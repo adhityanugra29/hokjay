@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --color-ink: #16232a;
+  --color-paper: #f5f2ea;
+  --color-panel: #ffffff;
+  --color-line: #ddd6c4;
+  --color-moss: #0e7c66;
+  --color-moss-deep: #0a3d3a;
+  --color-teal-bright: #12b8a3;
+  --color-clay: #e8542e;
+  --color-gold: #f0a52c;
+  --color-violet: #6952d6;
+  --color-muted: #7c7666;
+  --color-danger: #e0392b;
+}
+
+@theme inline {
+  --color-ink: var(--color-ink);
+  --color-paper: var(--color-paper);
+  --color-panel: var(--color-panel);
+  --color-line: var(--color-line);
+  --color-moss: var(--color-moss);
+  --color-moss-deep: var(--color-moss-deep);
+  --color-teal-bright: var(--color-teal-bright);
+  --color-clay: var(--color-clay);
+  --color-gold: var(--color-gold);
+  --color-violet: var(--color-violet);
+  --color-muted: var(--color-muted);
+  --color-danger: var(--color-danger);
+
+  --font-serif: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+
+  --radius-DEFAULT: 3px;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-gold);
+  color: #fff;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

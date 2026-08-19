@@ -1,0 +1,155 @@
+import { notFound } from "next/navigation";
+import PageHeader from "@/components/layout/PageHeader";
+import InvoiceActions from "@/components/invoice/InvoiceActions";
+import { LinkButton } from "@/components/ui/Button";
+import { dbConnect } from "@/lib/db";
+import { Invoice } from "@/models/Invoice";
+import { rupiah, formatDateLong, formatDateShort } from "@/lib/format";
+
+export const dynamic = "force-dynamic";
+
+export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/[id]">) {
+  const { id } = await params;
+  await dbConnect();
+  const invoice = await Invoice.findById(id);
+  if (!invoice) notFound();
+
+  return (
+    <>
+      <PageHeader
+        title={invoice.nomor}
+        subtitle={`DIBUAT ${formatDateLong(invoice.tanggalInvoice ?? invoice.createdAt!).toUpperCase()}`}
+        actions={
+          <>
+            {invoice.status !== "paid" && (
+              <LinkButton variant="ghost" href={`/invoice/${invoice._id}/ubah`}>
+                Ubah Invoice
+              </LinkButton>
+            )}
+            <InvoiceActions
+              nomor={invoice.nomor}
+              customerNama={invoice.customer!.nama}
+              customerWhatsapp={invoice.customer!.whatsapp ?? undefined}
+              grandTotal={invoice.grandTotal}
+            />
+          </>
+        }
+      />
+      <div className="p-6 md:p-9">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
+          <div id="invoice-doc" className="border border-line bg-panel p-9">
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b-2 border-ink pb-6">
+              <div>
+                <h2 className="font-serif text-2xl">INVOICE</h2>
+                <div className="mt-1.5 font-mono text-[0.75rem] text-muted">CV HORECA JAYA</div>
+              </div>
+              <div className="text-right font-mono text-[0.75rem] leading-relaxed text-muted">
+                No. {invoice.nomor}
+                <br />
+                Tanggal: {formatDateShort(invoice.tanggalInvoice ?? invoice.createdAt!)}
+              </div>
+            </div>
+
+            <div className="mb-7 flex flex-wrap gap-9">
+              <div>
+                <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">
+                  Ditagihkan kepada
+                </div>
+                <div className="font-medium">{invoice.customer!.nama}</div>
+                <div className="mt-1 font-mono text-[0.78rem] text-muted">{invoice.customer!.whatsapp}</div>
+              </div>
+              <div>
+                <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Dikirim ke</div>
+                <div className="text-[0.9rem] font-medium">{invoice.shipAddress ?? "—"}</div>
+                <div className="mt-1 font-mono text-[0.78rem] text-muted">
+                  {invoice.tanggalKirim ? `Tgl. Kirim: ${formatDateShort(invoice.tanggalKirim)}` : ""}
+                  {invoice.kurir ? ` · ${invoice.kurir}` : ""}
+                </div>
+              </div>
+              <div>
+                <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Sales</div>
+                <div className="font-medium">{invoice.sales!.nama}</div>
+              </div>
+            </div>
+
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  {["Produk", "Qty", "Harga", "Subtotal"].map((h, idx) => (
+                    <th
+                      key={h}
+                      className={`border-b border-ink py-2 font-mono text-[0.68rem] uppercase text-muted ${
+                        idx === 0 ? "text-left" : idx === 1 ? "text-center" : "text-right"
+                      }`}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {invoice.items.map((item, idx) => (
+                  <tr key={idx}>
+                    <td className="border-b border-line py-3 text-[0.88rem]">{item.namaSnapshot}</td>
+                    <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
+                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.hargaJual)}</td>
+                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="ml-auto mt-5 w-full max-w-[260px] font-mono">
+              <div className="flex justify-between py-1.5 text-[0.88rem]">
+                <span>Subtotal Produk</span>
+                <span>{rupiah(invoice.subtotalProduk)}</span>
+              </div>
+              <div className="flex justify-between py-1.5 text-[0.88rem]">
+                <span>Ongkos Kirim</span>
+                <span>{rupiah(invoice.ongkosKirim ?? 0)}</span>
+              </div>
+              <div className="mt-2 flex justify-between border-t-2 border-ink pt-3 font-serif text-lg font-semibold">
+                <span>Total</span>
+                <span>{rupiah(invoice.grandTotal)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="no-print">
+            <div className="mb-3.5 border border-line bg-panel p-5">
+              <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Status Pembayaran</h3>
+              <div className="flex items-center gap-2 font-mono text-[0.8rem]">
+                <span
+                  className={`h-2 w-2 rounded-full ${invoice.status === "paid" ? "bg-moss" : "bg-gold"}`}
+                />
+                {invoice.status === "draft" && "Draft — belum dikirim"}
+                {invoice.status === "unpaid" && "Belum Dibayar"}
+                {invoice.status === "paid" && "Lunas"}
+              </div>
+              {invoice.status === "unpaid" && (
+                <LinkButton href={`/invoice/${invoice._id}/bayar`} className="mt-3.5 w-full">
+                  Tandai Lunas Manual
+                </LinkButton>
+              )}
+              {invoice.status === "draft" && (
+                <div className="mt-3.5 font-mono text-[0.72rem] text-muted">
+                  Invoice draft belum mengurangi stok atau menghitung komisi.
+                </div>
+              )}
+            </div>
+            <div className="border border-line bg-panel p-5">
+              <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Riwayat</h3>
+              <div className="font-mono text-[0.75rem] leading-loose text-muted">
+                {invoice.riwayat.map((r, idx) => (
+                  <div key={idx}>
+                    {formatDateShort(r.tanggal ?? invoice.createdAt!)} — {r.keterangan}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
