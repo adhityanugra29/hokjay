@@ -5,7 +5,7 @@
 # sudah otomatis ada di tempat yang benar. Tinggal install dependency + build.
 deployment:
   tasks:
-    - export DEPLOYPATH=/mnt/Acronis/54ed5670-3888-43d7-8866-6980df26f687/home/wwwhokja/repositories/hokjay-repo/
-    - source /mnt/Acronis/54ed5670-3888-43d7-8866-6980df26f687/home/wwwhokja/nodevenv/repositories/hokjay-repo/20/bin/activate && cd $DEPLOYPATH && npm install && npm run build && deactivate
+    - export DEPLOYPATH=/mnt/Acronis/54ed5670-3888-43d7-8866-6980df26f687/home/wwwhokja/repositories/hokjay/
+    - source /mnt/Acronis/54ed5670-3888-43d7-8866-6980df26f687/home/wwwhokja/nodevenv/repositories/hokjay/20/bin/activate && cd $DEPLOYPATH && npm install && npm run build && deactivate
     - mkdir -p $DEPLOYPATH/tmp
     - touch $DEPLOYPATH/tmp/restart.txt
