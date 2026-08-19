@@ -1,27 +1,11 @@
 ---
 # cPanel Git Version Control deployment file.
-# Ganti 3 placeholder di bawah sebelum dipakai (lihat panduan dari Claude):
-#   <CPANEL_USERNAME>  -> username akun cPanel kamu
-#   <APP_ROOT>         -> "Application root" yang kamu isi saat membuat Node.js App
-#   <NODE_VERSION>      -> versi Node yang kamu pilih di Node.js App (mis. 20)
+# Application root = Repository path (satu folder yang sama): repositories/hokjay
+# Jadi tidak perlu copy file apa pun — begitu cPanel git-pull, source code
+# sudah otomatis ada di tempat yang benar. Tinggal install dependency + build.
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/<CPANEL_USERNAME>/<APP_ROOT>/
-    - /bin/cp -R app $DEPLOYPATH
-    - /bin/cp -R components $DEPLOYPATH
-    - /bin/cp -R lib $DEPLOYPATH
-    - /bin/cp -R models $DEPLOYPATH
-    - /bin/cp -R public $DEPLOYPATH
-    - /bin/cp -R scripts $DEPLOYPATH
-    - /bin/cp -R reference $DEPLOYPATH
-    - /bin/cp package.json $DEPLOYPATH
-    - /bin/cp package-lock.json $DEPLOYPATH
-    - /bin/cp next.config.ts $DEPLOYPATH
-    - /bin/cp tsconfig.json $DEPLOYPATH
-    - /bin/cp postcss.config.mjs $DEPLOYPATH
-    - /bin/cp eslint.config.mjs $DEPLOYPATH
-    - /bin/cp global.d.ts $DEPLOYPATH
-    - /bin/cp server.js $DEPLOYPATH
-    - source /home/<CPANEL_USERNAME>/nodevenv/<APP_ROOT>/<NODE_VERSION>/bin/activate && cd $DEPLOYPATH && npm install && npm run build && deactivate
+    - export DEPLOYPATH=/mnt/Acronis/54ed5670-3888-43d7-8866-6980df26f687/home/wwwhokja/repositories/hokjay/
+    - source /mnt/Acronis/54ed5670-3888-43d7-8866-6980df26f687/home/wwwhokja/nodevenv/repositories/hokjay/20/bin/activate && cd $DEPLOYPATH && npm install && npm run build && deactivate
     - mkdir -p $DEPLOYPATH/tmp
     - touch $DEPLOYPATH/tmp/restart.txt
