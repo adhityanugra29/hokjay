@@ -1,11 +1,16 @@
 ---
 # cPanel Git Version Control deployment file.
 # Application root = Repository path (satu folder yang sama): repositories/hokjay
-# Jadi tidak perlu copy file apa pun — begitu cPanel git-pull, source code
-# sudah otomatis ada di tempat yang benar. Tinggal install dependency + build.
+#
+# Server ini resource-nya terbatas jadi "next build" sering gagal/macet.
+# Solusinya: build dilakukan di komputer lokal, hasil ".next" di-upload manual
+# via File Manager langsung ke repositories/hokjay/.next (folder ini di-
+# gitignore, jadi git pull/deploy tidak pernah menghapusnya).
+# Server cukup install dependency PRODUKSI saja (--omit=dev, jauh lebih
+# ringan — skip TypeScript/Tailwind/ESLint dkk yang cuma dipakai saat build).
 deployment:
   tasks:
     - export DEPLOYPATH=/mnt/Acronis/54ed5670-3888-43d7-8866-6980df26f687/home/wwwhokja/repositories/hokjay/
-    - source /mnt/Acronis/54ed5670-3888-43d7-8866-6980df26f687/home/wwwhokja/nodevenv/repositories/hokjay/20/bin/activate && cd $DEPLOYPATH && npm install && npm run build && deactivate
+    - source /mnt/Acronis/54ed5670-3888-43d7-8866-6980df26f687/home/wwwhokja/nodevenv/repositories/hokjay/20/bin/activate && cd $DEPLOYPATH && npm install --omit=dev && deactivate
     - mkdir -p $DEPLOYPATH/tmp
     - touch $DEPLOYPATH/tmp/restart.txt
