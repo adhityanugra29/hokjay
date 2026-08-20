@@ -16,13 +16,31 @@ export default function KatalogClient({
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
   const [downloading, setDownloading] = useState(false);
-  const { selected, selectAll } = useCatalogSelection();
+  const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
 
-  async function downloadCatalogPDF() {
-    if (selected.size === 0) {
-      alert('Pilih dulu produk yang mau dimasukkan ke katalog PDF (centang foto produknya, atau "Pilih Semua").');
+  // Staged flow: idle button ("Unduh Katalog (PDF)") -> click reveals
+  // checkboxes + "Pilih Semua" and relabels to "Pilih Produk Katalog" ->
+  // once >=1 item is checked it relabels again to "Unduh Katalog PDF - XX
+  // itemnya" and now actually triggers the download.
+  function handleMainButtonClick() {
+    if (!pickMode) {
+      startPicking();
       return;
     }
+    if (selected.size === 0) return; // disabled below, but guard anyway
+    downloadCatalogPDF();
+  }
+
+  const mainButtonLabel = downloading
+    ? "Menyiapkan PDF..."
+    : !pickMode
+      ? "Unduh Katalog (PDF)"
+      : selected.size === 0
+        ? "Pilih Produk Katalog"
+        : `Unduh Katalog PDF - ${selected.size} itemnya`;
+
+  async function downloadCatalogPDF() {
+    if (selected.size === 0) return;
     let element = document.getElementById("catalog-print-doc");
     if (!element) return;
 
@@ -107,24 +125,35 @@ export default function KatalogClient({
           </Link>
           <button
             type="button"
-            onClick={downloadCatalogPDF}
-            disabled={downloading}
+            onClick={handleMainButtonClick}
+            disabled={downloading || (pickMode && selected.size === 0)}
             className="inline-block rounded border border-ink bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-semibold text-ink disabled:opacity-60"
           >
-            {downloading ? "Menyiapkan PDF..." : `Unduh Katalog (PDF)${selected.size > 0 ? ` · ${selected.size} dipilih` : ""}`}
+            {mainButtonLabel}
           </button>
+          {pickMode && (
+            <button
+              type="button"
+              onClick={cancelPicking}
+              className="inline-block px-2 py-2.5 font-sans text-[0.8rem] font-medium text-muted underline underline-offset-2"
+            >
+              Batal
+            </button>
+          )}
         </div>
       </div>
 
-      <label className="mb-3 flex w-fit cursor-pointer items-center gap-2 text-[0.8rem] text-muted select-none">
-        <input
-          type="checkbox"
-          checked={filtered.length > 0 && filtered.every((p) => selected.has(p._id))}
-          onChange={() => selectAll(filtered.map((p) => p._id))}
-          className="h-4 w-4 accent-accent"
-        />
-        Pilih Semua ({filtered.length} produk yang tampil)
-      </label>
+      {pickMode && (
+        <label className="mb-3 flex w-fit cursor-pointer items-center gap-2 text-[0.8rem] text-muted select-none">
+          <input
+            type="checkbox"
+            checked={filtered.length > 0 && filtered.every((p) => selected.has(p._id))}
+            onChange={() => selectAll(filtered.map((p) => p._id))}
+            className="h-4 w-4 accent-accent"
+          />
+          Pilih Semua ({filtered.length} produk yang tampil)
+        </label>
+      )}
 
       <div className="mb-5 flex flex-wrap items-center gap-2.5">
         <input

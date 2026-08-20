@@ -23,7 +23,7 @@ export interface KatalogProduct {
 
 export default function ProductCard({ product }: { product: KatalogProduct }) {
   const { items, addItem, updateItem, removeItem } = useCart();
-  const { isSelected, toggle } = useCatalogSelection();
+  const { isSelected, toggle, pickMode } = useCatalogSelection();
   const cartItem = items.find((i) => i.productId === product._id);
   const selected = isSelected(product._id);
 
@@ -54,21 +54,23 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
   }
 
   return (
-    <div className={`flex flex-col overflow-hidden border bg-panel ${selected ? "border-accent" : "border-line"}`}>
+    <div className={`flex flex-col overflow-hidden border bg-panel ${pickMode && selected ? "border-accent" : "border-line"}`}>
       <div className="relative flex aspect-4/3 items-center justify-center overflow-hidden bg-surface text-[0.68rem] text-muted">
-        <label
-          className="absolute top-2.5 left-2.5 z-10 flex h-6 w-6 cursor-pointer items-center justify-center border-2 border-line bg-panel"
-          style={selected ? { background: "var(--color-accent)", borderColor: "var(--color-accent)" } : undefined}
-          title="Pilih untuk katalog PDF"
-        >
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => toggle(product._id)}
-            className="sr-only"
-          />
-          {selected && <span className="text-[13px] leading-none font-bold text-white">✓</span>}
-        </label>
+        {pickMode && (
+          <label
+            className="absolute top-2.5 left-2.5 z-10 flex h-6 w-6 cursor-pointer items-center justify-center border-2 border-line bg-panel"
+            style={selected ? { background: "var(--color-accent)", borderColor: "var(--color-accent)" } : undefined}
+            title="Pilih untuk katalog PDF"
+          >
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => toggle(product._id)}
+              className="sr-only"
+            />
+            {selected && <span className="text-[13px] leading-none font-bold text-white">✓</span>}
+          </label>
+        )}
         {product.fotoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={product.fotoUrl} alt={product.name} className="h-full w-full object-cover" />

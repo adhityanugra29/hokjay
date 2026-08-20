@@ -14,6 +14,14 @@ interface CatalogSelectionContextValue {
   toggle: (id: string) => void;
   selectAll: (ids: string[]) => void;
   clearAll: () => void;
+  // "Pick mode" is the staged product-picking UI on /katalog: the download
+  // button starts as a plain "Unduh Katalog (PDF)" with no checkboxes
+  // visible; clicking it reveals per-card checkboxes + "Pilih Semua" and
+  // only then does the button turn into the real download trigger. Kept
+  // here (not local state in KatalogClient) so ProductCard can read it too.
+  pickMode: boolean;
+  startPicking: () => void;
+  cancelPicking: () => void;
 }
 
 const CatalogSelectionContext = createContext<CatalogSelectionContextValue | null>(null);
@@ -22,6 +30,7 @@ const STORAGE_KEY = "horeca-catalog-selection";
 export function CatalogSelectionProvider({ children }: { children: React.ReactNode }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [hydrated, setHydrated] = useState(false);
+  const [pickMode, setPickMode] = useState(false);
 
   useEffect(() => {
     try {
@@ -63,8 +72,19 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
     setSelected(new Set());
   }
 
+  function startPicking() {
+    setPickMode(true);
+  }
+
+  function cancelPicking() {
+    setPickMode(false);
+    clearAll();
+  }
+
   return (
-    <CatalogSelectionContext.Provider value={{ selected, isSelected, toggle, selectAll, clearAll }}>
+    <CatalogSelectionContext.Provider
+      value={{ selected, isSelected, toggle, selectAll, clearAll, pickMode, startPicking, cancelPicking }}
+    >
       {children}
     </CatalogSelectionContext.Provider>
   );
