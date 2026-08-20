@@ -7,7 +7,7 @@ import { LinkButton } from "@/components/ui/Button";
 import SortableHeader from "@/components/ui/SortableHeader";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
-import { rupiah } from "@/lib/format";
+import { rupiah, formatDateShort } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ const STATUS_LABEL: Record<string, { label: string; variant: PillVariant }> = {
   paid: { label: "Lunas", variant: "paid" },
 };
 
-const SORT_FIELDS = ["nomor", "customer.nama", "sales.nama", "grandTotal", "status"] as const;
+const SORT_FIELDS = ["nomor", "tanggalInvoice", "customer.nama", "sales.nama", "grandTotal", "status"] as const;
 
 export default async function InvoiceListPage({ searchParams }: PageProps<"/invoice">) {
   const sp = await searchParams;
@@ -60,6 +60,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
               <thead>
                 <tr>
                   <SortableHeader label="No. Invoice" sortKey="nomor" currentSort={field} currentDir={dir} basePath="/invoice" searchParams={sp} />
+                  <SortableHeader label="Tanggal Invoice" sortKey="tanggalInvoice" currentSort={field} currentDir={dir} basePath="/invoice" searchParams={sp} />
                   <SortableHeader label="Pelanggan" sortKey="customer.nama" currentSort={field} currentDir={dir} basePath="/invoice" searchParams={sp} />
                   <SortableHeader label="Sales" sortKey="sales.nama" currentSort={field} currentDir={dir} basePath="/invoice" searchParams={sp} />
                   <SortableHeader label="Total" sortKey="grandTotal" currentSort={field} currentDir={dir} basePath="/invoice" searchParams={sp} align="right" />
@@ -73,6 +74,9 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
                   return (
                     <tr key={String(inv._id)} className="hover:bg-[#fbfaf5]">
                       <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{inv.nomor}</td>
+                      <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
+                        {formatDateShort(inv.tanggalInvoice ?? inv.get("createdAt"))}
+                      </td>
                       <td className="border-b border-line px-5 py-4.5">
                         {inv.customer?.ref ? (
                           <Link href={`/pelanggan/${inv.customer.ref}`} className="hover:underline">
@@ -99,7 +103,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
                 })}
                 {invoices.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                    <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
                       Belum ada invoice.
                     </td>
                   </tr>

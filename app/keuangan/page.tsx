@@ -11,6 +11,7 @@ import { Product } from "@/models/Product";
 import { CashflowEntry } from "@/models/CashflowEntry";
 import { rupiah, rupiahCompact, formatDateShort } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
+import { accountName } from "@/lib/coa";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,14 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
       <PageHeader
         title="Keuangan"
         subtitle="RINGKASAN ARUS KAS & NILAI STOK · BULAN INI"
-        actions={<LinkButton href="/keuangan/pengeluaran">+ Catat Pengeluaran</LinkButton>}
+        actions={
+          <>
+            <LinkButton href="/keuangan/transaksi?tipe=masuk" variant="ghost">
+              + Catat Pemasukan
+            </LinkButton>
+            <LinkButton href="/keuangan/transaksi?tipe=keluar">+ Catat Pengeluaran</LinkButton>
+          </>
+        }
       />
       <div className="p-6 md:p-9">
         <div className="mb-5 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
@@ -46,7 +54,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
             value={rupiahCompact(summary.masukTotal)}
             accent="teal"
             deltaTone="up"
-            delta="dari pembayaran invoice lunas"
+            delta="dari invoice lunas & pemasukan lain"
           />
           <StatCard
             label="Uang Keluar (bulan ini)"
@@ -139,8 +147,12 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
                   <SortableHeader label="Tanggal" sortKey="tanggal" currentSort={kasField} currentDir={kasDir} basePath="/keuangan" searchParams={sp} paramPrefix="kas" />
                   <SortableHeader label="Tipe" sortKey="tipe" currentSort={kasField} currentDir={kasDir} basePath="/keuangan" searchParams={sp} paramPrefix="kas" />
                   <SortableHeader label="Keterangan" sortKey="keterangan" currentSort={kasField} currentDir={kasDir} basePath="/keuangan" searchParams={sp} paramPrefix="kas" />
+                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
+                    Akun
+                  </th>
                   <SortableHeader label="Referensi" sortKey="referensi" currentSort={kasField} currentDir={kasDir} basePath="/keuangan" searchParams={sp} paramPrefix="kas" />
                   <SortableHeader label="Nominal" sortKey="nominal" currentSort={kasField} currentDir={kasDir} basePath="/keuangan" searchParams={sp} paramPrefix="kas" />
+                  <th className="border-b border-line px-5 py-4" />
                 </tr>
               </thead>
               <tbody>
@@ -153,6 +165,9 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
                       {r.tipe === "masuk" ? <Pill variant="ok">Masuk</Pill> : <Pill variant="out">Keluar</Pill>}
                     </td>
                     <td className="border-b border-line px-5 py-4.5">{r.keterangan}</td>
+                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.75rem] text-muted">
+                      {r.akunKode ? `${r.akunKode} — ${accountName(r.akunKode)}` : "—"}
+                    </td>
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{r.referensi ?? "—"}</td>
                     <td
                       className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]"
@@ -161,11 +176,18 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
                       {r.tipe === "masuk" ? "+" : "−"}
                       {rupiah(r.nominal)}
                     </td>
+                    <td className="border-b border-line px-5 py-4.5">
+                      {r.buktiUrl && (
+                        <a href={r.buktiUrl} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+                          Lihat bukti
+                        </a>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {riwayat.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                    <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
                       Belum ada riwayat arus kas.
                     </td>
                   </tr>

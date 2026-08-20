@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_FOLDERS = ["products", "payments"];
+const ALLOWED_FOLDERS = ["products", "payments", "kwitansi"];
 
 export async function POST(req: Request) {
   const formData = await req.formData();

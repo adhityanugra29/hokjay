@@ -17,6 +17,8 @@ const SOURCE_TYPES = [
   "invoice-lunas",
   "komisi-cair",
   "cashflow-keluar",
+  "cashflow-masuk",
+  "kas-awal",
 ] as const;
 
 const JournalEntrySchema = new Schema(

@@ -108,19 +108,53 @@ export async function postCommissionPaid(invoice: InvoiceLike) {
 }
 
 /**
- * Posts the journal for a manual cash-out entry (see lib/services/addExpense.ts).
- * "Pembelian Stok" increases inventory value; other categories are expensed
- * immediately. There's no kas/bank distinction on CashflowEntry today, so
- * this defaults to Kas (1101) — see the accounting page's notes.
+ * Posts the journal for a manual cash-out entry (see
+ * lib/services/recordCashflow.ts) — `akunKode` is whichever expense/asset
+ * account the user picked on the form (see lib/coa.ts's
+ * manualExpenseAccounts()). There's no kas/bank distinction on
+ * CashflowEntry today, so this defaults to Kas (1101).
  */
-export async function postCashflowKeluar(entry: { keterangan: string; kategori: string; nominal: number; tanggal?: Date }) {
+export async function postCashflowKeluar(entry: { keterangan: string; akunKode: string; nominal: number; tanggal?: Date }) {
   await dbConnect();
-  const akun = entry.kategori === "Pembelian Stok" ? "1300" : entry.kategori === "Operasional" ? "6300" : "6900";
-
   await JournalEntry.create({
     tanggal: entry.tanggal ?? new Date(),
     deskripsi: entry.keterangan,
     sumberTipe: "cashflow-keluar",
-    lines: [line(akun, { debit: entry.nominal }), line("1101", { credit: entry.nominal })],
+    lines: [line(entry.akunKode, { debit: entry.nominal }), line("1101", { credit: entry.nominal })],
   });
+}
+
+/**
+ * Posts the journal for a manual cash-in entry that isn't an invoice
+ * payment (capital injection, other income, etc.) — `akunKode` is whichever
+ * income/equity account the user picked (see lib/coa.ts's
+ * manualIncomeAccounts()).
+ */
+export async function postCashflowMasuk(entry: { keterangan: string; akunKode: string; nominal: number; tanggal?: Date }) {
+  await dbConnect();
+  await JournalEntry.create({
+    tanggal: entry.tanggal ?? new Date(),
+    deskripsi: entry.keterangan,
+    sumberTipe: "cashflow-masuk",
+    lines: [line("1101", { debit: entry.nominal }), line(entry.akunKode, { credit: entry.nominal })],
+  });
+}
+
+/**
+ * Reconciles the opening-cash-balance journal entry (see
+ * app/admin/keuangan — "Kas Awal"). Idempotent: replaces whatever "kas-awal"
+ * entry existed before, so editing the setting doesn't pile up duplicates.
+ * Debits Kas, credits Modal Pemilik — a zero amount just clears it.
+ */
+export async function postKasAwal(amount: number, tanggal: Date) {
+  await dbConnect();
+  await JournalEntry.deleteMany({ sumberTipe: "kas-awal" });
+  if (amount > 0) {
+    await JournalEntry.create({
+      tanggal,
+      deskripsi: "Kas awal (saldo pembukaan)",
+      sumberTipe: "kas-awal",
+      lines: [line("1101", { debit: amount }), line("3100", { credit: amount })],
+    });
+  }
 }

@@ -10,6 +10,15 @@ const CashflowEntrySchema = new Schema(
     referensi: { type: String },
     nominal: { type: Number, required: true },
 
+    // Which ledger account this manual entry hits (see lib/coa.ts) — the
+    // other side of the double-entry is always Kas (1101). Invoice-driven
+    // entries (Pembayaran Invoice) don't set this; the accounting journal
+    // for those is posted separately, keyed off the invoice itself.
+    akunKode: { type: String },
+    // Scanned/uploaded kwitansi (receipt) for manual entries — see
+    // components/keuangan/TransactionForm.tsx.
+    buktiUrl: { type: String },
+
     invoice: { type: Schema.Types.ObjectId, ref: "Invoice" },
     product: { type: Schema.Types.ObjectId, ref: "Product" },
   },

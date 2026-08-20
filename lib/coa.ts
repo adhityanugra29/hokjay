@@ -31,6 +31,7 @@ export const ACCOUNTS: Account[] = [
   // Pendapatan
   { code: "4100", name: "Penjualan Barang Dagang", kelompok: "Pendapatan", normal: "credit" },
   { code: "4200", name: "Pendapatan Ongkos Kirim", kelompok: "Pendapatan", normal: "credit" },
+  { code: "4800", name: "Pendapatan Lain-lain", kelompok: "Pendapatan", normal: "credit" },
   { code: "4900", name: "Diskon Penjualan", kelompok: "Pendapatan", normal: "debit" }, // kontra-pendapatan
   // HPP
   { code: "5100", name: "Harga Pokok Penjualan (HPP)", kelompok: "HPP", normal: "debit" },
@@ -46,4 +47,22 @@ export const ACCOUNT_MAP = new Map(ACCOUNTS.map((a) => [a.code, a]));
 
 export function accountName(code: string): string {
   return ACCOUNT_MAP.get(code)?.name ?? code;
+}
+
+/**
+ * Accounts a user can pick by hand on the manual cashflow form (see
+ * components/keuangan/TransactionForm.tsx) — deliberately excludes accounts
+ * that only ever get touched by automated postings (Kas/Bank/Piutang
+ * themselves, Utang Komisi, Penjualan, HPP, Beban Komisi Sales), so manual
+ * entries can't accidentally corrupt those.
+ */
+export const MANUAL_EXPENSE_ACCOUNT_CODES = ["1300", "6200", "6300", "6900"];
+export const MANUAL_INCOME_ACCOUNT_CODES = ["4800", "3100"];
+
+export function manualExpenseAccounts(): Account[] {
+  return MANUAL_EXPENSE_ACCOUNT_CODES.map((c) => ACCOUNT_MAP.get(c)!).filter(Boolean);
+}
+
+export function manualIncomeAccounts(): Account[] {
+  return MANUAL_INCOME_ACCOUNT_CODES.map((c) => ACCOUNT_MAP.get(c)!).filter(Boolean);
 }

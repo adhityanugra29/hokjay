@@ -26,7 +26,7 @@ import { nextCustomerCode, nextProductSku } from "../lib/counters";
 import { createInvoice } from "../lib/services/createInvoice";
 import { payInvoice } from "../lib/services/payInvoice";
 import { restockProduct } from "../lib/services/restockProduct";
-import { addExpense } from "../lib/services/addExpense";
+import { recordCashflow } from "../lib/services/recordCashflow";
 
 const CATEGORY_NAMES = [
   "Working Table",
@@ -333,15 +333,19 @@ async function main() {
   console.log("Mencatat restock & pengeluaran manual...");
   await restockProduct(String(kompor._id), 50, "Restock rutin dari supplier");
   await restockProduct(String(rak._id), 20, "Restock rutin dari supplier");
-  await addExpense({
+  await recordCashflow({
+    tipe: "keluar",
     keterangan: "Pembelian stok — Kompor Gas Industrial",
     kategori: "Pembelian Stok",
+    akunKode: "1300",
     referensi: "PO-0042",
     nominal: kompor.hargaBeli * 6,
   });
-  await addExpense({
+  await recordCashflow({
+    tipe: "keluar",
     keterangan: "Biaya operasional gudang bulan ini",
     kategori: "Operasional",
+    akunKode: "6300",
     nominal: 900_000,
   });
 

@@ -15,6 +15,8 @@ export const CASHFLOW_CATEGORIES = [
   "Pembayaran Invoice",
   "Pembelian Stok",
   "Operasional",
+  "Modal Tambahan",
+  "Pendapatan Lain-lain",
   "Lainnya",
 ] as const;
 
