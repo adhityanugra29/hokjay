@@ -1,6 +1,7 @@
 "use client";
 
 import { useCart } from "@/components/cart/CartProvider";
+import { useCatalogSelection } from "./CatalogSelectionProvider";
 import { rupiah } from "@/lib/format";
 
 export interface KatalogProduct {
@@ -22,7 +23,9 @@ export interface KatalogProduct {
 
 export default function ProductCard({ product }: { product: KatalogProduct }) {
   const { items, addItem, updateItem, removeItem } = useCart();
+  const { isSelected, toggle } = useCatalogSelection();
   const cartItem = items.find((i) => i.productId === product._id);
+  const selected = isSelected(product._id);
 
   const dims = product.dimensi;
   const dimText =
@@ -51,8 +54,21 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
   }
 
   return (
-    <div className="flex flex-col overflow-hidden border border-line bg-panel">
-      <div className="flex aspect-4/3 items-center justify-center overflow-hidden bg-linear-to-br from-[#cfd8ce] to-[#eae5d6] font-mono text-[0.68rem] text-muted">
+    <div className={`flex flex-col overflow-hidden border bg-panel ${selected ? "border-accent" : "border-line"}`}>
+      <div className="relative flex aspect-4/3 items-center justify-center overflow-hidden bg-surface text-[0.68rem] text-muted">
+        <label
+          className="absolute top-2.5 left-2.5 z-10 flex h-6 w-6 cursor-pointer items-center justify-center border-2 border-line bg-panel"
+          style={selected ? { background: "var(--color-accent)", borderColor: "var(--color-accent)" } : undefined}
+          title="Pilih untuk katalog PDF"
+        >
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => toggle(product._id)}
+            className="sr-only"
+          />
+          {selected && <span className="text-[13px] leading-none font-bold text-white">✓</span>}
+        </label>
         {product.fotoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={product.fotoUrl} alt={product.name} className="h-full w-full object-cover" />
@@ -62,12 +78,10 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
       </div>
       <div className="flex flex-1 flex-col p-4">
         <div className="text-[0.92rem] font-medium">{product.name}</div>
-        <div className="mt-1.5 font-mono text-[0.85rem] font-medium text-moss-deep">
-          {rupiah(product.hargaRekomendasi)}
-        </div>
-        <div className="mt-2.5 font-mono text-[0.72rem] text-muted">
+        <div className="mt-1.5 text-[0.85rem] font-extrabold">{rupiah(product.hargaRekomendasi)}</div>
+        <div className="mt-2.5 text-[0.72rem] text-muted">
           {product.stok <= 0 ? (
-            <span className="text-danger">Stok Habis</span>
+            <span className="text-accent-700">Stok Habis</span>
           ) : (
             <>Stok: <span className="font-medium text-ink">{product.stok}</span> unit</>
           )}
@@ -75,18 +89,18 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
 
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {product.isCustom && (
-            <span className="rounded-full bg-[#e9e5f5] px-2.5 py-1 font-mono text-[0.66rem] font-medium text-violet">
+            <span className="border border-accent px-2.5 py-1 text-[0.66rem] font-semibold text-accent">
               Pesanan Custom
             </span>
           )}
           {product.kondisi === "bekas" ? (
-            <span className="rounded-full bg-[#f3e6d8] px-2.5 py-1 font-mono text-[0.66rem] text-[#8a6415]">
+            <span className="border border-line px-2.5 py-1 text-[0.66rem] text-muted">
               Bekas — Kondisi {product.kondisiPercent ?? "—"}%
             </span>
           ) : (
-            <span className="rounded-full bg-[#e3ebe4] px-2.5 py-1 font-mono text-[0.66rem] text-moss-deep">Baru</span>
+            <span className="border border-line px-2.5 py-1 text-[0.66rem] text-muted">Baru</span>
           )}
-          <span className="rounded-full bg-[#f3e0da] px-2.5 py-1 font-mono text-[0.66rem] font-medium text-clay">
+          <span className="border border-accent px-2.5 py-1 text-[0.66rem] font-semibold text-accent">
             Insentif {product.komisiPercent}% · {rupiah(product.komisiNominal)}
           </span>
         </div>

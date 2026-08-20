@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { rupiah } from "@/lib/format";
 import { CUSTOM_ORDER_CATEGORIES } from "@/lib/constants";
+import { useCatalogSelection } from "@/components/katalog/CatalogSelectionProvider";
 
 interface CatalogProduct {
   _id: string;
@@ -41,15 +42,17 @@ function specLine(p: CatalogProduct): string {
  * needs real layout to snapshot, which display:none elements don't have.
  * Never visible to the user and excluded from native browser printing.
  *
- * This is a static company-wide catalog brochure (cover → products by
- * category → custom order pricing → closing CTA), not tied to what's in
- * the cart — sourced live from the product/category/sales collections.
+ * This brochure (cover → products by category → custom order pricing →
+ * closing CTA) only includes products checked in the Katalog page's own
+ * selection checkboxes (see CatalogSelectionProvider) — separate from the
+ * invoice cart — sourced live from the product/category/sales collections.
  */
 export default function CatalogPrintDoc() {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [sales, setSales] = useState<CatalogSales[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const { selected } = useCatalogSelection();
 
   useEffect(() => {
     Promise.all([
@@ -65,8 +68,9 @@ export default function CatalogPrintDoc() {
       .finally(() => setLoaded(true));
   }, []);
 
+  const selectedProducts = products.filter((p) => selected.has(p._id));
   const byCategory = categories
-    .map((cat) => ({ cat, items: products.filter((p) => p.category === cat) }))
+    .map((cat) => ({ cat, items: selectedProducts.filter((p) => p.category === cat) }))
     .filter((g) => g.items.length > 0);
 
   const today = new Date();
@@ -107,7 +111,7 @@ export default function CatalogPrintDoc() {
         <div className="border-l border-line px-6 py-6">
           <div className="mb-2 text-[12px] tracking-[0.1em] text-accent uppercase">Isi katalog</div>
           <div className="text-[15px] leading-relaxed">
-            {products.length} produk siap stok
+            {selectedProducts.length} produk dipilih
             <br />+ pesanan custom
           </div>
         </div>

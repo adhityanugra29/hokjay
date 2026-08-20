@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
+import { useCatalogSelection } from "./CatalogSelectionProvider";
 
 export default function KatalogClient({
   products,
@@ -15,8 +16,13 @@ export default function KatalogClient({
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const { selected, selectAll } = useCatalogSelection();
 
   async function downloadCatalogPDF() {
+    if (selected.size === 0) {
+      alert('Pilih dulu produk yang mau dimasukkan ke katalog PDF (centang foto produknya, atau "Pilih Semua").');
+      return;
+    }
     let element = document.getElementById("catalog-print-doc");
     if (!element) return;
 
@@ -105,10 +111,20 @@ export default function KatalogClient({
             disabled={downloading}
             className="inline-block rounded border border-ink bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-semibold text-ink disabled:opacity-60"
           >
-            {downloading ? "Menyiapkan PDF..." : "Unduh Katalog (PDF)"}
+            {downloading ? "Menyiapkan PDF..." : `Unduh Katalog (PDF)${selected.size > 0 ? ` · ${selected.size} dipilih` : ""}`}
           </button>
         </div>
       </div>
+
+      <label className="mb-3 flex w-fit cursor-pointer items-center gap-2 text-[0.8rem] text-muted select-none">
+        <input
+          type="checkbox"
+          checked={filtered.length > 0 && filtered.every((p) => selected.has(p._id))}
+          onChange={() => selectAll(filtered.map((p) => p._id))}
+          className="h-4 w-4 accent-accent"
+        />
+        Pilih Semua ({filtered.length} produk yang tampil)
+      </label>
 
       <div className="mb-5 flex flex-wrap items-center gap-2.5">
         <input
