@@ -4,15 +4,42 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/constants";
+import { isAllowedPage } from "@/lib/auth/access";
+import type { UserRole } from "@/models/User";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+const ROLE_LABEL: Record<UserRole, string> = {
+  sales: "Sales",
+  finance: "Finance",
+  admin: "Admin",
+};
+
+export default function AppShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: { nama: string; role: UserRole } | null;
+}) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  // /login renders its own centered layout — no sidebar chrome around it.
+  if (pathname === "/login" || !user) {
+    return <>{children}</>;
+  }
+
+  const visibleNavItems = NAV_ITEMS.filter((item) => isAllowedPage(user.role, item.href));
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    // Hard navigation — see the matching note in app/login/page.tsx.
+    window.location.href = "/login";
+  }
 
   return (
     <div>
@@ -52,7 +79,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="flex flex-col py-2.5">
-            {NAV_ITEMS.map((item) => {
+            {visibleNavItems.map((item) => {
               const active = isActive(pathname, item.href);
               return (
                 <Link
@@ -75,7 +102,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="mt-auto border-t border-white/20 px-[22px] py-[18px] text-[11px] leading-relaxed text-white/55">
-            MongoDB Atlas — tersambung
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="font-medium text-white/80">{user.nama}</div>
+                <div className="text-white/50">{ROLE_LABEL[user.role]}</div>
+              </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="cursor-pointer border border-white/25 px-2.5 py-1.5 text-[10px] font-semibold text-white/80 hover:border-accent hover:text-white"
+              >
+                Keluar
+              </button>
+            </div>
           </div>
         </aside>
 

@@ -9,7 +9,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <SubnavTabs
           tabs={[
             { href: "/admin", label: "Kategori" },
-            { href: "/admin/user", label: "User" },
+            { href: "/admin/user", label: "Sales" },
+            { href: "/admin/akun", label: "Akun Login" },
             { href: "/admin/kurir", label: "Kurir" },
             { href: "/admin/zona-ongkir", label: "Zona Ongkir" },
             { href: "/admin/pembayaran", label: "Metode Pembayaran" },
