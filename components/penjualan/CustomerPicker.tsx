@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
 import { useCatalogSelection } from "@/components/katalog/CatalogSelectionProvider";
 import { useActiveCustomer } from "./ActiveCustomerProvider";
+import InlineCustomerForm, { type CreatedCustomer } from "./InlineCustomerForm";
 
 interface CustomerRow {
   _id: string;
@@ -29,9 +29,11 @@ export default function CustomerPicker({ customers }: { customers: CustomerRow[]
   const { clear: clearCart } = useCart();
   const { clearAll: clearCatalogSelection } = useCatalogSelection();
 
+  const [localCustomers, setLocalCustomers] = useState(customers);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<CustomerRow | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,14 +46,20 @@ export default function CustomerPicker({ customers }: { customers: CustomerRow[]
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return customers.slice(0, 8);
-    return customers.filter((c) => c.nama.toLowerCase().includes(q)).slice(0, 8);
-  }, [customers, query]);
+    if (!q) return localCustomers.slice(0, 8);
+    return localCustomers.filter((c) => c.nama.toLowerCase().includes(q)).slice(0, 8);
+  }, [localCustomers, query]);
 
   function pick(c: CustomerRow) {
     setSelected(c);
     setQuery(c.nama);
     setOpen(false);
+  }
+
+  function handleCreated(customer: CreatedCustomer) {
+    setLocalCustomers((prev) => [customer, ...prev]);
+    pick(customer);
+    setShowAddForm(false);
   }
 
   function goJualan() {
@@ -107,15 +115,27 @@ export default function CustomerPicker({ customers }: { customers: CustomerRow[]
         )}
       </div>
 
-      <div className="mt-2">
-        <Link href="/pelanggan/baru" className="font-sans text-[0.78rem] text-accent underline underline-offset-2">
-          + Tambah pelanggan baru
-        </Link>
-      </div>
+      {!showAddForm && (
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => setShowAddForm(true)}
+            className="cursor-pointer font-sans text-[0.78rem] text-accent underline underline-offset-2"
+          >
+            + Tambah pelanggan baru
+          </button>
+        </div>
+      )}
 
-      <Button onClick={goJualan} disabled={!selected} className="mt-5 w-full">
-        Ayo Jualan
-      </Button>
+      {showAddForm && (
+        <InlineCustomerForm onCreated={handleCreated} onCancel={() => setShowAddForm(false)} />
+      )}
+
+      {!showAddForm && (
+        <Button onClick={goJualan} disabled={!selected} className="mt-5 w-full">
+          Ayo Jualan
+        </Button>
+      )}
     </Panel>
   );
 }
