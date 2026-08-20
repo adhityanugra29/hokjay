@@ -1,12 +1,11 @@
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
+import HotProductsCarousel from "@/components/dashboard/HotProductsCarousel";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
-import { Product } from "@/models/Product";
-import { getKeuanganSummary } from "@/lib/keuangan";
 import { currentPeriod, getSalesRanking } from "@/lib/insentif";
-import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
+import { getHotProducts } from "@/lib/dashboard";
 import { rupiah, rupiahCompact, formatDateFull } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
 
@@ -27,11 +26,10 @@ export default async function DashboardPage() {
   const nowJakarta = currentJakartaMonthYear();
   const thisMonthRange = jakartaMonthRange(nowJakarta.year, nowJakarta.month);
 
-  const [summary, needsAction, ranking, lowStock, recentInvoices, unpaidAll] = await Promise.all([
-    getKeuanganSummary(thisMonthRange),
+  const [needsAction, ranking, hotProducts, recentInvoices, unpaidAll] = await Promise.all([
     Invoice.find({ status: { $in: ["unpaid", "draft"] } }).sort({ createdAt: 1 }).limit(6),
     getSalesRanking(currentPeriod()),
-    Product.find({ stok: { $lte: LOW_STOCK_THRESHOLD } }).sort({ stok: 1 }).limit(4),
+    getHotProducts(thisMonthRange),
     Invoice.find().sort({ updatedAt: -1 }).limit(5),
     Invoice.find({ status: "unpaid" }),
   ]);
@@ -50,60 +48,14 @@ export default async function DashboardPage() {
       <PageHeader
         title="Dasbor"
         subtitle={formatDateFull(new Date()).toUpperCase()}
-        actions={
-          <>
-            <LinkButton href="/katalog" variant="ghost">
-              Katalog
-            </LinkButton>
-            <LinkButton href="/invoice/baru">Buat Invoice →</LinkButton>
-          </>
-        }
+        actions={<LinkButton href="/penjualan">Ayo Jualan →</LinkButton>}
       />
-
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 divide-x-2 divide-line border-b-2 border-line md:grid-cols-4">
-        <div className="p-5">
-          <div className="font-sans text-[0.68rem] uppercase tracking-[0.1em] text-muted">
-            Uang Masuk · Bulan ini
-          </div>
-          <div className="mt-2.5 font-sans text-[1.9rem] font-extrabold leading-none">
-            {rupiahCompact(summary.masukTotal)}
-          </div>
-        </div>
-        <div className="p-5">
-          <div className="font-sans text-[0.68rem] uppercase tracking-[0.1em] text-muted">
-            Uang Keluar
-          </div>
-          <div className="mt-2.5 font-sans text-[1.9rem] font-extrabold leading-none">
-            {rupiahCompact(summary.keluarTotal)}
-          </div>
-        </div>
-        <div className="p-5">
-          <div className="font-sans text-[0.68rem] uppercase tracking-[0.1em] text-muted">
-            Arus Kas Bersih
-          </div>
-          <div className="mt-2.5 font-sans text-[1.9rem] font-extrabold leading-none">
-            {rupiahCompact(summary.netTotal)}
-          </div>
-        </div>
-        <div className="p-5">
-          <div className="font-sans text-[0.68rem] uppercase tracking-[0.1em] text-muted">
-            Nilai Stok Gudang
-          </div>
-          <div className="mt-2.5 font-sans text-[1.9rem] font-extrabold leading-none">
-            {rupiahCompact(summary.nilaiStok)}
-          </div>
-          <div className="mt-1.5 font-sans text-[0.7rem] text-muted">
-            {summary.productCount} produk aktif
-          </div>
-        </div>
-      </div>
 
       <div className="grid md:grid-cols-[1fr_360px]">
         {/* Main column */}
         <section className="border-line p-6 md:border-r-2 md:p-9">
           <div className="mb-3.5 flex items-baseline justify-between gap-2.5">
-            <h4 className="text-[1.05rem] font-extrabold">Perlu ditindak</h4>
+            <h4 className="text-[1.05rem] font-extrabold">Follow-up Yuk</h4>
             <span className="font-sans text-[0.7rem] text-muted">
               {unpaidCount} belum lunas · {draftCount} draft
             </span>
@@ -142,7 +94,7 @@ export default async function DashboardPage() {
           </div>
 
           <div className="mb-3.5 flex items-baseline justify-between gap-2.5">
-            <h4 className="text-[1.05rem] font-extrabold">Insentif bulan ini</h4>
+            <h4 className="text-[1.05rem] font-extrabold">Top Achiever</h4>
             <Link href="/insentif" className="font-sans text-[0.7rem] text-accent no-underline hover:underline">
               lihat semua →
             </Link>
@@ -167,31 +119,6 @@ export default async function DashboardPage() {
 
         {/* Aside */}
         <aside className="flex flex-col gap-7 p-6 md:p-7">
-          <div>
-            <h4 className="mb-3 text-[1.05rem] font-extrabold">Stok tipis</h4>
-            <div>
-              {lowStock.map((p) => (
-                <div
-                  key={String(p._id)}
-                  className="flex items-center justify-between gap-3 border-t border-line py-2.5 font-sans text-[0.85rem] last:border-b"
-                >
-                  <span>{p.name}</span>
-                  <span className={`font-extrabold ${p.stok <= 2 ? "text-accent-700" : ""}`}>
-                    {p.stok} sisa
-                  </span>
-                </div>
-              ))}
-              {lowStock.length === 0 && (
-                <div className="border-t border-line py-4 font-sans text-[0.8rem] text-muted">
-                  Semua stok aman.
-                </div>
-              )}
-            </div>
-            <LinkButton href="/produk/riwayat" variant="ghost" className="mt-3 w-full justify-start">
-              Catat restock
-            </LinkButton>
-          </div>
-
           <div>
             <h4 className="mb-3 text-[1.05rem] font-extrabold">Aktivitas terakhir</h4>
             <div className="flex flex-col gap-3.5">
@@ -225,6 +152,16 @@ export default async function DashboardPage() {
           </div>
         </aside>
       </div>
+
+      <section className="border-t-2 border-line p-6 md:p-9">
+        <div className="mb-4 flex items-baseline justify-between gap-2.5">
+          <h4 className="text-[1.05rem] font-extrabold">Hot Products</h4>
+          <span className="font-sans text-[0.7rem] text-muted">
+            Terlaris bulan ini · Stok terbanyak · Insentif tertinggi
+          </span>
+        </div>
+        <HotProductsCarousel products={hotProducts} />
+      </section>
     </>
   );
 }
