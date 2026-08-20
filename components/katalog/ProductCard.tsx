@@ -79,7 +79,9 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
         )}
       </div>
       <div className="flex flex-1 flex-col p-4">
-        <div className="text-[0.92rem] font-medium">{product.name}</div>
+        {/* Fixed-height name block + Insentif called out bold/red, matching
+            the Hot Products carousel cards (see confirmation 2026-08-20). */}
+        <div className="line-clamp-2 min-h-[2.75rem] text-[0.92rem] leading-snug font-medium">{product.name}</div>
         <div className="mt-1.5 text-[0.85rem] font-extrabold">{rupiah(product.hargaRekomendasi)}</div>
         <div className="mt-2.5 text-[0.72rem] text-muted">
           {product.stok <= 0 ? (
@@ -89,7 +91,7 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
           )}
         </div>
 
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {product.isCustom && (
             <span className="border border-accent px-2.5 py-1 text-[0.66rem] font-semibold text-accent">
               Pesanan Custom
@@ -102,10 +104,12 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
           ) : (
             <span className="border border-line px-2.5 py-1 text-[0.66rem] text-muted">Baru</span>
           )}
-          <span className="border border-accent px-2.5 py-1 text-[0.66rem] font-semibold text-accent">
-            Insentif {product.komisiPercent}% · {rupiah(product.komisiNominal)}
-          </span>
         </div>
+
+        <div className="mt-2.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">
+          Insentif {product.komisiPercent}%
+        </div>
+        <div className="text-[1.05rem] font-extrabold text-accent-700">{rupiah(product.komisiNominal)}</div>
 
         {(dimText || product.ketebalan) && (
           <div className="mt-2.5 border-t border-dashed border-line pt-2.5 font-mono text-[0.7rem] leading-relaxed text-muted">
@@ -123,23 +127,23 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
         )}
 
         {cartItem ? (
-          <div className="mt-auto flex w-full items-stretch overflow-hidden rounded-[4px] border-[1.5px] border-moss-deep">
+          <div className="mt-auto flex w-full items-stretch border border-accent">
             <button
               type="button"
               onClick={() => handleQtyChange(-1)}
-              className="h-9 w-[38px] cursor-pointer bg-moss-deep text-base font-semibold text-white hover:bg-moss"
+              className="h-9 w-[38px] cursor-pointer bg-accent text-base font-semibold text-white hover:bg-accent-deep"
               aria-label="Kurangi jumlah"
             >
               −
             </button>
-            <span className="flex-1 py-2 text-center font-mono text-[0.95rem] font-semibold text-moss-deep">
+            <span className="flex-1 py-2 text-center font-mono text-[0.95rem] font-semibold text-accent-700">
               {cartItem.qty}
             </span>
             <button
               type="button"
               onClick={() => handleQtyChange(1)}
               disabled={cartItem.qty >= product.stok}
-              className="h-9 w-[38px] cursor-pointer bg-moss-deep text-base font-semibold text-white hover:bg-moss disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-9 w-[38px] cursor-pointer bg-accent text-base font-semibold text-white hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Tambah jumlah"
             >
               +
@@ -164,7 +168,7 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
                 specsText,
               })
             }
-            className="mt-auto w-full cursor-pointer rounded-[4px] border-[1.5px] border-moss bg-transparent py-2.5 font-sans text-[0.82rem] font-medium text-moss-deep transition hover:bg-moss hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-auto w-full cursor-pointer border border-accent bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-white transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-40"
           >
             {product.stok <= 0 ? "Stok Habis" : "+ Tambah ke Invoice"}
           </button>
