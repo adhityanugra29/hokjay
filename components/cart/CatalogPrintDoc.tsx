@@ -82,14 +82,14 @@ export default function CatalogPrintDoc() {
       <div className="bg-accent px-12 py-14 text-white">
         <div className="mb-10 flex items-baseline justify-between gap-4">
           <span className="text-[19px] font-extrabold">CV HORECA JAYA</span>
-          <span className="text-[13px] tracking-[0.12em] text-white/85 uppercase">
+          <span className="text-[13px] tracking-[0.12em] text-[rgba(255,255,255,0.85)] uppercase">
             Katalog · {periodLabel}
           </span>
         </div>
         <h1 className="max-w-[14ch] text-[52px] leading-[0.98] font-extrabold">
           Peralatan dapur hotel &amp; restoran
         </h1>
-        <p className="mt-6 max-w-[46ch] text-[16px] leading-relaxed text-white/90">
+        <p className="mt-6 max-w-[46ch] text-[16px] leading-relaxed text-[rgba(255,255,255,0.9)]">
           Stainless steel berkualitas, stok siap kirim. Ukuran custom bisa dipesan sesuai kebutuhan dapur Anda.
         </p>
       </div>
@@ -191,12 +191,12 @@ export default function CatalogPrintDoc() {
 
       {/* Closing CTA */}
       <div className="break-inside-avoid bg-accent px-12 py-12 text-white">
-        <div className="mb-3 text-[12px] tracking-[0.14em] text-white/85 uppercase">CV HORECA JAYA</div>
+        <div className="mb-3 text-[12px] tracking-[0.14em] text-[rgba(255,255,255,0.85)] uppercase">CV HORECA JAYA</div>
         <h2 className="max-w-[26ch] text-[30px] leading-tight font-extrabold">
           Kirim daftar barangmu hari ini, invoice keluar hari ini juga.
         </h2>
         {sales.length > 0 && (
-          <div className="mt-6 text-[14px] text-white/90">
+          <div className="mt-6 text-[14px] text-[rgba(255,255,255,0.9)]">
             Sales yang melayani: {sales.map((s) => s.nama).join(" · ")}
           </div>
         )}
