@@ -1,5 +1,5 @@
 import { Panel, PanelHead } from "@/components/ui/Panel";
-import PeriodPicker from "@/components/akuntansi/PeriodPicker";
+import PeriodPicker from "@/components/ui/PeriodPicker";
 import { getLabaRugi } from "@/lib/akuntansi";
 import { rupiah } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";

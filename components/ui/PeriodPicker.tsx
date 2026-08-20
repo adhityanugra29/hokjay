@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select } from "@/components/ui/Form";
 import { MONTH_NAMES } from "@/lib/constants";
 
-/** Simple Bulan + Tahun filter, shared by all three Akuntansi report pages. */
+/** Simple Bulan + Tahun filter, shared by the Akuntansi, Insentif, and Keuangan pages. */
 export default function PeriodPicker({ month, year, currentYear }: { month: number; year: number; currentYear: number }) {
   const pathname = usePathname();
   const router = useRouter();

@@ -1,17 +1,5 @@
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
-import { MONTH_NAMES } from "@/lib/constants";
-
-export function periodOptions(count = 3): { value: string; label: string }[] {
-  const now = new Date();
-  const out: { value: string; label: string }[] = [];
-  for (let i = count - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    out.push({ value, label: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}` });
-  }
-  return out;
-}
 
 export function currentPeriod(): string {
   const now = new Date();

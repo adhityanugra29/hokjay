@@ -4,6 +4,7 @@ import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import Pill from "@/components/ui/Pill";
 import { LinkButton } from "@/components/ui/Button";
 import SortableHeader from "@/components/ui/SortableHeader";
+import PeriodPicker from "@/components/ui/PeriodPicker";
 import CashFlowChart from "@/components/keuangan/CashFlowChart";
 import { getKeuanganSummary } from "@/lib/keuangan";
 import { dbConnect } from "@/lib/db";
@@ -12,6 +13,8 @@ import { CashflowEntry } from "@/models/CashflowEntry";
 import { rupiah, rupiahCompact, formatDateShort } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
 import { accountName } from "@/lib/coa";
+import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
+import { MONTH_NAMES } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +24,11 @@ const KAS_SORT_FIELDS = ["tanggal", "tipe", "keterangan", "referensi", "nominal"
 export default async function KeuanganPage({ searchParams }: PageProps<"/keuangan">) {
   const sp = await searchParams;
   await dbConnect();
-  const summary = await getKeuanganSummary();
+  const nowJakarta = currentJakartaMonthYear();
+  const month = Number(sp.bulan) || nowJakarta.month;
+  const year = Number(sp.tahun) || nowJakarta.year;
+  const range = jakartaMonthRange(year, month);
+  const summary = await getKeuanganSummary(range);
 
   const { field: stokField, dir: stokDir } = parseSort(sp, STOK_SORT_FIELDS, "stok", "stok");
   const hasStokSort = typeof sp.stoksort === "string";
@@ -29,7 +36,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
 
   const { field: kasField, dir: kasDir } = parseSort(sp, KAS_SORT_FIELDS, "tanggal", "kas");
   const hasKasSort = typeof sp.kassort === "string";
-  const riwayat = await CashflowEntry.find()
+  const riwayat = await CashflowEntry.find({ tanggal: { $gte: range.from, $lt: range.to } })
     .sort(hasKasSort ? mongoSort(kasField, kasDir) : { tanggal: -1 })
     .limit(50);
 
@@ -37,7 +44,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
     <>
       <PageHeader
         title="Keuangan"
-        subtitle="RINGKASAN ARUS KAS & NILAI STOK · BULAN INI"
+        subtitle={`RINGKASAN ARUS KAS & NILAI STOK · ${MONTH_NAMES[month - 1].toUpperCase()} ${year}`}
         actions={
           <>
             <LinkButton href="/keuangan/transaksi?tipe=masuk" variant="ghost">
@@ -48,16 +55,18 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
         }
       />
       <div className="p-6 md:p-9">
+        <PeriodPicker month={month} year={year} currentYear={nowJakarta.year} />
+
         <div className="mb-5 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
           <StatCard
-            label="Uang Masuk (bulan ini)"
+            label={`Uang Masuk (${MONTH_NAMES[month - 1]})`}
             value={rupiahCompact(summary.masukTotal)}
             accent="teal"
             deltaTone="up"
             delta="dari invoice lunas & pemasukan lain"
           />
           <StatCard
-            label="Uang Keluar (bulan ini)"
+            label={`Uang Keluar (${MONTH_NAMES[month - 1]})`}
             value={rupiahCompact(summary.keluarTotal)}
             accent="clay"
             deltaTone="warn"
@@ -68,7 +77,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
             value={rupiahCompact(summary.netTotal)}
             accent="violet"
             deltaTone="violet"
-            delta="masuk − keluar bulan ini"
+            delta={`masuk − keluar ${MONTH_NAMES[month - 1]}`}
           />
           <StatCard
             label="Nilai Stok di Gudang"
@@ -139,7 +148,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
         </Panel>
 
         <Panel>
-          <PanelHead title="Riwayat arus kas" />
+          <PanelHead title={`Riwayat arus kas — ${MONTH_NAMES[month - 1]} ${year}`} />
           <TableScroll>
             <table className="w-full border-collapse">
               <thead>
@@ -188,7 +197,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
                 {riwayat.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                      Belum ada riwayat arus kas.
+                      Belum ada riwayat arus kas pada periode ini.
                     </td>
                   </tr>
                 )}

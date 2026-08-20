@@ -1,6 +1,6 @@
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import SortableHeader from "@/components/ui/SortableHeader";
-import PeriodPicker from "@/components/akuntansi/PeriodPicker";
+import PeriodPicker from "@/components/ui/PeriodPicker";
 import { getTrialBalance } from "@/lib/akuntansi";
 import { rupiah } from "@/lib/format";
 import { parseSort, sortRows } from "@/lib/sort";

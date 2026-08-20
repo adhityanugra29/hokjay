@@ -1,9 +1,9 @@
-import PeriodFilterPills from "@/components/ui/PeriodFilterPills";
+import PeriodPicker from "@/components/ui/PeriodPicker";
 import StatCard from "@/components/ui/StatCard";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import RankBadge from "@/components/ui/RankBadge";
 import SortableHeader from "@/components/ui/SortableHeader";
-import { periodOptions, getSalesRanking } from "@/lib/insentif";
+import { getSalesRanking } from "@/lib/insentif";
 import { rupiah } from "@/lib/format";
 import { parseSort, sortRows } from "@/lib/sort";
 
@@ -11,13 +11,18 @@ const SORT_FIELDS = ["salesNama", "qty", "totalPenjualan", "totalKomisi"] as con
 
 export default async function InsentifOverview({
   basePath,
-  period,
+  month,
+  year,
+  currentYear,
   searchParams,
 }: {
   basePath: string;
-  period: string;
+  month: number;
+  year: number;
+  currentYear: number;
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
+  const period = `${year}-${String(month).padStart(2, "0")}`;
   const sp = searchParams ?? {};
   const hasSort = typeof sp.ranksort === "string" && (SORT_FIELDS as readonly string[]).includes(sp.ranksort);
   const { field, dir } = parseSort(sp, SORT_FIELDS, "totalKomisi", "rank");
@@ -31,7 +36,7 @@ export default async function InsentifOverview({
 
   return (
     <>
-      <PeriodFilterPills basePath={basePath} periods={periodOptions()} active={period} />
+      <PeriodPicker month={month} year={year} currentYear={currentYear} />
 
       <div className="mb-5 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
         <StatCard label="Total komisi bulan ini" value={rupiah(totalKomisi)} accent="teal" delta={`dari ${ranking.length} sales aktif`} deltaTone="up" />

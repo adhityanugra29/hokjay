@@ -8,6 +8,7 @@ import { getKeuanganSummary } from "@/lib/keuangan";
 import { currentPeriod, getSalesRanking } from "@/lib/insentif";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { rupiah, rupiahCompact, formatDateFull } from "@/lib/format";
+import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -23,9 +24,11 @@ function timeOfDay(date: Date | string): string {
 
 export default async function DashboardPage() {
   await dbConnect();
+  const nowJakarta = currentJakartaMonthYear();
+  const thisMonthRange = jakartaMonthRange(nowJakarta.year, nowJakarta.month);
 
   const [summary, needsAction, ranking, lowStock, recentInvoices, unpaidAll] = await Promise.all([
-    getKeuanganSummary(),
+    getKeuanganSummary(thisMonthRange),
     Invoice.find({ status: { $in: ["unpaid", "draft"] } }).sort({ createdAt: 1 }).limit(6),
     getSalesRanking(currentPeriod()),
     Product.find({ stok: { $lte: LOW_STOCK_THRESHOLD } }).sort({ stok: 1 }).limit(4),

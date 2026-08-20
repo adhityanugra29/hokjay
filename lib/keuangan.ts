@@ -2,18 +2,10 @@ import { dbConnect } from "@/lib/db";
 import { CashflowEntry } from "@/models/CashflowEntry";
 import { Product } from "@/models/Product";
 
-function currentMonthRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return { start, end };
-}
-
-export async function getKeuanganSummary() {
+export async function getKeuanganSummary(range: { from: Date; to: Date }) {
   await dbConnect();
-  const { start, end } = currentMonthRange();
 
-  const entries = await CashflowEntry.find({ tanggal: { $gte: start, $lt: end } });
+  const entries = await CashflowEntry.find({ tanggal: { $gte: range.from, $lt: range.to } });
 
   const masukTotal = entries.filter((e) => e.tipe === "masuk").reduce((s, e) => s + e.nominal, 0);
   const keluarTotal = entries.filter((e) => e.tipe === "keluar").reduce((s, e) => s + e.nominal, 0);

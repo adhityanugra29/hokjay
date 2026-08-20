@@ -4,9 +4,10 @@ import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import SortableHeader from "@/components/ui/SortableHeader";
 import InsentifOverview from "@/components/insentif/InsentifOverview";
 import PayoutToggle from "@/components/insentif/PayoutToggle";
-import { currentPeriod, getRiwayatKomisi } from "@/lib/insentif";
+import { getRiwayatKomisi } from "@/lib/insentif";
 import { parseSort, sortRows } from "@/lib/sort";
 import { rupiah, formatDateShort } from "@/lib/format";
+import { currentJakartaMonthYear } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,10 @@ const SORT_FIELDS = ["nomor", "salesNama", "komisiBaris", "tanggalLunas"] as con
 
 export default async function InsentifRiwayatPage({ searchParams }: PageProps<"/insentif/riwayat">) {
   const sp = await searchParams;
-  const { period: periodParam } = sp;
-  const period = (periodParam as string) || currentPeriod();
+  const nowJakarta = currentJakartaMonthYear();
+  const month = Number(sp.bulan) || nowJakarta.month;
+  const year = Number(sp.tahun) || nowJakarta.year;
+  const period = `${year}-${String(month).padStart(2, "0")}`;
   const hasSort = typeof sp.sort === "string" && (SORT_FIELDS as readonly string[]).includes(sp.sort);
   const { field, dir } = parseSort(sp, SORT_FIELDS, "tanggalLunas");
   const rowsRaw = await getRiwayatKomisi(period);
@@ -25,7 +28,7 @@ export default async function InsentifRiwayatPage({ searchParams }: PageProps<"/
     <>
       <PageHeader title="Insentif Sales" subtitle="NOMINAL TETAP PER ITEM TERJUAL · DIJUMLAHKAN PER SALES" />
       <div className="p-6 md:p-9">
-        <InsentifOverview basePath="/insentif/riwayat" period={period} searchParams={sp} />
+        <InsentifOverview basePath="/insentif/riwayat" month={month} year={year} currentYear={nowJakarta.year} searchParams={sp} />
 
         <SubnavTabs
           tabs={[
