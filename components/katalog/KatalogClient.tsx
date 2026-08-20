@@ -14,6 +14,36 @@ export default function KatalogClient({
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
+  const [downloading, setDownloading] = useState(false);
+
+  async function downloadCatalogPDF() {
+    const element = document.getElementById("catalog-print-doc");
+    if (!element) return;
+
+    setDownloading(true);
+    try {
+      const { default: html2pdf } = await import("html2pdf.js");
+      const today = new Date();
+      const tanggal = [
+        String(today.getDate()).padStart(2, "0"),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        today.getFullYear(),
+      ].join("-");
+
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `Katalog-CV-HORECA-JAYA_${tanggal}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(element)
+        .save();
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     let list = products;
@@ -52,6 +82,14 @@ export default function KatalogClient({
           >
             Lihat Produk Custom
           </Link>
+          <button
+            type="button"
+            onClick={downloadCatalogPDF}
+            disabled={downloading}
+            className="inline-block rounded border border-ink bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-semibold text-ink disabled:opacity-60"
+          >
+            {downloading ? "Menyiapkan PDF..." : "Unduh Katalog (PDF)"}
+          </button>
         </div>
       </div>
 
