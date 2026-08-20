@@ -73,12 +73,18 @@ export default function CatalogPrintDoc() {
   const periodLabel = today.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
 
   return (
-    <div
-      id="catalog-print-doc"
-      data-ready={loaded ? "true" : "false"}
-      className="fixed top-0 left-[-9999px] w-[794px] bg-paper font-sans text-ink print:hidden"
-    >
-      {/* Cover */}
+    // Clips a normal (static, full-opacity) block down to zero visible
+    // footprint via the wrapper's overflow:hidden — html2canvas reads the
+    // captured element's own layout, not the wrapper's, so this hides it
+    // from the user without any of the tricks (fixed + far offscreen,
+    // opacity:0, display:none) that make html2canvas capture it blank.
+    <div className="h-0 overflow-hidden print:hidden">
+      <div
+        id="catalog-print-doc"
+        data-ready={loaded ? "true" : "false"}
+        className="w-[794px] bg-paper font-sans text-ink"
+      >
+        {/* Cover */}
       <div className="bg-accent px-12 py-14 text-white">
         <div className="mb-10 flex items-baseline justify-between gap-4">
           <span className="text-[19px] font-extrabold">CV HORECA JAYA</span>
@@ -200,6 +206,7 @@ export default function CatalogPrintDoc() {
             Sales yang melayani: {sales.map((s) => s.nama).join(" · ")}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

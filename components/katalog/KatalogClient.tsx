@@ -45,7 +45,11 @@ export default function KatalogClient({
 
       await html2pdf()
         .set({
-          margin: 10,
+          // No extra page margin here — the container is already sized to
+          // A4 width (794px ≈ 210mm @ 96dpi) with its own inner padding, so
+          // an additional html2pdf margin would push it past the printable
+          // width and crop the right edge instead of shrinking to fit.
+          margin: 0,
           filename: `Katalog-CV-HORECA-JAYA_${tanggal}.pdf`,
           image: { type: "jpeg", quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true },
