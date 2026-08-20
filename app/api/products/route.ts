@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
       category: body.category,
       kondisi: body.kondisi || "baru",
       kondisiPercent: body.kondisiPercent || undefined,
-      hargaBeli: Number(body.hargaBeli),
+      tipeProduk: body.tipeProduk || "non-elektronik",
+      hargaBeli: Number(body.hargaBeli ?? 0),
       hargaRekomendasi: Number(body.hargaRekomendasi),
       hargaMinimum: Number(body.hargaMinimum),
       komisiPercent: Number(body.komisiPercent ?? 5),
@@ -43,6 +44,8 @@ export async function POST(req: NextRequest) {
       dimensi: body.dimensi,
       ketebalan: body.ketebalan,
       fotoUrl: body.fotoUrl,
+      fotoSampingUrl: body.fotoSampingUrl,
+      fotoBelakangUrl: body.fotoBelakangUrl,
       deskripsi: body.deskripsi,
     });
     return NextResponse.json(product, { status: 201 });

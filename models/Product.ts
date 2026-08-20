@@ -12,6 +12,12 @@ const ProductSchema = new Schema(
     kondisi: { type: String, enum: ["baru", "bekas"], default: "baru" },
     kondisiPercent: { type: Number },
 
+    // Drives whether "Ketebalan Material" applies on the product form —
+    // material thickness only makes sense for fabricated sheet-metal items
+    // (tables, racks), not manufactured appliances (see confirmation with
+    // the user 2026-08-20).
+    tipeProduk: { type: String, enum: ["elektronik", "non-elektronik"], default: "non-elektronik" },
+
     hargaBeli: { type: Number, required: true },
     hargaRekomendasi: { type: Number, required: true },
     hargaMinimum: { type: Number, required: true },
@@ -29,7 +35,13 @@ const ProductSchema = new Schema(
     },
     ketebalan: { type: String },
 
+    // fotoUrl is the "Tampak Depan" (front view) shot — the only one shown
+    // in Katalog/kartu produk/PDF katalog. Samping/Belakang are reference-
+    // only extra angles, visible only on the product edit form (see
+    // confirmation with the user 2026-08-20).
     fotoUrl: { type: String },
+    fotoSampingUrl: { type: String },
+    fotoBelakangUrl: { type: String },
     deskripsi: { type: String },
 
     // True for one-off items generated from "Pesan Produk Custom" — they

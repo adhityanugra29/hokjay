@@ -13,6 +13,7 @@ export interface ProductFormValues {
   category: string;
   kondisi: "baru" | "bekas";
   kondisiPercent: string;
+  tipeProduk: "elektronik" | "non-elektronik";
   hargaBeli: string;
   hargaRekomendasi: string;
   hargaMinimum: string;
@@ -24,6 +25,8 @@ export interface ProductFormValues {
   tinggiCm: string;
   ketebalan: string;
   fotoUrl: string;
+  fotoSampingUrl: string;
+  fotoBelakangUrl: string;
   deskripsi: string;
 }
 
@@ -31,17 +34,22 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   name: "",
   kondisi: "baru",
   kondisiPercent: "",
+  tipeProduk: "non-elektronik",
   hargaBeli: "",
   hargaRekomendasi: "",
   hargaMinimum: "",
   komisiPercent: "5",
   stok: "0",
+  // No longer a form field (see confirmation 2026-08-20) — schema default
+  // (45) is preserved by still sending it, just never rendered/edited here.
   alertHariTidakTerjual: "45",
   panjangCm: "",
   lebarCm: "",
   tinggiCm: "",
   ketebalan: "",
   fotoUrl: "",
+  fotoSampingUrl: "",
+  fotoBelakangUrl: "",
   deskripsi: "",
 };
 
@@ -85,7 +93,12 @@ export default function ProductForm({
       category: values.category,
       kondisi: values.kondisi,
       kondisiPercent: values.kondisi === "bekas" && values.kondisiPercent ? Number(values.kondisiPercent) : undefined,
-      hargaBeli: Number(values.hargaBeli),
+      tipeProduk: values.tipeProduk,
+      // Create mode has no Harga Beli field anymore (defaults to 0 — cost
+      // basis is meant to come from a future Pembelian Barang/restock-cost
+      // flow instead, see 2026-08-20 discussion); edit mode still sends
+      // whatever's in the field since it's editable there.
+      hargaBeli: Number(values.hargaBeli || 0),
       hargaRekomendasi: Number(values.hargaRekomendasi),
       hargaMinimum: Number(values.hargaMinimum),
       komisiPercent: Number(values.komisiPercent),
@@ -99,8 +112,10 @@ export default function ProductForm({
               tinggiCm: Number(values.tinggiCm) || undefined,
             }
           : undefined,
-      ketebalan: values.ketebalan || undefined,
+      ketebalan: values.tipeProduk === "elektronik" ? undefined : values.ketebalan || undefined,
       fotoUrl: values.fotoUrl || undefined,
+      fotoSampingUrl: values.fotoSampingUrl || undefined,
+      fotoBelakangUrl: values.fotoBelakangUrl || undefined,
       deskripsi: values.deskripsi || undefined,
     };
 
@@ -166,16 +181,26 @@ export default function ProductForm({
               />
             </Field>
           )}
-
-          <Field label="Harga Beli *wajib">
-            <Input
-              required
-              type="number"
-              value={values.hargaBeli}
-              onChange={(e) => set("hargaBeli", e.target.value)}
-              placeholder="Rp 0"
-            />
+          <Field label="Tipe Produk" hint="Menentukan apakah Ketebalan Material berlaku untuk produk ini.">
+            <Select
+              value={values.tipeProduk}
+              onChange={(e) => set("tipeProduk", e.target.value as "elektronik" | "non-elektronik")}
+            >
+              <option value="non-elektronik">Non-Elektronik</option>
+              <option value="elektronik">Elektronik</option>
+            </Select>
           </Field>
+
+          {mode === "edit" && (
+            <Field label="Harga Beli">
+              <Input
+                type="number"
+                value={values.hargaBeli}
+                onChange={(e) => set("hargaBeli", e.target.value)}
+                placeholder="Rp 0"
+              />
+            </Field>
+          )}
           <Field label="Harga Rekomendasi">
             <Input
               required
@@ -217,13 +242,6 @@ export default function ProductForm({
           <Field label="Stok Awal">
             <Input type="number" value={values.stok} onChange={(e) => set("stok", e.target.value)} />
           </Field>
-          <Field label="Alert Tidak Terjual Setelah (hari)">
-            <Input
-              type="number"
-              value={values.alertHariTidakTerjual}
-              onChange={(e) => set("alertHariTidakTerjual", e.target.value)}
-            />
-          </Field>
 
           <Field label="Panjang (cm)">
             <Input type="number" value={values.panjangCm} onChange={(e) => set("panjangCm", e.target.value)} />
@@ -234,12 +252,20 @@ export default function ProductForm({
           <Field label="Tinggi (cm)">
             <Input type="number" value={values.tinggiCm} onChange={(e) => set("tinggiCm", e.target.value)} />
           </Field>
-          <Field label="Ketebalan Material">
-            <Input value={values.ketebalan} onChange={(e) => set("ketebalan", e.target.value)} placeholder="Contoh: 1.2 mm" />
-          </Field>
+          {values.tipeProduk !== "elektronik" && (
+            <Field label="Ketebalan Material">
+              <Input value={values.ketebalan} onChange={(e) => set("ketebalan", e.target.value)} placeholder="Contoh: 1.2 mm" />
+            </Field>
+          )}
 
-          <Field label="Foto Produk" span2>
+          <Field label="Foto Tampak Depan" hint="Foto ini yang tampil di Katalog, kartu produk, dan PDF katalog.">
             <UploadBox folder="products" value={values.fotoUrl} onChange={(url) => set("fotoUrl", url)} />
+          </Field>
+          <Field label="Foto Tampak Samping" hint="Referensi tambahan, tidak tampil di Katalog.">
+            <UploadBox folder="products" value={values.fotoSampingUrl} onChange={(url) => set("fotoSampingUrl", url)} />
+          </Field>
+          <Field label="Foto Tampak Belakang" hint="Referensi tambahan, tidak tampil di Katalog.">
+            <UploadBox folder="products" value={values.fotoBelakangUrl} onChange={(url) => set("fotoBelakangUrl", url)} />
           </Field>
 
           <Field label="Deskripsi (tampil di katalog)" span2>

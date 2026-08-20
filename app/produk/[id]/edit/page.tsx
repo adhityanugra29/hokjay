@@ -29,6 +29,7 @@ export default async function ProdukEditPage({ params }: PageProps<"/produk/[id]
             category: product.category,
             kondisi: product.kondisi as "baru" | "bekas",
             kondisiPercent: product.kondisiPercent ? String(product.kondisiPercent) : "",
+            tipeProduk: (product.tipeProduk as "elektronik" | "non-elektronik") ?? "non-elektronik",
             hargaBeli: String(product.hargaBeli),
             hargaRekomendasi: String(product.hargaRekomendasi),
             hargaMinimum: String(product.hargaMinimum),
@@ -40,6 +41,8 @@ export default async function ProdukEditPage({ params }: PageProps<"/produk/[id]
             tinggiCm: product.dimensi?.tinggiCm ? String(product.dimensi.tinggiCm) : "",
             ketebalan: product.ketebalan ?? "",
             fotoUrl: product.fotoUrl ?? "",
+            fotoSampingUrl: product.fotoSampingUrl ?? "",
+            fotoBelakangUrl: product.fotoBelakangUrl ?? "",
             deskripsi: product.deskripsi ?? "",
           }}
         />

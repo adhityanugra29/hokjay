@@ -22,6 +22,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/products/[id]"
     "category",
     "kondisi",
     "kondisiPercent",
+    "tipeProduk",
     "hargaBeli",
     "hargaRekomendasi",
     "hargaMinimum",
@@ -31,6 +32,8 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/products/[id]"
     "dimensi",
     "ketebalan",
     "fotoUrl",
+    "fotoSampingUrl",
+    "fotoBelakangUrl",
     "deskripsi",
   ]) {
     if (body[key] !== undefined) update[key] = body[key];
