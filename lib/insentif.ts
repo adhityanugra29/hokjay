@@ -90,6 +90,64 @@ export async function getKomisiPerProduk(period: string): Promise<ProdukKomisi[]
   return [...map.values()].sort((a, b) => b.totalKomisi - a.totalKomisi);
 }
 
+export interface UnpaidCommissionSales {
+  salesNama: string;
+  invoiceCount: number;
+  totalKomisi: number;
+}
+
+/**
+ * Outstanding ("belum cair") commission grouped by sales — not scoped to a
+ * period, since Finance needs to see everything still owed regardless of
+ * when it was earned. Backs the /insentif/bayar landing page.
+ */
+export async function getUnpaidCommissionBySales(): Promise<UnpaidCommissionSales[]> {
+  await dbConnect();
+  const invoices = await Invoice.find({ status: "paid", komisiCair: false });
+  const map = new Map<string, UnpaidCommissionSales>();
+
+  for (const inv of invoices) {
+    const total = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
+    if (total <= 0) continue;
+    const nama = inv.sales?.nama ?? "—";
+    const row = map.get(nama) ?? { salesNama: nama, invoiceCount: 0, totalKomisi: 0 };
+    row.invoiceCount++;
+    row.totalKomisi += total;
+    map.set(nama, row);
+  }
+
+  return [...map.values()].sort((a, b) => b.totalKomisi - a.totalKomisi);
+}
+
+export interface UnpaidCommissionInvoice {
+  invoiceId: string;
+  nomor: string;
+  tanggalLunas: Date;
+  itemLabel: string;
+  komisiTotal: number;
+}
+
+/** One sales's outstanding commission invoices — the checkbox list on /insentif/bayar/[nama]. */
+export async function getUnpaidCommissionInvoices(salesNama: string): Promise<UnpaidCommissionInvoice[]> {
+  await dbConnect();
+  const invoices = await Invoice.find({ status: "paid", komisiCair: false, "sales.nama": salesNama }).sort({
+    "payment.tanggalBayar": 1,
+  });
+
+  return invoices
+    .map((inv) => {
+      const items = inv.items.filter((i) => i.komisiSubtotal > 0);
+      return {
+        invoiceId: String(inv._id),
+        nomor: inv.nomor,
+        tanggalLunas: inv.payment?.tanggalBayar ?? inv.get("createdAt"),
+        itemLabel: items.map((i) => `${i.namaSnapshot} x${i.qty}`).join(", "),
+        komisiTotal: items.reduce((s, i) => s + i.komisiSubtotal, 0),
+      };
+    })
+    .filter((r) => r.komisiTotal > 0);
+}
+
 export interface RiwayatKomisiRow {
   invoiceId: string;
   nomor: string;
@@ -98,6 +156,7 @@ export interface RiwayatKomisiRow {
   komisiBaris: number;
   tanggalLunas: Date;
   komisiCair: boolean;
+  komisiCairBuktiUrl?: string;
 }
 
 export async function getRiwayatKomisi(period: string): Promise<RiwayatKomisiRow[]> {
@@ -117,6 +176,7 @@ export async function getRiwayatKomisi(period: string): Promise<RiwayatKomisiRow
       komisiBaris,
       tanggalLunas: inv.payment!.tanggalBayar!,
       komisiCair: inv.komisiCair ?? false,
+      komisiCairBuktiUrl: inv.komisiCairBuktiUrl ?? undefined,
     });
   }
 

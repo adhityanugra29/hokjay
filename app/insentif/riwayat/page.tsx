@@ -35,6 +35,7 @@ export default async function InsentifRiwayatPage({ searchParams }: PageProps<"/
             { href: "/insentif", label: "Rekap per Personil" },
             { href: "/insentif/item", label: "Rincian per Item" },
             { href: "/insentif/riwayat", label: "Riwayat per Invoice" },
+            { href: "/insentif/bayar", label: "Bayar Komisi" },
           ]}
         />
 
@@ -54,6 +55,9 @@ export default async function InsentifRiwayatPage({ searchParams }: PageProps<"/
                   <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
                     Pencairan
                   </th>
+                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
+                    Bukti
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -71,11 +75,23 @@ export default async function InsentifRiwayatPage({ searchParams }: PageProps<"/
                     <td className="border-b border-line px-5 py-4.5">
                       <PayoutToggle invoiceId={r.invoiceId} cair={r.komisiCair} />
                     </td>
+                    <td className="border-b border-line px-5 py-4.5">
+                      {r.komisiCairBuktiUrl && (
+                        <a
+                          href={r.komisiCairBuktiUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-accent hover:underline"
+                        >
+                          Lihat bukti
+                        </a>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                    <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
                       Belum ada data.
                     </td>
                   </tr>

@@ -63,6 +63,10 @@ const InvoiceSchema = new Schema(
 
     komisiCair: { type: Boolean, default: false },
     komisiCairTanggal: { type: Date },
+    // Proof-of-transfer for the commission payout — same value across every
+    // invoice included in one batch payment (see /insentif/bayar).
+    komisiCairBuktiUrl: { type: String },
+    komisiCairCatatan: { type: String },
 
     riwayat: { type: [RiwayatEntrySchema], default: [] },
   },

@@ -91,14 +91,14 @@ export async function postInvoicePaid(invoice: InvoiceLike) {
   });
 }
 
-/** Posts the journal for a sales-commission payout ("Tandai Cair"). */
-export async function postCommissionPaid(invoice: InvoiceLike) {
+/** Posts the journal for a sales-commission payout ("Tandai Cair" / Bayar Komisi). */
+export async function postCommissionPaid(invoice: InvoiceLike, tanggal?: Date) {
   await dbConnect();
   const komisiTotal = invoice.items.reduce((s, i) => s + i.komisiSubtotal, 0);
   if (komisiTotal <= 0) return;
 
   await JournalEntry.create({
-    tanggal: new Date(),
+    tanggal: tanggal ?? new Date(),
     deskripsi: `Pencairan komisi sales — invoice ${invoice.nomor}`,
     sumberTipe: "komisi-cair",
     sumberLabel: invoice.nomor,
