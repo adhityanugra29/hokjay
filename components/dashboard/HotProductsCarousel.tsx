@@ -42,14 +42,15 @@ export default function HotProductsCarousel({ products }: { products: HotProduct
               )}
             </div>
             <div className="flex flex-1 flex-col p-4">
-              <div className="text-[0.9rem] font-medium">{p.name}</div>
+              {/* Fixed-height name/price/badge block so "Insentif" lands at
+                  the same Y on every card regardless of how many lines the
+                  product name wraps to or whether the terlaris badge shows. */}
+              <div className="line-clamp-2 min-h-[2.75rem] text-[0.9rem] leading-snug font-medium">{p.name}</div>
               <div className="mt-1.5 text-[0.85rem] font-extrabold">{rupiah(p.hargaRekomendasi)}</div>
-              {p.badges.includes("terlaris") && (
-                <div className="mt-1.5 font-sans text-[0.68rem] text-muted">
-                  🔥 {p.terjualBulanIni} terjual bulan ini
-                </div>
-              )}
-              <div className="mt-2.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">Insentif</div>
+              <div className="mt-1.5 h-[1rem] font-sans text-[0.68rem] text-muted">
+                {p.badges.includes("terlaris") ? `🔥 ${p.terjualBulanIni} terjual bulan ini` : ""}
+              </div>
+              <div className="mt-1.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">Insentif</div>
               <div className="text-[1.15rem] font-extrabold text-accent-700">{rupiah(p.komisiNominal)}</div>
               <Link
                 href="/penjualan"

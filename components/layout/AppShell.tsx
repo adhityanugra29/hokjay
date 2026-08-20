@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/constants";
 
 function isActive(pathname: string, href: string) {
@@ -13,7 +13,6 @@ function isActive(pathname: string, href: string) {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
   return (
     <div>
@@ -102,23 +101,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
-
-      {/* Back / Home fabs */}
-      <button
-        type="button"
-        onClick={() => router.back()}
-        title="Kembali"
-        className="no-print fixed right-16 top-3.5 z-40 flex h-[42px] w-[42px] items-center justify-center border border-line bg-panel text-lg text-ink"
-      >
-        ←
-      </button>
-      <Link
-        href="/"
-        title="Kembali ke Dasbor"
-        className="no-print fixed right-3.5 top-3.5 z-40 flex h-[42px] w-[42px] items-center justify-center border border-white/15 bg-ink text-lg text-paper"
-      >
-        ⌂
-      </Link>
     </div>
   );
 }
