@@ -36,6 +36,7 @@ export interface InvoiceFormInitial {
   salesId?: string;
   kurirId?: string;
   zonaId?: string;
+  tanggalInvoice?: string;
   tanggalKirim?: string;
   shipAddress?: string;
 }
@@ -65,6 +66,9 @@ export default function InvoiceForm({
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
   const [shipAddress, setShipAddress] = useState(initial?.shipAddress ?? "");
   const [salesId, setSalesId] = useState(initial?.salesId ?? "");
+  const [tanggalInvoice, setTanggalInvoice] = useState(
+    initial?.tanggalInvoice ?? new Date().toISOString().slice(0, 10)
+  );
   const [tanggalKirim, setTanggalKirim] = useState(initial?.tanggalKirim ?? "");
   const [kurirId, setKurirId] = useState(initial?.kurirId ?? "");
   const [zonaId, setZonaId] = useState(initial?.zonaId ?? "");
@@ -126,6 +130,7 @@ export default function InvoiceForm({
           shipAddress,
           salesId: sales._id,
           salesNama: sales.nama,
+          tanggalInvoice: tanggalInvoice || undefined,
           tanggalKirim: tanggalKirim || undefined,
           kurir: selectedCourier?.name,
           ongkosKirim,
@@ -156,9 +161,12 @@ export default function InvoiceForm({
 
   return (
     <Panel className="max-w-4xl p-7">
-      <FormGrid className="mb-5 max-w-[260px] sm:grid-cols-1">
+      <FormGrid className="mb-5 max-w-[420px]">
         <Field label="Nomor Invoice">
           <Input disabled value={nextNumberHint} />
+        </Field>
+        <Field label="Tanggal Invoice">
+          <Input type="date" value={tanggalInvoice} onChange={(e) => setTanggalInvoice(e.target.value)} />
         </Field>
       </FormGrid>
 

@@ -108,6 +108,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     },
     shipAddress: input.shipAddress,
     sales: { ref: input.salesId || undefined, nama: input.salesNama },
+    tanggalInvoice: input.tanggalInvoice ? new Date(input.tanggalInvoice) : existing.tanggalInvoice,
     tanggalKirim: input.tanggalKirim ? new Date(input.tanggalKirim) : undefined,
     kurir: input.kurir,
     ongkosKirim,

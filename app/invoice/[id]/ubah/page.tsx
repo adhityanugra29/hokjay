@@ -72,6 +72,7 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
             salesId: invoice.sales?.ref ? String(invoice.sales.ref) : undefined,
             kurirId: selectedCourier ? String(selectedCourier._id) : undefined,
             zonaId: selectedZone ? String(selectedZone._id) : undefined,
+            tanggalInvoice: invoice.tanggalInvoice ? invoice.tanggalInvoice.toISOString().slice(0, 10) : undefined,
             tanggalKirim: invoice.tanggalKirim ? invoice.tanggalKirim.toISOString().slice(0, 10) : undefined,
             shipAddress: invoice.shipAddress ?? undefined,
           }}
