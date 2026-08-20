@@ -1,14 +1,9 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
 import { rupiah } from "@/lib/format";
-import type { HotProduct, HotBadge } from "@/lib/dashboard";
-
-const BADGE_LABEL: Record<HotBadge, (p: HotProduct) => string> = {
-  terlaris: (p) => `🔥 ${p.terjualBulanIni} terjual bulan ini`,
-  stok: () => "📦 Stok Terbanyak",
-  insentif: () => "💰 Insentif Tertinggi",
-};
+import type { HotProduct } from "@/lib/dashboard";
 
 export default function HotProductsCarousel({ products }: { products: HotProduct[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -36,7 +31,7 @@ export default function HotProductsCarousel({ products }: { products: HotProduct
           <div
             key={p._id}
             data-card
-            className="w-[240px] flex-none snap-start border border-line bg-panel"
+            className="flex w-[240px] flex-none flex-col snap-start border border-line bg-panel"
           >
             <div className="flex aspect-4/3 items-center justify-center overflow-hidden bg-surface text-[0.68rem] text-muted">
               {p.fotoUrl ? (
@@ -46,16 +41,22 @@ export default function HotProductsCarousel({ products }: { products: HotProduct
                 "Tidak ada foto"
               )}
             </div>
-            <div className="p-4">
+            <div className="flex flex-1 flex-col p-4">
               <div className="text-[0.9rem] font-medium">{p.name}</div>
               <div className="mt-1.5 text-[0.85rem] font-extrabold">{rupiah(p.hargaRekomendasi)}</div>
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                {p.badges.map((b) => (
-                  <span key={b} className="border border-accent px-2 py-1 text-[0.62rem] font-semibold text-accent">
-                    {BADGE_LABEL[b](p)}
-                  </span>
-                ))}
-              </div>
+              {p.badges.includes("terlaris") && (
+                <div className="mt-1.5 font-sans text-[0.68rem] text-muted">
+                  🔥 {p.terjualBulanIni} terjual bulan ini
+                </div>
+              )}
+              <div className="mt-2.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">Insentif</div>
+              <div className="text-[1.15rem] font-extrabold text-accent-700">{rupiah(p.komisiNominal)}</div>
+              <Link
+                href="/penjualan"
+                className="mt-auto block w-full border border-accent bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-white no-underline"
+              >
+                Ayo Jualan
+              </Link>
             </div>
           </div>
         ))}
