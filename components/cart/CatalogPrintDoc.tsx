@@ -65,8 +65,6 @@ export default function CatalogPrintDoc() {
       .finally(() => setLoaded(true));
   }, []);
 
-  if (!loaded) return null;
-
   const byCategory = categories
     .map((cat) => ({ cat, items: products.filter((p) => p.category === cat) }))
     .filter((g) => g.items.length > 0);
@@ -77,6 +75,7 @@ export default function CatalogPrintDoc() {
   return (
     <div
       id="catalog-print-doc"
+      data-ready={loaded ? "true" : "false"}
       className="fixed top-0 left-[-9999px] w-[794px] bg-paper font-sans text-ink print:hidden"
     >
       {/* Cover */}

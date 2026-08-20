@@ -17,11 +17,24 @@ export default function KatalogClient({
   const [downloading, setDownloading] = useState(false);
 
   async function downloadCatalogPDF() {
-    const element = document.getElementById("catalog-print-doc");
+    let element = document.getElementById("catalog-print-doc");
     if (!element) return;
 
     setDownloading(true);
     try {
+      // The offscreen catalog doc fetches its own product/category/sales
+      // data on mount — wait for that instead of generating a near-empty
+      // PDF (or, on a slow first click, silently doing nothing) if it
+      // hasn't landed yet.
+      for (let tries = 0; element.dataset.ready !== "true" && tries < 50; tries++) {
+        await new Promise((r) => setTimeout(r, 100));
+        element = document.getElementById("catalog-print-doc")!;
+      }
+      if (element.dataset.ready !== "true") {
+        alert("Data katalog belum siap, coba lagi sebentar.");
+        return;
+      }
+
       const { default: html2pdf } = await import("html2pdf.js");
       const today = new Date();
       const tanggal = [
