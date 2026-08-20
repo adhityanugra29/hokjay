@@ -5,6 +5,7 @@ import { CartProvider } from "@/components/cart/CartProvider";
 import CartBar from "@/components/cart/CartBar";
 import CatalogPrintDoc from "@/components/cart/CatalogPrintDoc";
 import { CatalogSelectionProvider } from "@/components/katalog/CatalogSelectionProvider";
+import { ActiveCustomerProvider } from "@/components/penjualan/ActiveCustomerProvider";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -22,13 +23,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="id" className={archivo.variable}>
       <body className="min-h-screen bg-paper text-ink font-sans antialiased">
-        <CartProvider>
-          <CatalogSelectionProvider>
-            <AppShell>{children}</AppShell>
-            <CartBar />
-            <CatalogPrintDoc />
-          </CatalogSelectionProvider>
-        </CartProvider>
+        <ActiveCustomerProvider>
+          <CartProvider>
+            <CatalogSelectionProvider>
+              <AppShell>{children}</AppShell>
+              <CartBar />
+              <CatalogPrintDoc />
+            </CatalogSelectionProvider>
+          </CartProvider>
+        </ActiveCustomerProvider>
       </body>
     </html>
   );

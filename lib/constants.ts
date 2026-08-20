@@ -37,7 +37,7 @@ export const CUSTOM_ORDER_CATEGORIES: {
 
 export const NAV_ITEMS: { href: string; label: string; num: string }[] = [
   { href: "/", label: "Dasbor", num: "01" },
-  { href: "/katalog", label: "Penjualan", num: "02" },
+  { href: "/penjualan", label: "Penjualan", num: "02" },
   { href: "/invoice", label: "Invoice", num: "03" },
   { href: "/produk", label: "Inventory", num: "04" },
   { href: "/pelanggan", label: "Pelanggan", num: "05" },

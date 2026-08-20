@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
+import { useActiveCustomer } from "@/components/penjualan/ActiveCustomerProvider";
 import ItemRowEditor from "./ItemRowEditor";
 import { computeLineCommission } from "@/lib/commission";
 import { rupiah } from "@/lib/format";
@@ -62,6 +63,7 @@ export default function InvoiceForm({
 }) {
   const router = useRouter();
   const { items, clear } = useCart();
+  const { activeCustomer } = useActiveCustomer();
 
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
   const [shipAddress, setShipAddress] = useState(initial?.shipAddress ?? "");
@@ -74,6 +76,20 @@ export default function InvoiceForm({
   const [zonaId, setZonaId] = useState(initial?.zonaId ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // The customer is now picked upstream on /penjualan before browsing the
+  // Katalog, so a new invoice should arrive with one already in hand
+  // (still editable here). activeCustomer hydrates from localStorage a
+  // tick after mount, so this can't just be a useState initializer — sync
+  // it in once it's available, but only if nothing's been chosen yet (an
+  // explicit `initial` from editing an existing invoice always wins).
+  useEffect(() => {
+    if (mode === "create" && !initial?.customerId && activeCustomer && !customerId) {
+      setCustomerId(activeCustomer.id);
+      setShipAddress((prev) => prev || activeCustomer.alamat);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCustomer]);
 
   const selectedCourier = couriers.find((c) => c._id === kurirId);
   const selectedZone = zones.find((z) => z._id === zonaId);

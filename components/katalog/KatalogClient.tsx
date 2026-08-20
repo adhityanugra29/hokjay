@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
+import { useActiveCustomer } from "@/components/penjualan/ActiveCustomerProvider";
 
 export default function KatalogClient({
   products,
@@ -17,6 +18,7 @@ export default function KatalogClient({
   const [sort, setSort] = useState("");
   const [downloading, setDownloading] = useState(false);
   const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
+  const { activeCustomer } = useActiveCustomer();
 
   // Staged flow: idle button ("Pilih Produk Katalog") -> click reveals
   // checkboxes + "Pilih Semua" (label stays "Pilih Produk Katalog", disabled
@@ -108,6 +110,14 @@ export default function KatalogClient({
         <p className="mt-3 font-sans text-[0.78rem] text-muted">
           STOK TER-UPDATE OTOMATIS · {products.length} PRODUK TERSEDIA
         </p>
+        {activeCustomer && (
+          <p className="mt-1.5 font-sans text-[0.78rem]">
+            Pelanggan: <span className="font-semibold text-ink">{activeCustomer.nama}</span>{" "}
+            <Link href="/penjualan" className="text-accent underline underline-offset-2">
+              Ganti
+            </Link>
+          </p>
+        )}
         <div className="mt-4 flex flex-wrap gap-2.5">
           <Link
             href="/katalog/custom-order"

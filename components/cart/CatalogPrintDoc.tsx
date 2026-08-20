@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { rupiah } from "@/lib/format";
 import { CUSTOM_ORDER_CATEGORIES } from "@/lib/constants";
 import { useCatalogSelection } from "@/components/katalog/CatalogSelectionProvider";
+import { useActiveCustomer } from "@/components/penjualan/ActiveCustomerProvider";
 
 interface CatalogProduct {
   _id: string;
@@ -53,6 +54,7 @@ export default function CatalogPrintDoc() {
   const [sales, setSales] = useState<CatalogSales[]>([]);
   const [loaded, setLoaded] = useState(false);
   const { selected } = useCatalogSelection();
+  const { activeCustomer } = useActiveCustomer();
 
   useEffect(() => {
     Promise.all([
@@ -102,11 +104,20 @@ export default function CatalogPrintDoc() {
         <p className="mt-6 max-w-[46ch] text-[16px] leading-relaxed text-[rgba(255,255,255,0.9)]">
           Stainless steel berkualitas, stok siap kirim. Ukuran custom bisa dipesan sesuai kebutuhan dapur Anda.
         </p>
+        {activeCustomer && (
+          <p className="mt-6 text-[13px] tracking-[0.1em] text-[rgba(255,255,255,0.85)] uppercase">
+            Katalog untuk: <span className="font-bold text-white normal-case">{activeCustomer.nama}</span>
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-3 border-b-2 border-line">
         <div className="px-12 py-6">
           <div className="mb-2 text-[12px] tracking-[0.1em] text-accent uppercase">Pemesanan</div>
-          <div className="text-[15px] leading-relaxed">Hubungi sales Anda untuk daftar harga & pemesanan</div>
+          <div className="text-[15px] leading-relaxed">
+            {activeCustomer
+              ? `${activeCustomer.nama} · ${activeCustomer.whatsapp}`
+              : "Hubungi sales Anda untuk daftar harga & pemesanan"}
+          </div>
         </div>
         <div className="border-l border-line px-6 py-6">
           <div className="mb-2 text-[12px] tracking-[0.1em] text-accent uppercase">Isi katalog</div>

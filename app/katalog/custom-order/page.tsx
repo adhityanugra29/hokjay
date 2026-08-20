@@ -7,6 +7,7 @@ import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
+import RequireActiveCustomer from "@/components/penjualan/RequireActiveCustomer";
 import { CUSTOM_ORDER_CATEGORIES, type CustomOrderCategoryId } from "@/lib/constants";
 import { customOrderEstimate } from "@/lib/pricing";
 import { rupiah } from "@/lib/format";
@@ -85,7 +86,7 @@ export default function CustomOrderPage() {
   }
 
   return (
-    <>
+    <RequireActiveCustomer>
       <PageHeader title="Pesan Produk Custom" subtitle="ESTIMASI HARGA OTOMATIS BERDASARKAN UKURAN & MATERIAL" />
       <div className="grid grid-cols-1 gap-5 p-6 md:p-9 lg:grid-cols-[1fr_320px]">
         <Panel className="p-7">
@@ -176,11 +177,11 @@ export default function CustomOrderPage() {
             <div className="mt-3 font-mono text-[0.75rem] leading-relaxed text-muted">
               • Item custom ini otomatis masuk ke Katalog & Inventory juga
               <br />• Bisa ditambah/dihapus dari invoice seperti produk biasa
-              <br />• Data pelanggan diisi di halaman Buat Invoice
+              <br />• Pelanggan sudah terisi otomatis di halaman Buat Invoice
             </div>
           </div>
         </div>
       </div>
-    </>
+    </RequireActiveCustomer>
   );
 }
