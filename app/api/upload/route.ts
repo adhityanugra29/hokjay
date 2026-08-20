@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
-import { mkdir, writeFile } from "node:fs/promises";
+import { put } from "@vercel/blob";
 import path from "node:path";
 import { slugify } from "@/lib/format";
 
+// Vercel's serverless functions have no persistent/writable local disk, so
+// uploads (product photos, payment proof) go to Vercel Blob storage instead
+// of public/uploads/ — needs BLOB_READ_WRITE_TOKEN set (auto-provided once
+// a Blob store is attached to the Vercel project; see DEPLOYMENT.md).
 export const runtime = "nodejs";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -29,13 +33,15 @@ export async function POST(req: Request) {
 
   const ext = path.extname(file.name) || (file.type === "application/pdf" ? ".pdf" : ".jpg");
   const baseName = slugify(path.basename(file.name, ext)) || "file";
-  const fileName = `${Date.now()}-${baseName}${ext}`;
+  const pathname = `${folder}/${Date.now()}-${baseName}${ext}`;
 
-  const dir = path.join(process.cwd(), "public", "uploads", folder);
-  await mkdir(dir, { recursive: true });
-
-  const bytes = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, fileName), bytes);
-
-  return NextResponse.json({ url: `/uploads/${folder}/${fileName}` }, { status: 201 });
+  try {
+    const blob = await put(pathname, file, { access: "public" });
+    return NextResponse.json({ url: blob.url }, { status: 201 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Gagal mengunggah file" },
+      { status: 500 }
+    );
+  }
 }

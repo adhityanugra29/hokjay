@@ -1,89 +1,68 @@
-# Deploy ke cPanel (Git Version Control)
+# Deploy ke Vercel
 
-Panduan ini pakai fitur cPanel **Setup Node.js App** + **Git Version Control**
-(`.cpanel.yml`), mengikuti https://go.cpanel.net/GitDeployment.
+Vercel adalah platform buatan tim Next.js sendiri — build dilakukan otomatis
+di cloud mereka (tidak perlu build manual/upload zip seperti di shared
+hosting), dan setiap `git push` ke GitHub otomatis men-deploy versi terbaru.
 
-Konsepnya biasanya ada **dua folder berbeda** di server — (1) Repository
-path, tempat cPanel `git clone`/`pull`, dan (2) Application root, tempat
-Passenger benar-benar menjalankan app-nya. **Setup kamu memakai satu folder
-yang sama untuk keduanya** (`repositories/hokjay`), jadi `.cpanel.yml` di
-repo ini tidak perlu menyalin file apa pun — begitu cPanel `git pull`, source
-code otomatis sudah ada di tempat yang benar. Tugasnya cuma `npm install` +
-`npm run build` lalu restart app.
+Upload file (foto produk, bukti transfer) memakai **Vercel Blob** — server
+Vercel tidak punya disk yang bisa ditulis permanen, jadi file tidak lagi
+disimpan di `public/uploads/`.
 
 ---
 
-## 1. Buat Node.js App
+## 1. Import project ke Vercel
 
-1. Login cPanel → buka **"Setup Node.js App"**.
-2. Klik **Create Application**, isi:
-   - **Node.js version**: pilih yang tersedia paling baru (minimal 20.x — app ini pakai Next.js 16, butuh Node cukup baru).
-   - **Application mode**: `Production`
-   - **Application root**: pakai folder yang sama dengan Repository Path di langkah 3, mis. `repositories/hokjay` (relatif ke home direktori kamu)
-   - **Application URL**: domain/subdomain yang mau dipakai
-   - **Application startup file**: `server.js` (sudah disiapkan di repo ini — lihat `server.js`, ini wrapper supaya Next.js bisa jalan di Passenger)
-3. Klik **Create**.
-4. Di halaman detail app yang muncul, **catat baris seperti ini** (persis punya kamu, bukan contoh ini):
-   ```
-   source /home/USERNAME/nodevenv/hokjay/20/bin/activate && cd /home/USERNAME/hokjay
-   ```
-   Dari situ kamu dapat 3 nilai: `USERNAME`, `hokjay` (application root), `20` (versi node).
-5. Di halaman yang sama, ada bagian **"Environment variables"** — tambahkan:
-   - `MONGODB_URI` = connection string MongoDB Atlas kamu (yang di `.env.local` lokal)
-   - (jangan upload file `.env.local` ke server — env var production diisi di sini, bukan lewat file)
+1. Buka [vercel.com](https://vercel.com) → login (bisa pakai akun GitHub).
+2. Klik **"Add New..." → "Project"**.
+3. Pilih **Import Git Repository** → cari `adhityanugra29/hokjay` → klik **Import**.
+4. Di layar konfigurasi:
+   - **Framework Preset**: otomatis kedeteksi "Next.js" — biarkan default.
+   - **Root Directory**: biarkan `./` (kosong/default).
+   - Jangan klik **Deploy** dulu — isi environment variables di langkah 2 dulu (biar deploy pertama langsung berhasil).
 
-## 2. Sesuaikan `.cpanel.yml`
+## 2. Isi Environment Variables
 
-Buka file `.cpanel.yml` di root project ini, ganti 3 placeholder pakai nilai dari langkah 1.4:
-- `<CPANEL_USERNAME>` → username cPanel kamu
-- `<APP_ROOT>` → application root (mis. `hokjay`)
-- `<NODE_VERSION>` → versi node (mis. `20`)
+Masih di layar yang sama (atau nanti lewat **Project → Settings → Environment Variables**), tambahkan:
 
-Commit & push perubahan ini ke GitHub (`git add .cpanel.yml && git commit -m "config deploy" && git push`).
+| Key | Value |
+|---|---|
+| `MONGODB_URI` | connection string MongoDB Atlas kamu (yang sama seperti di `.env.local` lokal) |
 
-## 3. Buat Git Version Control di cPanel
+(`BLOB_READ_WRITE_TOKEN` akan otomatis terisi setelah langkah 3 — tidak perlu diisi manual.)
 
-1. Buka **"Git Version Control"** di cPanel → **Create**.
-2. **Clone a Repository**: aktifkan, isi **Clone URL** dengan
-   `https://github.com/adhityanugra29/hokjay.git`
-3. **Repository Path**: folder yang SAMA dengan Application root di langkah 1.2 — mis. `repositories/hokjay`.
-4. Klik **Create** → cPanel akan clone repo dari GitHub.
+## 3. Aktifkan Vercel Blob Storage
+
+1. Di dashboard project (setelah project ke-import) → tab **Storage**.
+2. Klik **Create Database** → pilih **Blob**.
+3. Beri nama (bebas, mis. `hokjay-uploads`) → **Create**.
+4. Vercel otomatis menghubungkan store ini ke project dan mengisi env var `BLOB_READ_WRITE_TOKEN` — tidak perlu langkah tambahan.
 
 ## 4. Deploy
 
-Tiap kali ada update baru di GitHub:
-1. Buka **Git Version Control** → pilih repo → tab **"Pull or Deploy"**.
-2. Klik **"Update from Remote"** (ambil commit terbaru dari GitHub).
-3. Klik **"Deploy HEAD Commit"** — ini menjalankan `.cpanel.yml`: `npm install`
-   → `npm run build` → restart app otomatis (`touch tmp/restart.txt`).
-4. Tunggu sampai selesai (build Next.js bisa beberapa menit), lalu buka
-   Application URL kamu untuk cek.
+1. Klik **Deploy** (kalau belum otomatis jalan).
+2. Tunggu proses build (~1–3 menit) — semua terjadi di server Vercel, komputer/laptop kamu tidak perlu nyala.
+3. Setelah selesai, Vercel kasih URL seperti `https://hokjay.vercel.app` — buka untuk cek.
 
-## 5. Isi data awal (opsional, sekali saja)
+Setiap kali ada update kode baru (`git push` ke `main`), Vercel otomatis build & deploy ulang — tidak perlu langkah manual lagi.
 
-Dari **Terminal** cPanel (atau SSH), masuk ke application root lalu jalankan seed:
+## 5. Pakai domain sendiri (opsional, mis. hokjay.id)
+
+1. **Project → Settings → Domains** → masukkan `hokjay.id` → **Add**.
+2. Vercel kasih instruksi DNS (biasanya A record atau CNAME) — masukkan itu ke DNS registrar domain kamu (sama seperti waktu setting A record ke IP cPanel sebelumnya, tapi sekarang ke Vercel).
+3. Tunggu propagasi DNS, lalu Vercel otomatis pasang SSL (HTTPS) gratis.
+
+## 6. Isi data awal (opsional, sekali saja)
+
+Seeding (`npm run seed`) butuh akses langsung ke MongoDB dari komputer kamu — jalankan dari lokal seperti biasa (`.env.local` kamu sudah mengarah ke database Atlas yang sama dengan yang dipakai production):
 ```
-source /home/USERNAME/nodevenv/hokjay/20/bin/activate
-cd /home/USERNAME/hokjay
 npm run seed
-deactivate
 ```
-⚠️ Ini **menghapus semua data** di database yang ditunjuk `MONGODB_URI` lalu
-mengisi ulang dengan data contoh — jangan jalankan di database yang sudah
-berisi data asli pelanggan/invoice.
+⚠️ Ini **menghapus semua data** di database yang ditunjuk `MONGODB_URI` lalu mengisi ulang dengan data contoh — jangan jalankan kalau database sudah berisi data asli.
 
 ---
 
 ## Catatan penting
 
-- **Foto produk & bukti transfer** (`public/uploads/`) tersimpan langsung di
-  disk application root — aman dari `git pull`/deploy berikutnya (folder itu
-  di-*gitignore*, jadi git tidak pernah menyentuh/menghapus file yang sudah
-  ada di sana, walaupun folder `public/` sendiri ikut ada di repo).
-- Kalau `npm run build` gagal di server karena **memori terbatas** (umum di
-  shared hosting kecil), kabari saya — ada cara build di komputer lokal lalu
-  upload hasil build-nya saja.
-- Kalau koneksi ke MongoDB Atlas gagal di server tapi normal di lokal, kemungkinan
-  hosting-nya memblokir outbound port MongoDB — perlu tanya ke support hosting.
-- `server.js` cuma dipakai di server (via Passenger). Untuk development di
-  komputer sendiri tetap pakai `npm run dev` seperti biasa.
+- **Upload foto** sekarang lewat Vercel Blob — otomatis publik & permanen, tidak hilang saat deploy ulang.
+- Kalau sebelumnya sempat ada foto ter-upload ke `public/uploads/` (via percobaan cPanel), foto itu **tidak ikut pindah otomatis** — perlu upload ulang lewat form produk/pembayaran setelah pindah ke Vercel.
+- Tidak perlu lagi `server.js`, `.cpanel.yml` — itu khusus untuk hosting cPanel, aman diabaikan/dihapus kapan saja.
