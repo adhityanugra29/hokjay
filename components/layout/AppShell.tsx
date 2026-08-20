@@ -79,28 +79,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main id="main-content" className="min-w-0 flex-1 pb-20 md:pb-0">
+        <main id="main-content" className="min-w-0 flex-1">
           {children}
         </main>
       </div>
-
-      {/* Mobile bottom tab bar */}
-      <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex overflow-x-auto border-t-2 border-line bg-panel md:hidden">
-        {NAV_ITEMS.map((item) => {
-          const active = isActive(pathname, item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex-1 whitespace-nowrap px-3 py-2.5 text-center text-[0.65rem] ${
-                active ? "font-extrabold text-accent" : "text-muted"
-              }`}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
     </div>
   );
 }

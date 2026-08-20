@@ -16,7 +16,7 @@ export default function CartBar() {
   if (count === 0) return null;
 
   return (
-    <div className="no-print fixed inset-x-0 bottom-16 z-30 flex flex-wrap items-center justify-between gap-3 bg-ink px-6 py-3.5 text-white md:bottom-0 md:pl-[254px]">
+    <div className="no-print fixed inset-x-0 bottom-0 z-30 flex flex-wrap items-center justify-between gap-3 bg-ink px-6 py-3.5 text-white md:pl-[254px]">
       <div className="text-[0.82rem]">
         <b className="text-white">{count}</b> produk dipilih — total est. <b>{rupiah(totalEstimate)}</b>
       </div>
