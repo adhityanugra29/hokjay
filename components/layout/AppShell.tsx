@@ -22,7 +22,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         type="button"
         aria-label="Buka menu"
         onClick={() => setOpen(true)}
-        className="no-print fixed left-3 top-3 z-40 flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-full border border-line bg-panel shadow md:hidden"
+        className="no-print fixed left-3 top-3 z-40 flex h-10 w-10 flex-col items-center justify-center gap-1.5 border border-line bg-panel md:hidden"
       >
         <span className="block h-0.5 w-5 bg-ink" />
         <span className="block h-0.5 w-5 bg-ink" />
@@ -39,16 +39,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex min-h-screen">
         <aside
-          className={`no-print fixed inset-y-0 left-0 z-50 flex w-[230px] shrink-0 flex-col gap-8 bg-moss-deep p-6 text-[#eae5d6] transition-transform md:static md:z-auto md:translate-x-0 ${
+          className={`no-print fixed inset-y-0 left-0 z-50 flex w-[240px] shrink-0 flex-col bg-ink text-[#f3f2f2] transition-transform md:static md:z-auto md:translate-x-0 ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="flex items-baseline gap-2 font-serif text-xl font-semibold">
-            CV HORECA JAYA
-            <span className="font-mono text-[0.65rem] font-normal text-[#a9c2b6]">PREVIEW</span>
+          <div className="border-b-2 border-white/25 px-[22px] py-[18px]">
+            <div className="font-sans text-[17px] font-extrabold leading-tight tracking-tight">
+              CV HORECA JAYA
+            </div>
+            <div className="mt-1.5 font-sans text-[10px] uppercase tracking-[0.12em] text-white/50">
+              Kelola usaha
+            </div>
           </div>
 
-          <nav className="flex flex-col gap-1.5">
+          <nav className="flex flex-col py-2.5">
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item.href);
               return (
@@ -56,21 +60,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  style={
+                  className={`grid grid-cols-[26px_1fr] items-center gap-2.5 px-[22px] py-[11px] text-[14px] no-underline transition ${
                     active
-                      ? { background: item.color, color: "#12201d", borderLeftColor: "#fff" }
-                      : { borderLeftColor: item.color }
-                  }
-                  className={`flex items-center gap-2.5 rounded-l rounded-r-lg border-l-4 px-3 py-2.5 text-[0.86rem] font-medium shadow-[0_1px_0_rgba(0,0,0,0.15)] transition ${
-                    active
-                      ? "shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
-                      : "bg-white/5 text-[#eae5d6] hover:translate-x-0.5 hover:bg-white/10 hover:text-white"
+                      ? "bg-accent font-extrabold text-white"
+                      : "font-normal text-white/80 hover:bg-white/10 hover:text-white"
                   }`}
                 >
-                  <span
-                    className="w-5 font-mono text-[0.68rem] font-semibold"
-                    style={{ color: active ? "#12201d" : item.color }}
-                  >
+                  <span className={`text-[10px] ${active ? "text-white/80" : "text-white/50"}`}>
                     {item.num}
                   </span>
                   {item.label}
@@ -79,9 +75,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="mt-auto font-mono text-[0.68rem] leading-relaxed text-[#6f8c7f]">
-            DATA SUMBER
-            <br />
+          <div className="mt-auto border-t border-white/20 px-[22px] py-[18px] text-[11px] leading-relaxed text-white/55">
             MongoDB Atlas — tersambung
           </div>
         </aside>
@@ -92,15 +86,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Mobile bottom tab bar */}
-      <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex overflow-x-auto border-t border-line bg-panel md:hidden">
+      <nav className="no-print fixed inset-x-0 bottom-0 z-30 flex overflow-x-auto border-t-2 border-line bg-panel md:hidden">
         {NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex-1 whitespace-nowrap px-3 py-2.5 text-center font-mono text-[0.65rem] ${
-                active ? "font-semibold text-moss-deep" : "text-muted"
+              className={`flex-1 whitespace-nowrap px-3 py-2.5 text-center text-[0.65rem] ${
+                active ? "font-extrabold text-accent" : "text-muted"
               }`}
             >
               {item.label}
@@ -114,14 +108,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         type="button"
         onClick={() => router.back()}
         title="Kembali"
-        className="no-print fixed right-16 top-3.5 z-40 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-line bg-panel font-mono text-lg text-ink shadow-md"
+        className="no-print fixed right-16 top-3.5 z-40 flex h-[42px] w-[42px] items-center justify-center border border-line bg-panel text-lg text-ink"
       >
         ←
       </button>
       <Link
         href="/"
         title="Kembali ke Dasbor"
-        className="no-print fixed right-3.5 top-3.5 z-40 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-white/15 bg-ink font-mono text-lg text-paper shadow-md"
+        className="no-print fixed right-3.5 top-3.5 z-40 flex h-[42px] w-[42px] items-center justify-center border border-white/15 bg-ink text-lg text-paper"
       >
         ⌂
       </Link>

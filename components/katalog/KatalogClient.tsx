@@ -29,29 +29,28 @@ export default function KatalogClient({
 
   return (
     <div className="p-6 md:p-9">
-      <div className="relative -mx-6 -mt-6 mb-7 overflow-hidden border-b border-line bg-linear-to-br from-[#fff3c4] via-[#fff3c4] to-white px-6 py-10 pl-16 md:-mx-9 md:-mt-9 md:px-10 md:pl-14">
-        <div
-          className="pointer-events-none absolute -top-15 -right-15 h-55 w-55 rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(240,165,44,0.25), transparent 70%)" }}
-        />
-        <h1 className="relative max-w-xl font-serif text-[2.3rem] leading-tight font-semibold">
+      <div className="relative -mx-6 -mt-6 mb-7 overflow-hidden border-b-2 border-line bg-paper px-6 py-10 pl-16 md:-mx-9 md:-mt-9 md:px-10 md:pl-14">
+        <div className="mb-2 font-sans text-xs uppercase tracking-[0.12em] text-accent">
+          Penjualan
+        </div>
+        <h1 className="relative max-w-xl font-sans text-[2.3rem] leading-tight font-extrabold">
           Katalog CV HORECA JAYA
         </h1>
-        <p className="mt-3 font-mono text-[0.78rem] text-muted">
+        <p className="mt-3 font-sans text-[0.78rem] text-muted">
           STOK TER-UPDATE OTOMATIS · {products.length} PRODUK TERSEDIA
         </p>
         <div className="mt-4 flex flex-wrap gap-2.5">
           <Link
             href="/katalog/custom-order"
-            className="inline-block rounded border border-violet bg-violet px-4.5 py-2.5 font-sans text-[0.85rem] font-medium text-white"
+            className="inline-block rounded border border-accent bg-accent px-4.5 py-2.5 font-sans text-[0.85rem] font-semibold text-white"
           >
-            🛠 Pesan Produk Custom
+            Pesan Produk Custom
           </Link>
           <Link
             href="/katalog/custom"
-            className="inline-block rounded border border-violet bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-medium text-violet"
+            className="inline-block rounded border border-accent bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-semibold text-accent"
           >
-            📦 Lihat Produk Custom
+            Lihat Produk Custom
           </Link>
         </div>
       </div>
@@ -62,12 +61,12 @@ export default function KatalogClient({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cari nama produk atau kode SKU..."
-          className="min-w-[180px] flex-1 rounded-full border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.85rem]"
+          className="min-w-[180px] flex-1 rounded border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.85rem]"
         />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-full border border-line bg-panel px-3.5 py-2.5 font-mono text-[0.78rem] text-ink"
+          className="rounded border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.78rem] text-ink"
         >
           <option value="">Semua Kategori</option>
           {categories.map((c) => (
@@ -79,7 +78,7 @@ export default function KatalogClient({
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="rounded-full border border-line bg-panel px-3.5 py-2.5 font-mono text-[0.78rem] text-ink"
+          className="rounded border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.78rem] text-ink"
         >
           <option value="">Urutkan: Default</option>
           <option value="price-asc">Harga: Terendah ke Tertinggi</option>

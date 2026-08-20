@@ -1,39 +1,71 @@
 @import "tailwindcss";
 
+/*
+ * Design system — "Rak & Rel" (mockup 1a). One accent voice (merah #ec3013)
+ * carries every primary action / active state; everything else is ink on
+ * paper, structured by 1-2px rules instead of color, shadow or rounded
+ * corners. Old semantic token names (moss, clay, gold, violet, teal-bright)
+ * are kept so existing className="bg-moss" / "text-clay" usages across the
+ * app don't need touching — they're just repointed at the new palette below,
+ * which is what reskins the whole app from one file.
+ */
 :root {
-  --color-ink: #16232a;
-  --color-paper: #f5f2ea;
+  --color-ink: #201e1d;
+  --color-paper: #f3f2f2;
   --color-panel: #ffffff;
-  --color-line: #ddd6c4;
-  --color-moss: #0e7c66;
-  --color-moss-deep: #0a3d3a;
-  --color-teal-bright: #12b8a3;
-  --color-clay: #e8542e;
-  --color-gold: #f0a52c;
-  --color-violet: #6952d6;
-  --color-muted: #7c7666;
-  --color-danger: #e0392b;
+  --color-surface: #eae9e9;
+  --color-line: rgba(32, 30, 29, 0.4);
+  --color-muted: rgba(32, 30, 29, 0.55);
+
+  /* single accent family — every old accent token (moss, clay, gold,
+     violet, teal-bright, danger) resolves into this one red so nav,
+     buttons, pills and badges read as one voice. */
+  --color-accent: #ec3013;
+  --color-accent-deep: #201e1d;
+  --color-accent-100: #fff2ef;
+  --color-accent-600: #dd2b0f;
+  --color-accent-700: #ae1800;
+  --color-accent-800: #7c1405;
+
+  --color-moss: var(--color-accent);
+  --color-moss-deep: var(--color-accent-deep);
+  --color-teal-bright: var(--color-accent-600);
+  --color-clay: var(--color-accent);
+  --color-gold: var(--color-accent-600);
+  --color-violet: var(--color-accent-700);
+  --color-danger: var(--color-accent-700);
 }
 
 @theme inline {
   --color-ink: var(--color-ink);
   --color-paper: var(--color-paper);
   --color-panel: var(--color-panel);
+  --color-surface: var(--color-surface);
   --color-line: var(--color-line);
+  --color-muted: var(--color-muted);
+
+  --color-accent: var(--color-accent);
+  --color-accent-deep: var(--color-accent-deep);
+  --color-accent-100: var(--color-accent-100);
+  --color-accent-600: var(--color-accent-600);
+  --color-accent-700: var(--color-accent-700);
+  --color-accent-800: var(--color-accent-800);
+
   --color-moss: var(--color-moss);
   --color-moss-deep: var(--color-moss-deep);
   --color-teal-bright: var(--color-teal-bright);
   --color-clay: var(--color-clay);
   --color-gold: var(--color-gold);
   --color-violet: var(--color-violet);
-  --color-muted: var(--color-muted);
   --color-danger: var(--color-danger);
 
-  --font-serif: var(--font-fraunces), Georgia, serif;
-  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  /* one type family everywhere — headings, body and mono-labeled data all
+     read as Archivo now, matching the mockup's single-family system. */
+  --font-serif: var(--font-archivo), system-ui, sans-serif;
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+  --font-mono: var(--font-archivo), system-ui, sans-serif;
 
-  --radius-DEFAULT: 3px;
+  --radius-DEFAULT: 0px;
 }
 
 body {
@@ -42,8 +74,13 @@ body {
   font-family: var(--font-sans);
 }
 
+h1, h2, h3, h4 {
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
 ::selection {
-  background: var(--color-gold);
+  background: var(--color-accent);
   color: #fff;
 }
 

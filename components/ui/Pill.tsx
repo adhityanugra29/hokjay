@@ -11,7 +11,7 @@ export type PillVariant = keyof typeof CLASS;
 
 export default function Pill({ variant, children }: { variant: PillVariant; children: React.ReactNode }) {
   return (
-    <span className={`inline-block rounded-full px-2.5 py-1 font-mono text-[0.68rem] font-medium ${CLASS[variant]}`}>
+    <span className={`inline-block px-2.5 py-1 font-sans text-[0.68rem] font-semibold ${CLASS[variant]}`}>
       {children}
     </span>
   );

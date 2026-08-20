@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const cls =
-  "inline-block cursor-pointer rounded-full border border-moss bg-panel px-3 py-1.5 font-mono text-[0.7rem] font-medium leading-tight text-moss-deep no-underline transition hover:bg-moss hover:text-white";
+  "inline-block cursor-pointer border border-accent bg-panel px-3 py-1.5 font-sans text-[0.7rem] font-semibold leading-tight text-accent no-underline transition hover:bg-accent hover:text-white";
 
 export function RowActionLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (

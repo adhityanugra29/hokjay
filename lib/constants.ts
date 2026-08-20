@@ -33,16 +33,16 @@ export const CUSTOM_ORDER_CATEGORIES: {
   { id: "lainnya", label: "Lainnya", rate: 950_000 },
 ];
 
-export const NAV_ITEMS: { href: string; label: string; num: string; color: string }[] = [
-  { href: "/", label: "Dasbor", num: "01", color: "#f0a52c" },
-  { href: "/katalog", label: "Penjualan", num: "02", color: "#f0a52c" },
-  { href: "/invoice", label: "Invoice", num: "03", color: "#e8542e" },
-  { href: "/produk", label: "Inventory", num: "04", color: "#12b8a3" },
-  { href: "/pelanggan", label: "Pelanggan", num: "05", color: "#6952d6" },
-  { href: "/insentif", label: "Insentif Sales", num: "06", color: "#e0392b" },
-  { href: "/keuangan", label: "Keuangan", num: "07", color: "#0e7c66" },
-  { href: "/admin", label: "Admin", num: "08", color: "#7c7666" },
-  { href: "/akuntansi", label: "Akuntansi", num: "09", color: "#6952d6" },
+export const NAV_ITEMS: { href: string; label: string; num: string }[] = [
+  { href: "/", label: "Dasbor", num: "01" },
+  { href: "/katalog", label: "Penjualan", num: "02" },
+  { href: "/invoice", label: "Invoice", num: "03" },
+  { href: "/produk", label: "Inventory", num: "04" },
+  { href: "/pelanggan", label: "Pelanggan", num: "05" },
+  { href: "/insentif", label: "Insentif Sales", num: "06" },
+  { href: "/keuangan", label: "Keuangan", num: "07" },
+  { href: "/akuntansi", label: "Akuntansi", num: "08" },
+  { href: "/admin", label: "Admin", num: "09" },
 ];
 
 export const MONTH_NAMES = [

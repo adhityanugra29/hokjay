@@ -17,10 +17,10 @@ export default function PeriodFilterPills({
           <Link
             key={p.value}
             href={`${basePath}?period=${p.value}`}
-            className={`rounded-full border px-3.5 py-2 font-mono text-[0.75rem] ${
+            className={`border px-3.5 py-2 font-sans text-[0.75rem] ${
               isActive
-                ? "border-moss-deep bg-moss-deep text-white"
-                : "border-line bg-panel text-muted hover:border-moss hover:text-ink"
+                ? "border-accent bg-accent text-white"
+                : "border-line bg-panel text-muted hover:border-accent hover:text-ink"
             }`}
           >
             {p.label}

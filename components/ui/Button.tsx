@@ -3,16 +3,18 @@ import type { ButtonHTMLAttributes } from "react";
 
 type Variant = "solid" | "ghost" | "clay" | "violet" | "gold";
 
+// All four "accent" variants collapse to the same single accent color —
+// only solid (primary) vs ghost (secondary) is a meaningful distinction now.
 const VARIANT_CLASS: Record<Variant, string> = {
-  solid: "border-ink bg-ink text-paper hover:opacity-90",
-  ghost: "border-ink bg-transparent text-ink hover:bg-ink hover:text-paper",
-  clay: "border-clay bg-clay text-white hover:opacity-90",
-  violet: "border-violet bg-violet text-white hover:opacity-90",
-  gold: "border-gold bg-gold text-[#1b1200] hover:opacity-90",
+  solid: "border-accent bg-accent text-white hover:bg-accent-600",
+  ghost: "border-line bg-transparent text-ink hover:bg-black/5",
+  clay: "border-accent bg-accent text-white hover:bg-accent-600",
+  violet: "border-accent bg-accent text-white hover:bg-accent-600",
+  gold: "border-accent bg-accent text-white hover:bg-accent-600",
 };
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded border px-4.5 py-2.5 font-sans text-[0.85rem] font-medium cursor-pointer transition disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded border px-4.5 py-2.5 font-sans text-[0.85rem] font-extrabold cursor-pointer transition disabled:cursor-not-allowed disabled:opacity-50";
 
 export function Button({
   variant = "solid",
