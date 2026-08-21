@@ -20,10 +20,10 @@ export default function KatalogClient({
   const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
   const { activeCustomer } = useActiveCustomer();
 
-  // Staged flow: idle button ("Pilih Produk Katalog") -> click reveals
-  // checkboxes + "Pilih Semua" (label stays "Pilih Produk Katalog", disabled
-  // while 0 selected) -> once >=1 item is checked it relabels to "Unduh
-  // Katalog PDF - XX itemnya" and now actually triggers the download.
+  // Staged flow: idle button ("Buat Katalog") -> click reveals checkboxes +
+  // "Pilih Semua" (label stays "Buat Katalog", disabled while 0 selected) ->
+  // once >=1 item is checked it relabels to "Unduh Katalog PDF - XX itemnya"
+  // and now actually triggers the download.
   function handleMainButtonClick() {
     if (!pickMode) {
       startPicking();
@@ -37,7 +37,7 @@ export default function KatalogClient({
     ? "Menyiapkan PDF..."
     : pickMode && selected.size > 0
       ? `Unduh Katalog PDF - ${selected.size} itemnya`
-      : "Pilih Produk Katalog";
+      : "Buat Katalog";
 
   async function downloadCatalogPDF() {
     if (selected.size === 0) return;
