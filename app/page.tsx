@@ -62,12 +62,23 @@ export default async function DashboardPage() {
               className="grid grid-cols-[1fr_auto] items-center gap-4 border-t border-line py-3.5 last:border-b"
             >
               <div>
-                <div className="font-sans text-[0.95rem] font-bold">{inv.customer?.nama}</div>
+                <div className="flex items-center gap-2">
+                  <div className="font-sans text-[0.95rem] font-bold">{inv.customer?.nama}</div>
+                  <span
+                    className={`border px-2 py-0.5 font-sans text-[0.62rem] font-semibold uppercase tracking-wide ${
+                      inv.status === "draft"
+                        ? "border-yellow-400 bg-yellow-50 text-yellow-700"
+                        : "border-red-400 bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {inv.status === "draft" ? "Draft" : "Belum Bayar"}
+                  </span>
+                </div>
                 <div className="mt-1 font-sans text-[0.75rem] text-muted">
                   {inv.nomor} ·{" "}
                   {inv.status === "draft"
-                    ? `draft, dibuat ${daysAgo(inv.get("createdAt"))} hari lalu`
-                    : `belum bayar, ${daysAgo(inv.tanggalInvoice ?? inv.get("createdAt"))} hari`}
+                    ? `dibuat ${daysAgo(inv.get("createdAt"))} hari lalu`
+                    : `${daysAgo(inv.tanggalInvoice ?? inv.get("createdAt"))} hari`}
                 </div>
               </div>
               <div className="flex items-center gap-4">
