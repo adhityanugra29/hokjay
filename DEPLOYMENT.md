@@ -27,15 +27,17 @@ Masih di layar yang sama (atau nanti lewat **Project → Settings → Environmen
 | Key | Value |
 |---|---|
 | `MONGODB_URI` | connection string MongoDB Atlas kamu (yang sama seperti di `.env.local` lokal) |
+| `SESSION_SECRET` | string acak panjang untuk menandatangani cookie login — generate dengan `openssl rand -base64 32`. **Wajib diisi** — tanpa ini sesi login memakai fallback tidak aman |
 
-(`BLOB_READ_WRITE_TOKEN` akan otomatis terisi setelah langkah 3 — tidak perlu diisi manual.)
+(Env var Blob storage-nya diisi setelah langkah 3 di bawah — tidak perlu diisi manual di sini.)
 
 ## 3. Aktifkan Vercel Blob Storage
 
 1. Di dashboard project (setelah project ke-import) → tab **Storage**.
-2. Klik **Create Database** → pilih **Blob**.
+2. Klik **Create Database** → pilih **Blob** → pastikan pilih access **Public** saat pembuatan (bukan Private — kode aplikasi ini pakai URL publik langsung untuk semua foto/bukti, bukan signed URL).
 3. Beri nama (bebas, mis. `hokjay-uploads`) → **Create**.
-4. Vercel otomatis menghubungkan store ini ke project dan mengisi env var `BLOB_READ_WRITE_TOKEN` — tidak perlu langkah tambahan.
+4. Klik **Connect Project**, pilih project ini, centang environment yang dipakai (minimal Production) → Connect.
+5. **Penting**: Vercel menamai env var token-nya dengan awalan nama store (contoh: `Hojay_READ_WRITE_TOKEN`, bukan `BLOB_READ_WRITE_TOKEN` polos) — cek nama persisnya di **Project Settings → Environment Variables**. Kode di `app/api/upload/route.ts` sudah di-hardcode membaca `process.env.Hojay_READ_WRITE_TOKEN` — kalau nama store/env var kamu beda, sesuaikan nama variabel di file itu juga.
 
 ## 4. Deploy
 

@@ -4,9 +4,12 @@ import path from "node:path";
 import { slugify } from "@/lib/format";
 
 // Vercel's serverless functions have no persistent/writable local disk, so
-// uploads (product photos, payment proof) go to Vercel Blob storage instead
-// of public/uploads/ — needs BLOB_READ_WRITE_TOKEN set (auto-provided once
-// a Blob store is attached to the Vercel project; see DEPLOYMENT.md).
+// uploads (product photos, payment proof, etc.) go to Vercel Blob storage
+// instead of public/uploads/. The store's "Connect Project" flow named its
+// token env var with a store-specific prefix (Hojay_READ_WRITE_TOKEN)
+// rather than the SDK's default BLOB_READ_WRITE_TOKEN, so it's passed
+// explicitly here instead of relying on put()'s auto env-var lookup — see
+// DEPLOYMENT.md.
 export const runtime = "nodejs";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
@@ -36,7 +39,7 @@ export async function POST(req: Request) {
   const pathname = `${folder}/${Date.now()}-${baseName}${ext}`;
 
   try {
-    const blob = await put(pathname, file, { access: "public" });
+    const blob = await put(pathname, file, { access: "public", token: process.env.Hojay_READ_WRITE_TOKEN });
     return NextResponse.json({ url: blob.url }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
