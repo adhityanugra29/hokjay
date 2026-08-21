@@ -4,32 +4,27 @@ import { LinkButton } from "@/components/ui/Button";
 import HotProductsCarousel from "@/components/dashboard/HotProductsCarousel";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { dbConnect } from "@/lib/db";
-import { Invoice } from "@/models/Invoice";
 import { currentPeriod, getSalesRanking } from "@/lib/insentif";
-import { getHotProducts } from "@/lib/dashboard";
+import { getHotProducts, getFollowUpInvoices } from "@/lib/dashboard";
 import { rupiah, formatDateFull } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
-
-function daysAgo(date: Date | string): number {
-  const ms = Date.now() - new Date(date).getTime();
-  return Math.max(0, Math.floor(ms / 86_400_000));
-}
 
 export default async function DashboardPage() {
   await dbConnect();
   const nowJakarta = currentJakartaMonthYear();
   const thisMonthRange = jakartaMonthRange(nowJakarta.year, nowJakarta.month);
 
-  const [needsAction, ranking, hotProducts] = await Promise.all([
-    Invoice.find({ status: { $in: ["unpaid", "draft"] } }).sort({ createdAt: 1 }).limit(6),
+  const [followUpAll, ranking, hotProducts] = await Promise.all([
+    getFollowUpInvoices(),
     getSalesRanking(currentPeriod()),
     getHotProducts(thisMonthRange),
   ]);
 
-  const draftCount = needsAction.filter((i) => i.status === "draft").length;
-  const unpaidCount = needsAction.filter((i) => i.status === "unpaid").length;
+  const needsAction = followUpAll.slice(0, 6);
+  const draftCount = followUpAll.filter((i) => i.status === "draft").length;
+  const unpaidCount = followUpAll.filter((i) => i.status === "unpaid").length;
 
   return (
     <>
@@ -64,25 +59,25 @@ export default async function DashboardPage() {
         <div className="mb-8">
           {needsAction.map((inv) => (
             <div
-              key={String(inv._id)}
+              key={inv.invoiceId}
               className="grid grid-cols-[1fr_auto] items-center gap-4 border-t border-line py-3.5 last:border-b"
             >
               <div>
                 <div className="flex items-center gap-2">
-                  <div className="font-sans text-[0.95rem] font-bold">{inv.customer?.nama}</div>
-                  <FollowUpStatusBadge status={inv.status as "draft" | "unpaid"} />
+                  <div className="font-sans text-[0.95rem] font-bold">{inv.customerNama}</div>
+                  <FollowUpStatusBadge status={inv.status} />
                 </div>
                 <div className="mt-1 font-sans text-[0.75rem] text-muted">
-                  {inv.nomor} ·{" "}
-                  {inv.status === "draft"
-                    ? `dibuat ${daysAgo(inv.get("createdAt"))} hari lalu`
-                    : `${daysAgo(inv.tanggalInvoice ?? inv.get("createdAt"))} hari`}
+                  {inv.nomor} · {inv.status === "draft" ? `dibuat ${inv.hariBerjalan} hari lalu` : `${inv.hariBerjalan} hari`}
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="font-sans text-[0.95rem] font-extrabold">{rupiah(inv.grandTotal)}</div>
+                <div className="text-right">
+                  <div className="font-sans text-[0.95rem] font-extrabold">{rupiah(inv.grandTotal)}</div>
+                  <div className="font-sans text-[0.68rem] text-muted">Insentif {rupiah(inv.komisiPotensial)}</div>
+                </div>
                 <Link
-                  href={inv.status === "draft" ? `/invoice/${inv._id}/ubah` : `/invoice/${inv._id}`}
+                  href={inv.status === "draft" ? `/invoice/${inv.invoiceId}/ubah` : `/invoice/${inv.invoiceId}`}
                   className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent no-underline hover:bg-accent hover:text-white"
                 >
                   {inv.status === "draft" ? "Lanjutkan" : "Lihat"}
@@ -111,8 +106,8 @@ export default async function DashboardPage() {
               </span>
               <span className="font-sans text-[0.85rem] font-bold">{r.salesNama}</span>
               <div className="text-right">
-                <div className="font-sans text-[0.85rem] font-extrabold text-accent-700">{rupiah(r.totalKomisi)}</div>
-                <div className="font-sans text-[0.68rem] text-muted">Nilai Sales {rupiah(r.totalPenjualan)}</div>
+                <div className="font-sans text-[0.85rem] font-extrabold">{rupiah(r.totalPenjualan)}</div>
+                <div className="font-sans text-[0.68rem] text-muted">Insentif {rupiah(r.totalKomisi)}</div>
               </div>
             </div>
           ))}
