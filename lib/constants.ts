@@ -42,9 +42,10 @@ export const NAV_ITEMS: { href: string; label: string; num: string }[] = [
   { href: "/produk", label: "Inventory", num: "04" },
   { href: "/pelanggan", label: "Pelanggan", num: "05" },
   { href: "/insentif", label: "Insentif Sales", num: "06" },
-  { href: "/keuangan", label: "Keuangan", num: "07" },
-  { href: "/akuntansi", label: "Akuntansi", num: "08" },
-  { href: "/admin", label: "Admin", num: "09" },
+  { href: "/bayar-komisi", label: "Bayar Komisi", num: "07" },
+  { href: "/keuangan", label: "Keuangan", num: "08" },
+  { href: "/akuntansi", label: "Akuntansi", num: "09" },
+  { href: "/admin", label: "Admin", num: "10" },
 ];
 
 export const MONTH_NAMES = [

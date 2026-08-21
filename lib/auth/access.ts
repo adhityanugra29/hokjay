@@ -5,7 +5,7 @@ import type { UserRole } from "@/models/User";
 // nav filtering) without pulling in anything runtime-incompatible.
 
 export const SALES_PREFIXES = ["/penjualan", "/katalog", "/invoice", "/produk", "/pelanggan"];
-export const FINANCE_PREFIXES = ["/insentif", "/keuangan", "/akuntansi"];
+export const FINANCE_PREFIXES = ["/insentif", "/bayar-komisi", "/keuangan", "/akuntansi"];
 
 // Admin has full access (superuser); every other logged-in role can still
 // call the rest of the API (the pages themselves already gate what's

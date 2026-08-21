@@ -65,7 +65,7 @@ export default function KomisiPaymentForm({
         const b = await res.json().catch(() => ({}));
         throw new Error(b.error || "Gagal memproses pembayaran komisi");
       }
-      router.push("/insentif/bayar");
+      router.push("/bayar-komisi");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memproses pembayaran komisi");
@@ -164,7 +164,7 @@ export default function KomisiPaymentForm({
           <Button type="submit" disabled={saving || selected.size === 0}>
             {saving ? "Memproses..." : `Bayar Komisi (${rupiah(total)})`}
           </Button>
-          <LinkButton variant="ghost" href="/insentif/bayar">
+          <LinkButton variant="ghost" href="/bayar-komisi">
             Batal
           </LinkButton>
         </FormActions>

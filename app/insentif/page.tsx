@@ -35,7 +35,6 @@ export default async function InsentifPage({ searchParams }: PageProps<"/insenti
             { href: "/insentif", label: "Rekap per Personil" },
             { href: "/insentif/item", label: "Rincian per Item" },
             { href: "/insentif/riwayat", label: "Riwayat per Invoice" },
-            { href: "/insentif/bayar", label: "Bayar Komisi" },
           ]}
         />
 

@@ -105,12 +105,15 @@ export default async function DashboardPage() {
         </div>
         <div>
           {ranking.slice(0, 3).map((r, i) => (
-            <div key={r.salesNama} className="grid grid-cols-[32px_1fr_auto] items-baseline gap-3 border-t border-line py-2.5 last:border-b">
+            <div key={r.salesNama} className="grid grid-cols-[32px_1fr_auto] items-center gap-3 border-t border-line py-2.5 last:border-b">
               <span className={`font-sans text-[0.7rem] font-extrabold ${i === 0 ? "text-accent" : "text-muted"}`}>
                 0{i + 1}
               </span>
               <span className="font-sans text-[0.85rem] font-bold">{r.salesNama}</span>
-              <span className="font-sans text-[0.8rem]">{rupiah(r.totalKomisi)}</span>
+              <div className="text-right">
+                <div className="font-sans text-[0.85rem] font-extrabold text-accent-700">{rupiah(r.totalKomisi)}</div>
+                <div className="font-sans text-[0.68rem] text-muted">Nilai Sales {rupiah(r.totalPenjualan)}</div>
+              </div>
             </div>
           ))}
           {ranking.length === 0 && (

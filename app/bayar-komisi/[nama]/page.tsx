@@ -5,7 +5,7 @@ import { getUnpaidCommissionInvoices } from "@/lib/insentif";
 
 export const dynamic = "force-dynamic";
 
-export default async function InsentifBayarSalesPage({ params }: PageProps<"/insentif/bayar/[nama]">) {
+export default async function BayarKomisiSalesPage({ params }: PageProps<"/bayar-komisi/[nama]">) {
   const { nama } = await params;
   const salesNama = decodeURIComponent(nama);
   if (!salesNama) notFound();

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
-import SubnavTabs from "@/components/ui/SubnavTabs";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { RowActionLink } from "@/components/ui/RowAction";
 import { getUnpaidCommissionBySales } from "@/lib/insentif";
@@ -9,11 +8,13 @@ import { rupiah } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 /**
- * Landing page for Finance: who's still owed sales commission, and a way
- * into paying it off (per sales, batched across their unpaid invoices,
- * with an optional proof-of-transfer upload). See /insentif/bayar/[nama].
+ * Standalone landing page for Finance (own nav item, not nested under
+ * Insentif Sales — see confirmation with the user 2026-08-21): who's still
+ * owed sales commission, and a way into paying it off (per sales, batched
+ * across their unpaid invoices, with an optional proof-of-transfer upload).
+ * See /bayar-komisi/[nama].
  */
-export default async function InsentifBayarPage() {
+export default async function BayarKomisiPage() {
   const rows = await getUnpaidCommissionBySales();
   const totalOutstanding = rows.reduce((s, r) => s + r.totalKomisi, 0);
 
@@ -24,15 +25,6 @@ export default async function InsentifBayarPage() {
         subtitle="UNTUK TIM FINANCE · BAYAR KOMISI SALES PER ORANG ATAU SEKALIGUS"
       />
       <div className="p-6 md:p-9">
-        <SubnavTabs
-          tabs={[
-            { href: "/insentif", label: "Rekap per Personil" },
-            { href: "/insentif/item", label: "Rincian per Item" },
-            { href: "/insentif/riwayat", label: "Riwayat per Invoice" },
-            { href: "/insentif/bayar", label: "Bayar Komisi" },
-          ]}
-        />
-
         <div className="mb-5 border border-line bg-[#f7f5ee] p-5">
           <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">
             Total komisi belum cair (semua sales)
@@ -67,7 +59,7 @@ export default async function InsentifBayarPage() {
                       {rupiah(r.totalKomisi)}
                     </td>
                     <td className="border-b border-line px-5 py-4.5">
-                      <RowActionLink href={`/insentif/bayar/${encodeURIComponent(r.salesNama)}`}>
+                      <RowActionLink href={`/bayar-komisi/${encodeURIComponent(r.salesNama)}`}>
                         Bayar →
                       </RowActionLink>
                     </td>
