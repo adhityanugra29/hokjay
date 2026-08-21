@@ -2,6 +2,7 @@ import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import HotProductsCarousel from "@/components/dashboard/HotProductsCarousel";
+import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { currentPeriod, getSalesRanking } from "@/lib/insentif";
@@ -51,9 +52,14 @@ export default async function DashboardPage() {
       <section className="p-6 md:p-9">
         <div className="mb-3.5 flex items-baseline justify-between gap-2.5">
           <h4 className="text-[1.05rem] font-extrabold">Follow-up Yuk</h4>
-          <span className="font-sans text-[0.7rem] text-muted">
-            {unpaidCount} belum lunas · {draftCount} draft
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="font-sans text-[0.7rem] text-muted">
+              {unpaidCount} belum lunas · {draftCount} draft
+            </span>
+            <Link href="/follow-up" className="font-sans text-[0.7rem] text-accent no-underline hover:underline">
+              lihat semua →
+            </Link>
+          </div>
         </div>
         <div className="mb-8">
           {needsAction.map((inv) => (
@@ -64,15 +70,7 @@ export default async function DashboardPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <div className="font-sans text-[0.95rem] font-bold">{inv.customer?.nama}</div>
-                  <span
-                    className={`border px-2 py-0.5 font-sans text-[0.62rem] font-semibold uppercase tracking-wide ${
-                      inv.status === "draft"
-                        ? "border-yellow-400 bg-yellow-50 text-yellow-700"
-                        : "border-red-400 bg-red-50 text-red-700"
-                    }`}
-                  >
-                    {inv.status === "draft" ? "Draft" : "Belum Bayar"}
-                  </span>
+                  <FollowUpStatusBadge status={inv.status as "draft" | "unpaid"} />
                 </div>
                 <div className="mt-1 font-sans text-[0.75rem] text-muted">
                   {inv.nomor} ·{" "}

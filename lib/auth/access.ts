@@ -30,7 +30,8 @@ export const ADMIN_ONLY_WRITE_PREFIXES = [
 
 export function isAllowedPage(role: UserRole, pathname: string): boolean {
   if (role === "admin") return true;
-  if (pathname === "/") return true;
+  // Dashboard-adjacent content, viewable by every role just like "/" itself.
+  if (pathname === "/" || pathname === "/follow-up") return true;
   const prefixes = role === "sales" ? SALES_PREFIXES : FINANCE_PREFIXES;
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }

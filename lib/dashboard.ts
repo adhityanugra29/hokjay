@@ -75,3 +75,67 @@ export async function getHotProducts(range: { from: Date; to: Date }, limit = 5)
     (a, b) => b.badges.length - a.badges.length || b.terjualBulanIni - a.terjualBulanIni
   );
 }
+
+export interface FollowUpInvoiceRow {
+  invoiceId: string;
+  nomor: string;
+  status: "draft" | "unpaid";
+  customerNama: string;
+  salesNama: string;
+  grandTotal: number;
+  komisiPotensial: number;
+  hariBerjalan: number;
+}
+
+export interface FollowUpSalesSummary {
+  salesNama: string;
+  invoiceCount: number;
+  totalNilai: number;
+  totalKomisiPotensial: number;
+}
+
+/**
+ * Every invoice still needing follow-up (draft or unpaid — not just the
+ * dashboard widget's 6-row teaser), with the commission each one would earn
+ * once paid and cair. komisiSubtotal is already snapshotted on every item at
+ * creation time regardless of draft/unpaid (see lib/services/createInvoice.ts
+ * — only stock/journal posting is gated behind finalize), so summing it here
+ * is safe even for drafts. See confirmation with the user 2026-08-21.
+ */
+export async function getFollowUpInvoices(): Promise<FollowUpInvoiceRow[]> {
+  await dbConnect();
+  const invoices = await Invoice.find({ status: { $in: ["unpaid", "draft"] } }).sort({ createdAt: 1 });
+
+  return invoices.map((inv) => {
+    const komisiPotensial = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
+    const baseDate = inv.status === "draft" ? inv.get("createdAt") : (inv.tanggalInvoice ?? inv.get("createdAt"));
+    const hariBerjalan = Math.max(0, Math.floor((Date.now() - new Date(baseDate).getTime()) / 86_400_000));
+    return {
+      invoiceId: String(inv._id),
+      nomor: inv.nomor,
+      status: inv.status as "draft" | "unpaid",
+      customerNama: inv.customer?.nama || "—",
+      salesNama: inv.sales?.nama ?? "—",
+      grandTotal: inv.grandTotal,
+      komisiPotensial,
+      hariBerjalan,
+    };
+  });
+}
+
+export function summarizeFollowUpBySales(rows: FollowUpInvoiceRow[]): FollowUpSalesSummary[] {
+  const map = new Map<string, FollowUpSalesSummary>();
+  for (const r of rows) {
+    const row = map.get(r.salesNama) ?? {
+      salesNama: r.salesNama,
+      invoiceCount: 0,
+      totalNilai: 0,
+      totalKomisiPotensial: 0,
+    };
+    row.invoiceCount++;
+    row.totalNilai += r.grandTotal;
+    row.totalKomisiPotensial += r.komisiPotensial;
+    map.set(r.salesNama, row);
+  }
+  return [...map.values()].sort((a, b) => b.totalKomisiPotensial - a.totalKomisiPotensial);
+}
