@@ -49,6 +49,12 @@ const ProductSchema = new Schema(
     // added/removed with the normal qty stepper) but are flagged so the UI
     // can badge them and so admins understand why a bespoke name showed up.
     isCustom: { type: Boolean, default: false },
+    // Reference-only attachment (PDF/image) — the customer's RAB (budget
+    // plan) or café floor plan a multi-item custom order was based on. Not
+    // auto-parsed (see confirmation with the user 2026-08-21); just kept so
+    // the team can pull up the original document later. Every item created
+    // from the same submission shares this same URL.
+    rabUrl: { type: String },
   },
   { timestamps: true }
 );

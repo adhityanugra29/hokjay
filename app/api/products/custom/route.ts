@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
     ketebalan: ketebalanMm ? `${ketebalanMm} mm` : undefined,
     deskripsi: body.notes || undefined,
     isCustom: true,
+    rabUrl: body.rabUrl || undefined,
   });
 
   return NextResponse.json(product, { status: 201 });
