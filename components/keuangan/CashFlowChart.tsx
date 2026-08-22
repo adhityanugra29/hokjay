@@ -1,6 +1,5 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
 import { rupiahCompact } from "@/lib/format";
 
 export interface FlowNode {
@@ -9,16 +8,25 @@ export interface FlowNode {
   tipe: "masuk" | "keluar";
 }
 
-interface Line {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  color: string;
-}
+// Literal hex, not the app's shared accent/clay/moss tokens — since the "Rak
+// & Rel" redesign those all collapsed into one red voice (see globals.css),
+// which is exactly why masuk vs keluar stopped being tellable at a glance.
+// Matches Pill.tsx's existing "paid"/"out" palette so this stays consistent
+// with how the rest of the app already colors money in vs money out.
+const MASUK = { text: "#087a52", border: "#087a52", bg: "#f1faf6" };
+const KELUAR = { text: "#c02c1c", border: "#c02c1c", bg: "#fdf3f1" };
 
-const COLOR = { masuk: "#0e7c66", keluar: "#e8542e" };
-
+/**
+ * Redesigned 2026-08-22 — the previous version (Kas Toko on the far left,
+ * masuk/keluar categories mixed together in one column on the right,
+ * distinguished only by a thin 2px border at 35% opacity, in colors that by
+ * then had also collapsed into the same red accent) made it genuinely hard
+ * to tell inflow from outflow at a glance. Now: two clearly separated,
+ * strongly tinted zones (green = masuk on the left, red = keluar on the
+ * right) with Kas Toko in the middle, every amount explicitly prefixed
+ * +/−, and one bold arrow per side showing the direction of flow instead
+ * of a faint line per category.
+ */
 export default function CashFlowChart({
   masukTotal,
   keluarTotal,
@@ -30,105 +38,102 @@ export default function CashFlowChart({
   netTotal: number;
   nodes: FlowNode[];
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const centerRef = useRef<HTMLDivElement>(null);
-  const masukRef = useRef<HTMLDivElement>(null);
-  const keluarRef = useRef<HTMLDivElement>(null);
-  const nodeRefs = useRef<Record<number, HTMLDivElement | null>>({});
-  const [lines, setLines] = useState<Line[]>([]);
-
-  const orderedNodes = [...nodes.filter((n) => n.tipe === "masuk"), ...nodes.filter((n) => n.tipe === "keluar")];
-
-  useLayoutEffect(() => {
-    function measure() {
-      const container = containerRef.current;
-      if (!container) return;
-      const cRect = container.getBoundingClientRect();
-      const rel = (el: HTMLDivElement | null, side: "left" | "right") => {
-        if (!el) return { x: 0, y: 0 };
-        const r = el.getBoundingClientRect();
-        return { x: (side === "left" ? r.left : r.right) - cRect.left, y: r.top + r.height / 2 - cRect.top };
-      };
-
-      const center = rel(centerRef.current, "right");
-      const masuk = rel(masukRef.current, "left");
-      const masukRight = rel(masukRef.current, "right");
-      const keluar = rel(keluarRef.current, "left");
-      const keluarRight = rel(keluarRef.current, "right");
-
-      const newLines: Line[] = [
-        { x1: center.x, y1: center.y, x2: masuk.x, y2: masuk.y, color: COLOR.masuk },
-        { x1: center.x, y1: center.y, x2: keluar.x, y2: keluar.y, color: COLOR.keluar },
-      ];
-
-      orderedNodes.forEach((n, idx) => {
-        const el = nodeRefs.current[idx];
-        if (!el) return;
-        const r = el.getBoundingClientRect();
-        const point = { x: r.left - cRect.left, y: r.top + r.height / 2 - cRect.top };
-        const from = n.tipe === "masuk" ? masukRight : keluarRight;
-        newLines.push({ x1: from.x, y1: from.y, x2: point.x, y2: point.y, color: COLOR[n.tipe] });
-      });
-
-      setLines(newLines);
-    }
-
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes]);
+  const masukNodes = nodes.filter((n) => n.tipe === "masuk").sort((a, b) => b.value - a.value);
+  const keluarNodes = nodes.filter((n) => n.tipe === "keluar").sort((a, b) => b.value - a.value);
+  const netColor = netTotal >= 0 ? MASUK.text : KELUAR.text;
 
   return (
-    <div ref={containerRef} className="relative grid grid-cols-1 items-center gap-8 p-5 lg:grid-cols-[auto_1fr_1fr]">
-      <svg className="pointer-events-none absolute inset-0 hidden h-full w-full lg:block">
-        {lines.map((l, idx) => (
-          <path
-            key={idx}
-            d={`M ${l.x1} ${l.y1} C ${(l.x1 + l.x2) / 2} ${l.y1}, ${(l.x1 + l.x2) / 2} ${l.y2}, ${l.x2} ${l.y2}`}
-            fill="none"
-            stroke={l.color}
-            strokeOpacity={0.35}
-            strokeWidth={2}
-          />
-        ))}
-      </svg>
-
-      <div ref={centerRef} className="relative z-10 flex flex-col items-center">
-        <div className="flex h-22 w-22 items-center justify-center rounded-2xl border border-line bg-white text-3xl shadow-md">
-          💰
-        </div>
-        <div className="mt-2.5 text-center font-serif text-[0.95rem] font-semibold">Kas Toko</div>
-        <div className="text-center font-mono text-[0.68rem] text-muted">
-          Bersih {rupiahCompact(netTotal)}
-        </div>
-      </div>
-
-      <div className="relative z-10 flex flex-col gap-4">
-        <div ref={masukRef} className="border-l-[3px] border-moss bg-panel px-4 py-3 shadow-sm">
-          <div className="font-mono text-[0.68rem] uppercase text-muted">Uang Masuk</div>
-          <div className="font-serif text-lg font-semibold">{rupiahCompact(masukTotal)}</div>
-        </div>
-        <div ref={keluarRef} className="border-l-[3px] border-clay bg-panel px-4 py-3 shadow-sm">
-          <div className="font-mono text-[0.68rem] uppercase text-muted">Uang Keluar</div>
-          <div className="font-serif text-lg font-semibold">{rupiahCompact(keluarTotal)}</div>
-        </div>
-      </div>
-
-      <div className="relative z-10 flex flex-col gap-2.5">
-        {orderedNodes.map((n, idx) => (
-          <div
-            key={n.label}
-            ref={(el) => {
-              nodeRefs.current[idx] = el;
-            }}
-            className="border-l-2 bg-panel px-3.5 py-2.5 text-sm shadow-sm"
-            style={{ borderLeftColor: COLOR[n.tipe] }}
-          >
-            <div className="font-mono text-[0.65rem] text-muted">{n.label}</div>
-            <div className="font-mono text-[0.82rem] font-medium">{rupiahCompact(n.value)}</div>
+    <div className="p-5">
+      <div className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-[1fr_auto_1fr]">
+        {/* MASUK — green zone */}
+        <div className="rounded-lg border-2 p-4" style={{ borderColor: MASUK.border, backgroundColor: MASUK.bg }}>
+          <div className="flex items-center justify-between">
+            <div
+              className="flex items-center gap-1.5 font-mono text-[0.72rem] font-semibold tracking-wide uppercase"
+              style={{ color: MASUK.text }}
+            >
+              <span aria-hidden>▾</span> Uang Masuk
+            </div>
+            <div className="font-serif text-xl font-bold" style={{ color: MASUK.text }}>
+              +{rupiahCompact(masukTotal)}
+            </div>
           </div>
-        ))}
+          <div className="mt-3 flex flex-col gap-1.5">
+            {masukNodes.map((n) => (
+              <div
+                key={n.label}
+                className="flex items-center justify-between border-l-2 bg-white px-3 py-2 text-sm shadow-sm"
+                style={{ borderLeftColor: MASUK.border }}
+              >
+                <span className="font-mono text-[0.72rem] text-muted">{n.label}</span>
+                <span className="font-mono text-[0.8rem] font-semibold" style={{ color: MASUK.text }}>
+                  +{rupiahCompact(n.value)}
+                </span>
+              </div>
+            ))}
+            {masukNodes.length === 0 && (
+              <div className="px-3 py-2 font-mono text-[0.72rem] text-muted">Belum ada pemasukan.</div>
+            )}
+          </div>
+        </div>
+
+        {/* Center: Kas Toko flanked by direction arrows */}
+        <div className="flex flex-row items-center justify-center gap-2 lg:flex-col lg:gap-3">
+          <span className="hidden font-mono text-2xl leading-none lg:block" style={{ color: MASUK.text }} aria-hidden>
+            →
+          </span>
+          <span className="font-mono text-xl leading-none lg:hidden" style={{ color: MASUK.text }} aria-hidden>
+            ↓
+          </span>
+          <div className="flex flex-col items-center rounded-2xl border border-line bg-white px-6 py-4 shadow-md">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-line bg-paper text-2xl">
+              💰
+            </div>
+            <div className="mt-2 text-center font-serif text-[0.95rem] font-semibold">Kas Toko</div>
+            <div className="text-center font-mono text-[0.72rem] font-semibold" style={{ color: netColor }}>
+              Bersih {netTotal >= 0 ? "+" : "−"}
+              {rupiahCompact(Math.abs(netTotal))}
+            </div>
+          </div>
+          <span className="hidden font-mono text-2xl leading-none lg:block" style={{ color: KELUAR.text }} aria-hidden>
+            →
+          </span>
+          <span className="font-mono text-xl leading-none lg:hidden" style={{ color: KELUAR.text }} aria-hidden>
+            ↓
+          </span>
+        </div>
+
+        {/* KELUAR — red zone */}
+        <div className="rounded-lg border-2 p-4" style={{ borderColor: KELUAR.border, backgroundColor: KELUAR.bg }}>
+          <div className="flex items-center justify-between">
+            <div
+              className="flex items-center gap-1.5 font-mono text-[0.72rem] font-semibold tracking-wide uppercase"
+              style={{ color: KELUAR.text }}
+            >
+              <span aria-hidden>▾</span> Uang Keluar
+            </div>
+            <div className="font-serif text-xl font-bold" style={{ color: KELUAR.text }}>
+              −{rupiahCompact(keluarTotal)}
+            </div>
+          </div>
+          <div className="mt-3 flex flex-col gap-1.5">
+            {keluarNodes.map((n) => (
+              <div
+                key={n.label}
+                className="flex items-center justify-between border-l-2 bg-white px-3 py-2 text-sm shadow-sm"
+                style={{ borderLeftColor: KELUAR.border }}
+              >
+                <span className="font-mono text-[0.72rem] text-muted">{n.label}</span>
+                <span className="font-mono text-[0.8rem] font-semibold" style={{ color: KELUAR.text }}>
+                  −{rupiahCompact(n.value)}
+                </span>
+              </div>
+            ))}
+            {keluarNodes.length === 0 && (
+              <div className="px-3 py-2 font-mono text-[0.72rem] text-muted">Belum ada pengeluaran.</div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
