@@ -8,7 +8,7 @@ export default function UploadBox({
   onChange,
   hint = "JPG/PNG/PDF, maks 5MB",
 }: {
-  folder: "products" | "payments" | "kwitansi" | "komisi" | "rab";
+  folder: "products" | "payments" | "kwitansi" | "komisi" | "rab" | "purchasing";
   value?: string;
   onChange: (url: string) => void;
   hint?: string;

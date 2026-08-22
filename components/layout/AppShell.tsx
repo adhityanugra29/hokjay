@@ -15,6 +15,7 @@ function isActive(pathname: string, href: string) {
 const ROLE_LABEL: Record<UserRole, string> = {
   sales: "Sales",
   finance: "Finance",
+  purchasing: "Purchasing",
   admin: "Admin",
 };
 

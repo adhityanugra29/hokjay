@@ -33,6 +33,16 @@ export async function nextCustomerCode(): Promise<string> {
   return `CUST-${String(seq).padStart(4, "0")}`;
 }
 
+export async function nextPurchaseRequestCode(): Promise<string> {
+  const seq = await nextSeq("purchase-request");
+  return `PR-${String(seq).padStart(4, "0")}`;
+}
+
+export async function nextPurchaseBillCode(): Promise<string> {
+  const seq = await nextSeq("purchase-bill");
+  return `PB-${String(seq).padStart(4, "0")}`;
+}
+
 /** Derives a short SKU prefix from a product name's initials, e.g. "Blender Komersial 2L" -> "BK". */
 export async function nextProductSku(name: string): Promise<string> {
   const letters = name

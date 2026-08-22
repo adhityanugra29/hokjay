@@ -5,7 +5,14 @@ import type { UserRole } from "@/models/User";
 // nav filtering) without pulling in anything runtime-incompatible.
 
 export const SALES_PREFIXES = ["/penjualan", "/katalog", "/invoice", "/produk", "/pelanggan"];
-export const FINANCE_PREFIXES = ["/insentif", "/bayar-komisi", "/keuangan", "/akuntansi"];
+export const FINANCE_PREFIXES = ["/insentif", "/bayar-komisi", "/bayar-tagihan", "/keuangan", "/akuntansi"];
+export const PURCHASING_PREFIXES = ["/purchasing"];
+
+const ROLE_PREFIXES: Record<string, string[]> = {
+  sales: SALES_PREFIXES,
+  finance: FINANCE_PREFIXES,
+  purchasing: PURCHASING_PREFIXES,
+};
 
 // Admin has full access (superuser); every other logged-in role can still
 // call the rest of the API (the pages themselves already gate what's
@@ -31,6 +38,6 @@ export function isAllowedPage(role: UserRole, pathname: string): boolean {
   if (role === "admin") return true;
   // Dashboard-adjacent content, viewable by every role just like "/" itself.
   if (pathname === "/" || pathname === "/follow-up") return true;
-  const prefixes = role === "sales" ? SALES_PREFIXES : FINANCE_PREFIXES;
+  const prefixes = ROLE_PREFIXES[role] ?? [];
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }

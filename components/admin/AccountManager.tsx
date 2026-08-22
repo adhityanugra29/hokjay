@@ -155,6 +155,7 @@ export default function AccountManager() {
               <Select value={values.role} onChange={(e) => setValues((v) => ({ ...v, role: e.target.value as UserRole }))}>
                 <option value="sales">Sales</option>
                 <option value="finance">Finance</option>
+                <option value="purchasing">Purchasing</option>
                 <option value="admin">Admin</option>
               </Select>
             </Field>
@@ -201,6 +202,7 @@ export default function AccountManager() {
                     >
                       <option value="sales">Sales</option>
                       <option value="finance">Finance</option>
+                      <option value="purchasing">Purchasing</option>
                       <option value="admin">Admin</option>
                     </select>
                   </td>
