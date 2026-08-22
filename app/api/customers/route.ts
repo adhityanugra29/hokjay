@@ -29,6 +29,8 @@ export async function POST(req: NextRequest) {
       whatsapp: body.whatsapp,
       email: body.email || undefined,
       alamat: body.alamat,
+      kota: body.kota || undefined,
+      termHari: body.termHari !== undefined && body.termHari !== "" ? Number(body.termHari) : undefined,
       catatan: body.catatan || undefined,
     });
     return NextResponse.json(customer, { status: 201 });

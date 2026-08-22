@@ -15,7 +15,12 @@ export async function POST(req: NextRequest) {
   await dbConnect();
   const body = await req.json();
   try {
-    const sales = await Sales.create({ nama: body.nama, aktif: true });
+    const sales = await Sales.create({
+      nama: body.nama,
+      aktif: true,
+      bank: body.bank || undefined,
+      nomorRekening: body.nomorRekening || undefined,
+    });
     return NextResponse.json(sales, { status: 201 });
   } catch (err) {
     return NextResponse.json(

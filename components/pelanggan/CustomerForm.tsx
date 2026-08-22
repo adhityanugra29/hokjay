@@ -16,6 +16,8 @@ export default function CustomerForm() {
     whatsapp: "",
     email: "",
     alamat: "",
+    kota: "",
+    termHari: "0",
     catatan: "",
   });
   const [saving, setSaving] = useState(false);
@@ -100,6 +102,22 @@ export default function CustomerForm() {
               value={values.alamat}
               onChange={(e) => setValues((v) => ({ ...v, alamat: e.target.value }))}
               placeholder="Alamat lengkap untuk pengiriman & penagihan"
+            />
+          </Field>
+          <Field label="Kota (opsional)">
+            <Input
+              value={values.kota}
+              onChange={(e) => setValues((v) => ({ ...v, kota: e.target.value }))}
+              placeholder="Contoh: Semarang"
+            />
+          </Field>
+          <Field label="Termin Pembayaran" hint="0 = tunai (bayar di tempat)">
+            <Input
+              type="number"
+              min={0}
+              value={values.termHari}
+              onChange={(e) => setValues((v) => ({ ...v, termHari: e.target.value }))}
+              placeholder="Jumlah hari, contoh: 30"
             />
           </Field>
           <Field label="Catatan (opsional)" span2>

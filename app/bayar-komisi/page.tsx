@@ -1,82 +1,54 @@
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
-import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
-import { RowActionLink } from "@/components/ui/RowAction";
-import { getUnpaidCommissionBySales } from "@/lib/insentif";
-import { rupiah } from "@/lib/format";
+import BayarKomisiSheet from "@/components/insentif/BayarKomisiSheet";
+import { getUnpaidCommissionBySales, getUnpaidCommissionInvoices } from "@/lib/insentif";
+import { getCurrentCashBalance } from "@/lib/keuangan";
+import { dbConnect } from "@/lib/db";
+import { Sales } from "@/models/Sales";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Standalone landing page for Finance (own nav item, not nested under
- * Insentif Sales — see confirmation with the user 2026-08-21): who's still
- * owed sales commission, and a way into paying it off (per sales, batched
- * across their unpaid invoices, with an optional proof-of-transfer upload).
- * See /bayar-komisi/[nama].
+ * "Lembar sekali pakai" per the 2026-08-22 redesign ("3e") — centang sales,
+ * lihat total, bayar sekaligus, dengan konsekuensi ditulis sebelum tombol.
+ * Confirmed with the user to keep the *existing* pay-anytime behavior
+ * (commission becomes payable the moment an invoice is marked lunas) rather
+ * than the mockup's period-lock ("Tutup Periode") workflow — this is a
+ * visual redesign only, not a new closing-cycle feature.
  */
 export default async function BayarKomisiPage() {
+  await dbConnect();
   const rows = await getUnpaidCommissionBySales();
-  const totalOutstanding = rows.reduce((s, r) => s + r.totalKomisi, 0);
+
+  const [invoicesBySales, salesDocs, saldoHariIni] = await Promise.all([
+    Promise.all(rows.map((r) => getUnpaidCommissionInvoices(r.salesNama))),
+    Sales.find({ nama: { $in: rows.map((r) => r.salesNama) } }).lean(),
+    getCurrentCashBalance(),
+  ]);
+
+  const bankByNama = new Map(salesDocs.map((s) => [s.nama, s]));
+
+  const sheetRows = rows.map((r, i) => {
+    const bank = bankByNama.get(r.salesNama);
+    return {
+      salesNama: r.salesNama,
+      invoiceIds: invoicesBySales[i].map((inv) => inv.invoiceId),
+      totalKomisi: r.totalKomisi,
+      invoiceCount: r.invoiceCount,
+      bank: bank?.bank ?? undefined,
+      nomorRekening: bank?.nomorRekening ?? undefined,
+      rekeningTerverifikasi: bank?.rekeningTerverifikasi ?? false,
+    };
+  });
 
   return (
     <>
       <PageHeader
-        title="Pembayaran Komisi"
-        subtitle="UNTUK TIM FINANCE · BAYAR KOMISI SALES PER ORANG ATAU SEKALIGUS"
+        title="Bayar Komisi"
+        subtitle="Centang siapa yang dibayar, lihat totalnya, bayar sekaligus. Setelah dibayar langsung tercatat sebagai uang keluar di Keuangan."
       />
       <div className="p-6 md:p-9">
-        <div className="mb-5 border border-line bg-[#f7f5ee] p-5">
-          <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">
-            Total komisi belum cair (semua sales)
-          </div>
-          <div className="mt-1 text-[1.6rem] font-extrabold text-accent-700">{rupiah(totalOutstanding)}</div>
-        </div>
-
-        <Panel>
-          <PanelHead title="Komisi belum cair per sales" />
-          <TableScroll>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Sales
-                  </th>
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Jumlah Invoice
-                  </th>
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Total Komisi Belum Cair
-                  </th>
-                  <th className="border-b border-line px-5 py-4" />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.salesNama} className="hover:bg-[#fbfaf5]">
-                    <td className="border-b border-line px-5 py-4.5 font-medium">{r.salesNama}</td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{r.invoiceCount} invoice</td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem] font-medium text-accent-700">
-                      {rupiah(r.totalKomisi)}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5">
-                      <RowActionLink href={`/bayar-komisi/${encodeURIComponent(r.salesNama)}`}>
-                        Bayar →
-                      </RowActionLink>
-                    </td>
-                  </tr>
-                ))}
-                {rows.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                      Semua komisi sudah cair. 🎉
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </TableScroll>
-        </Panel>
-
+        <BayarKomisiSheet rows={sheetRows} saldoHariIni={saldoHariIni} />
         <div className="mt-3 font-mono text-[0.72rem] text-muted">
           Butuh lihat siapa yang sudah dibayar dan buktinya?{" "}
           <Link href="/insentif/riwayat" className="text-accent underline underline-offset-2">

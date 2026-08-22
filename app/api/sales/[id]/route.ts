@@ -12,6 +12,9 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/sales/[id]">) 
 
   if (typeof body.aktif === "boolean") sales.aktif = body.aktif;
   if (typeof body.nama === "string" && body.nama.trim()) sales.nama = body.nama.trim();
+  if (body.bank !== undefined) sales.bank = body.bank || undefined;
+  if (body.nomorRekening !== undefined) sales.nomorRekening = body.nomorRekening || undefined;
+  if (typeof body.rekeningTerverifikasi === "boolean") sales.rekeningTerverifikasi = body.rekeningTerverifikasi;
   await sales.save();
 
   return NextResponse.json(sales);
