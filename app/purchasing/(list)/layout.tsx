@@ -2,25 +2,26 @@ import PageHeader from "@/components/layout/PageHeader";
 import SubnavTabs from "@/components/ui/SubnavTabs";
 import { LinkButton } from "@/components/ui/Button";
 import { dbConnect } from "@/lib/db";
-import { PurchaseRequest } from "@/models/PurchaseRequest";
+import { OfficeExpenseRequest } from "@/models/OfficeExpenseRequest";
 
 export const dynamic = "force-dynamic";
 
 export default async function PurchasingLayout({ children }: { children: React.ReactNode }) {
   await dbConnect();
-  const pending = await PurchaseRequest.countDocuments({ status: { $in: ["diajukan", "diproses"] } });
+  const pending = await OfficeExpenseRequest.countDocuments({ status: "diajukan" });
 
   return (
     <>
       <PageHeader
         title="Purchasing"
-        subtitle={`${pending} REQUEST MENUNGGU DIPROSES`}
+        subtitle={`${pending} REQUEST KEBUTUHAN KANTOR MENUNGGU APPROVAL`}
         actions={<LinkButton href="/purchasing/baru">+ Request Baru</LinkButton>}
       />
       <div className="p-6 md:p-9">
         <SubnavTabs
           tabs={[
-            { href: "/purchasing", label: "Request Pembelian" },
+            { href: "/purchasing", label: "Kebutuhan Kantor" },
+            { href: "/purchasing/produk-po", label: "Request Produk PO" },
             { href: "/purchasing/tagihan", label: "Tagihan Pembelian" },
             { href: "/purchasing/inventaris", label: "Inventaris Kantor" },
             { href: "/purchasing/supplier", label: "Supplier" },

@@ -2,49 +2,43 @@ import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { RowActionLink } from "@/components/ui/RowAction";
 import Pill, { type PillVariant } from "@/components/ui/Pill";
 import { dbConnect } from "@/lib/db";
-import { OfficeExpenseRequest } from "@/models/OfficeExpenseRequest";
-import { rupiah, formatDateShort } from "@/lib/format";
+import { PurchaseRequest } from "@/models/PurchaseRequest";
+import { formatDateShort } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_LABEL: Record<string, { label: string; variant: PillVariant }> = {
-  diajukan: { label: "Menunggu Approval", variant: "unpaid" },
-  disetujui: { label: "Disetujui", variant: "draft" },
-  ditolak: { label: "Ditolak", variant: "out" },
-  dibayar: { label: "Sudah Ditransfer", variant: "low" },
-  selesai: { label: "Selesai", variant: "paid" },
+  diajukan: { label: "Menunggu", variant: "unpaid" },
+  diproses: { label: "Diproses", variant: "draft" },
+  dibeli: { label: "Dibeli", variant: "paid" },
+  dibatalkan: { label: "Dibatalkan", variant: "out" },
 };
 
-const KATEGORI_LABEL: Record<string, string> = {
-  listrik: "Listrik",
-  internet: "Internet / WiFi",
-  pulsa: "Pulsa",
-  lainnya: "Lainnya",
-};
-
-/** Kebutuhan Kantor — office operational expenses (listrik, wifi, pulsa, dll), not resale merchandise. See models/OfficeExpenseRequest.ts. */
-export default async function PurchasingKebutuhanKantorPage() {
+export default async function PurchasingRequestPage() {
   await dbConnect();
-  const requests = await OfficeExpenseRequest.find().sort({ createdAt: -1 }).lean();
+  const requests = await PurchaseRequest.find().sort({ createdAt: -1 }).lean();
 
   return (
     <Panel>
-      <PanelHead title="Semua request kebutuhan kantor" />
+      <PanelHead title="Request Produk PO dari Sales" />
       <TableScroll>
         <table className="w-full border-collapse">
           <thead>
             <tr>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                Kebutuhan
+                Nomor
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                Kategori
+                Barang
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                Jumlah
+                Qty
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                Diajukan Oleh
+                Untuk Pelanggan
+              </th>
+              <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
+                Diminta Oleh
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
                 Tanggal
@@ -58,18 +52,20 @@ export default async function PurchasingKebutuhanKantorPage() {
           <tbody>
             {requests.map((r) => {
               const status = STATUS_LABEL[r.status ?? "diajukan"];
+              const canAct = r.status === "diajukan" || r.status === "diproses";
               return (
                 <tr key={String(r._id)} className="hover:bg-[#fbfaf5]">
-                  <td className="border-b border-line px-5 py-4.5 font-medium">
-                    {r.nama}
-                    {r.alasan && <div className="font-mono text-[0.7rem] text-muted">{r.alasan}</div>}
+                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{r.nomor}</td>
+                  <td className="border-b border-line px-5 py-4.5">
+                    <div className="font-medium">{r.namaBarang}</div>
+                    {r.deskripsi && <div className="font-mono text-[0.7rem] text-muted">{r.deskripsi}</div>}
+                  </td>
+                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{r.qty}</td>
+                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.78rem] text-muted">
+                    {r.customer?.nama ?? "—"}
                   </td>
                   <td className="border-b border-line px-5 py-4.5 font-mono text-[0.78rem] text-muted">
-                    {KATEGORI_LABEL[r.kategori] ?? r.kategori}
-                  </td>
-                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{rupiah(r.jumlah)}</td>
-                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.78rem] text-muted">
-                    {r.diajukanOleh ?? "—"}
+                    {r.sales?.nama ?? r.diajukanOleh ?? "—"}
                   </td>
                   <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
                     {formatDateShort(r.createdAt!)}
@@ -78,15 +74,20 @@ export default async function PurchasingKebutuhanKantorPage() {
                     <Pill variant={status.variant}>{status.label}</Pill>
                   </td>
                   <td className="border-b border-line px-5 py-4.5">
-                    <RowActionLink href={`/purchasing/${r._id}`}>Lihat →</RowActionLink>
+                    {canAct && (
+                      <RowActionLink href={`/purchasing/tagihan/baru?requestId=${r._id}`}>
+                        Buat Tagihan →
+                      </RowActionLink>
+                    )}
                   </td>
                 </tr>
               );
             })}
             {requests.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                  Belum ada request kebutuhan kantor. Contoh: bayar tagihan listrik, top up wifi, atau pulsa kantor.
+                <td colSpan={8} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                  Belum ada request produk PO dari sales. Muncul di sini otomatis saat sales mengajukan lewat
+                  Katalog → Request Produk PO.
                 </td>
               </tr>
             )}

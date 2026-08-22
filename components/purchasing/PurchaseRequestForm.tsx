@@ -14,20 +14,21 @@ interface SalesOption {
 }
 
 /**
- * Shared by two entry points: Katalog's "Request Produk PO" (mode "sales" —
- * for an item not yet in the catalog/warehouse that a customer needs, tied
- * to the active customer picked on /penjualan) and Purchasing's own
- * "+ Request Baru" (mode "purchasing" — a general restock need with no
- * specific customer). Either way it lands on Purchasing's desk as a
- * PurchaseRequest ticket for them to source and eventually turn into a
- * Tagihan Pembelian — see components/purchasing/PurchaseBillForm.tsx.
+ * Katalog's "Request Produk PO" — for an item not yet in the
+ * catalog/warehouse that a customer needs, tied to the active customer
+ * picked on /penjualan. Lands on Purchasing's desk (under the "Request
+ * Produk PO" tab) as a PurchaseRequest ticket for them to source and
+ * eventually turn into a Tagihan Pembelian — see
+ * components/purchasing/PurchaseBillForm.tsx. This is exclusively a
+ * resale-merchandise flow — for office operational expenses (listrik,
+ * wifi, pulsa, dll) see components/purchasing/OfficeExpenseForm.tsx
+ * instead (confirmed with the user 2026-08-23: those are a separate,
+ * simpler request/approval flow with no customer or product involved).
  */
 export default function PurchaseRequestForm({
-  mode,
   salesList,
   redirectTo,
 }: {
-  mode: "sales" | "purchasing";
   salesList: SalesOption[];
   redirectTo: string;
 }) {
@@ -49,12 +50,12 @@ export default function PurchaseRequestForm({
       setError("Nama barang wajib diisi.");
       return;
     }
-    if (mode === "sales" && !activeCustomer) {
+    if (!activeCustomer) {
       setError("Pilih pelanggan dulu di halaman Penjualan.");
       return;
     }
     const sales = salesList.find((s) => s._id === salesId);
-    if (mode === "sales" && !sales) {
+    if (!sales) {
       setError("Pilih sales yang mengajukan.");
       return;
     }
@@ -65,14 +66,14 @@ export default function PurchaseRequestForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sumber: mode,
+          sumber: "sales",
           namaBarang,
           deskripsi: deskripsi || undefined,
           qty: Number(qty) || 1,
-          customerId: mode === "sales" ? activeCustomer?.id : undefined,
-          customerNama: mode === "sales" ? activeCustomer?.nama : undefined,
-          salesId: sales?._id,
-          salesNama: sales?.nama,
+          customerId: activeCustomer.id,
+          customerNama: activeCustomer.nama,
+          salesId: sales._id,
+          salesNama: sales.nama,
           catatan: catatan || undefined,
         }),
       });
@@ -92,26 +93,24 @@ export default function PurchaseRequestForm({
   return (
     <Panel className="max-w-2xl p-7">
       <form onSubmit={handleSubmit}>
-        {mode === "sales" && (
-          <div className="mb-5 border border-line bg-[#f7f5ee] p-4 font-sans text-[0.85rem]">
-            {activeCustomer ? (
-              <>
-                Untuk pelanggan: <span className="font-semibold text-ink">{activeCustomer.nama}</span>{" "}
-                <Link href="/penjualan" className="text-accent underline underline-offset-2">
-                  Ganti
-                </Link>
-              </>
-            ) : (
-              <>
-                Belum ada pelanggan aktif —{" "}
-                <Link href="/penjualan" className="text-accent underline underline-offset-2">
-                  pilih pelanggan dulu
-                </Link>
-                .
-              </>
-            )}
-          </div>
-        )}
+        <div className="mb-5 border border-line bg-[#f7f5ee] p-4 font-sans text-[0.85rem]">
+          {activeCustomer ? (
+            <>
+              Untuk pelanggan: <span className="font-semibold text-ink">{activeCustomer.nama}</span>{" "}
+              <Link href="/penjualan" className="text-accent underline underline-offset-2">
+                Ganti
+              </Link>
+            </>
+          ) : (
+            <>
+              Belum ada pelanggan aktif —{" "}
+              <Link href="/penjualan" className="text-accent underline underline-offset-2">
+                pilih pelanggan dulu
+              </Link>
+              .
+            </>
+          )}
+        </div>
 
         <FormGrid>
           <Field label="Nama Barang" span2>
@@ -128,8 +127,8 @@ export default function PurchaseRequestForm({
           <Field label="Qty">
             <Input required type="number" min={1} value={qty} onChange={(e) => setQty(e.target.value)} />
           </Field>
-          <Field label={mode === "sales" ? "Sales (Yang Meminta)" : "Sales (opsional)"}>
-            <Select value={salesId} onChange={(e) => setSalesId(e.target.value)} required={mode === "sales"}>
+          <Field label="Sales (Yang Meminta)">
+            <Select required value={salesId} onChange={(e) => setSalesId(e.target.value)}>
               <option value="">— Pilih sales —</option>
               {salesList.map((s) => (
                 <option key={s._id} value={s._id}>

@@ -24,7 +24,6 @@ export default async function KatalogRequestPOPage() {
       />
       <div className="p-6 md:p-9">
         <PurchaseRequestForm
-          mode="sales"
           salesList={salesList.map((s) => ({ _id: String(s._id), nama: s.nama }))}
           redirectTo="/katalog"
         />
