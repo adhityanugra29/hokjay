@@ -24,3 +24,8 @@ export function jakartaMonthRange(year: number, month: number): { from: Date; to
 export function jakartaMonthEnd(year: number, month: number): Date {
   return jakartaMonthRange(year, month).to;
 }
+
+/** [Jan 1, next Jan 1) as real UTC instants, for a full calendar year in GMT+7 — Akuntansi's "Setahun Penuh" option. */
+export function jakartaYearRange(year: number): { from: Date; to: Date } {
+  return { from: jakartaMonthRange(year, 1).from, to: jakartaMonthRange(year, 12).to };
+}

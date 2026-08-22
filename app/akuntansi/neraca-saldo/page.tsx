@@ -16,9 +16,12 @@ export default async function NeracaSaldoPage({ searchParams }: PageProps<"/akun
   const { field, dir } = parseSort(sp, SORT_FIELDS, "code");
 
   const nowJakarta = currentJakartaMonthYear();
-  const month = Number(sp.bulan) || nowJakarta.month;
+  // bulan=0 means "Setahun Penuh" — `Number(x) || fallback` would treat "0"
+  // as falsy and silently fall back to the current month, so check presence explicitly.
+  const month = sp.bulan !== undefined ? Number(sp.bulan) : nowJakarta.month;
   const year = Number(sp.tahun) || nowJakarta.year;
-  const asOf = jakartaMonthEnd(year, month);
+  const fullYear = month === 0;
+  const asOf = jakartaMonthEnd(year, fullYear ? 12 : month);
 
   const balancesRaw = await getTrialBalance({ to: asOf });
   const totalDebit = balancesRaw.reduce((s, b) => s + (b.normal === "debit" ? b.saldo : 0), 0);
@@ -29,7 +32,10 @@ export default async function NeracaSaldoPage({ searchParams }: PageProps<"/akun
   const balances = hasSort ? sortRows(filtered, field, dir) : filtered;
 
   return (
-    <ReportDocument title="Neraca Saldo (Trial Balance)" periodLabel={`Sampai akhir ${MONTH_NAMES[month - 1]} ${year}`}>
+    <ReportDocument
+      title="Neraca Saldo (Trial Balance)"
+      periodLabel={fullYear ? `Sampai akhir tahun ${year}` : `Sampai akhir ${MONTH_NAMES[month - 1]} ${year}`}
+    >
       <div className="mt-5 overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>

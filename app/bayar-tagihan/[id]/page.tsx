@@ -21,6 +21,18 @@ export default async function BayarTagihanDetailPage({ params }: PageProps<"/bay
         subtitle={`${bill.namaBarang} · SUPPLIER ${bill.supplier.toUpperCase()}`}
       />
       <div className="p-6 md:p-9">
+        {bill.supplierBank && (
+          <div className="mb-5 max-w-2xl border-l-4 border-accent bg-[#f7f5ee] p-4">
+            <div className="font-mono text-[0.68rem] uppercase tracking-wide text-muted">Transfer ke</div>
+            <div className="mt-1 font-sans text-[1rem] font-extrabold">
+              {bill.supplierBank} — {bill.supplierNomorRekening}
+            </div>
+            <div className="mt-1 font-mono text-[0.75rem] text-muted">
+              a.n. {bill.supplier}
+              {bill.supplierAlamat ? ` · ${bill.supplierAlamat}` : ""}
+            </div>
+          </div>
+        )}
         <TagihanPaymentForm billId={String(bill._id)} total={bill.totalTagihan} />
       </div>
     </>

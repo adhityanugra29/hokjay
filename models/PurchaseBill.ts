@@ -17,9 +17,19 @@ const PurchaseBillSchema = new Schema(
 
     namaBarang: { type: String, required: true, trim: true },
     qty: { type: Number, required: true, default: 1, min: 1 },
-    supplier: { type: String, required: true, trim: true },
     hargaSatuan: { type: Number, required: true, min: 0 },
     totalTagihan: { type: Number, required: true, min: 0 },
+
+    // Supplier — snapshotted from models/Supplier.ts at bill-creation time
+    // (same convention as Invoice's customer/sales snapshots) so a later
+    // edit to the supplier's bank/rekening doesn't retroactively change a
+    // historical bill's payment info. `supplier` free-text stays for
+    // standalone bills with no matching Supplier record.
+    supplierRef: { type: Schema.Types.ObjectId, ref: "Supplier" },
+    supplier: { type: String, required: true, trim: true }, // nama usaha snapshot
+    supplierAlamat: { type: String },
+    supplierBank: { type: String },
+    supplierNomorRekening: { type: String },
 
     jatuhTempo: { type: Date },
     catatan: { type: String, trim: true },

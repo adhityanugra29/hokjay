@@ -1,7 +1,7 @@
 import ReportDocument from "@/components/akuntansi/ReportDocument";
 import { getLabaRugi } from "@/lib/akuntansi";
 import { rupiah } from "@/lib/format";
-import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
+import { currentJakartaMonthYear, jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
 import { MONTH_NAMES } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -9,9 +9,12 @@ export const dynamic = "force-dynamic";
 export default async function LabaRugiPage({ searchParams }: PageProps<"/akuntansi/laba-rugi">) {
   const sp = await searchParams;
   const nowJakarta = currentJakartaMonthYear();
-  const month = Number(sp.bulan) || nowJakarta.month;
+  // bulan=0 means "Setahun Penuh" — `Number(x) || fallback` would treat "0"
+  // as falsy and silently fall back to the current month, so check presence explicitly.
+  const month = sp.bulan !== undefined ? Number(sp.bulan) : nowJakarta.month;
   const year = Number(sp.tahun) || nowJakarta.year;
-  const { from, to } = jakartaMonthRange(year, month);
+  const fullYear = month === 0;
+  const { from, to } = fullYear ? jakartaYearRange(year) : jakartaMonthRange(year, month);
   const lr = await getLabaRugi({ from, to });
 
   const Row = ({
@@ -33,13 +36,16 @@ export default async function LabaRugiPage({ searchParams }: PageProps<"/akuntan
 
   const persenLaba = lr.pendapatanBersih > 0 ? Math.round((lr.labaBersih / lr.pendapatanBersih) * 100) : 0;
   const untungRugi = lr.labaBersih >= 0 ? "untung" : "rugi";
-  const daysInMonth = new Date(year, month, 0).getDate();
+  const periodeSingkat = fullYear ? `tahun ${year}` : `${MONTH_NAMES[month - 1]} ${year}`;
+  const periodLabel = fullYear
+    ? `1 Januari – 31 Desember ${year}`
+    : `1 – ${new Date(year, month, 0).getDate()} ${MONTH_NAMES[month - 1]} ${year}`;
 
   return (
     <ReportDocument
       title="Laporan Laba Rugi"
-      periodLabel={`1 – ${daysInMonth} ${MONTH_NAMES[month - 1]} ${year}`}
-      interpretiveNote={`Artinya: setelah semua barang, gaji, dan biaya operasional dihitung, ${MONTH_NAMES[month - 1]} ${year} ${untungRugi} ${rupiah(Math.abs(lr.labaBersih))} — sekitar ${Math.abs(persenLaba)}% dari pendapatan bersih.`}
+      periodLabel={periodLabel}
+      interpretiveNote={`Artinya: setelah semua barang, gaji, dan biaya operasional dihitung, ${periodeSingkat} ${untungRugi} ${rupiah(Math.abs(lr.labaBersih))} — sekitar ${Math.abs(persenLaba)}% dari pendapatan bersih.`}
     >
       <div className="mt-5">
         <div className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">

@@ -45,6 +45,9 @@ export default async function BayarTagihanPage() {
                     Supplier
                   </th>
                   <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
+                    Transfer Ke
+                  </th>
+                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
                     Jatuh Tempo
                   </th>
                   <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
@@ -59,6 +62,15 @@ export default async function BayarTagihanPage() {
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{b.nomor}</td>
                     <td className="border-b border-line px-5 py-4.5 font-medium">{b.namaBarang}</td>
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.78rem] text-muted">{b.supplier}</td>
+                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.75rem]">
+                      {b.supplierBank ? (
+                        <>
+                          {b.supplierBank} — {b.supplierNomorRekening}
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
                       {b.jatuhTempo ? formatDateShort(b.jatuhTempo) : "—"}
                     </td>
@@ -72,7 +84,7 @@ export default async function BayarTagihanPage() {
                 ))}
                 {bills.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                    <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
                       Semua tagihan sudah dibayar. 🎉
                     </td>
                   </tr>

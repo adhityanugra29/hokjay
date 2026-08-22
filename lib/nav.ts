@@ -36,8 +36,10 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Barang",
     items: [
+      // Riwayat Stok isn't its own nav row — redundant with Inventory,
+      // which already surfaces it as a tab (app/produk/(list)/layout.tsx).
+      // Removed per the user's request 2026-08-22.
       { href: "/produk", label: "Inventory", icon: "box", badge: "lowStock" },
-      { href: "/produk/riwayat", label: "Riwayat Stok", icon: "list" },
       { href: "/purchasing", label: "Purchasing", icon: "truck" },
     ],
   },

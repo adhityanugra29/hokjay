@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { PurchaseBill } from "@/models/PurchaseBill";
 import { PurchaseRequest } from "@/models/PurchaseRequest";
+import { Supplier } from "@/models/Supplier";
 import { nextPurchaseBillCode } from "@/lib/counters";
 import { getSession } from "@/lib/auth/session";
 
@@ -29,11 +30,14 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
 
   if (!body.namaBarang?.trim()) return NextResponse.json({ error: "Nama barang wajib diisi" }, { status: 400 });
-  if (!body.supplier?.trim()) return NextResponse.json({ error: "Supplier wajib diisi" }, { status: 400 });
+  if (!body.supplierId) return NextResponse.json({ error: "Supplier wajib dipilih" }, { status: 400 });
   const qty = Number(body.qty) || 0;
   const hargaSatuan = Number(body.hargaSatuan) || 0;
   if (qty <= 0) return NextResponse.json({ error: "Qty harus lebih dari 0" }, { status: 400 });
   if (hargaSatuan <= 0) return NextResponse.json({ error: "Harga satuan harus lebih dari 0" }, { status: 400 });
+
+  const supplier = await Supplier.findById(body.supplierId);
+  if (!supplier) return NextResponse.json({ error: "Supplier tidak ditemukan" }, { status: 400 });
 
   try {
     const nomor = await nextPurchaseBillCode();
@@ -42,7 +46,11 @@ export async function POST(req: NextRequest) {
       request: body.requestId || undefined,
       namaBarang: body.namaBarang.trim(),
       qty,
-      supplier: body.supplier.trim(),
+      supplierRef: supplier._id,
+      supplier: supplier.namaUsaha,
+      supplierAlamat: supplier.alamat,
+      supplierBank: supplier.bank,
+      supplierNomorRekening: supplier.nomorRekening,
       hargaSatuan,
       jatuhTempo: body.jatuhTempo ? new Date(body.jatuhTempo) : undefined,
       catatan: body.catatan || undefined,

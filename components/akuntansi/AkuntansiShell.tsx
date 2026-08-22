@@ -25,7 +25,10 @@ export default function AkuntansiShell({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const nowJakarta = currentJakartaMonthYear();
-  const month = Number(searchParams.get("bulan")) || nowJakarta.month;
+  // bulan=0 means "Setahun Penuh" — can't use `Number(x) || fallback` here,
+  // 0 is falsy in JS and would silently fall back to the current month.
+  const bulanParam = searchParams.get("bulan");
+  const month = bulanParam !== null ? Number(bulanParam) : nowJakarta.month;
   const year = Number(searchParams.get("tahun")) || nowJakarta.year;
 
   return (
@@ -55,7 +58,7 @@ export default function AkuntansiShell({ children }: { children: React.ReactNode
           Periode
         </div>
         <div className="px-6">
-          <PeriodPicker month={month} year={year} currentYear={nowJakarta.year} />
+          <PeriodPicker month={month} year={year} currentYear={nowJakarta.year} allowFullYear />
         </div>
         <div className="mt-2 border-t border-line px-6 pt-3.5 font-mono text-[0.68rem] leading-relaxed text-muted">
           Jurnal umum &amp; buku besar tidak ditampilkan sebagai halaman — keduanya ikut terbawa di unduhan PDF.

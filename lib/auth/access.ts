@@ -33,11 +33,16 @@ export const ADMIN_ONLY_WRITE_PREFIXES = [
   "/api/payment-methods",
   "/api/pengaturan",
 ];
+// /api/suppliers is deliberately NOT admin-only-write like the settings
+// above — suppliers get added ad-hoc by Purchasing as they source new
+// vendors (not curated upfront by Admin like Category/Courier/Payment
+// Method), so any logged-in role can create/edit them, same as
+// /api/purchase-requests and /api/purchase-bills.
 
 export function isAllowedPage(role: UserRole, pathname: string): boolean {
   if (role === "admin") return true;
   // Dashboard-adjacent content, viewable by every role just like "/" itself.
-  if (pathname === "/" || pathname === "/follow-up") return true;
+  if (pathname === "/" || pathname === "/follow-up" || pathname === "/aktivitas") return true;
   const prefixes = ROLE_PREFIXES[role] ?? [];
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }

@@ -1,4 +1,5 @@
 import { Counter } from "@/models/Counter";
+import { currentJakartaMonthYear } from "@/lib/timezone";
 
 /** Atomically allocates the next number in a named sequence. */
 async function nextSeq(name: string): Promise<number> {
@@ -10,9 +11,21 @@ async function nextSeq(name: string): Promise<number> {
   return doc!.seq;
 }
 
+/** "202608" for August 2026 (Jakarta time) — the counter resets every month, one sequence per YYYYMM. */
+function invoiceYearMonth(): string {
+  const { year, month } = currentJakartaMonthYear();
+  return `${year}${String(month).padStart(2, "0")}`;
+}
+
+/**
+ * Format: INV-YYYYMM#### (e.g. INV-2026080001) — resets to 0001 each month,
+ * confirmed with the user 2026-08-22. Invoices created before this change
+ * keep their old INV-#### numbers; only new ones use this format.
+ */
 export async function nextInvoiceNumber(): Promise<string> {
-  const seq = await nextSeq("invoice");
-  return `INV-${String(seq).padStart(4, "0")}`;
+  const yyyymm = invoiceYearMonth();
+  const seq = await nextSeq(`invoice:${yyyymm}`);
+  return `INV-${yyyymm}${String(seq).padStart(4, "0")}`;
 }
 
 /**
@@ -23,9 +36,10 @@ export async function nextInvoiceNumber(): Promise<string> {
  * be off by one.
  */
 export async function peekNextInvoiceNumber(): Promise<string> {
-  const doc = await Counter.findById("invoice");
+  const yyyymm = invoiceYearMonth();
+  const doc = await Counter.findById(`invoice:${yyyymm}`);
   const seq = (doc?.seq ?? 0) + 1;
-  return `INV-${String(seq).padStart(4, "0")}`;
+  return `INV-${yyyymm}${String(seq).padStart(4, "0")}`;
 }
 
 export async function nextCustomerCode(): Promise<string> {

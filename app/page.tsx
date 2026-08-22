@@ -6,6 +6,7 @@ import { dbConnect } from "@/lib/db";
 import { currentPeriod, getSalesRanking } from "@/lib/insentif";
 import { getFollowUpInvoices, getLowStockProducts } from "@/lib/dashboard";
 import { getKeuanganSummary } from "@/lib/keuangan";
+import { getActivityLog } from "@/lib/activity";
 import { rupiah, rupiahCompact } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
 import { MONTH_NAMES } from "@/lib/constants";
@@ -18,12 +19,14 @@ export default async function DashboardPage() {
   const nowJakarta = currentJakartaMonthYear();
   const thisMonthRange = jakartaMonthRange(nowJakarta.year, nowJakarta.month);
 
-  const [followUpAll, ranking, lowStock, keuangan] = await Promise.all([
+  const [followUpAll, ranking, lowStock, keuangan, activity] = await Promise.all([
     getFollowUpInvoices(),
     getSalesRanking(currentPeriod()),
     getLowStockProducts(3),
     getKeuanganSummary(thisMonthRange),
+    getActivityLog(50),
   ]);
+  const recentActivityCount = activity.filter((a) => Date.now() - a.tanggal.getTime() < 24 * 60 * 60 * 1000).length;
 
   const draftCount = followUpAll.filter((i) => i.status === "draft").length;
   const unpaidCount = followUpAll.filter((i) => i.status === "unpaid").length;
@@ -41,16 +44,16 @@ export default async function DashboardPage() {
         subtitle="Titik awal setiap hari. Pilih satu aksi di bawah, atau bereskan daftar yang perlu ditindak."
         actions={
           <Link
-            href="/follow-up"
-            title="Follow-up Yuk"
+            href="/aktivitas"
+            title="Aktivitas"
             className="relative flex h-9 w-9 items-center justify-center border border-line text-ink hover:border-accent hover:text-accent"
           >
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
               <path d="M10 3a5 5 0 0 1 5 5v3l1.5 3H3.5L5 11V8a5 5 0 0 1 5-5zM8 17h4" />
             </svg>
-            {totalNeedsAction > 0 && (
+            {recentActivityCount > 0 && (
               <span className="absolute -right-1.5 -top-1.5 bg-accent px-1 text-[9.5px] font-bold text-white">
-                {totalNeedsAction}
+                {recentActivityCount}
               </span>
             )}
           </Link>

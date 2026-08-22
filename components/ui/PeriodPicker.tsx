@@ -4,8 +4,24 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select } from "@/components/ui/Form";
 import { MONTH_NAMES } from "@/lib/constants";
 
-/** Simple Bulan + Tahun filter, shared by the Akuntansi, Insentif, and Keuangan pages. */
-export default function PeriodPicker({ month, year, currentYear }: { month: number; year: number; currentYear: number }) {
+/**
+ * Simple Bulan + Tahun filter, shared by the Akuntansi, Insentif, and
+ * Keuangan pages. `allowFullYear` (Akuntansi only, confirmed with the user
+ * 2026-08-22) adds a "Setahun Penuh" option that encodes as bulan=0 — every
+ * caller parsing `bulan` must treat 0 as "full year", not fall through to
+ * a default via `Number(sp.bulan) || fallback` (0 is falsy in JS).
+ */
+export default function PeriodPicker({
+  month,
+  year,
+  currentYear,
+  allowFullYear,
+}: {
+  month: number;
+  year: number;
+  currentYear: number;
+  allowFullYear?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,6 +38,7 @@ export default function PeriodPicker({ month, year, currentYear }: { month: numb
   return (
     <div className="mb-5 flex flex-wrap gap-2.5">
       <Select value={month} onChange={(e) => update(Number(e.target.value), year)} className="w-auto">
+        {allowFullYear && <option value={0}>Setahun Penuh</option>}
         {MONTH_NAMES.map((name, idx) => (
           <option key={name} value={idx + 1}>
             {name}

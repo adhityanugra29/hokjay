@@ -22,6 +22,7 @@ export default async function PurchasingLayout({ children }: { children: React.R
           tabs={[
             { href: "/purchasing", label: "Request Pembelian" },
             { href: "/purchasing/tagihan", label: "Tagihan Pembelian" },
+            { href: "/purchasing/supplier", label: "Supplier" },
           ]}
         />
         {children}

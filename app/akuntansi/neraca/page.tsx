@@ -9,9 +9,15 @@ export const dynamic = "force-dynamic";
 export default async function NeracaPage({ searchParams }: PageProps<"/akuntansi/neraca">) {
   const sp = await searchParams;
   const nowJakarta = currentJakartaMonthYear();
-  const month = Number(sp.bulan) || nowJakarta.month;
+  // bulan=0 means "Setahun Penuh" — `Number(x) || fallback` would treat "0"
+  // as falsy and silently fall back to the current month, so check presence explicitly.
+  const month = sp.bulan !== undefined ? Number(sp.bulan) : nowJakarta.month;
   const year = Number(sp.tahun) || nowJakarta.year;
-  const asOf = jakartaMonthEnd(year, month);
+  const fullYear = month === 0;
+  // A balance sheet is always "as of" a single instant — for the whole
+  // year that's simply "as of end of December", same cutoff Desember
+  // itself already produces.
+  const asOf = jakartaMonthEnd(year, fullYear ? 12 : month);
 
   const neraca = await getNeraca(asOf);
   const balanced = Math.abs(neraca.totalAset - (neraca.totalKewajiban + neraca.totalEkuitas)) < 1;
@@ -28,7 +34,7 @@ export default async function NeracaPage({ searchParams }: PageProps<"/akuntansi
   );
 
   return (
-    <ReportDocument title="Neraca" periodLabel={`Per akhir ${MONTH_NAMES[month - 1]} ${year}`}>
+    <ReportDocument title="Neraca" periodLabel={fullYear ? `Per akhir tahun ${year}` : `Per akhir ${MONTH_NAMES[month - 1]} ${year}`}>
       <div className="mt-5 grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div>
           <h3 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">Aset</h3>
