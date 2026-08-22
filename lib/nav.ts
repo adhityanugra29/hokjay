@@ -89,6 +89,3 @@ export function getModuleMeta(pathname: string): ModuleMeta | null {
   if (bestIndex === -1) return null;
   return { groupLabel: bestGroupLabel, index: bestIndex, total: FLAT.length };
 }
-
-/** Every group's display label in nav order (Beranda first), for the header's group-tab strip. */
-export const NAV_GROUP_LABELS: string[] = NAV_GROUPS.map((g) => g.label ?? g.items[0].label);

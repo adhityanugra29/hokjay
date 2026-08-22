@@ -2,14 +2,16 @@
 
 import { usePathname } from "next/navigation";
 import BackHomeControls from "./BackHomeControls";
-import { getModuleMeta, NAV_GROUP_LABELS } from "@/lib/nav";
+import { getModuleMeta } from "@/lib/nav";
 
 /**
  * Module header — giant colored index number, group breadcrumb ("Jualan ·
- * Modul 03 dari 14"), title, and a one-line plain-language description,
- * plus the group-tab strip below showing where this page sits. Redesigned
- * 2026-08-22 ("Rak & Rel v2" — see the design doc discussed with the user)
- * to replace the old flat "small uppercase eyebrow + title" header.
+ * Modul 03 dari 14"), title, and a one-line plain-language description.
+ * Redesigned 2026-08-22 ("Rak & Rel v2" — see the design doc discussed with
+ * the user) to replace the old flat "small uppercase eyebrow + title"
+ * header. The group-tab strip that originally sat below this (Beranda /
+ * Jualan / Barang / Uang / Sistem) was removed per the user's request
+ * 2026-08-22 — the sidebar's own group headings already show this.
  *
  * Every existing call site only ever passes title/subtitle/actions, so this
  * stays a drop-in replacement: `subtitle` is reused verbatim as the
@@ -28,7 +30,7 @@ export default function PageHeader({
   const meta = getModuleMeta(pathname);
 
   return (
-    <div className="border-b-2 border-ink px-6 pt-[22px] pl-16 md:px-9 md:pt-[26px]">
+    <div className="border-b-2 border-ink px-6 pt-[22px] pb-6 pl-16 md:px-9 md:pt-[26px]">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="flex items-start gap-4 md:gap-5">
           {meta && (
@@ -54,22 +56,6 @@ export default function PageHeader({
           {actions}
           <BackHomeControls />
         </div>
-      </div>
-
-      <div className="mt-5 flex flex-wrap gap-0">
-        {NAV_GROUP_LABELS.map((label) => {
-          const isCurrent = meta?.groupLabel === label;
-          return (
-            <span
-              key={label}
-              className={`-mb-[2px] mr-5 border-b-[3px] pb-2 font-sans text-[10.5px] font-medium uppercase tracking-[0.14em] ${
-                isCurrent ? "border-accent font-bold text-accent" : "border-transparent text-muted/70"
-              }`}
-            >
-              {label}
-            </span>
-          );
-        })}
       </div>
     </div>
   );
