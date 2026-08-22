@@ -17,13 +17,12 @@ export const ADMIN_ONLY_ALL_METHODS_PREFIXES = ["/api/admin"];
 
 // Admin-only for *writes* (POST/PUT/PATCH/DELETE) — but GET stays open to
 // any logged-in role, since these are read broadly across the app (Katalog's
-// category filter, InvoiceForm's kurir/zona/metode-pembayaran pickers,
+// category filter, InvoiceForm's kurir/metode-pembayaran pickers,
 // Keuangan's account name lookups, CatalogPrintDoc's global fetch). Only
 // creating/editing/deleting these settings is an Admin-only action.
 export const ADMIN_ONLY_WRITE_PREFIXES = [
   "/api/categories",
   "/api/couriers",
-  "/api/shipping-zones",
   "/api/payment-methods",
   "/api/pengaturan",
 ];

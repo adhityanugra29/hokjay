@@ -4,6 +4,8 @@ const CustomerSchema = new Schema(
   {
     kode: { type: String, required: true, unique: true },
     nama: { type: String, required: true, trim: true },
+    namaToko: { type: String, required: true, trim: true },
+    jenisUsaha: { type: String, required: true, trim: true },
     whatsapp: { type: String, required: true, trim: true },
     email: { type: String, trim: true },
     alamat: { type: String, required: true },

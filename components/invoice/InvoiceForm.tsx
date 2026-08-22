@@ -26,17 +26,12 @@ interface CourierOption {
   _id: string;
   name: string;
 }
-interface ZoneOption {
-  _id: string;
-  name: string;
-  cost: number;
-}
 
 export interface InvoiceFormInitial {
   customerId?: string;
   salesId?: string;
   kurirId?: string;
-  zonaId?: string;
+  ongkosKirim?: number;
   tanggalInvoice?: string;
   tanggalKirim?: string;
   shipAddress?: string;
@@ -46,7 +41,6 @@ export default function InvoiceForm({
   customers,
   salesList,
   couriers,
-  zones,
   nextNumberHint,
   mode = "create",
   invoiceId,
@@ -55,7 +49,6 @@ export default function InvoiceForm({
   customers: CustomerOption[];
   salesList: SalesOption[];
   couriers: CourierOption[];
-  zones: ZoneOption[];
   nextNumberHint: string;
   mode?: "create" | "edit";
   invoiceId?: string;
@@ -73,7 +66,7 @@ export default function InvoiceForm({
   );
   const [tanggalKirim, setTanggalKirim] = useState(initial?.tanggalKirim ?? "");
   const [kurirId, setKurirId] = useState(initial?.kurirId ?? "");
-  const [zonaId, setZonaId] = useState(initial?.zonaId ?? "");
+  const [ongkosKirim, setOngkosKirim] = useState(initial?.ongkosKirim ?? 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,8 +85,6 @@ export default function InvoiceForm({
   }, [activeCustomer]);
 
   const selectedCourier = couriers.find((c) => c._id === kurirId);
-  const selectedZone = zones.find((z) => z._id === zonaId);
-  const ongkosKirim = selectedZone?.cost ?? 0;
   const subtotalProduk = useMemo(
     () => items.reduce((s, i) => s + (i.hargaJual - i.diskonPerUnit) * i.qty, 0),
     [items]
@@ -233,18 +224,13 @@ export default function InvoiceForm({
             ))}
           </Select>
         </Field>
-        <Field label="Zona Pengiriman (jarak)">
-          <Select value={zonaId} onChange={(e) => setZonaId(e.target.value)}>
-            <option value="">— Pilih zona —</option>
-            {zones.map((z) => (
-              <option key={z._id} value={z._id}>
-                {z.name} — {rupiah(z.cost)}
-              </option>
-            ))}
-          </Select>
-        </Field>
         <Field label="Ongkos Kirim">
-          <Input disabled value={rupiah(ongkosKirim)} />
+          <Input
+            type="number"
+            value={ongkosKirim}
+            onChange={(e) => setOngkosKirim(Number(e.target.value) || 0)}
+            placeholder="0"
+          />
         </Field>
       </FormGrid>
 

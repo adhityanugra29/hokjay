@@ -4,18 +4,16 @@ import { dbConnect } from "@/lib/db";
 import { Customer } from "@/models/Customer";
 import { Sales } from "@/models/Sales";
 import { Courier } from "@/models/Courier";
-import { ShippingZone } from "@/models/ShippingZone";
 import { peekNextInvoiceNumber } from "@/lib/counters";
 
 export const dynamic = "force-dynamic";
 
 export default async function InvoiceBaruPage() {
   await dbConnect();
-  const [customers, salesList, couriers, zones, nextNumber] = await Promise.all([
+  const [customers, salesList, couriers, nextNumber] = await Promise.all([
     Customer.find().sort({ nama: 1 }).lean(),
     Sales.find({ aktif: true }).sort({ nama: 1 }).lean(),
     Courier.find().sort({ name: 1 }).lean(),
-    ShippingZone.find().sort({ cost: 1 }).lean(),
     peekNextInvoiceNumber(),
   ]);
 
@@ -32,7 +30,6 @@ export default async function InvoiceBaruPage() {
           }))}
           salesList={salesList.map((s) => ({ _id: String(s._id), nama: s.nama }))}
           couriers={couriers.map((c) => ({ _id: String(c._id), name: c.name }))}
-          zones={zones.map((z) => ({ _id: String(z._id), name: z.name, cost: z.cost }))}
           nextNumberHint={nextNumber}
         />
       </div>

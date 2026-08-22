@@ -18,11 +18,6 @@ interface CourierOption {
   _id: string;
   name: string;
 }
-interface ZoneOption {
-  _id: string;
-  name: string;
-  cost: number;
-}
 
 /**
  * Pre-loads the cart with an existing invoice's items on mount, then renders
@@ -37,7 +32,6 @@ export default function EditInvoiceLoader({
   customers,
   salesList,
   couriers,
-  zones,
 }: {
   invoiceId: string;
   nomor: string;
@@ -46,7 +40,6 @@ export default function EditInvoiceLoader({
   customers: CustomerOption[];
   salesList: SalesOption[];
   couriers: CourierOption[];
-  zones: ZoneOption[];
 }) {
   const { loadItems } = useCart();
   const loaded = useRef(false);
@@ -66,7 +59,6 @@ export default function EditInvoiceLoader({
       customers={customers}
       salesList={salesList}
       couriers={couriers}
-      zones={zones}
       initial={initial}
     />
   );

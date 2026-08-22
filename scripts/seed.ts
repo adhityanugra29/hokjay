@@ -19,7 +19,6 @@ import { CashflowEntry } from "../models/CashflowEntry";
 import { Counter } from "../models/Counter";
 import { Category } from "../models/Category";
 import { Courier } from "../models/Courier";
-import { ShippingZone } from "../models/ShippingZone";
 import { PaymentMethod } from "../models/PaymentMethod";
 import { JournalEntry } from "../models/JournalEntry";
 import { nextCustomerCode, nextProductSku } from "../lib/counters";
@@ -82,7 +81,6 @@ async function main() {
     Counter.deleteMany({}),
     Category.deleteMany({}),
     Courier.deleteMany({}),
-    ShippingZone.deleteMany({}),
     PaymentMethod.deleteMany({}),
     JournalEntry.deleteMany({}),
   ]);
@@ -98,14 +96,6 @@ async function main() {
     { name: "Diambil Sendiri oleh Pelanggan" },
   ]);
   const courierByName = new Map(courierDocs.map((c) => [c.name, c]));
-
-  console.log("Membuat zona pengiriman...");
-  const zoneDocs = await ShippingZone.insertMany([
-    { name: "Diambil Sendiri", cost: 0 },
-    { name: "Dalam Kota (0-15 km)", cost: 150_000 },
-    { name: "Luar Kota (15-100 km)", cost: 450_000 },
-  ]);
-  const zoneByName = new Map(zoneDocs.map((z) => [z.name, z]));
 
   console.log("Membuat metode pembayaran...");
   await PaymentMethod.insertMany([
@@ -227,10 +217,34 @@ async function main() {
 
   console.log("Membuat pelanggan...");
   const customerSeed = [
-    { nama: "Ibu Sari — Toko Kelontong", whatsapp: "0812-3456-7891", alamat: "Jl. Melati Raya No. 8, Jakarta Selatan" },
-    { nama: "Pak Budi", whatsapp: "0821-8877-7031", alamat: "Jl. Merpati No. 12, Bandung" },
-    { nama: "CV Makmur Jaya", whatsapp: "022-4567890", alamat: "Jl. Industri Kav. 22, Tangerang" },
-    { nama: "Dinda Pratiwi", whatsapp: "0857-1234-5678", alamat: "Jl. Anggrek No. 5, Jakarta Timur" },
+    {
+      nama: "Ibu Sari",
+      namaToko: "Toko Kelontong Sari",
+      jenisUsaha: "Toko Kelontong / Ritel",
+      whatsapp: "0812-3456-7891",
+      alamat: "Jl. Melati Raya No. 8, Jakarta Selatan",
+    },
+    {
+      nama: "Pak Budi",
+      namaToko: "Warung Makan Budi",
+      jenisUsaha: "Restoran",
+      whatsapp: "0821-8877-7031",
+      alamat: "Jl. Merpati No. 12, Bandung",
+    },
+    {
+      nama: "CV Makmur Jaya",
+      namaToko: "CV Makmur Jaya",
+      jenisUsaha: "Katering",
+      whatsapp: "022-4567890",
+      alamat: "Jl. Industri Kav. 22, Tangerang",
+    },
+    {
+      nama: "Dinda Pratiwi",
+      namaToko: "Dinda Cafe & Bakery",
+      jenisUsaha: "Cafe",
+      whatsapp: "0857-1234-5678",
+      alamat: "Jl. Anggrek No. 5, Jakarta Timur",
+    },
   ];
   const customers = [];
   for (const c of customerSeed) {
@@ -248,8 +262,8 @@ async function main() {
 
   const kurirInternal = courierByName.get("Kurir Internal")!;
   const ambilSendiriKurir = courierByName.get("Diambil Sendiri oleh Pelanggan")!;
-  const dalamKota = zoneByName.get("Dalam Kota (0-15 km)")!;
-  const ambilSendiriZona = zoneByName.get("Diambil Sendiri")!;
+  const ongkosDalamKota = 150_000;
+  const ongkosAmbilSendiri = 0;
 
   // INV: draft, not finalized (no stock/commission side effects yet)
   await createInvoice({
@@ -269,7 +283,7 @@ async function main() {
     salesId: String(salesByName.get("Avi")!._id),
     salesNama: "Avi",
     kurir: kurirInternal.name,
-    ongkosKirim: dalamKota.cost,
+    ongkosKirim: ongkosDalamKota,
     tanggalKirim: new Date(),
     status: "unpaid",
     items: [{ productId: String(blender._id), qty: 1, hargaJual: blender.hargaRekomendasi }],
@@ -284,7 +298,7 @@ async function main() {
     salesId: String(salesByName.get("Anjas")!._id),
     salesNama: "Anjas",
     kurir: kurirInternal.name,
-    ongkosKirim: dalamKota.cost,
+    ongkosKirim: ongkosDalamKota,
     tanggalKirim: new Date(),
     status: "unpaid",
     items: [
@@ -303,7 +317,7 @@ async function main() {
     salesId: String(salesByName.get("Feby")!._id),
     salesNama: "Feby",
     kurir: kurirInternal.name,
-    ongkosKirim: dalamKota.cost,
+    ongkosKirim: ongkosDalamKota,
     tanggalKirim: new Date(),
     status: "unpaid",
     items: [{ productId: String(kompor._id), qty: 5, hargaJual: kompor.hargaRekomendasi }],
@@ -319,7 +333,7 @@ async function main() {
     salesId: String(salesByName.get("Feby")!._id),
     salesNama: "Feby",
     kurir: ambilSendiriKurir.name,
-    ongkosKirim: ambilSendiriZona.cost,
+    ongkosKirim: ongkosAmbilSendiri,
     tanggalKirim: new Date(),
     status: "unpaid",
     items: [{ productId: String(meja._id), qty: 15, hargaJual: meja.hargaRekomendasi }],

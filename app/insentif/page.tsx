@@ -26,7 +26,7 @@ export default async function InsentifPage({ searchParams }: PageProps<"/insenti
 
   return (
     <>
-      <PageHeader title="Insentif Sales" subtitle="NOMINAL TETAP PER ITEM TERJUAL · DIJUMLAHKAN PER SALES" />
+      <PageHeader title="Leaderboard Sales" subtitle="NOMINAL TETAP PER ITEM TERJUAL · DIJUMLAHKAN PER SALES" />
       <div className="p-6 md:p-9">
         <InsentifOverview basePath="/insentif" month={month} year={year} currentYear={nowJakarta.year} searchParams={sp} />
 

@@ -7,7 +7,6 @@ import { Invoice } from "@/models/Invoice";
 import { Customer } from "@/models/Customer";
 import { Sales } from "@/models/Sales";
 import { Courier } from "@/models/Courier";
-import { ShippingZone } from "@/models/ShippingZone";
 import { Product } from "@/models/Product";
 
 export const dynamic = "force-dynamic";
@@ -47,17 +46,13 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
     };
   });
 
-  const [customers, salesList, couriers, zones] = await Promise.all([
+  const [customers, salesList, couriers] = await Promise.all([
     Customer.find().sort({ nama: 1 }).lean(),
     Sales.find({ aktif: true }).sort({ nama: 1 }).lean(),
     Courier.find().sort({ name: 1 }).lean(),
-    ShippingZone.find().sort({ cost: 1 }).lean(),
   ]);
 
   const selectedCourier = couriers.find((c) => c.name === invoice.kurir);
-  // Invoice only stores the ongkosKirim amount, not which zone it came
-  // from — best-effort match by cost so editing pre-selects it.
-  const selectedZone = zones.find((z) => z.cost === (invoice.ongkosKirim ?? 0));
 
   return (
     <>
@@ -71,7 +66,7 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
             customerId: invoice.customer?.ref ? String(invoice.customer.ref) : undefined,
             salesId: invoice.sales?.ref ? String(invoice.sales.ref) : undefined,
             kurirId: selectedCourier ? String(selectedCourier._id) : undefined,
-            zonaId: selectedZone ? String(selectedZone._id) : undefined,
+            ongkosKirim: invoice.ongkosKirim ?? 0,
             tanggalInvoice: invoice.tanggalInvoice ? invoice.tanggalInvoice.toISOString().slice(0, 10) : undefined,
             tanggalKirim: invoice.tanggalKirim ? invoice.tanggalKirim.toISOString().slice(0, 10) : undefined,
             shipAddress: invoice.shipAddress ?? undefined,
@@ -79,7 +74,6 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
           customers={customers.map((c) => ({ _id: String(c._id), nama: c.nama, alamat: c.alamat, whatsapp: c.whatsapp }))}
           salesList={salesList.map((s) => ({ _id: String(s._id), nama: s.nama }))}
           couriers={couriers.map((c) => ({ _id: String(c._id), name: c.name }))}
-          zones={zones.map((z) => ({ _id: String(z._id), name: z.name, cost: z.cost }))}
         />
       </div>
     </>

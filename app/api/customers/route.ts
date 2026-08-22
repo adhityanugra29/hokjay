@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
     const customer = await Customer.create({
       kode,
       nama: body.nama,
+      namaToko: body.namaToko,
+      jenisUsaha: body.jenisUsaha,
       whatsapp: body.whatsapp,
       email: body.email || undefined,
       alamat: body.alamat,

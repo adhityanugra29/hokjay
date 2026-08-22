@@ -37,7 +37,7 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
     <>
       <PageHeader
         title={customer.nama}
-        subtitle={`${customer.kode} · TOTAL BELANJA ${rupiah(totalBelanja)}`}
+        subtitle={`${customer.kode}${customer.namaToko ? ` · ${customer.namaToko}` : ""}${customer.jenisUsaha ? ` · ${customer.jenisUsaha.toUpperCase()}` : ""} · TOTAL BELANJA ${rupiah(totalBelanja)}`}
       />
       <div className="p-6 md:p-9">
         <Panel>

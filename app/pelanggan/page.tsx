@@ -58,6 +58,9 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
                 <tr>
                   <SortableHeader label="Kode" sortKey="kode" currentSort={field} currentDir={defaultDir} basePath="/pelanggan" searchParams={sp} />
                   <SortableHeader label="Nama" sortKey="nama" currentSort={field} currentDir={defaultDir} basePath="/pelanggan" searchParams={sp} />
+                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
+                    Jenis Usaha
+                  </th>
                   <SortableHeader label="Kontak" sortKey="whatsapp" currentSort={field} currentDir={defaultDir} basePath="/pelanggan" searchParams={sp} />
                   <SortableHeader label="Total Belanja" sortKey="totalBelanja" currentSort={field} currentDir={defaultDir} basePath="/pelanggan" searchParams={sp} align="right" />
                   <th className="border-b border-line px-5 py-4" />
@@ -67,7 +70,13 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
                 {rows.map((c) => (
                   <tr key={String(c._id)} className="hover:bg-[#fbfaf5]">
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{c.kode}</td>
-                    <td className="border-b border-line px-5 py-4.5 font-medium">{c.nama}</td>
+                    <td className="border-b border-line px-5 py-4.5 font-medium">
+                      {c.nama}
+                      {c.namaToko && <div className="font-mono text-[0.7rem] text-muted">{c.namaToko}</div>}
+                    </td>
+                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.75rem] text-muted">
+                      {c.jenisUsaha || "—"}
+                    </td>
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{c.whatsapp}</td>
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
                       {rupiah(c.totalBelanja)}
@@ -89,7 +98,7 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
                 ))}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                    <td colSpan={6} className="px-5 py-8 text-center font-mono text-sm text-muted">
                       Belum ada pelanggan.{" "}
                       <Link href="/pelanggan/baru" className="text-moss-deep underline">
                         Tambah pelanggan pertama

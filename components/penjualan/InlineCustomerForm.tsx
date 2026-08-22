@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/Form";
+import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
+import { JENIS_USAHA_OPTIONS } from "@/lib/constants";
 
 export interface CreatedCustomer {
   _id: string;
@@ -25,7 +26,15 @@ export default function InlineCustomerForm({
   onCreated: (customer: CreatedCustomer) => void;
   onCancel: () => void;
 }) {
-  const [values, setValues] = useState({ nama: "", whatsapp: "", email: "", alamat: "", catatan: "" });
+  const [values, setValues] = useState({
+    nama: "",
+    namaToko: "",
+    jenisUsaha: "",
+    whatsapp: "",
+    email: "",
+    alamat: "",
+    catatan: "",
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,13 +64,35 @@ export default function InlineCustomerForm({
   return (
     <form onSubmit={handleSubmit} className="mt-4 border-t border-line pt-4">
       <FormGrid>
-        <Field label="Nama Pelanggan / Toko" span2>
+        <Field label="Nama Pelanggan (PIC)" span2>
           <Input
             required
             value={values.nama}
             onChange={(e) => setValues((v) => ({ ...v, nama: e.target.value }))}
-            placeholder="Contoh: Ibu Sari — Toko Kelontong"
+            placeholder="Contoh: Ibu Sari"
           />
+        </Field>
+        <Field label="Nama Toko / Usaha">
+          <Input
+            required
+            value={values.namaToko}
+            onChange={(e) => setValues((v) => ({ ...v, namaToko: e.target.value }))}
+            placeholder="Contoh: Toko Kelontong Sari"
+          />
+        </Field>
+        <Field label="Jenis Usaha">
+          <Select
+            required
+            value={values.jenisUsaha}
+            onChange={(e) => setValues((v) => ({ ...v, jenisUsaha: e.target.value }))}
+          >
+            <option value="">— Pilih jenis usaha —</option>
+            {JENIS_USAHA_OPTIONS.map((j) => (
+              <option key={j} value={j}>
+                {j}
+              </option>
+            ))}
+          </Select>
         </Field>
         <Field label="No. WhatsApp">
           <Input

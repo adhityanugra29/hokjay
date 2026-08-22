@@ -13,9 +13,8 @@ interface CourierRow {
 
 /**
  * Couriers are just delivery methods (who physically ships it) — Ongkos
- * Kirim is priced by Zona Pengiriman instead (see ShippingZoneManager),
- * not per courier, since a "Dalam Kota" delivery costs the same regardless
- * of which courier partner does it.
+ * Kirim is entered manually per invoice on the invoice form, not derived
+ * from the courier chosen here.
  */
 export default function CourierManager() {
   const [couriers, setCouriers] = useState<CourierRow[]>([]);
@@ -70,9 +69,6 @@ export default function CourierManager() {
         </form>
       </PanelHead>
       {error && <div className="px-5 pt-3 font-mono text-[0.72rem] text-danger">{error}</div>}
-      <div className="px-5 pt-3 font-mono text-[0.7rem] text-muted">
-        Ongkos kirim sekarang diatur lewat tab &quot;Zona Ongkir&quot;, bukan di sini.
-      </div>
       <TableScroll>
         <table className="w-full border-collapse">
           <thead>
