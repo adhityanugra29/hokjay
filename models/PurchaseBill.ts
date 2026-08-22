@@ -41,6 +41,12 @@ const PurchaseBillSchema = new Schema(
     dibayarBuktiUrl: { type: String }, // Finance's proof-of-transfer
     dibayarCatatan: { type: String, trim: true },
     dibayarOleh: { type: String }, // logged-in Finance user's nama
+
+    // Flipped once an OfficeAsset entry is created referencing this bill
+    // (see models/OfficeAsset.ts) — lets /purchasing/tagihan hide the
+    // "Catat sebagai Aset" action once it's already been done, same
+    // status-flip convention as PurchaseRequest -> PurchaseBill.
+    dicatatSebagaiAset: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
