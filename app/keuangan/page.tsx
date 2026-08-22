@@ -1,26 +1,17 @@
+import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
-import StatCard from "@/components/ui/StatCard";
-import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
-import Pill from "@/components/ui/Pill";
 import { LinkButton } from "@/components/ui/Button";
-import SortableHeader from "@/components/ui/SortableHeader";
 import PeriodPicker from "@/components/ui/PeriodPicker";
-import CashFlowChart from "@/components/keuangan/CashFlowChart";
-import { getKeuanganSummary } from "@/lib/keuangan";
+import { getKeuanganSummary, getCashBook, getCurrentCashBalance } from "@/lib/keuangan";
+import { getFollowUpInvoices } from "@/lib/dashboard";
 import { dbConnect } from "@/lib/db";
-import { Product } from "@/models/Product";
-import { CashflowEntry } from "@/models/CashflowEntry";
 import { rupiah, rupiahCompact, formatDateShort } from "@/lib/format";
-import { parseSort, mongoSort } from "@/lib/sort";
-import { accountName } from "@/lib/coa";
 import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
 import { MONTH_NAMES } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
-const STOK_SORT_FIELDS = ["name", "stok", "hargaRekomendasi", "hargaBeli"] as const;
-const KAS_SORT_FIELDS = ["tanggal", "tipe", "keterangan", "referensi", "nominal"] as const;
-
+/** Keuangan — cash-book with a running balance ("2a" in the 2026-08-22 redesign, replacing the flow-chart version). */
 export default async function KeuanganPage({ searchParams }: PageProps<"/keuangan">) {
   const sp = await searchParams;
   await dbConnect();
@@ -28,183 +19,201 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
   const month = Number(sp.bulan) || nowJakarta.month;
   const year = Number(sp.tahun) || nowJakarta.year;
   const range = jakartaMonthRange(year, month);
-  const summary = await getKeuanganSummary(range);
+  const tipeFilter = sp.tipe === "masuk" || sp.tipe === "keluar" ? sp.tipe : undefined;
 
-  const { field: stokField, dir: stokDir } = parseSort(sp, STOK_SORT_FIELDS, "stok", "stok");
-  const hasStokSort = typeof sp.stoksort === "string";
-  const products = await Product.find().sort(hasStokSort ? mongoSort(stokField, stokDir) : { stok: -1 }).lean();
+  const [summary, cashBook, saldoHariIni, followUp] = await Promise.all([
+    getKeuanganSummary(range),
+    getCashBook(range),
+    getCurrentCashBalance(),
+    getFollowUpInvoices(),
+  ]);
 
-  const { field: kasField, dir: kasDir } = parseSort(sp, KAS_SORT_FIELDS, "tanggal", "kas");
-  const hasKasSort = typeof sp.kassort === "string";
-  const riwayat = await CashflowEntry.find({ tanggal: { $gte: range.from, $lt: range.to } })
-    .sort(hasKasSort ? mongoSort(kasField, kasDir) : { tanggal: -1 })
-    .limit(50);
+  const piutang = followUp.filter((i) => i.status === "unpaid");
+  const totalPiutang = piutang.reduce((s, i) => s + i.grandTotal, 0);
+  const tertuaHari = piutang.length > 0 ? Math.max(...piutang.map((i) => i.hariBerjalan)) : 0;
+
+  const displayedRows = cashBook.rows.filter((r) => {
+    if (r.isOpeningRow) return true;
+    if (!tipeFilter) return true;
+    return tipeFilter === "masuk" ? r.masuk !== undefined : r.keluar !== undefined;
+  });
+
+  function tipeLink(tipe?: "masuk" | "keluar") {
+    const params = new URLSearchParams();
+    params.set("bulan", String(month));
+    params.set("tahun", String(year));
+    if (tipe) params.set("tipe", tipe);
+    return `/keuangan?${params.toString()}`;
+  }
 
   return (
     <>
       <PageHeader
         title="Keuangan"
-        subtitle={`RINGKASAN ARUS KAS & NILAI STOK · ${MONTH_NAMES[month - 1].toUpperCase()} ${year}`}
+        subtitle="Uang yang benar-benar keluar-masuk kas toko, urut tanggal. Kolom paling kanan adalah sisa kas setelah transaksi itu."
         actions={
           <>
             <LinkButton href="/keuangan/transaksi?tipe=masuk" variant="ghost">
-              + Catat Pemasukan
+              + Pemasukan
             </LinkButton>
-            <LinkButton href="/keuangan/transaksi?tipe=keluar">+ Catat Pengeluaran</LinkButton>
+            <LinkButton href="/keuangan/transaksi?tipe=keluar">+ Pengeluaran</LinkButton>
           </>
         }
       />
       <div className="p-6 md:p-9">
         <PeriodPicker month={month} year={year} currentYear={nowJakarta.year} />
 
-        <div className="mb-5 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-          <StatCard
-            label={`Uang Masuk (${MONTH_NAMES[month - 1]})`}
-            value={rupiahCompact(summary.masukTotal)}
-            accent="teal"
-            deltaTone="up"
-            delta="dari invoice lunas & pemasukan lain"
-          />
-          <StatCard
-            label={`Uang Keluar (${MONTH_NAMES[month - 1]})`}
-            value={rupiahCompact(summary.keluarTotal)}
-            accent="clay"
-            deltaTone="warn"
-            delta="untuk pembelian/restock barang"
-          />
-          <StatCard
-            label="Arus Kas Bersih"
-            value={rupiahCompact(summary.netTotal)}
-            accent="violet"
-            deltaTone="violet"
-            delta={`masuk − keluar ${MONTH_NAMES[month - 1]}`}
-          />
-          <StatCard
-            label="Nilai Stok di Gudang"
-            value={rupiahCompact(summary.nilaiStok)}
-            accent="gold"
-            deltaTone="gold"
-            delta={`${summary.productCount} produk, harga jual saat ini`}
-          />
+        <div className="mb-6 grid grid-cols-2 border-2 border-ink bg-panel lg:grid-cols-4">
+          <div className="border-b border-r border-line p-4.5 lg:border-b-0">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+              Saldo awal {MONTH_NAMES[month - 1]}
+            </div>
+            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.3rem] font-extrabold">
+              {rupiah(cashBook.saldoAwal)}
+            </div>
+          </div>
+          <div className="border-b border-r-0 border-line p-4.5 lg:border-b-0 lg:border-r">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+              Uang masuk
+            </div>
+            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.3rem] font-extrabold">
+              + {rupiah(cashBook.totalMasuk)}
+            </div>
+          </div>
+          <div className="border-r border-line p-4.5">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+              Uang keluar
+            </div>
+            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.3rem] font-extrabold text-accent">
+              − {rupiah(cashBook.totalKeluar)}
+            </div>
+          </div>
+          <div className="bg-ink p-4.5 text-white">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              Sisa kas hari ini
+            </div>
+            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.4rem] font-extrabold">
+              {rupiah(saldoHariIni)}
+            </div>
+          </div>
         </div>
 
-        <Panel className="mb-5">
-          <PanelHead title="Arus Kas — Uang Masuk & Uang Keluar" />
-          <CashFlowChart
-            masukTotal={summary.masukTotal}
-            keluarTotal={summary.keluarTotal}
-            netTotal={summary.netTotal}
-            nodes={summary.nodes}
-          />
-        </Panel>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-ink pb-2.5">
+              <div className="font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
+                Buku kas — {MONTH_NAMES[month - 1]} {year}
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  href={tipeLink()}
+                  className={`border px-2.5 py-1.5 font-mono text-[0.7rem] ${!tipeFilter ? "border-ink bg-ink text-white" : "border-line text-ink hover:border-accent"}`}
+                >
+                  Semua
+                </Link>
+                <Link
+                  href={tipeLink("masuk")}
+                  className={`border px-2.5 py-1.5 font-mono text-[0.7rem] ${tipeFilter === "masuk" ? "border-ink bg-ink text-white" : "border-line text-ink hover:border-accent"}`}
+                >
+                  Masuk
+                </Link>
+                <Link
+                  href={tipeLink("keluar")}
+                  className={`border px-2.5 py-1.5 font-mono text-[0.7rem] ${tipeFilter === "keluar" ? "border-ink bg-ink text-white" : "border-line text-ink hover:border-accent"}`}
+                >
+                  Keluar
+                </Link>
+              </div>
+            </div>
 
-        <Panel className="mb-5">
-          <PanelHead title="Stock on Hand — nilai per produk" />
-          <TableScroll>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <SortableHeader label="Produk" sortKey="name" currentSort={stokField} currentDir={stokDir} basePath="/keuangan" searchParams={sp} paramPrefix="stok" />
-                  <SortableHeader label="Stok" sortKey="stok" currentSort={stokField} currentDir={stokDir} basePath="/keuangan" searchParams={sp} paramPrefix="stok" />
-                  <SortableHeader label="Harga Rekomendasi" sortKey="hargaRekomendasi" currentSort={stokField} currentDir={stokDir} basePath="/keuangan" searchParams={sp} paramPrefix="stok" />
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Nilai Stok
-                  </th>
-                  <SortableHeader label="Harga Beli" sortKey="hargaBeli" currentSort={stokField} currentDir={stokDir} basePath="/keuangan" searchParams={sp} paramPrefix="stok" />
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Modal Tertanam
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((p) => (
-                  <tr key={String(p._id)} className="hover:bg-[#fbfaf5]">
-                    <td className="border-b border-line px-5 py-4.5 font-medium">{p.name}</td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{p.stok}</td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
-                      {rupiah(p.hargaRekomendasi)}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
-                      {rupiah(p.stok * p.hargaRekomendasi)}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
-                      {rupiah(p.hargaBeli)}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
-                      {rupiah(p.stok * p.hargaBeli)}
-                    </td>
-                  </tr>
-                ))}
-                {products.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                      Belum ada produk.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </TableScroll>
-        </Panel>
+            <div className="grid grid-cols-[58px_1fr_120px_120px_130px] gap-3.5 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted">
+              <span>Tgl</span>
+              <span>Keterangan</span>
+              <span className="text-right">Masuk</span>
+              <span className="text-right">Keluar</span>
+              <span className="text-right">Sisa kas</span>
+            </div>
+            {displayedRows.map((r) => (
+              <div
+                key={r.id}
+                className={`grid grid-cols-[58px_1fr_120px_120px_130px] gap-3.5 border-b border-line py-3 text-[0.82rem] ${r.isOpeningRow ? "bg-[#f7f5ee] font-semibold" : ""}`}
+              >
+                <span className="font-mono text-[0.72rem] text-muted">{formatDateShort(r.tanggal)}</span>
+                <span>
+                  <span className="font-medium">{r.keterangan}</span>
+                  {r.sub && <span className="ml-1 font-mono text-[0.7rem] text-muted">· {r.sub}</span>}
+                </span>
+                <span className="text-right font-mono">{r.masuk ? rupiah(r.masuk) : ""}</span>
+                <span className="text-right font-mono text-accent">{r.keluar ? rupiah(r.keluar) : ""}</span>
+                <span className="text-right font-mono font-semibold">{rupiah(r.saldoBerjalan)}</span>
+              </div>
+            ))}
+            {displayedRows.length <= 1 && (
+              <div className="border-b border-line py-8 text-center font-mono text-sm text-muted">
+                Belum ada transaksi pada periode ini.
+              </div>
+            )}
+            <div className="grid grid-cols-[58px_1fr_120px_120px_130px] gap-3.5 border-t-2 border-ink py-3.5 font-sans text-[0.85rem] font-extrabold">
+              <span className="col-span-2">Total</span>
+              <span className="text-right">{rupiah(cashBook.totalMasuk)}</span>
+              <span className="text-right text-accent">{rupiah(cashBook.totalKeluar)}</span>
+              <span className="text-right">{rupiah(cashBook.saldoAkhir)}</span>
+            </div>
+          </div>
 
-        <Panel>
-          <PanelHead title={`Riwayat arus kas — ${MONTH_NAMES[month - 1]} ${year}`} />
-          <TableScroll>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <SortableHeader label="Tanggal" sortKey="tanggal" currentSort={kasField} currentDir={kasDir} basePath="/keuangan" searchParams={sp} paramPrefix="kas" />
-                  <SortableHeader label="Tipe" sortKey="tipe" currentSort={kasField} currentDir={kasDir} basePath="/keuangan" searchParams={sp} paramPrefix="kas" />
-                  <SortableHeader label="Keterangan" sortKey="keterangan" currentSort={kasField} currentDir={kasDir} basePath="/keuangan" searchParams={sp} paramPrefix="kas" />
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Akun
-                  </th>
-                  <SortableHeader label="Referensi" sortKey="referensi" currentSort={kasField} currentDir={kasDir} basePath="/keuangan" searchParams={sp} paramPrefix="kas" />
-                  <SortableHeader label="Nominal" sortKey="nominal" currentSort={kasField} currentDir={kasDir} basePath="/keuangan" searchParams={sp} paramPrefix="kas" />
-                  <th className="border-b border-line px-5 py-4" />
-                </tr>
-              </thead>
-              <tbody>
-                {riwayat.map((r) => (
-                  <tr key={String(r._id)} className="hover:bg-[#fbfaf5]">
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
-                      {formatDateShort(r.tanggal ?? r.createdAt!)}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5">
-                      {r.tipe === "masuk" ? <Pill variant="ok">Masuk</Pill> : <Pill variant="out">Keluar</Pill>}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5">{r.keterangan}</td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.75rem] text-muted">
-                      {r.akunKode ? `${r.akunKode} — ${accountName(r.akunKode)}` : "—"}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{r.referensi ?? "—"}</td>
-                    <td
-                      className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]"
-                      style={{ color: r.tipe === "masuk" ? "#087a52" : "var(--color-clay)" }}
-                    >
-                      {r.tipe === "masuk" ? "+" : "−"}
-                      {rupiah(r.nominal)}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5">
-                      {r.buktiUrl && (
-                        <a href={r.buktiUrl} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-                          Lihat bukti
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {riwayat.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                      Belum ada riwayat arus kas pada periode ini.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </TableScroll>
-        </Panel>
+          <div>
+            <div className="border-b-2 border-ink pb-2.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
+              Rekap kategori {MONTH_NAMES[month - 1]}
+            </div>
+            {summary.nodes.map((n) => (
+              <div key={n.label} className="flex items-center justify-between gap-2.5 border-b border-line py-2.5 font-sans text-[0.82rem]">
+                <span>{n.label}</span>
+                <b className={n.tipe === "keluar" ? "text-accent" : ""}>
+                  {n.tipe === "masuk" ? "+" : "−"} {rupiahCompact(n.value)}
+                </b>
+              </div>
+            ))}
+            {summary.nodes.length === 0 && (
+              <div className="py-4 text-center font-mono text-[0.75rem] text-muted">Belum ada transaksi.</div>
+            )}
+            <div className="flex items-center justify-between gap-2.5 py-3 font-sans text-[0.9rem] font-extrabold">
+              <span>Bertambah bulan ini</span>
+              <span>{summary.netTotal >= 0 ? "+" : "−"} {rupiahCompact(Math.abs(summary.netTotal))}</span>
+            </div>
+
+            <div className="mt-6 border-b-2 border-ink pb-2.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
+              Belum jadi kas
+            </div>
+            <div className="border-b border-line py-3">
+              <div className="flex items-baseline justify-between gap-2.5">
+                <span className="font-sans text-[0.82rem]">Piutang pelanggan</span>
+                <b className="font-sans text-[1rem] text-accent">{rupiahCompact(totalPiutang)}</b>
+              </div>
+              <div className="mt-1 font-mono text-[0.68rem] text-muted">
+                {piutang.length} invoice{piutang.length > 0 ? ` · tertua ${tertuaHari} hari` : ""} ·{" "}
+                <Link href="/invoice" className="text-accent no-underline hover:underline">
+                  tagih sekarang →
+                </Link>
+              </div>
+            </div>
+            <div className="border-b border-line py-3">
+              <div className="flex items-baseline justify-between gap-2.5">
+                <span className="font-sans text-[0.82rem]">Nilai stok gudang</span>
+                <b className="font-sans text-[1rem]">{rupiahCompact(summary.nilaiStok)}</b>
+              </div>
+              <div className="mt-1 font-mono text-[0.68rem] text-muted">
+                {summary.productCount} produk ·{" "}
+                <Link href="/produk" className="text-accent no-underline hover:underline">
+                  lihat inventory →
+                </Link>
+              </div>
+            </div>
+            <div className="mt-3.5 border-l-4 border-accent bg-[#f7f5ee] p-3.5 font-sans text-[0.75rem] leading-relaxed">
+              Piutang dan stok <b>belum</b> terhitung di sisa kas — keduanya baru jadi uang setelah pelanggan bayar
+              atau barang terjual.
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );

@@ -1,6 +1,7 @@
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Product } from "@/models/Product";
+import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 
 export type HotBadge = "terlaris" | "stok" | "insentif";
 
@@ -121,6 +122,28 @@ export async function getFollowUpInvoices(): Promise<FollowUpInvoiceRow[]> {
       hariBerjalan,
     };
   });
+}
+
+export interface LowStockProduct {
+  _id: string;
+  name: string;
+  stok: number;
+}
+
+/** Products at or below LOW_STOCK_THRESHOLD — powers Beranda's "Perlu ditindak" stok-tipis row. */
+export async function getLowStockProducts(limit = 3): Promise<LowStockProduct[]> {
+  await dbConnect();
+  const products = await Product.find({ stok: { $lte: LOW_STOCK_THRESHOLD }, isCustom: { $ne: true } })
+    .sort({ stok: 1 })
+    .limit(limit)
+    .lean();
+  return products.map((p) => ({ _id: String(p._id), name: p.name, stok: p.stok }));
+}
+
+/** Total count of low-stock products (not just the capped preview list). */
+export async function countLowStockProducts(): Promise<number> {
+  await dbConnect();
+  return Product.countDocuments({ stok: { $lte: LOW_STOCK_THRESHOLD }, isCustom: { $ne: true } });
 }
 
 export function summarizeFollowUpBySales(rows: FollowUpInvoiceRow[]): FollowUpSalesSummary[] {

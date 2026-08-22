@@ -1,5 +1,4 @@
-import { Panel, PanelHead } from "@/components/ui/Panel";
-import PeriodPicker from "@/components/ui/PeriodPicker";
+import ReportDocument from "@/components/akuntansi/ReportDocument";
 import { getLabaRugi } from "@/lib/akuntansi";
 import { rupiah } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
@@ -32,31 +31,42 @@ export default async function LabaRugiPage({ searchParams }: PageProps<"/akuntan
     </div>
   );
 
+  const persenLaba = lr.pendapatanBersih > 0 ? Math.round((lr.labaBersih / lr.pendapatanBersih) * 100) : 0;
+  const untungRugi = lr.labaBersih >= 0 ? "untung" : "rugi";
+  const daysInMonth = new Date(year, month, 0).getDate();
+
   return (
-    <>
-      <PeriodPicker month={month} year={year} currentYear={nowJakarta.year} />
-      <Panel id="report-doc">
-        <PanelHead title={`Laporan Laba Rugi — ${MONTH_NAMES[month - 1]} ${year}`} />
-        <div className="p-6">
-          <Row label="Penjualan Bruto" value={lr.penjualanBruto} />
-          <Row label="Pendapatan Ongkos Kirim" value={lr.pendapatanOngkosKirim} />
-          <Row label="Diskon Penjualan" value={-lr.diskonPenjualan} />
-          <Row label="Pendapatan Bersih" value={lr.pendapatanBersih} bold />
-
-          <div className="h-4" />
-          <Row label="Harga Pokok Penjualan (HPP)" value={-lr.hpp} />
-          <Row label="Laba Kotor" value={lr.labaKotor} bold />
-
-          <div className="h-4" />
-          {lr.beban.map((b) => (
-            <Row key={b.code} label={`${b.code} — ${b.name}`} value={-b.total} indent />
-          ))}
-          <Row label="Total Beban" value={-lr.totalBeban} />
-
-          <div className="h-4" />
-          <Row label={lr.labaBersih >= 0 ? "Laba Bersih" : "Rugi Bersih"} value={lr.labaBersih} bold />
+    <ReportDocument
+      title="Laporan Laba Rugi"
+      periodLabel={`1 – ${daysInMonth} ${MONTH_NAMES[month - 1]} ${year}`}
+      interpretiveNote={`Artinya: setelah semua barang, gaji, dan biaya operasional dihitung, ${MONTH_NAMES[month - 1]} ${year} ${untungRugi} ${rupiah(Math.abs(lr.labaBersih))} — sekitar ${Math.abs(persenLaba)}% dari pendapatan bersih.`}
+    >
+      <div className="mt-5">
+        <div className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+          Pendapatan
         </div>
-      </Panel>
-    </>
+        <Row label="Penjualan Bruto" value={lr.penjualanBruto} />
+        <Row label="Pendapatan Ongkos Kirim" value={lr.pendapatanOngkosKirim} />
+        <Row label="Diskon Penjualan" value={-lr.diskonPenjualan} />
+        <Row label="Pendapatan Bersih" value={lr.pendapatanBersih} bold />
+
+        <div className="mt-5 mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+          Harga Pokok
+        </div>
+        <Row label="Harga Pokok Penjualan (HPP)" value={-lr.hpp} />
+        <Row label="Laba Kotor" value={lr.labaKotor} bold />
+
+        <div className="mt-5 mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+          Beban Usaha
+        </div>
+        {lr.beban.map((b) => (
+          <Row key={b.code} label={`${b.code} — ${b.name}`} value={-b.total} indent />
+        ))}
+        <Row label="Total Beban" value={-lr.totalBeban} />
+
+        <div className="h-2" />
+        <Row label={lr.labaBersih >= 0 ? "Laba Bersih" : "Rugi Bersih"} value={lr.labaBersih} bold />
+      </div>
+    </ReportDocument>
   );
 }

@@ -51,20 +51,9 @@ export const CUSTOM_ORDER_CATEGORIES: {
   { id: "lainnya", label: "Lainnya", rate: 950_000 },
 ];
 
-export const NAV_ITEMS: { href: string; label: string; num: string }[] = [
-  { href: "/", label: "Dasbor", num: "01" },
-  { href: "/penjualan", label: "Penjualan", num: "02" },
-  { href: "/invoice", label: "Invoice", num: "03" },
-  { href: "/produk", label: "Inventory", num: "04" },
-  { href: "/pelanggan", label: "Pelanggan", num: "05" },
-  { href: "/insentif", label: "Leaderboard Sales", num: "06" },
-  { href: "/bayar-komisi", label: "Bayar Komisi", num: "07" },
-  { href: "/purchasing", label: "Purchasing", num: "08" },
-  { href: "/bayar-tagihan", label: "Bayar Tagihan", num: "09" },
-  { href: "/keuangan", label: "Keuangan", num: "10" },
-  { href: "/akuntansi", label: "Akuntansi", num: "11" },
-  { href: "/admin", label: "Admin", num: "12" },
-];
+// Sidebar nav is now grouped (Jualan/Barang/Uang/Sistem) with icons — see
+// lib/nav.ts's NAV_GROUPS, which replaced the old flat NAV_ITEMS list here
+// as of the 2026-08-22 "Rak & Rel v2" redesign.
 
 export const MONTH_NAMES = [
   "Januari",
