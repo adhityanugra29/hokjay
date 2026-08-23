@@ -83,7 +83,7 @@ export default function AppShell({
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <Logo tone="ink" fill full />
+          <Logo tone="ink" fill full border={false} shadow />
 
           <nav className="flex flex-col overflow-y-auto py-2">
             {visibleGroups.map((group) => (
