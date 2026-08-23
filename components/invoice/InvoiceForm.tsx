@@ -59,6 +59,12 @@ export default function InvoiceForm({
   const { activeCustomer } = useActiveCustomer();
 
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
+  // Pelanggan is picked upstream on /penjualan (or already set when editing
+  // an existing invoice) — this form shows it read-only at the top by
+  // default, only opening back up to a picker when there's genuinely no
+  // customer yet or the user explicitly clicks "Ubah". Confirmed with the
+  // user 2026-08-23.
+  const [editingCustomer, setEditingCustomer] = useState(false);
   const [shipAddress, setShipAddress] = useState(initial?.shipAddress ?? "");
   const [salesId, setSalesId] = useState(initial?.salesId ?? "");
   const [tanggalInvoice, setTanggalInvoice] = useState(
@@ -110,8 +116,13 @@ export default function InvoiceForm({
   function selectCustomer(id: string) {
     setCustomerId(id);
     const c = customers.find((c) => c._id === id);
-    if (c) setShipAddress(c.alamat);
+    if (c) {
+      setShipAddress(c.alamat);
+      setEditingCustomer(false); // collapse back to the read-only view once a real pick is made
+    }
   }
+
+  const selectedCustomer = customers.find((c) => c._id === customerId);
 
   async function submit(status: "draft" | "unpaid") {
     setError(null);
@@ -166,8 +177,56 @@ export default function InvoiceForm({
     }
   }
 
+  const showCustomerPicker = !customerId || editingCustomer;
+
   return (
     <Panel className="max-w-4xl p-7">
+      {/* Pelanggan sits at the very top and is read-only by default — it's
+          already picked upstream (on /penjualan, or from the invoice being
+          edited); "Ubah" reopens the picker inline instead of it being a
+          plain editable dropdown mixed in with the rest of the fields. */}
+      <div className="mb-5 border border-line bg-[#f7f5ee] p-4">
+        <label className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Pelanggan</label>
+        {showCustomerPicker ? (
+          <div className="mt-1.5">
+            <Select value={customerId} onChange={(e) => selectCustomer(e.target.value)}>
+              <option value="">— Pilih pelanggan —</option>
+              {customers.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.nama}
+                </option>
+              ))}
+            </Select>
+            <div className="mt-1.5 flex flex-wrap items-center gap-3 font-mono text-[0.7rem] text-muted">
+              <Link href="/pelanggan/baru" className="text-moss underline">
+                Tambah pelanggan baru
+              </Link>
+              {customerId && (
+                <button type="button" onClick={() => setEditingCustomer(false)} className="cursor-pointer underline">
+                  Batal
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-1.5 flex items-center justify-between gap-3">
+            <div>
+              <div className="font-sans text-[1rem] font-bold">{selectedCustomer?.nama}</div>
+              {selectedCustomer?.whatsapp && (
+                <div className="font-mono text-[0.72rem] text-muted">{selectedCustomer.whatsapp}</div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditingCustomer(true)}
+              className="cursor-pointer border border-line bg-panel px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink hover:border-accent hover:text-accent"
+            >
+              Ubah
+            </button>
+          </div>
+        )}
+      </div>
+
       <FormGrid className="mb-5 max-w-[420px]">
         <Field label="Nomor Invoice">
           <Input disabled value={nextNumberHint} />
@@ -178,22 +237,6 @@ export default function InvoiceForm({
       </FormGrid>
 
       <FormGrid>
-        <Field label="Pelanggan">
-          <Select value={customerId} onChange={(e) => selectCustomer(e.target.value)}>
-            <option value="">— Pilih pelanggan —</option>
-            {customers.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.nama}
-              </option>
-            ))}
-          </Select>
-          <div className="mt-1 font-mono text-[0.7rem] text-muted">
-            Belum ada di daftar?{" "}
-            <Link href="/pelanggan/baru" className="text-moss underline">
-              Tambah pelanggan baru
-            </Link>
-          </div>
-        </Field>
         <Field label="Sales (Yang Closing)">
           <Select value={salesId} onChange={(e) => setSalesId(e.target.value)}>
             <option value="">— Pilih sales —</option>
