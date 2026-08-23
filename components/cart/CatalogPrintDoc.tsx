@@ -5,6 +5,7 @@ import { rupiah } from "@/lib/format";
 import { CUSTOM_ORDER_CATEGORIES } from "@/lib/constants";
 import { useCatalogSelection } from "@/components/katalog/CatalogSelectionProvider";
 import { useActiveCustomer } from "@/components/penjualan/ActiveCustomerProvider";
+import Logo from "@/components/layout/Logo";
 
 interface CatalogProduct {
   _id: string;
@@ -92,8 +93,8 @@ export default function CatalogPrintDoc() {
       >
         {/* Cover */}
       <div className="bg-accent px-12 py-14 text-white">
-        <div className="mb-10 flex items-baseline justify-between gap-4">
-          <span className="text-[19px] font-extrabold">CV HORECA JAYA</span>
+        <div className="mb-10 flex items-center justify-between gap-4">
+          <Logo tone="white" />
           <span className="text-[13px] tracking-[0.12em] text-[rgba(255,255,255,0.85)] uppercase">
             Katalog · {periodLabel}
           </span>
@@ -212,7 +213,9 @@ export default function CatalogPrintDoc() {
 
       {/* Closing CTA */}
       <div className="break-inside-avoid bg-accent px-12 py-12 text-white">
-        <div className="mb-3 text-[12px] tracking-[0.14em] text-[rgba(255,255,255,0.85)] uppercase">CV HORECA JAYA</div>
+        <div className="mb-4">
+          <Logo tone="white" size="sm" />
+        </div>
         <h2 className="max-w-[26ch] text-[30px] leading-tight font-extrabold">
           Kirim daftar barangmu hari ini, invoice keluar hari ini juga.
         </h2>

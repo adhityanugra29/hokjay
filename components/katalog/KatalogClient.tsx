@@ -5,6 +5,7 @@ import Link from "next/link";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 import { useActiveCustomer } from "@/components/penjualan/ActiveCustomerProvider";
+import Logo from "@/components/layout/Logo";
 
 export default function KatalogClient({
   products,
@@ -104,8 +105,11 @@ export default function KatalogClient({
         <div className="mb-2 font-sans text-xs uppercase tracking-[0.12em] text-accent">
           Penjualan
         </div>
+        <div className="mb-3.5">
+          <Logo size="sm" />
+        </div>
         <h1 className="relative max-w-xl font-sans text-[2.3rem] leading-tight font-extrabold">
-          Katalog CV HORECA JAYA
+          Katalog
         </h1>
         <p className="mt-3 font-sans text-[0.78rem] text-muted">
           STOK TER-UPDATE OTOMATIS · {products.length} PRODUK TERSEDIA

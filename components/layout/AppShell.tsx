@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { NAV_GROUPS } from "@/lib/nav";
 import { isAllowedPage } from "@/lib/auth/access";
 import NavIcon from "./NavIcons";
+import Logo from "./Logo";
 import type { UserRole } from "@/models/User";
 
 function isActive(pathname: string, href: string) {
@@ -83,11 +84,9 @@ export default function AppShell({
           }`}
         >
           <div className="border-b-2 border-white/25 px-5 py-[18px]">
-            <div className="font-sans text-[16px] font-extrabold leading-tight tracking-tight">
-              CV HORECA JAYA
-            </div>
-            <div className="mt-1.5 font-sans text-[9.5px] uppercase tracking-[0.16em] text-white/45">
-              Kelola usaha
+            <Logo tone="white" size="sm" />
+            <div className="mt-2 font-sans text-[9.5px] uppercase tracking-[0.16em] text-white/45">
+              CV Horeca Jaya · Kelola usaha
             </div>
           </div>
 

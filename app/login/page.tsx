@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Field, FormActions, Input } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
+import Logo from "@/components/layout/Logo";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -44,9 +45,11 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper p-6">
       <div className="w-full max-w-sm">
-        <div className="mb-7 text-center">
-          <div className="font-sans text-[1.1rem] font-extrabold">CV HORECA JAYA</div>
-          <div className="mt-1 font-sans text-[0.7rem] uppercase tracking-[0.12em] text-muted">Kelola Usaha</div>
+        <div className="mb-7 flex flex-col items-center text-center">
+          <Logo />
+          <div className="mt-2.5 font-sans text-[0.7rem] uppercase tracking-[0.12em] text-muted">
+            CV Horeca Jaya · Kelola Usaha
+          </div>
         </div>
         <Panel className="p-7">
           <h1 className="mb-5 font-sans text-[1.2rem] font-extrabold">Masuk</h1>
