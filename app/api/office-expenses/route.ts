@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { OfficeExpenseRequest, OFFICE_EXPENSE_KATEGORI } from "@/models/OfficeExpenseRequest";
 import { getSession } from "@/lib/auth/session";
+import { nextJobOrderCode } from "@/lib/counters";
 
 export async function GET(req: NextRequest) {
   await dbConnect();
@@ -29,7 +30,9 @@ export async function POST(req: NextRequest) {
   if (jumlah <= 0) return NextResponse.json({ error: "Jumlah harus lebih dari 0" }, { status: 400 });
 
   try {
+    const nomor = await nextJobOrderCode();
     const request = await OfficeExpenseRequest.create({
+      nomor,
       nama: body.nama.trim(),
       kategori: body.kategori,
       jumlah,

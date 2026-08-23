@@ -41,6 +41,9 @@ export const NAV_GROUPS: NavGroup[] = [
       // Removed per the user's request 2026-08-22.
       { href: "/produk", label: "Inventory", icon: "box", badge: "lowStock" },
       { href: "/purchasing", label: "Purchasing", icon: "truck" },
+      // Split out from Purchasing into its own module per the user's
+      // request 2026-08-23 — it's asset tracking, not procurement.
+      { href: "/inventaris-kantor", label: "Inventaris Kantor", icon: "list" },
     ],
   },
   {
@@ -65,29 +68,25 @@ const FLAT: { href: string; groupLabel: string }[] = NAV_GROUPS.flatMap((g) =>
 
 export interface ModuleMeta {
   groupLabel: string;
-  index: number; // 1-based
-  total: number;
 }
 
 /**
  * Resolves any pathname (not just exact nav hrefs — also detail/sub pages
- * like /produk/baru or /pelanggan/[id]) to its nav module via longest-prefix
- * match, so the page header's big number/group breadcrumb stays accurate
- * even on pages that aren't themselves a sidebar entry.
+ * like /produk/baru or /pelanggan/[id]) to its nav group via longest-prefix
+ * match, so the page header's group breadcrumb stays accurate even on
+ * pages that aren't themselves a sidebar entry. No numbering (module
+ * index/total) — removed per the user's request 2026-08-23.
  */
 export function getModuleMeta(pathname: string): ModuleMeta | null {
   let bestHref = "";
   let bestGroupLabel = "";
-  let bestIndex = -1;
-  for (let i = 0; i < FLAT.length; i++) {
-    const entry = FLAT[i];
+  for (const entry of FLAT) {
     const matches = pathname === entry.href || pathname.startsWith(`${entry.href}/`);
     if (matches && entry.href.length > bestHref.length) {
       bestHref = entry.href;
       bestGroupLabel = entry.groupLabel;
-      bestIndex = i + 1;
     }
   }
-  if (bestIndex === -1) return null;
-  return { groupLabel: bestGroupLabel, index: bestIndex, total: FLAT.length };
+  if (!bestHref) return null;
+  return { groupLabel: bestGroupLabel };
 }

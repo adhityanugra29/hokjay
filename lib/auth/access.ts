@@ -6,7 +6,10 @@ import type { UserRole } from "@/models/User";
 
 export const SALES_PREFIXES = ["/penjualan", "/katalog", "/invoice", "/produk", "/pelanggan"];
 export const FINANCE_PREFIXES = ["/insentif", "/bayar-komisi", "/bayar-tagihan", "/keuangan", "/akuntansi"];
-export const PURCHASING_PREFIXES = ["/purchasing"];
+// Inventaris Kantor is its own module (split out from Purchasing 2026-08-23)
+// but Purchasing still needs to reach it — the "Catat sebagai Aset" link
+// from a paid Material Order lands here.
+export const PURCHASING_PREFIXES = ["/purchasing", "/inventaris-kantor"];
 
 const ROLE_PREFIXES: Record<string, string[]> = {
   sales: SALES_PREFIXES,

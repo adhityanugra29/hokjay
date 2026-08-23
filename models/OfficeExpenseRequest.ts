@@ -4,9 +4,10 @@ export const OFFICE_EXPENSE_KATEGORI = ["listrik", "internet", "pulsa", "lainnya
 export const OFFICE_EXPENSE_STATUSES = ["diajukan", "disetujui", "ditolak", "dibayar", "selesai"] as const;
 
 /**
- * "Kebutuhan Kantor" — office operational expense requests (listrik, wifi,
- * pulsa, dan sejenisnya), NOT resale merchandise — that's Request Produk
- * PO / PurchaseBill's job (models/PurchaseRequest.ts, models/Supplier.ts).
+ * "Job Order" (renamed from "Kebutuhan Kantor" 2026-08-23) — office
+ * operational expense requests (listrik, wifi, pulsa, dan sejenisnya), NOT
+ * resale merchandise — that's Request Produk PO / "Material Order"'s job
+ * (models/PurchaseRequest.ts, models/PurchaseBill.ts, models/Supplier.ts).
  * Deliberately a separate, simpler flow with no Supplier/bank-account
  * relationship: request -> Admin approve/reject -> bukti transfer
  * (uang sudah dikirim) -> bukti pembelian berhasil (mis. token listrik
@@ -19,6 +20,7 @@ export const OFFICE_EXPENSE_STATUSES = ["diajukan", "disetujui", "ditolak", "dib
  */
 const OfficeExpenseRequestSchema = new Schema(
   {
+    nomor: { type: String, required: true, unique: true }, // JO-0001
     nama: { type: String, required: true, trim: true }, // e.g. "Bayar tagihan listrik Agustus"
     kategori: { type: String, enum: OFFICE_EXPENSE_KATEGORI, required: true },
     jumlah: { type: Number, required: true, min: 0 }, // requested amount

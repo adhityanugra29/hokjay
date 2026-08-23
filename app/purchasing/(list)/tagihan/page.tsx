@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
-import { LinkButton } from "@/components/ui/Button";
 import { RowActionLink } from "@/components/ui/RowAction";
 import Pill from "@/components/ui/Pill";
 import { dbConnect } from "@/lib/db";
@@ -9,17 +8,14 @@ import { rupiah, formatDateShort } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
+/** "Material Order" (renamed from "Tagihan Pembelian" 2026-08-23). Model stays PurchaseBill internally. */
 export default async function PurchasingTagihanPage() {
   await dbConnect();
   const bills = await PurchaseBill.find().sort({ createdAt: -1 }).lean();
 
   return (
     <Panel>
-      <PanelHead title="Semua tagihan pembelian">
-        <LinkButton href="/purchasing/tagihan/baru" variant="ghost">
-          + Buat Tagihan
-        </LinkButton>
-      </PanelHead>
+      <PanelHead title="Semua Material Order" />
       <TableScroll>
         <table className="w-full border-collapse">
           <thead>
@@ -34,7 +30,7 @@ export default async function PurchasingTagihanPage() {
                 Supplier
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                Total Tagihan
+                Total
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
                 Tanggal Dibuat
@@ -67,7 +63,7 @@ export default async function PurchasingTagihanPage() {
                 </td>
                 <td className="border-b border-line px-5 py-4.5">
                   {!b.dicatatSebagaiAset && (
-                    <RowActionLink href={`/purchasing/inventaris?billId=${b._id}`}>Catat sebagai Aset</RowActionLink>
+                    <RowActionLink href={`/inventaris-kantor?billId=${b._id}`}>Catat sebagai Aset</RowActionLink>
                   )}
                 </td>
               </tr>
@@ -75,9 +71,9 @@ export default async function PurchasingTagihanPage() {
             {bills.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                  Belum ada tagihan pembelian.{" "}
+                  Belum ada Material Order.{" "}
                   <Link href="/purchasing/tagihan/baru" className="text-accent underline underline-offset-2">
-                    Buat tagihan pertama
+                    Buat yang pertama
                   </Link>
                   .
                 </td>

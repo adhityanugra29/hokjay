@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Standalone landing page for Finance (own nav item, same pattern as
- * /bayar-komisi): tagihan pembelian Purchasing sudah buat tapi belum
+ * /bayar-komisi): Material Order Purchasing sudah buat tapi belum
  * dibayar. See /bayar-tagihan/[id] for the actual payment form.
  */
 export default async function BayarTagihanPage() {
@@ -20,17 +20,17 @@ export default async function BayarTagihanPage() {
 
   return (
     <>
-      <PageHeader title="Pembayaran Tagihan Purchasing" subtitle="UNTUK TIM FINANCE · BAYAR TAGIHAN DARI TIM PURCHASING" />
+      <PageHeader title="Pembayaran Material Order" subtitle="UNTUK TIM FINANCE · BAYAR MATERIAL ORDER DARI TIM PURCHASING" />
       <div className="p-6 md:p-9">
         <div className="mb-5 border border-line bg-[#f7f5ee] p-5">
           <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">
-            Total tagihan belum dibayar
+            Total Material Order belum dibayar
           </div>
           <div className="mt-1 text-[1.6rem] font-extrabold text-accent-700">{rupiah(totalOutstanding)}</div>
         </div>
 
         <Panel>
-          <PanelHead title="Tagihan pembelian belum dibayar" />
+          <PanelHead title="Material Order belum dibayar" />
           <TableScroll>
             <table className="w-full border-collapse">
               <thead>
@@ -51,7 +51,7 @@ export default async function BayarTagihanPage() {
                     Jatuh Tempo
                   </th>
                   <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Total Tagihan
+                    Total
                   </th>
                   <th className="border-b border-line px-5 py-4" />
                 </tr>
@@ -85,7 +85,7 @@ export default async function BayarTagihanPage() {
                 {bills.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                      Semua tagihan sudah dibayar. 🎉
+                      Semua Material Order sudah dibayar. 🎉
                     </td>
                   </tr>
                 )}
@@ -97,7 +97,7 @@ export default async function BayarTagihanPage() {
         <div className="mt-3 font-mono text-[0.72rem] text-muted">
           Lihat semua tagihan (termasuk yang sudah dibayar) di{" "}
           <Link href="/purchasing/tagihan" className="text-accent underline underline-offset-2">
-            Purchasing → Tagihan Pembelian
+            Purchasing → Material Order
           </Link>
           .
         </div>

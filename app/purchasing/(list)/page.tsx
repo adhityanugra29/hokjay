@@ -22,18 +22,21 @@ const KATEGORI_LABEL: Record<string, string> = {
   lainnya: "Lainnya",
 };
 
-/** Kebutuhan Kantor — office operational expenses (listrik, wifi, pulsa, dll), not resale merchandise. See models/OfficeExpenseRequest.ts. */
-export default async function PurchasingKebutuhanKantorPage() {
+/** Job Order (renamed from "Kebutuhan Kantor" 2026-08-23) — office operational expenses (listrik, wifi, pulsa, dll), not resale merchandise. See models/OfficeExpenseRequest.ts. */
+export default async function PurchasingJobOrderPage() {
   await dbConnect();
   const requests = await OfficeExpenseRequest.find().sort({ createdAt: -1 }).lean();
 
   return (
     <Panel>
-      <PanelHead title="Semua request kebutuhan kantor" />
+      <PanelHead title="Semua Job Order" />
       <TableScroll>
         <table className="w-full border-collapse">
           <thead>
             <tr>
+              <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
+                Nomor
+              </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
                 Kebutuhan
               </th>
@@ -60,6 +63,7 @@ export default async function PurchasingKebutuhanKantorPage() {
               const status = STATUS_LABEL[r.status ?? "diajukan"];
               return (
                 <tr key={String(r._id)} className="hover:bg-[#fbfaf5]">
+                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{r.nomor}</td>
                   <td className="border-b border-line px-5 py-4.5 font-medium">
                     {r.nama}
                     {r.alasan && <div className="font-mono text-[0.7rem] text-muted">{r.alasan}</div>}
@@ -85,8 +89,8 @@ export default async function PurchasingKebutuhanKantorPage() {
             })}
             {requests.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                  Belum ada request kebutuhan kantor. Contoh: bayar tagihan listrik, top up wifi, atau pulsa kantor.
+                <td colSpan={8} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                  Belum ada Job Order. Contoh: bayar tagihan listrik, top up wifi, atau pulsa kantor.
                 </td>
               </tr>
             )}

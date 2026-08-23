@@ -52,9 +52,16 @@ export async function nextPurchaseRequestCode(): Promise<string> {
   return `PR-${String(seq).padStart(4, "0")}`;
 }
 
+/** "Material Order" (formerly "Tagihan Pembelian") — renamed 2026-08-23; old records keep their PB- numbers. */
 export async function nextPurchaseBillCode(): Promise<string> {
-  const seq = await nextSeq("purchase-bill");
-  return `PB-${String(seq).padStart(4, "0")}`;
+  const seq = await nextSeq("material-order");
+  return `MO-${String(seq).padStart(4, "0")}`;
+}
+
+/** "Job Order" (formerly "Kebutuhan Kantor") — office operational expense requests. */
+export async function nextJobOrderCode(): Promise<string> {
+  const seq = await nextSeq("job-order");
+  return `JO-${String(seq).padStart(4, "0")}`;
 }
 
 /** Derives a short SKU prefix from a product name's initials, e.g. "Blender Komersial 2L" -> "BK". */

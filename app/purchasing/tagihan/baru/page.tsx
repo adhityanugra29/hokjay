@@ -21,7 +21,7 @@ export default async function PurchasingTagihanBaruPage({
   return (
     <>
       <PageHeader
-        title="Buat Tagihan Pembelian"
+        title="Buat Material Order"
         subtitle="ISI SETELAH SUPPLIER & HARGA SUDAH DIDAPAT · FINANCE AKAN MEMBAYAR INI"
       />
       <div className="p-6 md:p-9">

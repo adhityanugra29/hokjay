@@ -23,7 +23,7 @@ interface SupplierOption {
   nomorRekening: string;
 }
 
-/** Purchasing fills this in once they've sourced a supplier and know the cost — see app/api/purchase-bills/route.ts. */
+/** "Material Order" (renamed from "Tagihan Pembelian" 2026-08-23) — Purchasing fills this in once they've sourced a supplier and know the cost. See app/api/purchase-bills/route.ts (model stays PurchaseBill internally). */
 export default function PurchaseBillForm({
   fromRequest,
   suppliers,
@@ -70,12 +70,12 @@ export default function PurchaseBillForm({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Gagal membuat tagihan pembelian");
+        throw new Error(body.error || "Gagal membuat Material Order");
       }
       router.push("/purchasing/tagihan");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal membuat tagihan pembelian");
+      setError(err instanceof Error ? err.message : "Gagal membuat Material Order");
     } finally {
       setSaving(false);
     }
@@ -87,7 +87,7 @@ export default function PurchaseBillForm({
         {fromRequest && (
           <div className="mb-5 border border-line bg-[#f7f5ee] p-4 font-mono text-[0.75rem] text-muted">
             Dari request <span className="font-semibold text-ink">{fromRequest.nomor}</span> — menandai request ini
-            sebagai &quot;Dibeli&quot; setelah tagihan disimpan.
+            sebagai &quot;Dibeli&quot; setelah Material Order disimpan.
           </div>
         )}
 
@@ -140,7 +140,7 @@ export default function PurchaseBillForm({
         )}
 
         <div className="mt-5 border border-line bg-[#f7f5ee] p-5">
-          <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Total Tagihan</div>
+          <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Total Material Order</div>
           <div className="mt-1 text-[1.6rem] font-extrabold text-accent-700">{rupiah(total)}</div>
         </div>
 
@@ -148,7 +148,7 @@ export default function PurchaseBillForm({
 
         <FormActions>
           <Button type="submit" disabled={saving}>
-            {saving ? "Menyimpan..." : "Simpan Tagihan"}
+            {saving ? "Menyimpan..." : "Simpan Material Order"}
           </Button>
           <LinkButton variant="ghost" href="/purchasing">
             Batal

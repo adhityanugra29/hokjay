@@ -41,7 +41,8 @@ const BLANK = {
  * distinction the user asked for — Peralatan counts toward standing
  * asset value below, Habis Pakai never does even though it's still
  * logged here for spend visibility. See confirmation with the user
- * 2026-08-22.
+ * 2026-08-22. Moved out from under Purchasing into its own standalone
+ * nav section 2026-08-23 (was components/purchasing/OfficeAssetManager.tsx).
  */
 export default function OfficeAssetManager({ prefillFromBill }: { prefillFromBill?: { _id: string; nomor: string; namaBarang: string; qty: number; totalTagihan: number } }) {
   const [assets, setAssets] = useState<AssetRow[]>([]);
@@ -180,7 +181,7 @@ export default function OfficeAssetManager({ prefillFromBill }: { prefillFromBil
           <form onSubmit={handleSubmit} className="border-b-2 border-line p-5">
             {prefillFromBill && (
               <div className="mb-4 border border-line bg-[#f7f5ee] p-3 font-mono text-[0.72rem] text-muted">
-                Dicatat dari tagihan <span className="font-semibold text-ink">{prefillFromBill.nomor}</span>.
+                Dicatat dari Material Order <span className="font-semibold text-ink">{prefillFromBill.nomor}</span>.
               </div>
             )}
             <FormGrid>

@@ -43,7 +43,7 @@ export default function TagihanPaymentForm({ billId, total }: { billId: string; 
     <form onSubmit={handleSubmit}>
       <Panel className="max-w-2xl p-7">
         <div className="mb-5 border border-line bg-[#f7f5ee] p-5">
-          <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Total tagihan</div>
+          <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Total Material Order</div>
           <div className="mt-1 text-[1.6rem] font-extrabold text-accent-700">{rupiah(total)}</div>
         </div>
 
@@ -63,7 +63,7 @@ export default function TagihanPaymentForm({ billId, total }: { billId: string; 
 
         <FormActions>
           <Button type="submit" disabled={saving}>
-            {saving ? "Memproses..." : `Bayar Tagihan (${rupiah(total)})`}
+            {saving ? "Memproses..." : `Bayar Material Order (${rupiah(total)})`}
           </Button>
           <LinkButton variant="ghost" href="/bayar-tagihan">
             Batal

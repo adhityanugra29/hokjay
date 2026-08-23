@@ -76,7 +76,7 @@ export default async function PurchasingRequestPage() {
                   <td className="border-b border-line px-5 py-4.5">
                     {canAct && (
                       <RowActionLink href={`/purchasing/tagihan/baru?requestId=${r._id}`}>
-                        Buat Tagihan →
+                        Buat Material Order →
                       </RowActionLink>
                     )}
                   </td>
