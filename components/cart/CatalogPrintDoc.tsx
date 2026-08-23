@@ -5,7 +5,6 @@ import { rupiah } from "@/lib/format";
 import { CUSTOM_ORDER_CATEGORIES } from "@/lib/constants";
 import { useCatalogSelection } from "@/components/katalog/CatalogSelectionProvider";
 import { useActiveCustomer } from "@/components/penjualan/ActiveCustomerProvider";
-import Logo from "@/components/layout/Logo";
 
 interface CatalogProduct {
   _id: string;
@@ -94,7 +93,8 @@ export default function CatalogPrintDoc() {
         {/* Cover */}
       <div className="bg-accent px-12 py-14 text-white">
         <div className="mb-10 flex items-center justify-between gap-4">
-          <Logo tone="ink" fill />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" className="h-auto w-[220px]" />
           <span className="text-[13px] tracking-[0.12em] text-[rgba(255,255,255,0.85)] uppercase">
             Katalog · {periodLabel}
           </span>
@@ -214,7 +214,8 @@ export default function CatalogPrintDoc() {
       {/* Closing CTA */}
       <div className="break-inside-avoid bg-accent px-12 py-12 text-white">
         <div className="mb-4">
-          <Logo tone="ink" fill size="sm" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" className="h-auto w-[150px]" />
         </div>
         <h2 className="max-w-[26ch] text-[30px] leading-tight font-extrabold">
           Kirim daftar barangmu hari ini, invoice keluar hari ini juga.

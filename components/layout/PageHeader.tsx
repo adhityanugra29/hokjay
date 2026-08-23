@@ -16,6 +16,13 @@ import { getModuleMeta } from "@/lib/nav";
  * Every existing call site only ever passes title/subtitle/actions, so this
  * stays a drop-in replacement: `subtitle` is reused verbatim as the
  * description line on pages that haven't been given bespoke new copy yet.
+ *
+ * min-h-[100px] + vertical centering matches the sidebar's full-width HOJAY
+ * mark (see Logo.tsx's `full` variant) — same 100px reference height, so
+ * the sidebar's border and this header's border-b-2 land on the same line
+ * across the page on the common case (no subtitle, or a one-line one).
+ * min- not a strict height so a longer, wrapping subtitle can still grow
+ * the header past 100px on those specific pages instead of clipping.
  */
 export default function PageHeader({
   title,
@@ -30,7 +37,7 @@ export default function PageHeader({
   const meta = getModuleMeta(pathname);
 
   return (
-    <div className="border-b-2 border-ink px-6 pt-[22px] pb-6 pl-16 md:px-9 md:pt-[26px]">
+    <div className="flex min-h-[100px] flex-col justify-center border-b-2 border-ink px-6 py-5 pl-16 md:px-9">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div>
           {meta && (

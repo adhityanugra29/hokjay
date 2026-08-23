@@ -60,15 +60,21 @@ export default function Logo({
   // row reliably span edge-to-edge like the reference mockup, with the
   // wordmark's tracking tuned to roughly fill it too.
   const dims = full
-    ? { pad: "px-5 py-4", word: "text-[1.5rem]", caption: "text-[9px]", badge: "px-1.5 py-0.5 text-[9px]", width: "" }
+    ? { pad: "px-5", word: "text-[1.5rem]", caption: "text-[9px]", badge: "px-1.5 py-0.5 text-[9px]", width: "" }
     : size === "sm"
       ? { pad: "px-2.5 py-1.5", word: "text-[0.85rem]", caption: "text-[6.5px]", badge: "px-1 py-px text-[6.5px]", width: "w-[128px]" }
       : size === "lg"
         ? { pad: "px-4 py-3", word: "text-[1.6rem]", caption: "text-[9px]", badge: "px-1.5 py-0.5 text-[9px]", width: "w-[232px]" }
         : { pad: "px-3 py-2", word: "text-[1.15rem]", caption: "text-[8px]", badge: "px-1 py-0.5 text-[8px]", width: "w-[172px]" };
 
+  // The sidebar's full-width mark is the height benchmark for every
+  // PageHeader in the app (min-h-[100px], see PageHeader.tsx) — vertically
+  // centered instead of relying on py-4 so it lands at exactly that height
+  // regardless of font-metric rounding. Confirmed with the user 2026-08-23.
+  const fullHeightClass = full ? "flex min-h-[100px] flex-col justify-center" : "";
+
   return (
-    <div className={`${full ? "block w-full" : `block ${dims.width}`} ${borderClass} ${bgColor} ${shadowClass} ${dims.pad} ${className}`}>
+    <div className={`${full ? `block w-full ${fullHeightClass}` : `block ${dims.width}`} ${borderClass} ${bgColor} ${shadowClass} ${dims.pad} ${className}`}>
       <div className={`font-sans font-extrabold leading-none tracking-[0.14em] ${textColor} ${dims.word}`}>HOJAY</div>
       <div className={`my-1.5 h-px w-full ${ruleColor}`} />
       <div className="flex w-full items-center justify-between gap-2">
