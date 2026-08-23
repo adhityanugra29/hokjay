@@ -121,6 +121,12 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
                     Kirim WA
                   </a>
                   <Link
+                    href={`/invoice/${inv._id}/ubah`}
+                    className="border border-line px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent"
+                  >
+                    Edit
+                  </Link>
+                  <Link
                     href={`/invoice/${inv._id}`}
                     className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-white no-underline hover:bg-accent-600"
                   >
