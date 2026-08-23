@@ -33,7 +33,6 @@ export default function Logo({
 }) {
   const borderColor = tone === "white" ? "border-white" : "border-ink";
   const textColor = tone === "white" ? "text-white" : "text-ink";
-  const ruleColor = tone === "white" ? "bg-white" : "bg-ink";
   // Literal rgba() instead of Tailwind's "text-white/70" opacity-modifier
   // syntax on purpose — Tailwind v4 compiles that via CSS color-mix(),
   // which html2canvas can't parse and aborts on, silently breaking PDF
@@ -46,7 +45,10 @@ export default function Logo({
   // vanishes against an accent-red cover (see CatalogPrintDoc's cover).
   const badgeColor = tone === "white" ? "bg-white text-accent" : "bg-accent text-white";
   const bgColor = fill ? (tone === "white" ? "bg-ink" : "bg-white") : "";
-  const borderClass = border ? `border-2 ${borderColor}` : "";
+  // 1px, not 2 — a 2px outline read as too heavy/wide once scaled up in the
+  // katalog PDF (html2canvas renders at scale:2). Per the user's feedback
+  // 2026-08-23.
+  const borderClass = border ? `border ${borderColor}` : "";
   const shadowClass = shadow ? "shadow-[0_8px_24px_-4px_rgba(0,0,0,0.55)]" : "";
 
   const dims = full
@@ -59,8 +61,15 @@ export default function Logo({
 
   return (
     <div className={`${full ? "block w-full" : "inline-block"} ${borderClass} ${bgColor} ${shadowClass} ${dims.pad} ${className}`}>
-      <div className={`font-sans font-extrabold leading-none tracking-tight ${textColor} ${dims.word}`}>HOJAY</div>
-      <div className={`my-1 h-px w-full ${ruleColor}`} />
+      {/* border-b on the wordmark itself (inline-block, shrink-to-fit) sizes
+          the rule exactly to "HOJAY"'s rendered width — matches the
+          reference mockup, where the underline stops under the text
+          instead of running edge-to-edge of the box. */}
+      <div
+        className={`mb-1.5 inline-block border-b pb-0.5 font-sans font-extrabold leading-none tracking-tight ${borderColor} ${textColor} ${dims.word}`}
+      >
+        HOJAY
+      </div>
       <div className={`flex items-center ${dims.gap}`}>
         <span className={`font-mono font-semibold uppercase tracking-[0.14em] ${captionColor} ${dims.caption}`}>
           Kitchen Equipment
