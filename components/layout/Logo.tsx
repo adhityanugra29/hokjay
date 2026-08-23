@@ -34,7 +34,13 @@ export default function Logo({
   const borderColor = tone === "white" ? "border-white" : "border-ink";
   const textColor = tone === "white" ? "text-white" : "text-ink";
   const ruleColor = tone === "white" ? "bg-white" : "bg-ink";
-  const captionColor = tone === "white" ? "text-white/70" : "text-muted";
+  // Literal rgba() instead of Tailwind's "text-white/70" opacity-modifier
+  // syntax on purpose — Tailwind v4 compiles that via CSS color-mix(),
+  // which html2canvas can't parse and aborts on, silently breaking PDF
+  // downloads wherever this component ends up inside html2canvas's capture
+  // (e.g. CatalogPrintDoc's cover). Matches the same rgba()-literal
+  // convention CatalogPrintDoc already used elsewhere for this exact reason.
+  const captionColor = tone === "white" ? "text-[rgba(255,255,255,0.7)]" : "text-muted";
   // On a colored/dark background the badge inverts (white fill, accent
   // text) instead of the usual accent fill — otherwise an accent-red badge
   // vanishes against an accent-red cover (see CatalogPrintDoc's cover).

@@ -5,7 +5,6 @@ import Link from "next/link";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 import { useActiveCustomer } from "@/components/penjualan/ActiveCustomerProvider";
-import Logo from "@/components/layout/Logo";
 
 export default function KatalogClient({
   products,
@@ -82,6 +81,14 @@ export default function KatalogClient({
         })
         .from(element)
         .save();
+    } catch (err) {
+      // html2pdf/html2canvas failures otherwise vanish as an unhandled
+      // rejection — no visible feedback beyond the button re-enabling —
+      // which is exactly what made this bug hard to report/diagnose.
+      console.error("Gagal membuat PDF katalog:", err);
+      alert(
+        `Gagal membuat PDF katalog: ${err instanceof Error ? err.message : String(err)}\n\nCoba lagi, atau screenshot pesan ini untuk dilaporkan.`
+      );
     } finally {
       setDownloading(false);
     }
@@ -105,11 +112,8 @@ export default function KatalogClient({
         <div className="mb-2 font-sans text-xs uppercase tracking-[0.12em] text-accent">
           Penjualan
         </div>
-        <div className="mb-3.5">
-          <Logo size="sm" />
-        </div>
         <h1 className="relative max-w-xl font-sans text-[2.3rem] leading-tight font-extrabold">
-          Katalog
+          Katalog CV HORECA JAYA
         </h1>
         <p className="mt-3 font-sans text-[0.78rem] text-muted">
           STOK TER-UPDATE OTOMATIS · {products.length} PRODUK TERSEDIA
