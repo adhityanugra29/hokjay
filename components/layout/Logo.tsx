@@ -33,6 +33,7 @@ export default function Logo({
 }) {
   const borderColor = tone === "white" ? "border-white" : "border-ink";
   const textColor = tone === "white" ? "text-white" : "text-ink";
+  const ruleColor = tone === "white" ? "bg-white" : "bg-ink";
   // Literal rgba() instead of Tailwind's "text-white/70" opacity-modifier
   // syntax on purpose — Tailwind v4 compiles that via CSS color-mix(),
   // which html2canvas can't parse and aborts on, silently breaking PDF
@@ -51,26 +52,26 @@ export default function Logo({
   const borderClass = border ? `border ${borderColor}` : "";
   const shadowClass = shadow ? "shadow-[0_8px_24px_-4px_rgba(0,0,0,0.55)]" : "";
 
+  // Fixed pixel width per size, instead of letting the box shrink-to-fit —
+  // shrink-to-fit is ambiguous here (the browser can pick either the
+  // wordmark's or the caption row's intrinsic width to drive it, and
+  // Chromium picked the caption row, leaving "HOJAY" looking too small with
+  // slack on both sides). A known width lets both the rule and the caption
+  // row reliably span edge-to-edge like the reference mockup, with the
+  // wordmark's tracking tuned to roughly fill it too.
   const dims = full
-    ? { pad: "px-5 py-4", word: "text-[1.5rem]", caption: "text-[9px]", badge: "px-1.5 py-0.5 text-[9px]", gap: "gap-2" }
+    ? { pad: "px-5 py-4", word: "text-[1.5rem]", caption: "text-[9px]", badge: "px-1.5 py-0.5 text-[9px]", width: "" }
     : size === "sm"
-      ? { pad: "px-2.5 py-1.5", word: "text-[0.85rem]", caption: "text-[6.5px]", badge: "px-1 py-px text-[6.5px]", gap: "gap-1" }
+      ? { pad: "px-2.5 py-1.5", word: "text-[0.85rem]", caption: "text-[6.5px]", badge: "px-1 py-px text-[6.5px]", width: "w-[128px]" }
       : size === "lg"
-        ? { pad: "px-4 py-3", word: "text-[1.6rem]", caption: "text-[9px]", badge: "px-1.5 py-0.5 text-[9px]", gap: "gap-2" }
-        : { pad: "px-3 py-2", word: "text-[1.15rem]", caption: "text-[8px]", badge: "px-1 py-0.5 text-[8px]", gap: "gap-1.5" };
+        ? { pad: "px-4 py-3", word: "text-[1.6rem]", caption: "text-[9px]", badge: "px-1.5 py-0.5 text-[9px]", width: "w-[232px]" }
+        : { pad: "px-3 py-2", word: "text-[1.15rem]", caption: "text-[8px]", badge: "px-1 py-0.5 text-[8px]", width: "w-[172px]" };
 
   return (
-    <div className={`${full ? "block w-full" : "inline-block"} ${borderClass} ${bgColor} ${shadowClass} ${dims.pad} ${className}`}>
-      {/* border-b on the wordmark itself (inline-block, shrink-to-fit) sizes
-          the rule exactly to "HOJAY"'s rendered width — matches the
-          reference mockup, where the underline stops under the text
-          instead of running edge-to-edge of the box. */}
-      <div
-        className={`mb-1.5 inline-block border-b pb-0.5 font-sans font-extrabold leading-none tracking-tight ${borderColor} ${textColor} ${dims.word}`}
-      >
-        HOJAY
-      </div>
-      <div className={`flex items-center ${dims.gap}`}>
+    <div className={`${full ? "block w-full" : `block ${dims.width}`} ${borderClass} ${bgColor} ${shadowClass} ${dims.pad} ${className}`}>
+      <div className={`font-sans font-extrabold leading-none tracking-[0.14em] ${textColor} ${dims.word}`}>HOJAY</div>
+      <div className={`my-1.5 h-px w-full ${ruleColor}`} />
+      <div className="flex w-full items-center justify-between gap-2">
         <span className={`font-mono font-semibold uppercase tracking-[0.14em] ${captionColor} ${dims.caption}`}>
           Kitchen Equipment
         </span>
