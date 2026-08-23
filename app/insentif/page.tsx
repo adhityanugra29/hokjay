@@ -1,5 +1,4 @@
 import PageHeader from "@/components/layout/PageHeader";
-import SubnavTabs from "@/components/ui/SubnavTabs";
 import PeriodPicker from "@/components/ui/PeriodPicker";
 import SalesBoard from "@/components/insentif/SalesBoard";
 import { getSalesBoard } from "@/lib/insentif";
@@ -22,16 +21,9 @@ export default async function InsentifPage({ searchParams }: PageProps<"/insenti
       <PageHeader title="Leaderboard Sales" subtitle="CAPAIAN, SISA TARGET, DAN HITUNG MUNDUR — DIPERBARUI OTOMATIS TIAP INVOICE LUNAS" />
       <div className="p-6 md:p-9">
         <PeriodPicker month={month} year={year} currentYear={nowJakarta.year} />
-
-        <SubnavTabs
-          tabs={[
-            { href: "/insentif", label: "Rekap per Personil" },
-            { href: "/insentif/item", label: "Rincian per Item" },
-            { href: "/insentif/riwayat", label: "Riwayat per Invoice" },
-          ]}
-        />
-
-        <SalesBoard board={board} periodLabel={periodLabel} />
+        <div className="mt-5">
+          <SalesBoard board={board} periodLabel={periodLabel} />
+        </div>
       </div>
     </>
   );

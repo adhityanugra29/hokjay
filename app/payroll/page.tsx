@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import SubnavTabs from "@/components/ui/SubnavTabs";
 import BayarKomisiSheet from "@/components/insentif/BayarKomisiSheet";
@@ -74,13 +73,6 @@ export default async function PayrollPage() {
       <div className="p-6 md:p-9">
         <SubnavTabs tabs={PAYROLL_TABS} />
         <BayarKomisiSheet rows={sheetRows} saldoHariIni={saldoHariIni} />
-        <div className="mt-3 font-mono text-[0.72rem] text-muted">
-          Butuh lihat siapa yang sudah dibayar dan buktinya?{" "}
-          <Link href="/insentif/riwayat" className="text-accent underline underline-offset-2">
-            Cek Riwayat per Invoice
-          </Link>
-          .
-        </div>
       </div>
     </>
   );

@@ -132,35 +132,6 @@ export async function getSalesBoard(period: string): Promise<SalesBoard> {
   return { rows, teamTotal, teamTarget, teamPercent, teamGap, daysRemaining };
 }
 
-export interface ProdukKomisi {
-  namaProduk: string;
-  komisiPerItem: number;
-  totalTerjual: number;
-  totalKomisi: number;
-}
-
-export async function getKomisiPerProduk(period: string): Promise<ProdukKomisi[]> {
-  const invoices = await getPaidInvoicesForPeriod(period);
-  const map = new Map<string, ProdukKomisi>();
-
-  for (const inv of invoices) {
-    for (const item of inv.items) {
-      if (item.isCustom) continue;
-      const row = map.get(item.namaSnapshot) ?? {
-        namaProduk: item.namaSnapshot,
-        komisiPerItem: item.komisiPerItemSnapshot,
-        totalTerjual: 0,
-        totalKomisi: 0,
-      };
-      row.totalTerjual += item.qty;
-      row.totalKomisi += item.komisiSubtotal;
-      map.set(item.namaSnapshot, row);
-    }
-  }
-
-  return [...map.values()].sort((a, b) => b.totalKomisi - a.totalKomisi);
-}
-
 export interface UnpaidCommissionSales {
   salesNama: string;
   invoiceCount: number;
@@ -220,37 +191,3 @@ export async function getUnpaidCommissionInvoices(salesNama: string): Promise<Un
     .filter((r) => r.komisiTotal > 0);
 }
 
-export interface RiwayatKomisiRow {
-  invoiceId: string;
-  nomor: string;
-  salesNama: string;
-  itemLabel: string;
-  komisiBaris: number;
-  tanggalLunas: Date;
-  komisiCair: boolean;
-  komisiCairBuktiUrl?: string;
-}
-
-export async function getRiwayatKomisi(period: string): Promise<RiwayatKomisiRow[]> {
-  const invoices = await getPaidInvoicesForPeriod(period);
-  const rows: RiwayatKomisiRow[] = [];
-
-  for (const inv of invoices) {
-    const items = inv.items.filter((i) => !i.isCustom && i.komisiSubtotal > 0);
-    if (items.length === 0) continue;
-    const itemLabel = items.map((i) => `${i.namaSnapshot} x${i.qty}`).join(", ");
-    const komisiBaris = items.reduce((s, i) => s + i.komisiSubtotal, 0);
-    rows.push({
-      invoiceId: String(inv._id),
-      nomor: inv.nomor,
-      salesNama: inv.sales?.nama ?? "—",
-      itemLabel,
-      komisiBaris,
-      tanggalLunas: inv.payment!.tanggalBayar!,
-      komisiCair: inv.komisiCair ?? false,
-      komisiCairBuktiUrl: inv.komisiCairBuktiUrl ?? undefined,
-    });
-  }
-
-  return rows;
-}

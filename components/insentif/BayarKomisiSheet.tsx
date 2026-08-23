@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Field, Input, Textarea } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
@@ -196,12 +195,6 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
         >
           Unduh daftar transfer (.csv)
         </button>
-
-        <div className="mt-auto pt-6">
-          <Link href="/insentif/riwayat" className="font-mono text-[0.72rem] text-accent underline underline-offset-2">
-            Lihat riwayat pembayaran →
-          </Link>
-        </div>
       </div>
     </div>
   );
