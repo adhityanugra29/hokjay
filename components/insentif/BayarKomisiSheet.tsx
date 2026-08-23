@@ -18,7 +18,7 @@ interface SheetRow {
   rekeningTerverifikasi: boolean;
 }
 
-/** The "Daftar bayar" sheet — checkbox per sales (not per invoice; drill into /bayar-komisi/[nama] for invoice-level control), rekening + verification status, consequences panel, one-click batch pay. */
+/** The "Daftar bayar" sheet — checkbox per sales (not per invoice; drill into /payroll/komisi/[nama] for invoice-level control), rekening + verification status, consequences panel, one-click batch pay. Lives under Payroll's Komisi tab (formerly the standalone /bayar-komisi). */
 export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRow[]; saldoHariIni: number }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(
@@ -76,7 +76,7 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
         const b = await res.json().catch(() => ({}));
         throw new Error(b.error || "Gagal memproses pembayaran komisi");
       }
-      router.push("/bayar-komisi");
+      router.push("/payroll");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memproses pembayaran komisi");

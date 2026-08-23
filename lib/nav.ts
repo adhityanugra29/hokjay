@@ -52,7 +52,11 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/keuangan", label: "Keuangan", icon: "cashbox" },
       { href: "/akuntansi", label: "Akuntansi", icon: "ledger" },
       { href: "/insentif", label: "Leaderboard Sales", icon: "trophy" },
-      { href: "/bayar-komisi", label: "Bayar Komisi", icon: "split" },
+      // "Payroll" (2026-08-23) — merges the old standalone Bayar Komisi with
+      // gaji pokok (sales tetap) + gaji karyawan (non-sales, absensi-based)
+      // into one nav entry. Same URL for Admin (full payment dashboard) and
+      // Sales (their own read-only slip) — see app/payroll/page.tsx.
+      { href: "/payroll", label: "Payroll", icon: "split" },
       { href: "/bayar-tagihan", label: "Bayar Tagihan", icon: "receipt" },
     ],
   },

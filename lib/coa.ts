@@ -40,6 +40,7 @@ export const ACCOUNTS: Account[] = [
   { code: "6100", name: "Beban Komisi Sales", kelompok: "Beban", normal: "debit" },
   { code: "6200", name: "Beban Ongkos Kirim (Kurir)", kelompok: "Beban", normal: "debit" },
   { code: "6300", name: "Beban Operasional", kelompok: "Beban", normal: "debit" },
+  { code: "6400", name: "Beban Gaji", kelompok: "Beban", normal: "debit" },
   { code: "6900", name: "Beban Lain-lain", kelompok: "Beban", normal: "debit" },
 ];
 

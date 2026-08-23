@@ -20,6 +20,8 @@ export async function POST(req: NextRequest) {
       aktif: true,
       bank: body.bank || undefined,
       nomorRekening: body.nomorRekening || undefined,
+      statusKepegawaian: body.statusKepegawaian === "tetap" ? "tetap" : "freelance",
+      gajiPokok: Number(body.gajiPokok) || 0,
     });
     return NextResponse.json(sales, { status: 201 });
   } catch (err) {

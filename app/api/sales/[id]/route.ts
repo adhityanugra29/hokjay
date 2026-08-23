@@ -15,6 +15,10 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/sales/[id]">) 
   if (body.bank !== undefined) sales.bank = body.bank || undefined;
   if (body.nomorRekening !== undefined) sales.nomorRekening = body.nomorRekening || undefined;
   if (typeof body.rekeningTerverifikasi === "boolean") sales.rekeningTerverifikasi = body.rekeningTerverifikasi;
+  if (body.statusKepegawaian === "tetap" || body.statusKepegawaian === "freelance") {
+    sales.statusKepegawaian = body.statusKepegawaian;
+  }
+  if (body.gajiPokok !== undefined) sales.gajiPokok = Number(body.gajiPokok) || 0;
   await sales.save();
 
   return NextResponse.json(sales);

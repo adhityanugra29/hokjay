@@ -98,8 +98,9 @@ export interface UnpaidCommissionSales {
 
 /**
  * Outstanding ("belum cair") commission grouped by sales — not scoped to a
- * period, since Finance needs to see everything still owed regardless of
- * when it was earned. Backs the /bayar-komisi landing page.
+ * period, since Admin needs to see everything still owed regardless of
+ * when it was earned. Backs the /payroll landing page's Komisi tab (moved
+ * from the standalone /bayar-komisi 2026-08-23).
  */
 export async function getUnpaidCommissionBySales(): Promise<UnpaidCommissionSales[]> {
   await dbConnect();
@@ -127,7 +128,7 @@ export interface UnpaidCommissionInvoice {
   komisiTotal: number;
 }
 
-/** One sales's outstanding commission invoices — the checkbox list on /bayar-komisi/[nama]. */
+/** One sales's outstanding commission invoices — the checkbox list on /payroll/komisi/[nama]. */
 export async function getUnpaidCommissionInvoices(salesNama: string): Promise<UnpaidCommissionInvoice[]> {
   await dbConnect();
   const invoices = await Invoice.find({ status: "paid", komisiCair: false, "sales.nama": salesNama }).sort({

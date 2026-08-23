@@ -4,8 +4,15 @@ import type { UserRole } from "@/models/User";
 // imported by proxy.ts (edge runtime) AND client components (AppShell's
 // nav filtering) without pulling in anything runtime-incompatible.
 
-export const SALES_PREFIXES = ["/penjualan", "/katalog", "/invoice", "/produk", "/pelanggan"];
-export const FINANCE_PREFIXES = ["/insentif", "/bayar-komisi", "/bayar-tagihan", "/keuangan", "/akuntansi"];
+// "/payroll" is Sales-reachable — but only for their own read-only slip
+// gaji; the admin payment dashboard living at the same URL is gated inside
+// app/payroll/**\/page.tsx itself (session.role !== "admin" -> notFound()).
+// See models/Karyawan.ts, models/Absensi.ts, models/GajiPayment.ts.
+export const SALES_PREFIXES = ["/penjualan", "/katalog", "/invoice", "/produk", "/pelanggan", "/payroll"];
+// Payroll (2026-08-23) folded in the old Bayar Komisi and moved to
+// Admin-only per the user's explicit confirmation — Finance no longer has
+// a payroll-payment surface at all (was "/bayar-komisi" here before).
+export const FINANCE_PREFIXES = ["/insentif", "/bayar-tagihan", "/keuangan", "/akuntansi"];
 // Inventaris Kantor is its own module (split out from Purchasing 2026-08-23)
 // but Purchasing still needs to reach it — the "Catat sebagai Aset" link
 // from a paid Material Order lands here.

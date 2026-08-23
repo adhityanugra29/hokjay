@@ -2,10 +2,11 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input } from "@/components/ui/Form";
+import { Field, FormGrid, FormActions, Input, Select } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 import { RowActionButton } from "@/components/ui/RowAction";
 import Pill from "@/components/ui/Pill";
+import { rupiah } from "@/lib/format";
 
 interface SalesRow {
   _id: string;
@@ -14,9 +15,11 @@ interface SalesRow {
   bank?: string;
   nomorRekening?: string;
   rekeningTerverifikasi?: boolean;
+  statusKepegawaian?: "tetap" | "freelance";
+  gajiPokok?: number;
 }
 
-const BLANK = { nama: "", bank: "", nomorRekening: "" };
+const BLANK = { nama: "", bank: "", nomorRekening: "", statusKepegawaian: "freelance" as "tetap" | "freelance", gajiPokok: "" };
 
 /**
  * Manages the "Sales" collection — the closest thing this no-login app has
@@ -32,7 +35,13 @@ export default function UserManager() {
   const [saving, setSaving] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState({ nama: "", bank: "", nomorRekening: "" });
+  const [editValues, setEditValues] = useState({
+    nama: "",
+    bank: "",
+    nomorRekening: "",
+    statusKepegawaian: "freelance" as "tetap" | "freelance",
+    gajiPokok: "",
+  });
   const [editSaving, setEditSaving] = useState(false);
 
   async function load() {
@@ -52,7 +61,7 @@ export default function UserManager() {
     await fetch("/api/sales", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
+      body: JSON.stringify({ ...values, gajiPokok: Number(values.gajiPokok) || 0 }),
     });
     setValues(BLANK);
     setShowForm(false);
@@ -80,7 +89,13 @@ export default function UserManager() {
 
   function startEdit(s: SalesRow) {
     setEditingId(s._id);
-    setEditValues({ nama: s.nama, bank: s.bank ?? "", nomorRekening: s.nomorRekening ?? "" });
+    setEditValues({
+      nama: s.nama,
+      bank: s.bank ?? "",
+      nomorRekening: s.nomorRekening ?? "",
+      statusKepegawaian: s.statusKepegawaian ?? "freelance",
+      gajiPokok: s.gajiPokok ? String(s.gajiPokok) : "",
+    });
   }
 
   async function handleEditSubmit(e: React.FormEvent) {
@@ -90,7 +105,7 @@ export default function UserManager() {
     await fetch(`/api/sales/${editingId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editValues),
+      body: JSON.stringify({ ...editValues, gajiPokok: Number(editValues.gajiPokok) || 0 }),
     });
     setEditingId(null);
     setEditSaving(false);
@@ -119,9 +134,28 @@ export default function UserManager() {
             <Field label="Bank (opsional)">
               <Input value={values.bank} onChange={(e) => setValues((v) => ({ ...v, bank: e.target.value }))} placeholder="Contoh: BCA" />
             </Field>
-            <Field label="Nomor Rekening (opsional)" span2>
+            <Field label="Nomor Rekening (opsional)">
               <Input value={values.nomorRekening} onChange={(e) => setValues((v) => ({ ...v, nomorRekening: e.target.value }))} />
             </Field>
+            <Field label="Status Kepegawaian" hint="Menentukan apakah sales ini dapat gaji pokok bulanan lewat Payroll.">
+              <Select
+                value={values.statusKepegawaian}
+                onChange={(e) => setValues((v) => ({ ...v, statusKepegawaian: e.target.value as "tetap" | "freelance" }))}
+              >
+                <option value="freelance">Freelance (komisi saja)</option>
+                <option value="tetap">Tetap (gaji pokok + komisi)</option>
+              </Select>
+            </Field>
+            {values.statusKepegawaian === "tetap" && (
+              <Field label="Gaji Pokok / Bulan">
+                <Input
+                  type="number"
+                  min={0}
+                  value={values.gajiPokok}
+                  onChange={(e) => setValues((v) => ({ ...v, gajiPokok: e.target.value }))}
+                />
+              </Field>
+            )}
           </FormGrid>
           <FormActions>
             <Button type="submit" disabled={saving}>
@@ -143,6 +177,9 @@ export default function UserManager() {
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
                 Terverifikasi
+              </th>
+              <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
+                Kepegawaian
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
                 Status
@@ -170,6 +207,16 @@ export default function UserManager() {
                       {s.rekeningTerverifikasi ? <Pill variant="ok">Terverifikasi</Pill> : <Pill variant="unpaid">Belum</Pill>}
                     </label>
                   </td>
+                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.75rem]">
+                    {s.statusKepegawaian === "tetap" ? (
+                      <>
+                        <Pill variant="ok">Tetap</Pill>
+                        <div className="mt-1 text-muted">{rupiah(s.gajiPokok ?? 0)}/bln</div>
+                      </>
+                    ) : (
+                      <span className="text-muted">Freelance</span>
+                    )}
+                  </td>
                   <td className="border-b border-line px-5 py-4.5">
                     <label className="flex cursor-pointer items-center gap-2">
                       <input
@@ -192,7 +239,7 @@ export default function UserManager() {
                 </tr>
                 {editingId === s._id && (
                   <tr>
-                    <td colSpan={5} className="border-b border-line bg-[#f7f5ee] p-5">
+                    <td colSpan={6} className="border-b border-line bg-[#f7f5ee] p-5">
                       <form onSubmit={handleEditSubmit}>
                         <FormGrid>
                           <Field label="Nama">
@@ -201,9 +248,28 @@ export default function UserManager() {
                           <Field label="Bank">
                             <Input value={editValues.bank} onChange={(e) => setEditValues((v) => ({ ...v, bank: e.target.value }))} />
                           </Field>
-                          <Field label="Nomor Rekening" span2>
+                          <Field label="Nomor Rekening">
                             <Input value={editValues.nomorRekening} onChange={(e) => setEditValues((v) => ({ ...v, nomorRekening: e.target.value }))} />
                           </Field>
+                          <Field label="Status Kepegawaian">
+                            <Select
+                              value={editValues.statusKepegawaian}
+                              onChange={(e) => setEditValues((v) => ({ ...v, statusKepegawaian: e.target.value as "tetap" | "freelance" }))}
+                            >
+                              <option value="freelance">Freelance (komisi saja)</option>
+                              <option value="tetap">Tetap (gaji pokok + komisi)</option>
+                            </Select>
+                          </Field>
+                          {editValues.statusKepegawaian === "tetap" && (
+                            <Field label="Gaji Pokok / Bulan">
+                              <Input
+                                type="number"
+                                min={0}
+                                value={editValues.gajiPokok}
+                                onChange={(e) => setEditValues((v) => ({ ...v, gajiPokok: e.target.value }))}
+                              />
+                            </Field>
+                          )}
                         </FormGrid>
                         <FormActions>
                           <Button type="submit" disabled={editSaving}>
@@ -221,7 +287,7 @@ export default function UserManager() {
             ))}
             {!loading && sales.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                <td colSpan={6} className="px-5 py-8 text-center font-mono text-sm text-muted">
                   Belum ada user/sales.
                 </td>
               </tr>

@@ -1,22 +1,46 @@
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
+import SubnavTabs from "@/components/ui/SubnavTabs";
 import BayarKomisiSheet from "@/components/insentif/BayarKomisiSheet";
+import SlipGajiView from "@/components/payroll/SlipGajiView";
+import { PAYROLL_TABS } from "@/components/payroll/tabs";
 import { getUnpaidCommissionBySales, getUnpaidCommissionInvoices } from "@/lib/insentif";
 import { getCurrentCashBalance } from "@/lib/keuangan";
+import { getSlipGaji } from "@/lib/payroll";
+import { getSession } from "@/lib/auth/session";
 import { dbConnect } from "@/lib/db";
 import { Sales } from "@/models/Sales";
 
 export const dynamic = "force-dynamic";
 
 /**
- * "Lembar sekali pakai" per the 2026-08-22 redesign ("3e") — centang sales,
- * lihat total, bayar sekaligus, dengan konsekuensi ditulis sebelum tombol.
- * Confirmed with the user to keep the *existing* pay-anytime behavior
- * (commission becomes payable the moment an invoice is marked lunas) rather
- * than the mockup's period-lock ("Tutup Periode") workflow — this is a
- * visual redesign only, not a new closing-cycle feature.
+ * "Payroll" — merges the old standalone Bayar Komisi into one nav entry
+ * with gaji pokok (sales tetap) + gaji karyawan (non-sales, absensi-based),
+ * per the user's request 2026-08-23. One shared URL, two very different
+ * views depending on who's looking: Admin gets the full payment dashboard
+ * (this page = its Komisi tab); Sales gets a read-only slip of their own
+ * gaji pokok + komisi. Everyone else is blocked by lib/auth/access.ts
+ * before reaching here — the role check below is a defensive backstop.
  */
-export default async function BayarKomisiPage() {
+export default async function PayrollPage() {
+  const session = await getSession();
+  if (!session) notFound();
+
+  if (session.role === "sales") {
+    const slip = await getSlipGaji(session.nama);
+    return (
+      <>
+        <PageHeader title="Payroll — Slip Gaji Saya" subtitle="GAJI POKOK (JIKA TETAP) & KOMISI YANG SUDAH CAIR" />
+        <div className="p-6 md:p-9">
+          <SlipGajiView slip={slip} salesNama={session.nama} />
+        </div>
+      </>
+    );
+  }
+
+  if (session.role !== "admin") notFound();
+
   await dbConnect();
   const rows = await getUnpaidCommissionBySales();
 
@@ -44,10 +68,11 @@ export default async function BayarKomisiPage() {
   return (
     <>
       <PageHeader
-        title="Bayar Komisi"
-        subtitle="Centang siapa yang dibayar, lihat totalnya, bayar sekaligus. Setelah dibayar langsung tercatat sebagai uang keluar di Keuangan."
+        title="Payroll"
+        subtitle="Bayar komisi sales, gaji pokok sales tetap, dan gaji karyawan non-sales — semuanya di satu tempat."
       />
       <div className="p-6 md:p-9">
+        <SubnavTabs tabs={PAYROLL_TABS} />
         <BayarKomisiSheet rows={sheetRows} saldoHariIni={saldoHariIni} />
         <div className="mt-3 font-mono text-[0.72rem] text-muted">
           Butuh lihat siapa yang sudah dibayar dan buktinya?{" "}

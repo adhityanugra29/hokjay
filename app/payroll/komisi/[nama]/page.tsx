@@ -1,11 +1,16 @@
 import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import KomisiPaymentForm from "@/components/insentif/KomisiPaymentForm";
 import { getUnpaidCommissionInvoices } from "@/lib/insentif";
+import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function BayarKomisiSalesPage({ params }: PageProps<"/bayar-komisi/[nama]">) {
+export default async function PayrollKomisiSalesPage({ params }: PageProps<"/payroll/komisi/[nama]">) {
+  const session = await getSession();
+  if (session?.role !== "admin") redirect("/payroll");
+
   const { nama } = await params;
   const salesNama = decodeURIComponent(nama);
   if (!salesNama) notFound();
