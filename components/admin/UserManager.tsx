@@ -17,9 +17,17 @@ interface SalesRow {
   rekeningTerverifikasi?: boolean;
   statusKepegawaian?: "tetap" | "freelance";
   gajiPokok?: number;
+  targetBulanan?: number;
 }
 
-const BLANK = { nama: "", bank: "", nomorRekening: "", statusKepegawaian: "freelance" as "tetap" | "freelance", gajiPokok: "" };
+const BLANK = {
+  nama: "",
+  bank: "",
+  nomorRekening: "",
+  statusKepegawaian: "freelance" as "tetap" | "freelance",
+  gajiPokok: "",
+  targetBulanan: "",
+};
 
 /**
  * Manages the "Sales" collection — the closest thing this no-login app has
@@ -41,6 +49,7 @@ export default function UserManager() {
     nomorRekening: "",
     statusKepegawaian: "freelance" as "tetap" | "freelance",
     gajiPokok: "",
+    targetBulanan: "",
   });
   const [editSaving, setEditSaving] = useState(false);
 
@@ -61,7 +70,11 @@ export default function UserManager() {
     await fetch("/api/sales", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...values, gajiPokok: Number(values.gajiPokok) || 0 }),
+      body: JSON.stringify({
+        ...values,
+        gajiPokok: Number(values.gajiPokok) || 0,
+        targetBulanan: Number(values.targetBulanan) || 0,
+      }),
     });
     setValues(BLANK);
     setShowForm(false);
@@ -95,6 +108,7 @@ export default function UserManager() {
       nomorRekening: s.nomorRekening ?? "",
       statusKepegawaian: s.statusKepegawaian ?? "freelance",
       gajiPokok: s.gajiPokok ? String(s.gajiPokok) : "",
+      targetBulanan: s.targetBulanan ? String(s.targetBulanan) : "",
     });
   }
 
@@ -105,7 +119,11 @@ export default function UserManager() {
     await fetch(`/api/sales/${editingId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...editValues, gajiPokok: Number(editValues.gajiPokok) || 0 }),
+      body: JSON.stringify({
+        ...editValues,
+        gajiPokok: Number(editValues.gajiPokok) || 0,
+        targetBulanan: Number(editValues.targetBulanan) || 0,
+      }),
     });
     setEditingId(null);
     setEditSaving(false);
@@ -156,6 +174,14 @@ export default function UserManager() {
                 />
               </Field>
             )}
+            <Field label="Target Penjualan / Bulan (opsional)" hint="Untuk papan Leaderboard Sales — kosongkan kalau belum ada target.">
+              <Input
+                type="number"
+                min={0}
+                value={values.targetBulanan}
+                onChange={(e) => setValues((v) => ({ ...v, targetBulanan: e.target.value }))}
+              />
+            </Field>
           </FormGrid>
           <FormActions>
             <Button type="submit" disabled={saving}>
@@ -180,6 +206,9 @@ export default function UserManager() {
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
                 Kepegawaian
+              </th>
+              <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
+                Target/Bln
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
                 Status
@@ -217,6 +246,9 @@ export default function UserManager() {
                       <span className="text-muted">Freelance</span>
                     )}
                   </td>
+                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.75rem] text-muted">
+                    {s.targetBulanan ? rupiah(s.targetBulanan) : "—"}
+                  </td>
                   <td className="border-b border-line px-5 py-4.5">
                     <label className="flex cursor-pointer items-center gap-2">
                       <input
@@ -239,7 +271,7 @@ export default function UserManager() {
                 </tr>
                 {editingId === s._id && (
                   <tr>
-                    <td colSpan={6} className="border-b border-line bg-[#f7f5ee] p-5">
+                    <td colSpan={7} className="border-b border-line bg-[#f7f5ee] p-5">
                       <form onSubmit={handleEditSubmit}>
                         <FormGrid>
                           <Field label="Nama">
@@ -270,6 +302,14 @@ export default function UserManager() {
                               />
                             </Field>
                           )}
+                          <Field label="Target Penjualan / Bulan (opsional)">
+                            <Input
+                              type="number"
+                              min={0}
+                              value={editValues.targetBulanan}
+                              onChange={(e) => setEditValues((v) => ({ ...v, targetBulanan: e.target.value }))}
+                            />
+                          </Field>
                         </FormGrid>
                         <FormActions>
                           <Button type="submit" disabled={editSaving}>
@@ -287,7 +327,7 @@ export default function UserManager() {
             ))}
             {!loading && sales.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
                   Belum ada user/sales.
                 </td>
               </tr>

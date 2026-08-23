@@ -1,5 +1,6 @@
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
+import { Sales } from "@/models/Sales";
 
 export function currentPeriod(): string {
   const now = new Date();
@@ -59,6 +60,76 @@ export async function getSalesRanking(period: string): Promise<SalesRanking[]> {
   }
 
   return [...map.values()].sort((a, b) => b.totalKomisi - a.totalKomisi);
+}
+
+export interface SalesBoardRow {
+  salesNama: string;
+  totalPenjualan: number;
+  orderCount: number;
+  /** 0 = no target set on that sales's roster record — the board just skips the progress bar for them. */
+  target: number;
+  percent: number;
+  lewatTarget: boolean;
+  selisih: number;
+}
+
+export interface SalesBoard {
+  rows: SalesBoardRow[];
+  teamTotal: number;
+  teamTarget: number;
+  teamPercent: number;
+  teamGap: number;
+  daysRemaining: number;
+}
+
+/**
+ * Powers the Leaderboard Sales board (design "5a" from the mockup doc the
+ * user supplied 2026-08-24) — team-wide target progress + a countdown, then
+ * each sales's own achievement against their individual target. Target is
+ * Sales.targetBulanan (0 = not set, admin fills it in via Kelola User).
+ */
+export async function getSalesBoard(period: string): Promise<SalesBoard> {
+  await dbConnect();
+  const [invoices, salesDocs] = await Promise.all([
+    getPaidInvoicesForPeriod(period),
+    Sales.find({ aktif: true }).lean(),
+  ]);
+  const targetByNama = new Map(salesDocs.map((s) => [s.nama, s.targetBulanan ?? 0]));
+
+  const map = new Map<string, { totalPenjualan: number; orderCount: number }>();
+  for (const inv of invoices) {
+    const nama = inv.sales?.nama ?? "—";
+    const row = map.get(nama) ?? { totalPenjualan: 0, orderCount: 0 };
+    row.totalPenjualan += inv.items.reduce((s, i) => s + i.subtotal, 0);
+    row.orderCount += 1;
+    map.set(nama, row);
+  }
+
+  const rows: SalesBoardRow[] = [...map.entries()]
+    .map(([salesNama, r]) => {
+      const target = targetByNama.get(salesNama) ?? 0;
+      return {
+        salesNama,
+        totalPenjualan: r.totalPenjualan,
+        orderCount: r.orderCount,
+        target,
+        percent: target > 0 ? Math.round((r.totalPenjualan / target) * 100) : 0,
+        lewatTarget: target > 0 && r.totalPenjualan >= target,
+        selisih: Math.abs(r.totalPenjualan - target),
+      };
+    })
+    .sort((a, b) => b.totalPenjualan - a.totalPenjualan);
+
+  const teamTotal = rows.reduce((s, r) => s + r.totalPenjualan, 0);
+  const teamTarget = [...targetByNama.values()].reduce((s, t) => s + t, 0);
+  const teamPercent = teamTarget > 0 ? Math.round((teamTotal / teamTarget) * 100) : 0;
+  const teamGap = Math.max(0, teamTarget - teamTotal);
+
+  const [y, m] = period.split("-").map(Number);
+  const endOfMonth = new Date(y, m, 0);
+  const daysRemaining = Math.max(0, Math.ceil((endOfMonth.getTime() - Date.now()) / 86_400_000));
+
+  return { rows, teamTotal, teamTarget, teamPercent, teamGap, daysRemaining };
 }
 
 export interface ProdukKomisi {

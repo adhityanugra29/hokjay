@@ -19,6 +19,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/sales/[id]">) 
     sales.statusKepegawaian = body.statusKepegawaian;
   }
   if (body.gajiPokok !== undefined) sales.gajiPokok = Number(body.gajiPokok) || 0;
+  if (body.targetBulanan !== undefined) sales.targetBulanan = Number(body.targetBulanan) || 0;
   await sales.save();
 
   return NextResponse.json(sales);
