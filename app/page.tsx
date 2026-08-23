@@ -61,9 +61,6 @@ export default async function DashboardPage() {
       />
 
       <div className="px-6 pt-7 md:px-9">
-        <div className="mb-2.5 font-sans text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
-          Mau ngapain sekarang?
-        </div>
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
           <Link
             href="/penjualan"
