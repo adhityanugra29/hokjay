@@ -94,6 +94,55 @@ export async function getKaryawanGajiSummary(periode: string): Promise<GajiKarya
   });
 }
 
+export interface GajiBulananRow {
+  tipe: "sales" | "karyawan";
+  id: string;
+  nama: string;
+  /** Sales: "{bank} · {rekening}" or "belum diisi". Karyawan: jabatan + hari hadir. */
+  subtitle: string;
+  jumlah: number;
+  /** Sales: rekening sudah diverifikasi. Karyawan: ada gaji > 0 untuk dibayar. */
+  siapBayar: boolean;
+  sudahDibayar: boolean;
+}
+
+/**
+ * Gaji Sales Tetap and Gaji Karyawan merged into one list — same shape
+ * (nama, jumlah, siap/sudah dibayar), same batch-pay action, just two
+ * different underlying recipient types. Merged per the user's request
+ * 2026-08-24 ("fieldnya sama kok"). Each row still posts through its own
+ * existing endpoint (/api/payroll/gaji-sales/bayar or
+ * .../gaji-karyawan/bayar) — see components/payroll/GajiBulananSheet.tsx.
+ */
+export async function getGajiBulananSummary(periode: string): Promise<GajiBulananRow[]> {
+  const [salesRows, karyawanRows] = await Promise.all([
+    getGajiSalesSummary(periode),
+    getKaryawanGajiSummary(periode),
+  ]);
+
+  const fromSales: GajiBulananRow[] = salesRows.map((s) => ({
+    tipe: "sales",
+    id: s.salesId,
+    nama: s.nama,
+    subtitle: s.bank ? `${s.bank} · ${s.nomorRekening}` : "belum diisi",
+    jumlah: s.gajiPokok,
+    siapBayar: s.rekeningTerverifikasi,
+    sudahDibayar: s.sudahDibayar,
+  }));
+
+  const fromKaryawan: GajiBulananRow[] = karyawanRows.map((k) => ({
+    tipe: "karyawan",
+    id: k.karyawanId,
+    nama: k.nama,
+    subtitle: `${k.jabatan ?? "Karyawan"} · ${k.hariHadir} hari hadir`,
+    jumlah: k.totalGaji,
+    siapBayar: k.totalGaji > 0,
+    sudahDibayar: k.sudahDibayar,
+  }));
+
+  return [...fromSales, ...fromKaryawan].sort((a, b) => a.nama.localeCompare(b.nama));
+}
+
 export interface SlipGajiKomisiRow {
   invoiceId: string;
   nomor: string;

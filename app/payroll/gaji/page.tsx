@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import SubnavTabs from "@/components/ui/SubnavTabs";
-import GajiSalesSheet from "@/components/payroll/GajiSalesSheet";
+import GajiBulananSheet from "@/components/payroll/GajiBulananSheet";
 import { PAYROLL_TABS } from "@/components/payroll/tabs";
-import { getGajiSalesSummary, currentPeriod } from "@/lib/payroll";
+import { getGajiBulananSummary, currentPeriod } from "@/lib/payroll";
 import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -18,22 +18,23 @@ function periodOptions(): string[] {
   return opts;
 }
 
-export default async function PayrollGajiSalesPage({
+/** Gaji Sales Tetap + Gaji Karyawan, merged into one tab — see lib/payroll.ts's getGajiBulananSummary. */
+export default async function PayrollGajiPage({
   searchParams,
-}: PageProps<"/payroll/gaji-sales">) {
+}: PageProps<"/payroll/gaji">) {
   const session = await getSession();
   if (session?.role !== "admin") notFound();
 
   const sp = await searchParams;
   const periode = typeof sp.periode === "string" ? sp.periode : currentPeriod();
-  const rows = await getGajiSalesSummary(periode);
+  const rows = await getGajiBulananSummary(periode);
 
   return (
     <>
-      <PageHeader title="Payroll" subtitle="Gaji pokok bulanan untuk sales berstatus Tetap." />
+      <PageHeader title="Payroll" subtitle="Gaji pokok sales tetap dan gaji karyawan non-sales, dibayar dari satu tempat." />
       <div className="p-6 md:p-9">
         <SubnavTabs tabs={PAYROLL_TABS} />
-        <GajiSalesSheet rows={rows} periodOptions={periodOptions()} periode={periode} />
+        <GajiBulananSheet rows={rows} periodOptions={periodOptions()} periode={periode} />
       </div>
     </>
   );
