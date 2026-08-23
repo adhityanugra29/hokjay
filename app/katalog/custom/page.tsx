@@ -1,7 +1,6 @@
 import PageHeader from "@/components/layout/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import ProductCard from "@/components/katalog/ProductCard";
-import RequireActiveCustomer from "@/components/penjualan/RequireActiveCustomer";
 import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
 
@@ -16,7 +15,7 @@ export default async function KatalogCustomPage() {
     .lean();
 
   return (
-    <RequireActiveCustomer>
+    <>
       <PageHeader
         title="Produk Custom"
         subtitle="HASIL PESANAN CUSTOM · MASIH TERSEDIA"
@@ -60,6 +59,6 @@ export default async function KatalogCustomPage() {
           )}
         </div>
       </div>
-    </RequireActiveCustomer>
+    </>
   );
 }

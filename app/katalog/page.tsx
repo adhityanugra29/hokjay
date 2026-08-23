@@ -1,5 +1,4 @@
 import KatalogClient from "@/components/katalog/KatalogClient";
-import RequireActiveCustomer from "@/components/penjualan/RequireActiveCustomer";
 import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
 import { Category } from "@/models/Category";
@@ -19,26 +18,24 @@ export default async function KatalogPage() {
   ]);
 
   return (
-    <RequireActiveCustomer>
-      <KatalogClient
-        categories={categories.map((c) => c.name)}
-        products={products.map((p) => ({
-          _id: String(p._id),
-          name: p.name,
-          category: p.category,
-          hargaRekomendasi: p.hargaRekomendasi,
-          hargaMinimum: p.hargaMinimum,
-          komisiPercent: p.komisiPercent,
-          komisiNominal: p.komisiNominal,
-          stok: p.stok,
-          kondisi: p.kondisi ?? "baru",
-          kondisiPercent: p.kondisiPercent ?? undefined,
-          dimensi: p.dimensi ?? undefined,
-          ketebalan: p.ketebalan ?? undefined,
-          fotoUrl: p.fotoUrl ?? undefined,
-          isCustom: p.isCustom ?? false,
-        }))}
-      />
-    </RequireActiveCustomer>
+    <KatalogClient
+      categories={categories.map((c) => c.name)}
+      products={products.map((p) => ({
+        _id: String(p._id),
+        name: p.name,
+        category: p.category,
+        hargaRekomendasi: p.hargaRekomendasi,
+        hargaMinimum: p.hargaMinimum,
+        komisiPercent: p.komisiPercent,
+        komisiNominal: p.komisiNominal,
+        stok: p.stok,
+        kondisi: p.kondisi ?? "baru",
+        kondisiPercent: p.kondisiPercent ?? undefined,
+        dimensi: p.dimensi ?? undefined,
+        ketebalan: p.ketebalan ?? undefined,
+        fotoUrl: p.fotoUrl ?? undefined,
+        isCustom: p.isCustom ?? false,
+      }))}
+    />
   );
 }

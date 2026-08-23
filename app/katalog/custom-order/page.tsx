@@ -7,7 +7,6 @@ import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
-import RequireActiveCustomer from "@/components/penjualan/RequireActiveCustomer";
 import { useCart } from "@/components/cart/CartProvider";
 import { CUSTOM_ORDER_CATEGORIES, type CustomOrderCategoryId } from "@/lib/constants";
 import { customOrderEstimate } from "@/lib/pricing";
@@ -149,7 +148,7 @@ export default function CustomOrderPage() {
   }
 
   return (
-    <RequireActiveCustomer>
+    <>
       <PageHeader
         title="Pesan Produk Custom"
         subtitle="BISA BEBERAPA ITEM SEKALIGUS · ESTIMASI HARGA OTOMATIS BERDASARKAN UKURAN"
@@ -332,6 +331,6 @@ export default function CustomOrderPage() {
           </div>
         </div>
       </div>
-    </RequireActiveCustomer>
+    </>
   );
 }
