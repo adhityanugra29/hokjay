@@ -160,7 +160,7 @@ export default function AppShell({
           </div>
         </aside>
 
-        <main id="main-content" className="min-w-0 flex-1">
+        <main id="main-content" className="min-w-0 flex-1 border-l border-line">
           {children}
         </main>
       </div>

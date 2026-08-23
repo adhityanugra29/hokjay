@@ -94,7 +94,7 @@ export default function CatalogPrintDoc() {
         {/* Cover */}
       <div className="bg-accent px-12 py-14 text-white">
         <div className="mb-10 flex items-center justify-between gap-4">
-          <Logo tone="white" />
+          <Logo tone="ink" fill />
           <span className="text-[13px] tracking-[0.12em] text-[rgba(255,255,255,0.85)] uppercase">
             Katalog · {periodLabel}
           </span>
@@ -214,7 +214,7 @@ export default function CatalogPrintDoc() {
       {/* Closing CTA */}
       <div className="break-inside-avoid bg-accent px-12 py-12 text-white">
         <div className="mb-4">
-          <Logo tone="white" size="sm" />
+          <Logo tone="ink" fill size="sm" />
         </div>
         <h2 className="max-w-[26ch] text-[30px] leading-tight font-extrabold">
           Kirim daftar barangmu hari ini, invoice keluar hari ini juga.
