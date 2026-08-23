@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       tipe: "keluar",
       keterangan: `Gaji ${karyawan.nama} — ${hariHadir} hari kerja, periode ${periode}`,
       kategori: "Gaji",
-      akunKode: "6400",
+      akunKode: "6-2100",
       referensi: periode,
       nominal: totalGaji,
       tanggal,

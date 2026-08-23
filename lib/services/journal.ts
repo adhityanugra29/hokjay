@@ -46,10 +46,10 @@ export async function postInvoiceFinalized(invoice: InvoiceLike, hppTotal: numbe
     sumberLabel: invoice.nomor,
     invoice: invoice._id,
     lines: [
-      line("1200", { debit: invoice.grandTotal }),
-      line("4900", { debit: diskonTotal }),
-      line("4100", { credit: gross }),
-      ...(ongkosKirim > 0 ? [line("4200", { credit: ongkosKirim })] : []),
+      line("1-2000", { debit: invoice.grandTotal }),
+      line("4-1900", { debit: diskonTotal }),
+      line("4-1000", { credit: gross }),
+      ...(ongkosKirim > 0 ? [line("4-1100", { credit: ongkosKirim })] : []),
     ],
   });
 
@@ -60,7 +60,7 @@ export async function postInvoiceFinalized(invoice: InvoiceLike, hppTotal: numbe
       sumberTipe: "invoice-hpp",
       sumberLabel: invoice.nomor,
       invoice: invoice._id,
-      lines: [line("5100", { debit: hppTotal }), line("1300", { credit: hppTotal })],
+      lines: [line("5-1000", { debit: hppTotal }), line("1-3000", { credit: hppTotal })],
     });
   }
 
@@ -71,7 +71,7 @@ export async function postInvoiceFinalized(invoice: InvoiceLike, hppTotal: numbe
       sumberTipe: "invoice-komisi",
       sumberLabel: invoice.nomor,
       invoice: invoice._id,
-      lines: [line("6100", { debit: komisiTotal }), line("2200", { credit: komisiTotal })],
+      lines: [line("6-1000", { debit: komisiTotal }), line("2-1000", { credit: komisiTotal })],
     });
   }
 }
@@ -79,7 +79,7 @@ export async function postInvoiceFinalized(invoice: InvoiceLike, hppTotal: numbe
 /** Posts the journal for an invoice payment confirmation (status -> paid). */
 export async function postInvoicePaid(invoice: InvoiceLike) {
   await dbConnect();
-  const kasAkun = invoice.payment?.metode === "Tunai" ? "1101" : "1102";
+  const kasAkun = invoice.payment?.metode === "Tunai" ? "1-1100" : "1-1200";
 
   await JournalEntry.create({
     tanggal: invoice.payment?.tanggalBayar ?? new Date(),
@@ -87,7 +87,7 @@ export async function postInvoicePaid(invoice: InvoiceLike) {
     sumberTipe: "invoice-lunas",
     sumberLabel: invoice.nomor,
     invoice: invoice._id,
-    lines: [line(kasAkun, { debit: invoice.grandTotal }), line("1200", { credit: invoice.grandTotal })],
+    lines: [line(kasAkun, { debit: invoice.grandTotal }), line("1-2000", { credit: invoice.grandTotal })],
   });
 }
 
@@ -103,7 +103,7 @@ export async function postCommissionPaid(invoice: InvoiceLike, tanggal?: Date) {
     sumberTipe: "komisi-cair",
     sumberLabel: invoice.nomor,
     invoice: invoice._id,
-    lines: [line("2200", { debit: komisiTotal }), line("1101", { credit: komisiTotal })],
+    lines: [line("2-1000", { debit: komisiTotal }), line("1-1100", { credit: komisiTotal })],
   });
 }
 
@@ -112,7 +112,7 @@ export async function postCommissionPaid(invoice: InvoiceLike, tanggal?: Date) {
  * lib/services/recordCashflow.ts) — `akunKode` is whichever expense/asset
  * account the user picked on the form (see lib/coa.ts's
  * manualExpenseAccounts()). There's no kas/bank distinction on
- * CashflowEntry today, so this defaults to Kas (1101).
+ * CashflowEntry today, so this defaults to Kas (1-1100).
  */
 export async function postCashflowKeluar(entry: { keterangan: string; akunKode: string; nominal: number; tanggal?: Date }) {
   await dbConnect();
@@ -120,7 +120,7 @@ export async function postCashflowKeluar(entry: { keterangan: string; akunKode: 
     tanggal: entry.tanggal ?? new Date(),
     deskripsi: entry.keterangan,
     sumberTipe: "cashflow-keluar",
-    lines: [line(entry.akunKode, { debit: entry.nominal }), line("1101", { credit: entry.nominal })],
+    lines: [line(entry.akunKode, { debit: entry.nominal }), line("1-1100", { credit: entry.nominal })],
   });
 }
 
@@ -136,7 +136,7 @@ export async function postCashflowMasuk(entry: { keterangan: string; akunKode: s
     tanggal: entry.tanggal ?? new Date(),
     deskripsi: entry.keterangan,
     sumberTipe: "cashflow-masuk",
-    lines: [line("1101", { debit: entry.nominal }), line(entry.akunKode, { credit: entry.nominal })],
+    lines: [line("1-1100", { debit: entry.nominal }), line(entry.akunKode, { credit: entry.nominal })],
   });
 }
 
@@ -154,7 +154,7 @@ export async function postKasAwal(amount: number, tanggal: Date) {
       tanggal,
       deskripsi: "Kas awal (saldo pembukaan)",
       sumberTipe: "kas-awal",
-      lines: [line("1101", { debit: amount }), line("3100", { credit: amount })],
+      lines: [line("1-1100", { debit: amount }), line("3-1000", { credit: amount })],
     });
   }
 }

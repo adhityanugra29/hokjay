@@ -41,7 +41,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/purchase-bills/
     tipe: "keluar",
     keterangan: `Pembayaran tagihan ${bill.nomor} — ${bill.namaBarang} (${bill.supplier})`,
     kategori: "Pembelian Stok",
-    akunKode: "1300",
+    akunKode: "1-3000",
     referensi: bill.nomor,
     nominal: bill.totalTagihan,
     tanggal,

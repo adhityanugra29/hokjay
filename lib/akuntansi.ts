@@ -48,8 +48,15 @@ export interface LabaRugi {
   pendapatanBersih: number;
   hpp: number;
   labaKotor: number;
+  /** Operating expenses only (COA group 6) — see `bebanLain` for non-operating (group 7). */
   beban: { code: string; name: string; total: number }[];
   totalBeban: number;
+  /** Subtotal after operating expenses, before non-operating ones — the
+   * corporate multi-step income statement's "Laba Usaha" line, confirmed
+   * with the user 2026-08-23. */
+  labaUsaha: number;
+  bebanLain: { code: string; name: string; total: number }[];
+  totalBebanLain: number;
   labaBersih: number;
 }
 
@@ -58,16 +65,20 @@ export async function getLabaRugi(range: { from?: Date; to?: Date }): Promise<La
   const balances = await getTrialBalance(range);
   const byCode = new Map(balances.map((b) => [b.code, b]));
 
-  const penjualanBruto = byCode.get("4100")?.saldo ?? 0;
-  const pendapatanOngkosKirim = byCode.get("4200")?.saldo ?? 0;
-  const diskonPenjualan = byCode.get("4900")?.saldo ?? 0;
+  const penjualanBruto = byCode.get("4-1000")?.saldo ?? 0;
+  const pendapatanOngkosKirim = byCode.get("4-1100")?.saldo ?? 0;
+  const diskonPenjualan = byCode.get("4-1900")?.saldo ?? 0;
   const pendapatanBersih = penjualanBruto + pendapatanOngkosKirim - diskonPenjualan;
 
-  const hpp = (byCode.get("5100")?.saldo ?? 0) + (byCode.get("5200")?.saldo ?? 0);
+  const hpp = (byCode.get("5-1000")?.saldo ?? 0) + (byCode.get("5-1900")?.saldo ?? 0);
   const labaKotor = pendapatanBersih - hpp;
 
   const bebanAccounts = balances.filter((b) => b.kelompok === "Beban" && b.saldo !== 0);
   const totalBeban = bebanAccounts.reduce((s, b) => s + b.saldo, 0);
+  const labaUsaha = labaKotor - totalBeban;
+
+  const bebanLainAccounts = balances.filter((b) => b.kelompok === "Beban Non-Operasional" && b.saldo !== 0);
+  const totalBebanLain = bebanLainAccounts.reduce((s, b) => s + b.saldo, 0);
 
   return {
     penjualanBruto,
@@ -78,7 +89,10 @@ export async function getLabaRugi(range: { from?: Date; to?: Date }): Promise<La
     labaKotor,
     beban: bebanAccounts.map((b) => ({ code: b.code, name: b.name, total: b.saldo })),
     totalBeban,
-    labaBersih: labaKotor - totalBeban,
+    labaUsaha,
+    bebanLain: bebanLainAccounts.map((b) => ({ code: b.code, name: b.name, total: b.saldo })),
+    totalBebanLain,
+    labaBersih: labaUsaha - totalBebanLain,
   };
 }
 
@@ -100,10 +114,14 @@ export async function getNeraca(asOf?: Date): Promise<Neraca> {
   const kewajiban = balances.filter((b) => b.kelompok === "Kewajiban" && b.saldo !== 0);
   const ekuitasAccounts = balances.filter((b) => b.kelompok === "Ekuitas" && b.saldo !== 0);
 
-  const penjualan = (balances.find((b) => b.code === "4100")?.saldo ?? 0) + (balances.find((b) => b.code === "4200")?.saldo ?? 0);
-  const diskon = balances.find((b) => b.code === "4900")?.saldo ?? 0;
+  const penjualan = (balances.find((b) => b.code === "4-1000")?.saldo ?? 0) + (balances.find((b) => b.code === "4-1100")?.saldo ?? 0);
+  const diskon = balances.find((b) => b.code === "4-1900")?.saldo ?? 0;
+  // Every expense group (HPP, operating Beban, and non-operating Beban
+  // Non-Operasional) nets against equity here — labaBerjalan has to match
+  // getLabaRugi's final labaBersih (not just labaUsaha) for the balance
+  // sheet to actually balance.
   const hppBeban = balances
-    .filter((b) => b.kelompok === "HPP" || b.kelompok === "Beban")
+    .filter((b) => b.kelompok === "HPP" || b.kelompok === "Beban" || b.kelompok === "Beban Non-Operasional")
     .reduce((s, b) => s + b.saldo, 0);
   const labaBerjalan = penjualan - diskon - hppBeban;
 

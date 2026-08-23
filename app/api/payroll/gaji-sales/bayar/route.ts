@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       tipe: "keluar",
       keterangan: `Gaji pokok ${sales.nama} — periode ${periode}`,
       kategori: "Gaji",
-      akunKode: "6400",
+      akunKode: "6-2100",
       referensi: periode,
       nominal: sales.gajiPokok,
       tanggal,

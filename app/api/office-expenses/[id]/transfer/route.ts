@@ -41,7 +41,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/office-expenses
     tipe: "keluar",
     keterangan: `Kebutuhan kantor: ${request.nama}`,
     kategori: "Operasional",
-    akunKode: "6300",
+    akunKode: "6-2000",
     referensi: String(request._id),
     nominal,
     tanggal,

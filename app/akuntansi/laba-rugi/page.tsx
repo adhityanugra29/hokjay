@@ -63,12 +63,27 @@ export default async function LabaRugiPage({ searchParams }: PageProps<"/akuntan
         <Row label="Laba Kotor" value={lr.labaKotor} bold />
 
         <div className="mt-5 mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-          Beban Usaha
+          Beban Operasional
         </div>
         {lr.beban.map((b) => (
           <Row key={b.code} label={`${b.code} — ${b.name}`} value={-b.total} indent />
         ))}
-        <Row label="Total Beban" value={-lr.totalBeban} />
+        <Row label="Total Beban Operasional" value={-lr.totalBeban} />
+
+        <div className="h-2" />
+        <Row label="Laba Usaha" value={lr.labaUsaha} bold />
+
+        {lr.bebanLain.length > 0 && (
+          <>
+            <div className="mt-5 mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+              Beban Non-Operasional
+            </div>
+            {lr.bebanLain.map((b) => (
+              <Row key={b.code} label={`${b.code} — ${b.name}`} value={-b.total} indent />
+            ))}
+            <Row label="Total Beban Non-Operasional" value={-lr.totalBebanLain} />
+          </>
+        )}
 
         <div className="h-2" />
         <Row label={lr.labaBersih >= 0 ? "Laba Bersih" : "Rugi Bersih"} value={lr.labaBersih} bold />
