@@ -8,11 +8,19 @@
 export default function Logo({
   tone = "ink",
   size = "md",
+  full = false,
+  fill = false,
   className = "",
 }: {
   /** "ink" for light backgrounds (black border/text), "white" for dark/accent backgrounds. */
   tone?: "ink" | "white";
   size?: "sm" | "md" | "lg";
+  /** Block-level, full width of its container — for use as a header bar (e.g. the sidebar). */
+  full?: boolean;
+  /** Paints an explicit background (white box on "ink" tone, black box on "white" tone) so the
+   * mark reads as a solid card sitting on a contrasting page background, instead of being
+   * transparent — needed whenever the surrounding background isn't already that color itself. */
+  fill?: boolean;
   className?: string;
 }) {
   const borderColor = tone === "white" ? "border-white" : "border-ink";
@@ -23,16 +31,18 @@ export default function Logo({
   // text) instead of the usual accent fill — otherwise an accent-red badge
   // vanishes against an accent-red cover (see CatalogPrintDoc's cover).
   const badgeColor = tone === "white" ? "bg-white text-accent" : "bg-accent text-white";
+  const bgColor = fill ? (tone === "white" ? "bg-ink" : "bg-white") : "";
 
-  const dims =
-    size === "sm"
+  const dims = full
+    ? { pad: "px-5 py-4", word: "text-[1.5rem]", caption: "text-[9px]", badge: "px-1.5 py-0.5 text-[9px]", gap: "gap-2" }
+    : size === "sm"
       ? { pad: "px-2.5 py-1.5", word: "text-[0.85rem]", caption: "text-[6.5px]", badge: "px-1 py-px text-[6.5px]", gap: "gap-1" }
       : size === "lg"
         ? { pad: "px-4 py-3", word: "text-[1.6rem]", caption: "text-[9px]", badge: "px-1.5 py-0.5 text-[9px]", gap: "gap-2" }
         : { pad: "px-3 py-2", word: "text-[1.15rem]", caption: "text-[8px]", badge: "px-1 py-0.5 text-[8px]", gap: "gap-1.5" };
 
   return (
-    <div className={`inline-block border-2 ${borderColor} ${dims.pad} ${className}`}>
+    <div className={`${full ? "block w-full" : "inline-block"} border-2 ${borderColor} ${bgColor} ${dims.pad} ${className}`}>
       <div className={`font-sans font-extrabold leading-none tracking-tight ${textColor} ${dims.word}`}>HOJAY</div>
       <div className={`my-1 h-px w-full ${ruleColor}`} />
       <div className={`flex items-center ${dims.gap}`}>

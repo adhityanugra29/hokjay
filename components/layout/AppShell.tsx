@@ -83,12 +83,7 @@ export default function AppShell({
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="border-b-2 border-white/25 px-5 py-[18px]">
-            <Logo tone="white" size="sm" />
-            <div className="mt-2 font-sans text-[9.5px] uppercase tracking-[0.16em] text-white/45">
-              CV Horeca Jaya · Kelola usaha
-            </div>
-          </div>
+          <Logo tone="ink" fill full />
 
           <nav className="flex flex-col overflow-y-auto py-2">
             {visibleGroups.map((group) => (
