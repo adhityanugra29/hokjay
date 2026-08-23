@@ -94,7 +94,13 @@ export default function CatalogPrintDoc() {
       <div className="bg-accent px-12 py-14 text-white">
         <div className="mb-10 flex items-center justify-between gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" className="h-auto w-[220px]" />
+          <img
+            src="/logo/hojay-2b-positif.png"
+            alt="HOJAY Kitchen Equipment"
+            width={220}
+            height={122}
+            className="h-auto w-[220px]"
+          />
           <span className="text-[13px] tracking-[0.12em] text-[rgba(255,255,255,0.85)] uppercase">
             Katalog · {periodLabel}
           </span>
@@ -105,11 +111,6 @@ export default function CatalogPrintDoc() {
         <p className="mt-6 max-w-[46ch] text-[16px] leading-relaxed text-[rgba(255,255,255,0.9)]">
           Stainless steel berkualitas, stok siap kirim. Ukuran custom bisa dipesan sesuai kebutuhan dapur Anda.
         </p>
-        {activeCustomer && (
-          <p className="mt-6 text-[13px] tracking-[0.1em] text-[rgba(255,255,255,0.85)] uppercase">
-            Katalog untuk: <span className="font-bold text-white normal-case">{activeCustomer.nama}</span>
-          </p>
-        )}
       </div>
       <div className="grid grid-cols-3 border-b-2 border-line">
         <div className="px-12 py-6">
@@ -215,7 +216,13 @@ export default function CatalogPrintDoc() {
       <div className="break-inside-avoid bg-accent px-12 py-12 text-white">
         <div className="mb-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" className="h-auto w-[150px]" />
+          <img
+            src="/logo/hojay-2b-positif.png"
+            alt="HOJAY Kitchen Equipment"
+            width={150}
+            height={83}
+            className="h-auto w-[150px]"
+          />
         </div>
         <h2 className="max-w-[26ch] text-[30px] leading-tight font-extrabold">
           Kirim daftar barangmu hari ini, invoice keluar hari ini juga.
