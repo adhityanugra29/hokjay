@@ -31,6 +31,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/katalog", label: "Katalog", icon: "grid" },
       { href: "/invoice", label: "Invoice", icon: "document", badge: "invoiceCount" },
       { href: "/pelanggan", label: "Pelanggan", icon: "users" },
+      // Moved from "Uang" into "Jualan" per the user's request 2026-08-23.
+      { href: "/insentif", label: "Leaderboard Sales", icon: "trophy" },
     ],
   },
   {
@@ -51,7 +53,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/keuangan", label: "Keuangan", icon: "cashbox" },
       { href: "/akuntansi", label: "Akuntansi", icon: "ledger" },
-      { href: "/insentif", label: "Leaderboard Sales", icon: "trophy" },
       // "Payroll" (2026-08-23) — merges the old standalone Bayar Komisi with
       // gaji pokok (sales tetap) + gaji karyawan (non-sales, absensi-based)
       // into one nav entry. Same URL for Admin (full payment dashboard) and
