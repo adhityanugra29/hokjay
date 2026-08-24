@@ -109,7 +109,7 @@ export default function GajiBulananSheet({
           </Select>
         </div>
 
-        <div className="grid grid-cols-[24px_1.3fr_1fr_150px_190px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted">
+        <div className="hidden grid-cols-[24px_1.3fr_1fr_150px_190px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted sm:grid">
           <span />
           <span>Nama</span>
           <span>Keterangan</span>
@@ -120,13 +120,16 @@ export default function GajiBulananSheet({
           const checked = selected.has(r.id);
           const disabled = r.sudahDibayar || !r.siapBayar;
           return (
-            <div key={`${r.tipe}-${r.id}`} className="grid grid-cols-[24px_1.3fr_1fr_150px_190px] items-center gap-4 border-b border-line py-3.5 text-[0.85rem]">
+            <div
+              key={`${r.tipe}-${r.id}`}
+              className="grid grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 text-[0.85rem] sm:grid-cols-[24px_1.3fr_1fr_150px_190px] sm:items-center sm:gap-4"
+            >
               <input
                 type="checkbox"
                 checked={r.sudahDibayar || checked}
                 disabled={disabled}
                 onChange={() => toggle(r.id)}
-                className="h-4 w-4 accent-accent"
+                className="mt-0.5 h-4 w-4 accent-accent sm:mt-0"
               />
               <span className="font-semibold">
                 {r.nama}
@@ -134,10 +137,10 @@ export default function GajiBulananSheet({
                   {TIPE_LABEL[r.tipe]}
                 </span>
               </span>
-              <span className="font-mono text-[0.72rem] text-muted">{r.subtitle}</span>
-              <span className="text-right font-bold">{rupiah(r.jumlah)}</span>
+              <span className="col-start-2 font-mono text-[0.72rem] text-muted sm:col-auto">{r.subtitle}</span>
+              <span className="col-start-2 font-bold sm:col-auto sm:text-right">{rupiah(r.jumlah)}</span>
               <span
-                className={`font-mono text-[0.68rem] font-bold uppercase tracking-wide ${
+                className={`col-start-2 font-mono text-[0.68rem] font-bold uppercase tracking-wide sm:col-auto ${
                   r.sudahDibayar ? "text-muted/60" : r.siapBayar ? "text-ink" : "text-accent"
                 }`}
               >

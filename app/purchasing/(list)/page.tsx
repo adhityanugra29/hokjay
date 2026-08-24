@@ -63,7 +63,7 @@ export default async function PurchasingDashboardPage() {
             <Link
               key={po.id}
               href={`/purchasing/po/${po.id}`}
-              className={`grid grid-cols-[118px_1fr_120px_140px] items-center gap-4 border-b border-line py-3.5 pl-3 text-[0.85rem] no-underline hover:bg-[#fbfaf5] ${
+              className={`grid grid-cols-1 gap-1.5 border-b border-line py-3.5 pl-3 text-[0.85rem] no-underline hover:bg-[#fbfaf5] sm:grid-cols-[100px_1fr_120px_140px] sm:items-center sm:gap-4 ${
                 po.hariTelat > 0 ? "border-l-4 border-l-accent" : "border-l-4 border-l-line"
               }`}
             >
@@ -81,7 +81,7 @@ export default async function PurchasingDashboardPage() {
                     ? `ETA ${formatDateShort(po.tanggalEstimasi)}`
                     : "ETA belum diisi"}
               </span>
-              <span className="text-right font-sans text-[0.95rem] font-extrabold">{rupiah(po.totalNilai)}</span>
+              <span className="font-sans text-[0.95rem] font-extrabold sm:text-right">{rupiah(po.totalNilai)}</span>
             </Link>
           ))}
           {menunggu.length === 0 && (
@@ -99,7 +99,7 @@ export default async function PurchasingDashboardPage() {
             <Link
               key={po.id}
               href={`/purchasing/po/${po.id}`}
-              className="grid grid-cols-[118px_1fr_140px] items-center gap-4 border-b border-line py-3.5 text-[0.85rem] no-underline hover:bg-[#fbfaf5]"
+              className="grid grid-cols-1 gap-1.5 border-b border-line py-3.5 text-[0.85rem] no-underline hover:bg-[#fbfaf5] sm:grid-cols-[100px_1fr_140px] sm:items-center sm:gap-4"
             >
               <span className="font-mono text-[0.72rem] font-bold text-ink">{po.nomor}</span>
               <span className="text-ink">
@@ -108,7 +108,7 @@ export default async function PurchasingDashboardPage() {
                   {po.itemLabel} · diterima {po.tanggalDiterima ? formatDateShort(po.tanggalDiterima) : "—"}
                 </span>
               </span>
-              <span className="text-right font-sans text-[0.95rem] font-extrabold">{rupiah(po.totalNilai)}</span>
+              <span className="font-sans text-[0.95rem] font-extrabold sm:text-right">{rupiah(po.totalNilai)}</span>
             </Link>
           ))}
           {diterimaRecent.length === 0 && (

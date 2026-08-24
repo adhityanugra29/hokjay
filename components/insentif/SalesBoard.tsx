@@ -15,19 +15,19 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
 
   return (
     <div className="border-2 border-ink bg-panel">
-      <div className="flex flex-wrap items-end justify-between gap-6 border-b-2 border-ink px-10 py-7">
+      <div className="flex flex-wrap items-end justify-between gap-5 border-b-2 border-ink px-5 py-5 sm:gap-6 sm:px-10 sm:py-7">
         <div>
           <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
             CV Horeca Jaya · Papan penjualan
           </div>
-          <h1 className="mt-2 font-sans text-[2.4rem] font-extrabold tracking-tight">{periodLabel}</h1>
+          <h1 className="mt-2 font-sans text-[1.7rem] font-extrabold tracking-tight sm:text-[2.4rem]">{periodLabel}</h1>
         </div>
-        <div className="flex items-end gap-8">
+        <div className="flex flex-wrap items-end gap-5 sm:gap-8">
           <div>
             <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
               Penjualan tim
             </div>
-            <div className="mt-2 whitespace-nowrap font-sans text-[1.6rem] font-extrabold tracking-tight">
+            <div className="mt-2 whitespace-nowrap font-sans text-[1.3rem] font-extrabold tracking-tight sm:text-[1.6rem]">
               {rupiah(teamTotal)}
             </div>
           </div>
@@ -35,7 +35,7 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
             <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
               Sisa waktu
             </div>
-            <div className="mt-2 whitespace-nowrap font-sans text-[2rem] font-extrabold leading-none tracking-tight text-accent">
+            <div className="mt-2 whitespace-nowrap font-sans text-[1.6rem] font-extrabold leading-none tracking-tight text-accent sm:text-[2rem]">
               {daysRemaining} hari
             </div>
           </div>
@@ -43,7 +43,7 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
       </div>
 
       {teamTarget > 0 ? (
-        <div className="border-b-2 border-ink bg-white px-10 py-5">
+        <div className="border-b-2 border-ink bg-white px-5 py-5 sm:px-10">
           <div className="flex flex-wrap items-baseline justify-between gap-4">
             <span className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
               Target tim {rupiah(teamTarget)}
@@ -69,7 +69,7 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
           </div>
         </div>
       ) : (
-        <div className="border-b-2 border-ink bg-white px-10 py-5 font-mono text-[0.8rem] text-muted">
+        <div className="border-b-2 border-ink bg-white px-5 py-5 font-mono text-[0.8rem] text-muted sm:px-10">
           Belum ada target tim tercapai —{" "}
           <Link href="/admin" className="text-accent underline underline-offset-2">
             atur target per sales di Admin → Kelola User
@@ -85,20 +85,20 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
           return (
             <div
               key={r.salesNama}
-              className={`grid grid-cols-[58px_1fr_280px_96px_200px] items-center gap-6 px-5 py-5 ${
+              className={`grid grid-cols-[40px_1fr] items-start gap-x-3 gap-y-2.5 px-4 py-4 sm:grid-cols-[58px_1fr_280px_96px_200px] sm:items-center sm:gap-6 sm:px-5 sm:py-5 ${
                 isTop ? "bg-accent text-white" : "border-b border-ink/20 bg-white text-ink"
               }`}
             >
-              <span className={`font-sans text-[2.1rem] font-extrabold leading-none tracking-tight ${isTop ? "text-white" : "text-ink/25"}`}>
+              <span className={`font-sans text-[1.6rem] font-extrabold leading-none tracking-tight sm:text-[2.1rem] ${isTop ? "text-white" : "text-ink/25"}`}>
                 {rows.indexOf(r) + 1}
               </span>
-              <span>
-                <span className="font-sans text-[1.4rem] font-extrabold tracking-tight">{r.salesNama}</span>
-                <span className={`mt-1 block font-mono text-[12px] ${isTop ? "text-white/75" : "text-muted"}`}>
+              <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 sm:block">
+                <span className="font-sans text-[1.15rem] font-extrabold tracking-tight sm:text-[1.4rem]">{r.salesNama}</span>
+                <span className={`font-mono text-[12px] sm:mt-1 sm:block ${isTop ? "text-white/75" : "text-muted"}`}>
                   {r.orderCount} order
                 </span>
               </span>
-              <span>
+              <span className="col-start-2 sm:col-auto">
                 {hasTarget ? (
                   <>
                     <div className={`relative h-3 ${isTop ? "bg-white/30" : "bg-ink/14"}`}>
@@ -119,10 +119,10 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
                   </span>
                 )}
               </span>
-              <span className="text-right font-sans text-[1.35rem] font-extrabold tracking-tight">
+              <span className="col-start-2 font-sans text-[1.1rem] font-extrabold tracking-tight sm:col-auto sm:text-right sm:text-[1.35rem]">
                 {hasTarget ? `${r.percent}%` : "—"}
               </span>
-              <span className="whitespace-nowrap text-right font-sans text-[1.45rem] font-extrabold tracking-tight">
+              <span className="col-start-2 whitespace-nowrap font-sans text-[1.2rem] font-extrabold tracking-tight sm:col-auto sm:text-right sm:text-[1.45rem]">
                 {rupiah(r.totalPenjualan)}
               </span>
             </div>
@@ -134,7 +134,7 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
       </div>
 
       {rows.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-accent px-10 py-4 text-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-accent px-5 py-4 text-white sm:px-10">
           <span className="font-sans text-[0.9rem] font-extrabold">
             {lewatCount > 0 ? `${lewatCount} orang sudah lewat target` : "Belum ada yang lewat target"}
             {belumCount > 0 ? ` · ${belumCount} orang masih dalam jangkauan` : ""}

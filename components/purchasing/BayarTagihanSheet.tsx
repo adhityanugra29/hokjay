@@ -99,18 +99,18 @@ export default function BayarTagihanSheet({
           return (
             <label
               key={r.id}
-              className={`grid cursor-pointer grid-cols-[24px_1fr_140px_150px] items-center gap-4 border-b border-line py-3.5 pl-3 text-[0.85rem] hover:bg-[#fbfaf5] ${
+              className={`grid cursor-pointer grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 pl-3 text-[0.85rem] hover:bg-[#fbfaf5] sm:grid-cols-[24px_1fr_140px_150px] sm:items-center sm:gap-4 ${
                 urgent ? "border-l-4 border-l-accent" : "border-l-4 border-l-line"
               }`}
             >
-              <input type="checkbox" checked={checked} onChange={() => toggle(r.id)} className="h-4 w-4 accent-accent" />
+              <input type="checkbox" checked={checked} onChange={() => toggle(r.id)} className="mt-0.5 h-4 w-4 accent-accent sm:mt-0" />
               <span>
                 <span className="block font-bold">{r.supplier}</span>
                 <span className="mt-0.5 block font-mono text-[0.72rem] text-muted">
                   {r.nomor} · {r.namaBarang}
                 </span>
               </span>
-              <span className={`font-mono text-[0.72rem] font-bold ${urgent ? "text-accent" : "text-muted"}`}>
+              <span className={`col-start-2 font-mono text-[0.72rem] font-bold sm:col-auto ${urgent ? "text-accent" : "text-muted"}`}>
                 {urgent
                   ? `Telat ${r.hariTerlambat} hari`
                   : r.jatuhTempo
@@ -121,7 +121,9 @@ export default function BayarTagihanSheet({
                         : `${formatDateShort(r.jatuhTempo)} · ${r.hariMenujuJatuhTempo} hari`
                     : "Belum ada jatuh tempo"}
               </span>
-              <span className="text-right font-sans text-[0.95rem] font-extrabold">{rupiah(r.totalTagihan)}</span>
+              <span className="col-start-2 font-sans text-[0.95rem] font-extrabold sm:col-auto sm:text-right">
+                {rupiah(r.totalTagihan)}
+              </span>
             </label>
           );
         })}

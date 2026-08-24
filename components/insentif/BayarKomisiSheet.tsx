@@ -94,7 +94,7 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
           </div>
         </div>
 
-        <div className="grid grid-cols-[24px_1.2fr_1fr_150px_190px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted">
+        <div className="hidden grid-cols-[24px_1.2fr_1fr_150px_190px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted sm:grid">
           <span />
           <span>Sales</span>
           <span>Rekening</span>
@@ -104,15 +104,18 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
         {rows.map((r) => {
           const checked = selected.has(r.salesNama);
           return (
-            <div key={r.salesNama} className="grid grid-cols-[24px_1.2fr_1fr_150px_190px] items-center gap-4 border-b border-line py-3.5 text-[0.85rem]">
-              <input type="checkbox" checked={checked} onChange={() => toggle(r.salesNama)} className="h-4 w-4 accent-accent" />
+            <div
+              key={r.salesNama}
+              className="grid grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 text-[0.85rem] sm:grid-cols-[24px_1.2fr_1fr_150px_190px] sm:items-center sm:gap-4"
+            >
+              <input type="checkbox" checked={checked} onChange={() => toggle(r.salesNama)} className="mt-0.5 h-4 w-4 accent-accent sm:mt-0" />
               <span className="font-semibold">{r.salesNama}</span>
-              <span className="font-mono text-[0.72rem] text-muted">
+              <span className="col-start-2 font-mono text-[0.72rem] text-muted sm:col-auto">
                 {r.bank ? `${r.bank} · ${r.nomorRekening}` : "belum diisi"}
               </span>
-              <span className="text-right font-bold">{rupiah(r.totalKomisi)}</span>
+              <span className="col-start-2 font-bold sm:col-auto sm:text-right">{rupiah(r.totalKomisi)}</span>
               <span
-                className={`font-mono text-[0.68rem] font-bold uppercase tracking-wide ${
+                className={`col-start-2 font-mono text-[0.68rem] font-bold uppercase tracking-wide sm:col-auto ${
                   r.rekeningTerverifikasi ? "text-muted/60" : "text-accent"
                 }`}
               >
@@ -127,13 +130,15 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
           </div>
         )}
         {rows.length > 0 && (
-          <div className="grid grid-cols-[24px_1.2fr_1fr_150px_190px] gap-4 border-t-2 border-ink py-3.5 font-sans text-[0.9rem] font-extrabold">
-            <span />
+          <div className="flex flex-wrap items-baseline justify-between gap-3 border-t-2 border-ink py-3.5 font-sans text-[0.9rem] font-extrabold">
             <span>Total dipilih</span>
-            <span />
-            <span className="text-right">{rupiah(total)}</span>
-            <span className="font-mono text-[0.7rem] font-medium text-muted">
-              {tertunda.length > 0 ? `${tertunda.length} ditunda: ${rupiah(tertundaTotal)}` : ""}
+            <span className="flex items-baseline gap-3">
+              {rupiah(total)}
+              {tertunda.length > 0 && (
+                <span className="font-mono text-[0.7rem] font-medium text-muted">
+                  {tertunda.length} ditunda: {rupiah(tertundaTotal)}
+                </span>
+              )}
             </span>
           </div>
         )}

@@ -133,17 +133,19 @@ export default function PurchaseOrderForm({
           <label className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Barang Dipesan</label>
           <div className="mt-3 flex flex-col gap-3">
             {items.map((row, idx) => (
-              <div key={idx} className="grid grid-cols-[1fr_90px_150px_32px] items-end gap-3 border border-line bg-[#f7f5ee] p-3.5">
-                <Field label="Produk">
-                  <Select required value={row.productId} onChange={(e) => pickProduct(idx, e.target.value)}>
-                    <option value="">— Pilih produk —</option>
-                    {products.map((p) => (
-                      <option key={p._id} value={p._id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
+              <div key={idx} className="grid grid-cols-2 gap-3 border border-line bg-[#f7f5ee] p-3.5 sm:grid-cols-[1fr_90px_150px_32px] sm:items-end">
+                <div className="col-span-2 sm:col-span-1">
+                  <Field label="Produk">
+                    <Select required value={row.productId} onChange={(e) => pickProduct(idx, e.target.value)}>
+                      <option value="">— Pilih produk —</option>
+                      {products.map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                </div>
                 <Field label="Qty">
                   <Input type="number" min={1} value={row.qty} onChange={(e) => updateItem(idx, { qty: e.target.value })} />
                 </Field>
@@ -159,9 +161,9 @@ export default function PurchaseOrderForm({
                   type="button"
                   onClick={() => removeRow(idx)}
                   disabled={items.length === 1}
-                  className="h-[42px] cursor-pointer border border-line font-mono text-[0.8rem] text-muted hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+                  className="col-span-2 h-[42px] cursor-pointer border border-line font-mono text-[0.8rem] text-muted hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:col-span-1"
                 >
-                  ×
+                  × Hapus Baris
                 </button>
               </div>
             ))}
