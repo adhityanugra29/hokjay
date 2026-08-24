@@ -71,6 +71,12 @@ export async function nextPurchaseOrderCode(): Promise<string> {
   return `PO-${yyyymm}${String(seq).padStart(4, "0")}`;
 }
 
+/** Inventaris Kantor asset tag — design "6c", see models/OfficeAsset.ts. Never resets. */
+export async function nextAssetCode(): Promise<string> {
+  const seq = await nextSeq("office-asset");
+  return `AST-${String(seq).padStart(3, "0")}`;
+}
+
 /** Derives a short SKU prefix from a product name's initials, e.g. "Blender Komersial 2L" -> "BK". */
 export async function nextProductSku(name: string): Promise<string> {
   const letters = name

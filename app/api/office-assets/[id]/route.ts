@@ -19,7 +19,9 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/office-assets/
   }
   if (body.qty !== undefined) asset.qty = Number(body.qty) || 1;
   if (body.satuan !== undefined) asset.satuan = body.satuan || undefined;
+  if (body.pemegang !== undefined) asset.pemegang = body.pemegang || undefined;
   if (body.lokasi !== undefined) asset.lokasi = body.lokasi || undefined;
+  if (body.umurEkonomisBulan !== undefined) asset.umurEkonomisBulan = Number(body.umurEkonomisBulan) || 48;
   if (body.kondisi !== undefined) {
     if (!OFFICE_ASSET_KONDISI.includes(body.kondisi)) {
       return NextResponse.json({ error: "Kondisi tidak valid" }, { status: 400 });

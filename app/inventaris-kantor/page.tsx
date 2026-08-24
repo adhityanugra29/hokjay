@@ -2,10 +2,16 @@ import PageHeader from "@/components/layout/PageHeader";
 import OfficeAssetManager from "@/components/inventaris/OfficeAssetManager";
 import { dbConnect } from "@/lib/db";
 import { PurchaseBill } from "@/models/PurchaseBill";
+import { getInventarisSummary } from "@/lib/inventaris";
+import { rupiah } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-/** Standalone module, separated out from Purchasing per the user's request 2026-08-23. */
+/**
+ * Standalone module, separated out from Purchasing per the user's request
+ * 2026-08-23. Redesigned "6c" 2026-08-24 — aset, bukan stok jual: siapa
+ * pegang, kondisinya, dan nilai bukunya sekarang.
+ */
 export default async function InventarisKantorPage({
   searchParams,
 }: PageProps<"/inventaris-kantor">) {
@@ -13,15 +19,56 @@ export default async function InventarisKantorPage({
   const billId = typeof sp.billId === "string" ? sp.billId : undefined;
 
   await dbConnect();
-  const bill = billId ? await PurchaseBill.findById(billId).lean() : null;
+  const [bill, summary] = await Promise.all([
+    billId ? PurchaseBill.findById(billId).lean() : null,
+    getInventarisSummary(),
+  ]);
 
   return (
     <>
       <PageHeader
         title="Inventaris Kantor"
-        subtitle="BARANG MILIK KANTOR — PERALATAN (ASET) & HABIS PAKAI, TERMASUK YANG DIBELI LEWAT MATERIAL ORDER"
+        subtitle="Barang milik perusahaan yang dipakai sendiri — terpisah dari stok dagang di Inventory."
       />
       <div className="p-6 md:p-9">
+        <div className="mb-6 grid grid-cols-2 border-2 border-ink bg-panel lg:grid-cols-4">
+          <div className="border-b border-r border-line p-5 lg:border-b-0">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+              Jumlah aset
+            </div>
+            <div className="mt-1.5 font-sans text-[1.4rem] font-extrabold">{summary.jumlahAset} unit</div>
+            <div className="mt-1 font-mono text-[0.7rem] text-muted">{summary.kategoriCount} kategori</div>
+          </div>
+          <div className="border-b border-line p-5 lg:border-b-0 lg:border-r">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+              Harga beli total
+            </div>
+            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.4rem] font-extrabold">
+              {rupiah(summary.hargaBeliTotal)}
+            </div>
+          </div>
+          <div className="border-r border-line p-5">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+              Nilai buku sekarang
+            </div>
+            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.4rem] font-extrabold">
+              {rupiah(summary.nilaiBukuTotal)}
+            </div>
+            <div className="mt-1 font-mono text-[0.7rem] text-muted">
+              penyusutan bulan ini {rupiah(summary.penyusutanBulanIni)}
+            </div>
+          </div>
+          <div className="bg-ink p-5 text-white">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              Perlu tindakan
+            </div>
+            <div className="mt-1.5 font-sans text-[1.4rem] font-extrabold">{summary.perluTindakanCount} unit</div>
+            <div className="mt-1 font-mono text-[0.7rem] text-white/55">
+              {summary.servisCount} servis · {summary.rusakCount} rusak
+            </div>
+          </div>
+        </div>
+
         <OfficeAssetManager
           prefillFromBill={
             bill

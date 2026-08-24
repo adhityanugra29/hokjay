@@ -18,14 +18,30 @@ export const OFFICE_ASSET_KONDISI = ["baik", "perlu_servis", "rusak"] as const;
  */
 const OfficeAssetSchema = new Schema(
   {
+    kodeAset: { type: String, unique: true, sparse: true }, // AST-#### — see lib/counters.ts's nextAssetCode()
     nama: { type: String, required: true, trim: true },
     kategori: { type: String, enum: OFFICE_ASSET_KATEGORI, required: true },
     qty: { type: Number, required: true, default: 1, min: 1 },
     satuan: { type: String, trim: true, default: "unit" },
+    // Who's actually holding/using it right now, distinct from `lokasi`
+    // (which room/site it's at) — design "6c", confirmed with the user
+    // 2026-08-24: "siapa pegang dan berapa nilainya sekarang".
+    pemegang: { type: String, trim: true },
     lokasi: { type: String, trim: true },
     kondisi: { type: String, enum: OFFICE_ASSET_KONDISI, default: "baik" },
     hargaPerolehan: { type: Number, min: 0 }, // total, not per-unit
     tanggalPerolehan: { type: Date, default: Date.now },
+    // Straight-line depreciation over this many months — only meaningful
+    // for kategori "peralatan" (habis_pakai never carries book value).
+    // Nilai buku itself is computed on read (lib/inventaris.ts), not
+    // stored, so changing this retroactively re-derives every asset's
+    // current book value instead of drifting out of sync.
+    umurEkonomisBulan: { type: Number, default: 48, min: 1 },
+    // Write-off — asset stays in the list for history, but drops out of
+    // "Perlu tindakan" and its book value is pinned to 0 from here on.
+    dihapusBuku: { type: Boolean, default: false },
+    dihapusBukuTanggal: { type: Date },
+    dihapusBukuCatatan: { type: String, trim: true },
     sumberBill: { type: Schema.Types.ObjectId, ref: "PurchaseBill" },
     sumberBillNomor: { type: String },
     catatan: { type: String, trim: true },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { OfficeAsset, OFFICE_ASSET_KATEGORI } from "@/models/OfficeAsset";
 import { PurchaseBill } from "@/models/PurchaseBill";
+import { nextAssetCode } from "@/lib/counters";
 
 export async function GET(req: NextRequest) {
   await dbConnect();
@@ -32,15 +33,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const kodeAset = await nextAssetCode();
     const asset = await OfficeAsset.create({
+      kodeAset,
       nama: body.nama.trim(),
       kategori: body.kategori,
       qty: Number(body.qty) || 1,
       satuan: body.satuan || undefined,
+      pemegang: body.pemegang || undefined,
       lokasi: body.lokasi || undefined,
       kondisi: body.kondisi || undefined,
       hargaPerolehan: body.hargaPerolehan !== undefined && body.hargaPerolehan !== "" ? Number(body.hargaPerolehan) : undefined,
       tanggalPerolehan: body.tanggalPerolehan ? new Date(body.tanggalPerolehan) : undefined,
+      umurEkonomisBulan: body.umurEkonomisBulan ? Number(body.umurEkonomisBulan) : undefined,
       sumberBill: body.sumberBill || undefined,
       sumberBillNomor,
       catatan: body.catatan || undefined,
