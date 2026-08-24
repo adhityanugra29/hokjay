@@ -1,5 +1,6 @@
 import PageHeader from "@/components/layout/PageHeader";
 import BayarTagihanSheet from "@/components/purchasing/BayarTagihanSheet";
+import MobileBayarTagihanSheet from "@/components/purchasing/MobileBayarTagihanSheet";
 import { getBayarTagihanSummary, getTagihanBerjalan } from "@/lib/purchasing";
 import { getGajiBulananSummary, currentPeriod } from "@/lib/payroll";
 import { rupiah } from "@/lib/format";
@@ -25,6 +26,11 @@ export default async function BayarTagihanPage() {
 
   return (
     <>
+      {/* Mobile — "7f" */}
+      <MobileBayarTagihanSheet rows={rows} kasTersedia={summary.kasTersedia} />
+
+      {/* Desktop — "6b" */}
+      <div className="hidden md:block">
       <PageHeader
         title="Bayar Tagihan"
         subtitle="Apa yang jatuh tempo, dan cukup tidak kasnya — bukan yang paling baru masuk."
@@ -74,6 +80,7 @@ export default async function BayarTagihanPage() {
           gajiBelumDibayar={gajiBelumDibayar}
           gajiPeriodeLabel={gajiPeriodeLabel}
         />
+      </div>
       </div>
     </>
   );

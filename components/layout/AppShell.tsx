@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_GROUPS } from "@/lib/nav";
 import { isAllowedPage } from "@/lib/auth/access";
 import NavIcon from "./NavIcons";
 import Logo from "./Logo";
+import MobileTabBar from "./MobileTabBar";
+import LogoutButton from "./LogoutButton";
 import type { UserRole } from "@/models/User";
 
 function isActive(pathname: string, href: string) {
@@ -35,7 +36,6 @@ export default function AppShell({
   user: { nama: string; role: UserRole } | null;
   badgeCounts?: NavBadgeCounts;
 }) {
-  const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   // /login renders its own centered layout — no sidebar chrome around it.
@@ -49,40 +49,13 @@ export default function AppShell({
     items: g.items.filter((item) => isAllowedPage(user.role, item.href)),
   })).filter((g) => g.items.length > 0);
 
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    // Hard navigation — see the matching note in app/login/page.tsx.
-    window.location.href = "/login";
-  }
-
   return (
     <div>
-      {/* Hamburger — mobile only */}
-      <button
-        type="button"
-        aria-label="Buka menu"
-        onClick={() => setOpen(true)}
-        className="no-print fixed left-3 top-3 z-40 flex h-10 w-10 flex-col items-center justify-center gap-1.5 border border-line bg-panel md:hidden"
-      >
-        <span className="block h-0.5 w-5 bg-ink" />
-        <span className="block h-0.5 w-5 bg-ink" />
-        <span className="block h-0.5 w-5 bg-ink" />
-      </button>
-
-      {/* Overlay — mobile only, shown while sidebar is open */}
-      {open && (
-        <div
-          className="no-print fixed inset-0 z-40 bg-black/40 md:hidden"
-          onClick={() => setOpen(false)}
-        />
-      )}
-
+      {/* Sidebar — desktop (md+) only. Below md, nav is the fixed bottom tab
+          bar instead (see MobileTabBar / the 2026-08-24 "7" mobile design
+          doc) — no more hamburger/sliding drawer on phones. */}
       <div className="flex min-h-screen">
-        <aside
-          className={`no-print fixed inset-y-0 left-0 z-50 flex w-[248px] shrink-0 flex-col bg-ink text-[#f3f2f2] transition-transform md:static md:z-auto md:translate-x-0 ${
-            open ? "translate-x-0" : "-translate-x-full"
-          }`}
-        >
+        <aside className="no-print sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col bg-ink text-[#f3f2f2] md:flex">
           <Logo tone="ink" fill full border={false} shadow />
 
           <nav className="flex flex-col overflow-y-auto py-2">
@@ -105,7 +78,6 @@ export default function AppShell({
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={() => setOpen(false)}
                       className={`grid items-center gap-2.5 px-5 py-[9px] text-[13.5px] no-underline transition ${
                         showBadge ? "grid-cols-[18px_1fr_auto]" : "grid-cols-[18px_1fr]"
                       } ${
@@ -149,21 +121,19 @@ export default function AppShell({
                 <div className="text-[12px] font-medium text-white/85">{user.nama}</div>
                 <div className="text-[10.5px] text-white/45">{ROLE_LABEL[user.role]}</div>
               </div>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="cursor-pointer border border-white/25 px-2.5 py-1.5 text-[10px] font-semibold text-white/80 hover:border-accent hover:text-white"
-              >
+              <LogoutButton className="cursor-pointer border border-white/25 px-2.5 py-1.5 text-[10px] font-semibold text-white/80 hover:border-accent hover:text-white">
                 Keluar
-              </button>
+              </LogoutButton>
             </div>
           </div>
         </aside>
 
-        <main id="main-content" className="min-w-0 flex-1 border-l border-line">
+        <main id="main-content" className="min-w-0 flex-1 border-l border-line pb-[58px] md:pb-0">
           {children}
         </main>
       </div>
+
+      <MobileTabBar role={user.role} />
     </div>
   );
 }

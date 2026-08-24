@@ -18,7 +18,10 @@ export type NavIconName =
   | "split"
   | "truck"
   | "receipt"
-  | "gear";
+  | "gear"
+  | "menu"
+  | "close"
+  | "chevron-right";
 
 function Icon({ children, size = 15 }: { children: React.ReactNode; size?: number }) {
   return (
@@ -108,6 +111,11 @@ const ICONS: Record<NavIconName, React.ReactNode> = {
       <path d="M10 3v2M10 15v2M3 10h2M15 10h2M5 5l1.5 1.5M13.5 13.5 15 15M15 5l-1.5 1.5M6.5 13.5 5 15" />
     </>
   ),
+  // Mobile bottom tab bar's "Menu" tab — matches the "7g" mockup's hamburger
+  // exactly (3 equal lines, unlike "list"'s shorter third line).
+  menu: <path d="M3 6h14M3 10h14M3 14h14" />,
+  close: <path d="M5 5l10 10M15 5 5 15" />,
+  "chevron-right": <path d="M7 4.5 12.5 10 7 15.5" />,
 };
 
 export default function NavIcon({ name, size }: { name: NavIconName; size?: number }) {
