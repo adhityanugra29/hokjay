@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LinkButton } from "@/components/ui/Button";
+import MobilePurchasing from "@/components/purchasing/MobilePurchasing";
 import { rupiah, formatDateShort } from "@/lib/format";
 import { getPurchasingSummary, getPOsMenunggu, getPOsDiterimaRecent, getLowStockSuggestions } from "@/lib/purchasing";
 
@@ -22,6 +23,11 @@ export default async function PurchasingDashboardPage() {
 
   return (
     <>
+      {/* Mobile — "7i" */}
+      <MobilePurchasing summary={summary} menunggu={menunggu} diterimaRecent={diterimaRecent} />
+
+      {/* Desktop — "6a" */}
+      <div className="hidden md:block">
       <div className="mb-6 grid grid-cols-2 border-2 border-ink bg-panel lg:grid-cols-4">
         <div className="min-w-0 border-b border-r border-line p-4 sm:p-5 lg:border-b-0">
           <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">PO jalan</div>
@@ -171,6 +177,7 @@ export default async function PurchasingDashboardPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </>
   );

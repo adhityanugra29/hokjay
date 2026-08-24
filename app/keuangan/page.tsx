@@ -2,6 +2,7 @@ import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import PeriodPicker from "@/components/ui/PeriodPicker";
+import MobileKeuangan from "@/components/keuangan/MobileKeuangan";
 import { getKeuanganSummary, getCashBook, getCurrentCashBalance } from "@/lib/keuangan";
 import { getFollowUpInvoices } from "@/lib/dashboard";
 import { dbConnect } from "@/lib/db";
@@ -46,8 +47,23 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
     return `/keuangan?${params.toString()}`;
   }
 
+  const keluarNodes = summary.nodes.filter((n) => n.tipe === "keluar");
+
   return (
     <>
+      {/* Mobile — "7h" */}
+      <MobileKeuangan
+        month={month}
+        year={year}
+        currentYear={nowJakarta.year}
+        saldoHariIni={saldoHariIni}
+        cashBook={cashBook}
+        keluarNodes={keluarNodes}
+        netTotal={summary.netTotal}
+      />
+
+      {/* Desktop — "2a" */}
+      <div className="hidden md:block">
       <PageHeader
         title="Keuangan"
         subtitle="Uang yang benar-benar keluar-masuk kas toko, urut tanggal. Kolom paling kanan adalah sisa kas setelah transaksi itu."
@@ -240,6 +256,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
             </div>
           </div>
         </div>
+      </div>
       </div>
     </>
   );
