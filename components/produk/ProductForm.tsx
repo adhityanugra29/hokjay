@@ -19,6 +19,7 @@ export interface ProductFormValues {
   hargaMinimum: string;
   komisiPercent: string;
   stok: string;
+  stokMinimum: string;
   alertHariTidakTerjual: string;
   panjangCm: string;
   lebarCm: string;
@@ -40,6 +41,7 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   hargaMinimum: "",
   komisiPercent: "5",
   stok: "0",
+  stokMinimum: "5",
   // No longer a form field (see confirmation 2026-08-20) — schema default
   // (45) is preserved by still sending it, just never rendered/edited here.
   alertHariTidakTerjual: "45",
@@ -103,6 +105,7 @@ export default function ProductForm({
       hargaMinimum: Number(values.hargaMinimum),
       komisiPercent: Number(values.komisiPercent),
       stok: Number(values.stok),
+      stokMinimum: Number(values.stokMinimum) || 0,
       alertHariTidakTerjual: Number(values.alertHariTidakTerjual),
       dimensi:
         values.panjangCm || values.lebarCm || values.tinggiCm
@@ -241,6 +244,10 @@ export default function ProductForm({
 
           <Field label="Stok Awal">
             <Input type="number" value={values.stok} onChange={(e) => set("stok", e.target.value)} />
+          </Field>
+
+          <Field label="Stok Minimum" hint="Kalau stok di bawah ini, muncul usulan PO otomatis di Purchasing.">
+            <Input type="number" min={0} value={values.stokMinimum} onChange={(e) => set("stokMinimum", e.target.value)} />
           </Field>
 
           <Field label="Panjang (cm)">

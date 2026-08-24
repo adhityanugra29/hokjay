@@ -14,6 +14,10 @@ const PurchaseBillSchema = new Schema(
   {
     nomor: { type: String, required: true, unique: true },
     request: { type: Schema.Types.ObjectId, ref: "PurchaseRequest" },
+    // Set when this bill was auto-created from a received PurchaseOrder
+    // item (see app/api/purchase-orders/[id]/terima) — absent for
+    // standalone/manual bills, same optional-link convention as `request`.
+    purchaseOrder: { type: Schema.Types.ObjectId, ref: "PurchaseOrder" },
 
     namaBarang: { type: String, required: true, trim: true },
     qty: { type: Number, required: true, default: 1, min: 1 },

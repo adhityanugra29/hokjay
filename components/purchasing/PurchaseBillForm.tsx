@@ -150,7 +150,7 @@ export default function PurchaseBillForm({
           <Button type="submit" disabled={saving}>
             {saving ? "Menyimpan..." : "Simpan Material Order"}
           </Button>
-          <LinkButton variant="ghost" href="/purchasing">
+          <LinkButton variant="ghost" href="/purchasing/tagihan">
             Batal
           </LinkButton>
         </FormActions>

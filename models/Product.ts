@@ -26,6 +26,11 @@ const ProductSchema = new Schema(
     komisiNominal: { type: Number, required: true, default: 0 },
 
     stok: { type: Number, required: true, default: 0 },
+    // Per-product override of LOW_STOCK_THRESHOLD — powers Purchasing's
+    // auto-suggested PO list (see lib/purchasing.ts). Defaults to the same
+    // global threshold so existing products behave the same until someone
+    // tunes it per product.
+    stokMinimum: { type: Number, default: LOW_STOCK_THRESHOLD, min: 0 },
     alertHariTidakTerjual: { type: Number, default: 45 },
 
     dimensi: {

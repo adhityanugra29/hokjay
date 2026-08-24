@@ -64,6 +64,13 @@ export async function nextJobOrderCode(): Promise<string> {
   return `JO-${String(seq).padStart(4, "0")}`;
 }
 
+/** Purchasing's restocking PO — design "6a", see models/PurchaseOrder.ts. Resets monthly like INV-. */
+export async function nextPurchaseOrderCode(): Promise<string> {
+  const yyyymm = invoiceYearMonth();
+  const seq = await nextSeq(`purchase-order:${yyyymm}`);
+  return `PO-${yyyymm}${String(seq).padStart(4, "0")}`;
+}
+
 /** Derives a short SKU prefix from a product name's initials, e.g. "Blender Komersial 2L" -> "BK". */
 export async function nextProductSku(name: string): Promise<string> {
   const letters = name

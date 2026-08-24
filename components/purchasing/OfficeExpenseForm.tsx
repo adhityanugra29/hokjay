@@ -40,7 +40,7 @@ export default function OfficeExpenseForm() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal mengirim request");
       }
-      router.push("/purchasing");
+      router.push("/purchasing/job-order");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengirim request");
@@ -84,7 +84,7 @@ export default function OfficeExpenseForm() {
           <Button type="submit" disabled={saving}>
             {saving ? "Mengirim..." : "Kirim Request"}
           </Button>
-          <LinkButton variant="ghost" href="/purchasing">
+          <LinkButton variant="ghost" href="/purchasing/job-order">
             Batal
           </LinkButton>
         </FormActions>

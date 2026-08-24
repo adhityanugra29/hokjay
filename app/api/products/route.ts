@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       hargaMinimum: Number(body.hargaMinimum),
       komisiPercent: Number(body.komisiPercent ?? 5),
       stok: Number(body.stok ?? 0),
+      stokMinimum: body.stokMinimum !== undefined ? Number(body.stokMinimum) : undefined,
       alertHariTidakTerjual: body.alertHariTidakTerjual ? Number(body.alertHariTidakTerjual) : undefined,
       dimensi: body.dimensi,
       ketebalan: body.ketebalan,

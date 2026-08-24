@@ -28,6 +28,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/products/[id]"
     "hargaMinimum",
     "komisiPercent",
     "stok",
+    "stokMinimum",
     "alertHariTidakTerjual",
     "dimensi",
     "ketebalan",
