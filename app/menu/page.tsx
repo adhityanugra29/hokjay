@@ -8,6 +8,7 @@ import { Product } from "@/models/Product";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import MenuBackButton from "@/components/layout/MenuBackButton";
 import LogoutButton from "@/components/layout/LogoutButton";
+import Logo from "@/components/layout/Logo";
 
 export const dynamic = "force-dynamic";
 
@@ -48,8 +49,8 @@ export default async function MenuPage() {
       <div className="flex min-h-[calc(100vh-58px)] flex-col bg-ink text-panel md:hidden">
         <div className="flex items-center justify-between gap-3 border-b-2 border-white/25 px-4 py-4">
           <div>
-            <div className="font-sans text-[1.05rem] font-extrabold tracking-tight text-white">CV HORECA JAYA</div>
-            <div className="mt-1 font-sans text-[0.68rem] text-white/45">
+            <Logo tone="white" size="sm" />
+            <div className="mt-2 font-sans text-[0.68rem] text-white/45">
               {session.nama} · {ROLE_LABEL[session.role] ?? session.role}
             </div>
           </div>

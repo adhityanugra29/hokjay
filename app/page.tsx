@@ -1,6 +1,7 @@
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import NavIcon from "@/components/layout/NavIcons";
+import Logo from "@/components/layout/Logo";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { dbConnect } from "@/lib/db";
 import { currentPeriod, getSalesRanking } from "@/lib/insentif";
@@ -104,8 +105,8 @@ export default async function DashboardPage() {
         <div className="bg-ink px-4 pb-4 pt-3 text-panel">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="font-sans text-[1.05rem] font-extrabold tracking-tight text-white">CV HORECA JAYA</div>
-              <div className="mt-1 font-sans text-[0.7rem] text-white/50">
+              <Logo tone="white" size="sm" />
+              <div className="mt-2 font-sans text-[0.7rem] text-white/50">
                 {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}
                 {session?.nama ? ` · ${session.nama}` : ""}
               </div>
