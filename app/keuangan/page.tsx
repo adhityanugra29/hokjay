@@ -126,7 +126,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
               </div>
             </div>
 
-            <div className="grid grid-cols-[58px_1fr_120px_120px_130px] gap-3.5 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted">
+            <div className="hidden grid-cols-[58px_1fr_120px_120px_130px] gap-3.5 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted sm:grid">
               <span>Tgl</span>
               <span>Keterangan</span>
               <span className="text-right">Masuk</span>
@@ -136,16 +136,34 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
             {displayedRows.map((r) => (
               <div
                 key={r.id}
-                className={`grid grid-cols-[58px_1fr_120px_120px_130px] gap-3.5 border-b border-line py-3 text-[0.82rem] ${r.isOpeningRow ? "bg-[#f7f5ee] font-semibold" : ""}`}
+                className={`border-b border-line py-3 text-[0.82rem] ${r.isOpeningRow ? "bg-[#f7f5ee] font-semibold" : ""}`}
               >
-                <span className="font-mono text-[0.72rem] text-muted">{formatDateShort(r.tanggal)}</span>
-                <span>
-                  <span className="font-medium">{r.keterangan}</span>
-                  {r.sub && <span className="ml-1 font-mono text-[0.7rem] text-muted">· {r.sub}</span>}
-                </span>
-                <span className="text-right font-mono">{r.masuk ? rupiah(r.masuk) : ""}</span>
-                <span className="text-right font-mono text-accent">{r.keluar ? rupiah(r.keluar) : ""}</span>
-                <span className="text-right font-mono font-semibold">{rupiah(r.saldoBerjalan)}</span>
+                {/* Mobile card — hidden at sm: and up, where the grid row below takes over. */}
+                <div className="sm:hidden">
+                  <div className="flex items-baseline justify-between gap-2.5">
+                    <span>
+                      <span className="font-medium">{r.keterangan}</span>
+                      {r.sub && <span className="ml-1 font-mono text-[0.7rem] text-muted">· {r.sub}</span>}
+                    </span>
+                    <span className="shrink-0 font-mono text-[0.72rem] text-muted">{formatDateShort(r.tanggal)}</span>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[0.75rem]">
+                    {r.masuk !== undefined && <span>Masuk {rupiah(r.masuk)}</span>}
+                    {r.keluar !== undefined && <span className="text-accent">Keluar {rupiah(r.keluar)}</span>}
+                    <span className="font-semibold">Sisa {rupiah(r.saldoBerjalan)}</span>
+                  </div>
+                </div>
+                {/* Desktop/tablet row */}
+                <div className="hidden sm:grid sm:grid-cols-[58px_1fr_120px_120px_130px] sm:items-center sm:gap-3.5">
+                  <span className="font-mono text-[0.72rem] text-muted">{formatDateShort(r.tanggal)}</span>
+                  <span>
+                    <span className="font-medium">{r.keterangan}</span>
+                    {r.sub && <span className="ml-1 font-mono text-[0.7rem] text-muted">· {r.sub}</span>}
+                  </span>
+                  <span className="text-right font-mono">{r.masuk ? rupiah(r.masuk) : ""}</span>
+                  <span className="text-right font-mono text-accent">{r.keluar ? rupiah(r.keluar) : ""}</span>
+                  <span className="text-right font-mono font-semibold">{rupiah(r.saldoBerjalan)}</span>
+                </div>
               </div>
             ))}
             {displayedRows.length <= 1 && (
@@ -153,11 +171,19 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
                 Belum ada transaksi pada periode ini.
               </div>
             )}
-            <div className="grid grid-cols-[58px_1fr_120px_120px_130px] gap-3.5 border-t-2 border-ink py-3.5 font-sans text-[0.85rem] font-extrabold">
-              <span className="col-span-2">Total</span>
-              <span className="text-right">{rupiah(cashBook.totalMasuk)}</span>
-              <span className="text-right text-accent">{rupiah(cashBook.totalKeluar)}</span>
-              <span className="text-right">{rupiah(cashBook.saldoAkhir)}</span>
+            <div className="border-t-2 border-ink py-3.5 font-sans text-[0.85rem] font-extrabold">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1.5 sm:hidden">
+                <span>Total</span>
+                <span className="font-mono">Masuk {rupiah(cashBook.totalMasuk)}</span>
+                <span className="font-mono text-accent">Keluar {rupiah(cashBook.totalKeluar)}</span>
+                <span className="font-mono">Sisa {rupiah(cashBook.saldoAkhir)}</span>
+              </div>
+              <div className="hidden sm:grid sm:grid-cols-[58px_1fr_120px_120px_130px] sm:gap-3.5">
+                <span className="sm:col-span-2">Total</span>
+                <span className="text-right">{rupiah(cashBook.totalMasuk)}</span>
+                <span className="text-right text-accent">{rupiah(cashBook.totalKeluar)}</span>
+                <span className="text-right">{rupiah(cashBook.saldoAkhir)}</span>
+              </div>
             </div>
           </div>
 
