@@ -5,6 +5,8 @@ import { NAV_GROUPS } from "@/lib/nav";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Product } from "@/models/Product";
+import { PurchaseBill } from "@/models/PurchaseBill";
+import { OfficeExpenseRequest } from "@/models/OfficeExpenseRequest";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import MenuBackButton from "@/components/layout/MenuBackButton";
 import LogoutButton from "@/components/layout/LogoutButton";
@@ -19,29 +21,59 @@ const ROLE_LABEL: Record<string, string> = {
   admin: "Admin",
 };
 
+interface MenuItem {
+  href: string;
+  label: string;
+  badge?: number;
+}
+
 /**
  * "7g" — full-screen mobile menu, reached from the bottom tab bar's "Menu"
- * tab. Same content the desktop sidebar already shows (NAV_GROUPS, filtered
- * through the identical isAllowedPage check), just laid out as a dark
- * full-page grid instead of a 248px rail — see the 2026-08-24 mobile design
- * doc's "7g". Reachable on desktop too (direct URL), where it shows a short
- * redirect notice instead since the sidebar already covers this there.
+ * tab. Starts from the same NAV_GROUPS the desktop sidebar shows (still
+ * filtered through the identical isAllowedPage check), then — mobile-menu
+ * only, doesn't touch the shared sidebar — splices in Material Order, Job
+ * Order, and Supplier as their own rows under "Barang", matching the
+ * 2026-08-25 mobile design doc's "7g". These are real existing pages
+ * (currently reachable only via Purchasing's SubnavTabs); Job Order here is
+ * still the existing office-expense-request feature (listrik/wifi/pulsa),
+ * NOT the production-tracking concept the doc's "7k" describes — that one
+ * was skipped per the user's confirmation 2026-08-25 (name conflict with a
+ * real existing feature, would need its own design).
  */
 export default async function MenuPage() {
   const session = await getSession();
   if (!session) return null;
 
   await dbConnect();
-  const [invoiceCount, lowStock] = await Promise.all([
+  const [invoiceCount, lowStock, materialOrderUnpaid, jobOrderPending] = await Promise.all([
     Invoice.countDocuments({ status: { $in: ["draft", "unpaid"] } }),
     Product.countDocuments({ stok: { $lte: LOW_STOCK_THRESHOLD }, isCustom: { $ne: true } }),
+    PurchaseBill.countDocuments({ status: "belum_dibayar" }),
+    OfficeExpenseRequest.countDocuments({ status: "diajukan" }),
   ]);
   const counts = { invoiceCount, lowStock };
 
   const visibleGroups = NAV_GROUPS.map((g) => ({
-    ...g,
-    items: g.items.filter((item) => isAllowedPage(session.role, item.href)),
-  })).filter((g) => g.items.length > 0 && g.label !== null);
+    label: g.label,
+    items: g.items
+      .filter((item) => isAllowedPage(session.role, item.href))
+      .map(
+        (item): MenuItem => ({
+          href: item.href,
+          label: item.label,
+          badge: item.badge === "invoiceCount" ? counts.invoiceCount : item.badge === "lowStock" ? counts.lowStock : undefined,
+        })
+      ),
+  })).filter((g) => g.label !== null && g.items.length > 0) as { label: string; items: MenuItem[] }[];
+
+  const barang = visibleGroups.find((g) => g.label === "Barang");
+  if (barang && isAllowedPage(session.role, "/purchasing")) {
+    barang.items.push(
+      { href: "/purchasing/tagihan", label: "Material Order", badge: materialOrderUnpaid || undefined },
+      { href: "/purchasing/job-order", label: "Job Order", badge: jobOrderPending || undefined },
+      { href: "/purchasing/supplier", label: "Supplier" }
+    );
+  }
 
   return (
     <>
@@ -64,21 +96,18 @@ export default async function MenuPage() {
                 {group.label}
               </div>
               <div className="grid grid-cols-2 gap-px bg-white/15">
-                {group.items.map((item) => {
-                  const badgeValue = item.badge === "invoiceCount" ? counts.invoiceCount : counts.lowStock;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="flex min-h-[44px] items-center justify-between gap-2 bg-ink px-4 py-3.5 no-underline"
-                    >
-                      <b className="font-sans text-[0.85rem] text-white">{item.label}</b>
-                      {item.badge && badgeValue > 0 && (
-                        <span className="bg-accent px-1.5 py-0.5 font-sans text-[10px] font-bold text-white">{badgeValue}</span>
-                      )}
-                    </Link>
-                  );
-                })}
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex min-h-[44px] items-center justify-between gap-2 bg-ink px-4 py-3.5 no-underline"
+                  >
+                    <b className="font-sans text-[0.85rem] text-white">{item.label}</b>
+                    {!!item.badge && (
+                      <span className="bg-accent px-1.5 py-0.5 font-sans text-[10px] font-bold text-white">{item.badge}</span>
+                    )}
+                  </Link>
+                ))}
               </div>
             </div>
           ))}

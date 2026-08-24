@@ -2,6 +2,7 @@ import { dbConnect } from "@/lib/db";
 import { PurchaseOrder } from "@/models/PurchaseOrder";
 import { PurchaseBill } from "@/models/PurchaseBill";
 import { Product } from "@/models/Product";
+import { Supplier } from "@/models/Supplier";
 import { getCurrentCashBalance } from "@/lib/keuangan";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -254,4 +255,48 @@ export async function getTagihanBerjalan(): Promise<TagihanBerjalanRow[]> {
     if (a.hariTerlambat !== b.hariTerlambat) return b.hariTerlambat - a.hariTerlambat; // most overdue first
     return a.hariMenujuJatuhTempo - b.hariMenujuJatuhTempo; // then soonest due
   });
+}
+
+export interface SupplierWithUtangRow {
+  id: string;
+  namaUsaha: string;
+  alamat: string;
+  bank: string;
+  nomorRekening: string;
+  kontak?: string;
+  utangBerjalan: number;
+}
+
+/**
+ * Supplier master data + real outstanding-balance-per-supplier ("Utang
+ * berjalan"), computed from unpaid PurchaseBill.supplierRef — sorted
+ * highest-utang-first, matching the "7l" mobile design doc. Deliberately
+ * does NOT add lead-time or on-time-delivery-% (not tracked anywhere in
+ * the app today) — see confirmation with the user 2026-08-25.
+ */
+export async function getSuppliersWithUtang(): Promise<SupplierWithUtangRow[]> {
+  await dbConnect();
+  const [suppliers, unpaidBills] = await Promise.all([
+    Supplier.find().sort({ namaUsaha: 1 }).lean(),
+    PurchaseBill.find({ status: "belum_dibayar", supplierRef: { $ne: null } }).lean(),
+  ]);
+
+  const utangByRef = new Map<string, number>();
+  for (const b of unpaidBills) {
+    if (!b.supplierRef) continue;
+    const key = String(b.supplierRef);
+    utangByRef.set(key, (utangByRef.get(key) ?? 0) + b.totalTagihan);
+  }
+
+  return suppliers
+    .map((s) => ({
+      id: String(s._id),
+      namaUsaha: s.namaUsaha,
+      alamat: s.alamat,
+      bank: s.bank,
+      nomorRekening: s.nomorRekening,
+      kontak: s.kontak ?? undefined,
+      utangBerjalan: utangByRef.get(String(s._id)) ?? 0,
+    }))
+    .sort((a, b) => b.utangBerjalan - a.utangBerjalan);
 }
