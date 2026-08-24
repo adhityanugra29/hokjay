@@ -64,35 +64,35 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
         <PeriodPicker month={month} year={year} currentYear={nowJakarta.year} />
 
         <div className="mb-6 grid grid-cols-2 border-2 border-ink bg-panel lg:grid-cols-4">
-          <div className="border-b border-r border-line p-4.5 lg:border-b-0">
+          <div className="min-w-0 border-b border-r border-line p-3.5 sm:p-4.5 lg:border-b-0">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Saldo awal {MONTH_NAMES[month - 1]}
             </div>
-            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.3rem] font-extrabold">
+            <div className="mt-1.5 font-sans text-[1.05rem] font-extrabold sm:whitespace-nowrap sm:text-[1.3rem]">
               {rupiah(cashBook.saldoAwal)}
             </div>
           </div>
-          <div className="border-b border-r-0 border-line p-4.5 lg:border-b-0 lg:border-r">
+          <div className="min-w-0 border-b border-r-0 border-line p-3.5 sm:p-4.5 lg:border-b-0 lg:border-r">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Uang masuk
             </div>
-            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.3rem] font-extrabold">
+            <div className="mt-1.5 font-sans text-[1.05rem] font-extrabold sm:whitespace-nowrap sm:text-[1.3rem]">
               + {rupiah(cashBook.totalMasuk)}
             </div>
           </div>
-          <div className="border-r border-line p-4.5">
+          <div className="min-w-0 border-r border-line p-3.5 sm:p-4.5">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Uang keluar
             </div>
-            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.3rem] font-extrabold text-accent">
+            <div className="mt-1.5 font-sans text-[1.05rem] font-extrabold text-accent sm:whitespace-nowrap sm:text-[1.3rem]">
               − {rupiah(cashBook.totalKeluar)}
             </div>
           </div>
-          <div className="bg-ink p-4.5 text-white">
+          <div className="min-w-0 bg-ink p-3.5 text-white sm:p-4.5">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
               Sisa kas hari ini
             </div>
-            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.4rem] font-extrabold">
+            <div className="mt-1.5 font-sans text-[1.1rem] font-extrabold sm:whitespace-nowrap sm:text-[1.4rem]">
               {rupiah(saldoHariIni)}
             </div>
           </div>

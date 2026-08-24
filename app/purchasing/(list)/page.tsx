@@ -23,31 +23,31 @@ export default async function PurchasingDashboardPage() {
   return (
     <>
       <div className="mb-6 grid grid-cols-2 border-2 border-ink bg-panel lg:grid-cols-4">
-        <div className="border-b border-r border-line p-5 lg:border-b-0">
+        <div className="min-w-0 border-b border-r border-line p-4 sm:p-5 lg:border-b-0">
           <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">PO jalan</div>
-          <div className="mt-1.5 font-sans text-[1.4rem] font-extrabold">{summary.poJalanCount} PO</div>
+          <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold sm:text-[1.4rem]">{summary.poJalanCount} PO</div>
           <div className="mt-1 font-mono text-[0.7rem] text-muted">{summary.poTelatCount} telat</div>
         </div>
-        <div className="border-b border-line p-5 lg:border-b-0 lg:border-r">
+        <div className="min-w-0 border-b border-line p-4 sm:p-5 lg:border-b-0 lg:border-r">
           <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
             Nilai PO jalan
           </div>
-          <div className="mt-1.5 whitespace-nowrap font-sans text-[1.4rem] font-extrabold">
+          <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold sm:whitespace-nowrap sm:text-[1.4rem]">
             {rupiah(summary.poJalanNilai)}
           </div>
         </div>
-        <div className="border-r border-line p-5">
+        <div className="min-w-0 border-r border-line p-4 sm:p-5">
           <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
             Barang telat datang
           </div>
-          <div className="mt-1.5 font-sans text-[1.4rem] font-extrabold text-accent">{summary.poTelatCount} PO</div>
+          <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold text-accent sm:text-[1.4rem]">{summary.poTelatCount} PO</div>
           <div className="mt-1 font-mono text-[0.7rem] text-muted">{rupiah(summary.poTelatNilai)} tertahan</div>
         </div>
-        <div className="bg-ink p-5 text-white">
+        <div className="min-w-0 bg-ink p-4 text-white sm:p-5">
           <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
             Perlu dibeli
           </div>
-          <div className="mt-1.5 font-sans text-[1.4rem] font-extrabold">{summary.perluDibeliCount} barang</div>
+          <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold sm:text-[1.4rem]">{summary.perluDibeliCount} barang</div>
           <div className="mt-1 font-mono text-[0.7rem] text-white/55">di bawah stok minimum</div>
         </div>
       </div>

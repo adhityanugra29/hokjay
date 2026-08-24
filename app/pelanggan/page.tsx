@@ -35,34 +35,34 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
       />
       <div className="p-6 md:p-9">
         <div className="mb-6 grid grid-cols-2 border-2 border-ink bg-panel lg:grid-cols-4">
-          <div className="border-b border-r border-line p-4.5 lg:border-b-0">
+          <div className="min-w-0 border-b border-r border-line p-4 sm:p-4.5 lg:border-b-0">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Pelanggan aktif
             </div>
-            <div className="mt-1.5 font-sans text-[1.3rem] font-extrabold">{summary.pelangganAktif}</div>
+            <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold sm:text-[1.3rem]">{summary.pelangganAktif}</div>
             <div className="mt-1 font-mono text-[0.68rem] text-muted">pesan dalam 90 hari</div>
           </div>
-          <div className="border-b border-line p-4.5 lg:border-b-0 lg:border-r">
+          <div className="min-w-0 border-b border-line p-4 sm:p-4.5 lg:border-b-0 lg:border-r">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Total piutang
             </div>
-            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.3rem] font-extrabold text-accent">
+            <div className="mt-1.5 font-sans text-[1.05rem] font-extrabold text-accent sm:whitespace-nowrap sm:text-[1.3rem]">
               {rupiah(summary.totalPiutang)}
             </div>
             <div className="mt-1 font-mono text-[0.68rem] text-muted">tersebar di {summary.piutangCustomerCount} pelanggan</div>
           </div>
-          <div className="border-r border-line p-4.5">
+          <div className="min-w-0 border-r border-line p-4 sm:p-4.5">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Lewat jatuh tempo
             </div>
-            <div className="mt-1.5 font-sans text-[1.3rem] font-extrabold">{summary.lewatJatuhTempoCount} pelanggan</div>
+            <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold sm:text-[1.3rem]">{summary.lewatJatuhTempoCount} pelanggan</div>
             <div className="mt-1 font-mono text-[0.68rem] text-muted">senilai {rupiahCompact(summary.lewatJatuhTempoTotal)}</div>
           </div>
-          <div className="bg-ink p-4.5 text-white">
+          <div className="min-w-0 bg-ink p-4 text-white sm:p-4.5">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
               Mulai jarang pesan
             </div>
-            <div className="mt-1.5 font-sans text-[1.3rem] font-extrabold">{summary.jarangPesanCount} pelanggan</div>
+            <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold sm:text-[1.3rem]">{summary.jarangPesanCount} pelanggan</div>
             <div className="mt-1 font-mono text-[0.68rem] text-white/55">biasa rutin, kini &gt;60 hari diam</div>
           </div>
         </div>

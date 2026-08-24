@@ -27,7 +27,7 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
             <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
               Penjualan tim
             </div>
-            <div className="mt-2 whitespace-nowrap font-sans text-[1.3rem] font-extrabold tracking-tight sm:text-[1.6rem]">
+            <div className="mt-2 font-sans text-[1.05rem] font-extrabold tracking-tight sm:whitespace-nowrap sm:text-[1.6rem]">
               {rupiah(teamTotal)}
             </div>
           </div>
@@ -122,7 +122,7 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
               <span className="col-start-2 font-sans text-[1.1rem] font-extrabold tracking-tight sm:col-auto sm:text-right sm:text-[1.35rem]">
                 {hasTarget ? `${r.percent}%` : "—"}
               </span>
-              <span className="col-start-2 whitespace-nowrap font-sans text-[1.2rem] font-extrabold tracking-tight sm:col-auto sm:text-right sm:text-[1.45rem]">
+              <span className="col-start-2 font-sans text-[1.05rem] font-extrabold tracking-tight sm:col-auto sm:text-right sm:whitespace-nowrap sm:text-[1.45rem]">
                 {rupiah(r.totalPenjualan)}
               </span>
             </div>
