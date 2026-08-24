@@ -1,6 +1,8 @@
 import { dbConnect } from "@/lib/db";
 import { PurchaseOrder } from "@/models/PurchaseOrder";
+import { PurchaseBill } from "@/models/PurchaseBill";
 import { Product } from "@/models/Product";
+import { getCurrentCashBalance } from "@/lib/keuangan";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -164,5 +166,92 @@ export async function getLowStockSuggestions(): Promise<LowStockSuggestion[]> {
       hargaSatuan,
       usulTotal: usulQty * hargaSatuan,
     };
+  });
+}
+
+export interface BayarTagihanSummary {
+  kasTersedia: number;
+  jatuhTempo7HariCount: number;
+  jatuhTempo7HariNilai: number;
+  terlambatCount: number;
+  terlambatNilai: number;
+  totalHutangCount: number;
+  totalHutangNilai: number;
+}
+
+/** The 4 stat cards atop Bayar Tagihan — design "6b". */
+export async function getBayarTagihanSummary(): Promise<BayarTagihanSummary> {
+  await dbConnect();
+  const [kasTersedia, bills] = await Promise.all([
+    getCurrentCashBalance(),
+    PurchaseBill.find({ status: "belum_dibayar" }).lean(),
+  ]);
+  const now = Date.now();
+  const in7Days = now + SEVEN_DAYS_MS;
+
+  let jatuhTempo7HariCount = 0;
+  let jatuhTempo7HariNilai = 0;
+  let terlambatCount = 0;
+  let terlambatNilai = 0;
+
+  for (const b of bills) {
+    const due = b.jatuhTempo?.getTime();
+    if (due === undefined) continue;
+    if (due < now) {
+      terlambatCount++;
+      terlambatNilai += b.totalTagihan;
+    } else if (due <= in7Days) {
+      jatuhTempo7HariCount++;
+      jatuhTempo7HariNilai += b.totalTagihan;
+    }
+  }
+
+  return {
+    kasTersedia,
+    jatuhTempo7HariCount,
+    jatuhTempo7HariNilai,
+    terlambatCount,
+    terlambatNilai,
+    totalHutangCount: bills.length,
+    totalHutangNilai: bills.reduce((s, b) => s + b.totalTagihan, 0),
+  };
+}
+
+export interface TagihanBerjalanRow {
+  id: string;
+  nomor: string;
+  supplier: string;
+  namaBarang: string;
+  totalTagihan: number;
+  jatuhTempo?: Date;
+  hariTerlambat: number; // 0 if not overdue
+  hariMenujuJatuhTempo: number; // 0 if overdue or no due date
+}
+
+/** Unpaid bills sorted by urgency — overdue first (worst first), then soonest due date, matching "6b". */
+export async function getTagihanBerjalan(): Promise<TagihanBerjalanRow[]> {
+  await dbConnect();
+  const bills = await PurchaseBill.find({ status: "belum_dibayar" }).sort({ jatuhTempo: 1 }).lean();
+  const now = Date.now();
+
+  const rows = bills.map((b) => {
+    const due = b.jatuhTempo?.getTime();
+    const hariTerlambat = due !== undefined && due < now ? Math.floor((now - due) / 86_400_000) : 0;
+    const hariMenujuJatuhTempo = due !== undefined && due >= now ? Math.ceil((due - now) / 86_400_000) : 0;
+    return {
+      id: String(b._id),
+      nomor: b.nomor,
+      supplier: b.supplier,
+      namaBarang: b.namaBarang,
+      totalTagihan: b.totalTagihan,
+      jatuhTempo: b.jatuhTempo ?? undefined,
+      hariTerlambat,
+      hariMenujuJatuhTempo,
+    };
+  });
+
+  return rows.sort((a, b) => {
+    if (a.hariTerlambat !== b.hariTerlambat) return b.hariTerlambat - a.hariTerlambat; // most overdue first
+    return a.hariMenujuJatuhTempo - b.hariMenujuJatuhTempo; // then soonest due
   });
 }

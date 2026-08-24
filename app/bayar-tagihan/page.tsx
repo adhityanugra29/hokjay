@@ -1,106 +1,79 @@
-import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
-import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
-import { RowActionLink } from "@/components/ui/RowAction";
-import { dbConnect } from "@/lib/db";
-import { PurchaseBill } from "@/models/PurchaseBill";
-import { rupiah, formatDateShort } from "@/lib/format";
+import BayarTagihanSheet from "@/components/purchasing/BayarTagihanSheet";
+import { getBayarTagihanSummary, getTagihanBerjalan } from "@/lib/purchasing";
+import { getGajiBulananSummary, currentPeriod } from "@/lib/payroll";
+import { rupiah } from "@/lib/format";
+import { currentJakartaMonthYear } from "@/lib/timezone";
+import { MONTH_NAMES } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Standalone landing page for Finance (own nav item, same pattern as
- * /bayar-komisi): Material Order Purchasing sudah buat tapi belum
- * dibayar. See /bayar-tagihan/[id] for the actual payment form.
+ * Bayar Tagihan — design "6b": urut jatuh tempo, dampak kas ditulis dulu.
+ * See components/purchasing/BayarTagihanSheet.tsx.
  */
 export default async function BayarTagihanPage() {
-  await dbConnect();
-  const bills = await PurchaseBill.find({ status: "belum_dibayar" }).sort({ jatuhTempo: 1, createdAt: 1 }).lean();
-  const totalOutstanding = bills.reduce((s, b) => s + b.totalTagihan, 0);
+  const [summary, rows, gajiRows] = await Promise.all([
+    getBayarTagihanSummary(),
+    getTagihanBerjalan(),
+    getGajiBulananSummary(currentPeriod()),
+  ]);
+
+  const gajiBelumDibayar = gajiRows.filter((r) => !r.sudahDibayar).reduce((s, r) => s + r.jumlah, 0);
+  const { month, year } = currentJakartaMonthYear();
+  const gajiPeriodeLabel = `${MONTH_NAMES[month - 1]} ${year}`;
 
   return (
     <>
-      <PageHeader title="Pembayaran Material Order" subtitle="UNTUK TIM FINANCE · BAYAR MATERIAL ORDER DARI TIM PURCHASING" />
+      <PageHeader
+        title="Bayar Tagihan"
+        subtitle="Apa yang jatuh tempo, dan cukup tidak kasnya — bukan yang paling baru masuk."
+      />
       <div className="p-6 md:p-9">
-        <div className="mb-5 border border-line bg-[#f7f5ee] p-5">
-          <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">
-            Total Material Order belum dibayar
+        <div className="mb-6 grid grid-cols-2 border-2 border-ink bg-panel lg:grid-cols-4">
+          <div className="border-b border-r border-line p-5 lg:border-b-0">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+              Kas tersedia
+            </div>
+            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.4rem] font-extrabold">
+              {rupiah(summary.kasTersedia)}
+            </div>
           </div>
-          <div className="mt-1 text-[1.6rem] font-extrabold text-accent-700">{rupiah(totalOutstanding)}</div>
+          <div className="border-b border-line p-5 lg:border-b-0 lg:border-r">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+              Jatuh tempo 7 hari
+            </div>
+            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.4rem] font-extrabold">
+              {rupiah(summary.jatuhTempo7HariNilai)}
+            </div>
+            <div className="mt-1 font-mono text-[0.7rem] text-muted">{summary.jatuhTempo7HariCount} tagihan</div>
+          </div>
+          <div className="border-r border-line p-5">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+              Sudah terlambat
+            </div>
+            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.4rem] font-extrabold text-accent">
+              {rupiah(summary.terlambatNilai)}
+            </div>
+            <div className="mt-1 font-mono text-[0.7rem] text-muted">{summary.terlambatCount} tagihan</div>
+          </div>
+          <div className="bg-ink p-5 text-white">
+            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              Total hutang usaha
+            </div>
+            <div className="mt-1.5 whitespace-nowrap font-sans text-[1.4rem] font-extrabold">
+              {rupiah(summary.totalHutangNilai)}
+            </div>
+            <div className="mt-1 font-mono text-[0.7rem] text-white/55">{summary.totalHutangCount} tagihan berjalan</div>
+          </div>
         </div>
 
-        <Panel>
-          <PanelHead title="Material Order belum dibayar" />
-          <TableScroll>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Nomor
-                  </th>
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Barang
-                  </th>
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Supplier
-                  </th>
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Transfer Ke
-                  </th>
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Jatuh Tempo
-                  </th>
-                  <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                    Total
-                  </th>
-                  <th className="border-b border-line px-5 py-4" />
-                </tr>
-              </thead>
-              <tbody>
-                {bills.map((b) => (
-                  <tr key={String(b._id)} className="hover:bg-[#fbfaf5]">
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{b.nomor}</td>
-                    <td className="border-b border-line px-5 py-4.5 font-medium">{b.namaBarang}</td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.78rem] text-muted">{b.supplier}</td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.75rem]">
-                      {b.supplierBank ? (
-                        <>
-                          {b.supplierBank} — {b.supplierNomorRekening}
-                        </>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
-                      {b.jatuhTempo ? formatDateShort(b.jatuhTempo) : "—"}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem] font-medium text-accent-700">
-                      {rupiah(b.totalTagihan)}
-                    </td>
-                    <td className="border-b border-line px-5 py-4.5">
-                      <RowActionLink href={`/bayar-tagihan/${b._id}`}>Bayar →</RowActionLink>
-                    </td>
-                  </tr>
-                ))}
-                {bills.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                      Semua Material Order sudah dibayar. 🎉
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </TableScroll>
-        </Panel>
-
-        <div className="mt-3 font-mono text-[0.72rem] text-muted">
-          Lihat semua tagihan (termasuk yang sudah dibayar) di{" "}
-          <Link href="/purchasing/tagihan" className="text-accent underline underline-offset-2">
-            Purchasing → Material Order
-          </Link>
-          .
-        </div>
+        <BayarTagihanSheet
+          rows={rows}
+          kasTersedia={summary.kasTersedia}
+          gajiBelumDibayar={gajiBelumDibayar}
+          gajiPeriodeLabel={gajiPeriodeLabel}
+        />
       </div>
     </>
   );
