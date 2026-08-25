@@ -20,6 +20,8 @@ const ROLE_LABEL: Record<string, string> = {
   purchasing: "Purchasing",
   admin: "Admin",
   owner: "Owner Hojay",
+  super_admin: "Super Admin",
+  manager: "Manager Hojay",
 };
 
 interface MenuItem {

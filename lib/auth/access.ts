@@ -49,14 +49,15 @@ export const ADMIN_ONLY_WRITE_PREFIXES = [
 // Method), so any logged-in role can create/edit them, same as
 // /api/purchase-requests and /api/purchase-bills.
 
-// "owner" (added 2026-08-25, Admin > Kelola User's "Owner Hojay") has the
-// exact same authority as "admin" everywhere in the app — a separate role
-// purely so the business owner's own account is labeled distinctly, not a
-// restricted one. Every place that used to check `role === "admin"` should
-// use this instead, so the two stay in lockstep by construction rather than
-// needing `role === "admin" || role === "owner"` repeated at each call site.
+// "owner", "super_admin", "manager" (owner added 2026-08-25 as "Owner
+// Hojay"; super_admin/manager added the same day as "Super Admin"/"Manager
+// Hojay") all have the exact same authority as "admin" everywhere in the
+// app — separate roles purely so each account is labeled distinctly, not
+// restricted ones. Every place that used to check `role === "admin"` should
+// use this instead, so all of them stay in lockstep by construction rather
+// than needing every admin-level role name repeated at each call site.
 export function isAdminLevel(role: UserRole | undefined | null): boolean {
-  return role === "admin" || role === "owner";
+  return role === "admin" || role === "owner" || role === "super_admin" || role === "manager";
 }
 
 export function isAllowedPage(role: UserRole, pathname: string): boolean {

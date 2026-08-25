@@ -158,6 +158,8 @@ export default function AccountManager() {
                 <option value="purchasing">Purchasing</option>
                 <option value="admin">Admin</option>
                 <option value="owner">Owner Hojay</option>
+                <option value="super_admin">Super Admin</option>
+                <option value="manager">Manager Hojay</option>
               </Select>
             </Field>
           </FormGrid>
@@ -206,6 +208,8 @@ export default function AccountManager() {
                       <option value="purchasing">Purchasing</option>
                       <option value="admin">Admin</option>
                       <option value="owner">Owner Hojay</option>
+                      <option value="super_admin">Super Admin</option>
+                      <option value="manager">Manager Hojay</option>
                     </select>
                   </td>
                   <td className="border-b border-line px-5 py-4.5">

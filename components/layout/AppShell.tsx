@@ -21,6 +21,8 @@ const ROLE_LABEL: Record<UserRole, string> = {
   purchasing: "Purchasing",
   admin: "Admin",
   owner: "Owner Hojay",
+  super_admin: "Super Admin",
+  manager: "Manager Hojay",
 };
 
 export interface NavBadgeCounts {
