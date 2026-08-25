@@ -4,6 +4,7 @@ import SubnavTabs from "@/components/ui/SubnavTabs";
 import AbsensiForm from "@/components/payroll/AbsensiForm";
 import { PAYROLL_TABS } from "@/components/payroll/tabs";
 import { getSession } from "@/lib/auth/session";
+import { isAdminLevel } from "@/lib/auth/access";
 import { dbConnect } from "@/lib/db";
 import { Karyawan } from "@/models/Karyawan";
 import { Absensi } from "@/models/Absensi";
@@ -14,7 +15,7 @@ export default async function PayrollAbsensiPage({
   searchParams,
 }: PageProps<"/payroll/absensi">) {
   const session = await getSession();
-  if (session?.role !== "admin") notFound();
+  if (!isAdminLevel(session?.role)) notFound();
 
   const sp = await searchParams;
   const tanggal = typeof sp.tanggal === "string" ? sp.tanggal : new Date().toISOString().slice(0, 10);

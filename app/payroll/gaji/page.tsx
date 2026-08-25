@@ -7,6 +7,7 @@ import { PAYROLL_TABS } from "@/components/payroll/tabs";
 import { getGajiBulananSummary, currentPeriod } from "@/lib/payroll";
 import { getCurrentCashBalance } from "@/lib/keuangan";
 import { getSession } from "@/lib/auth/session";
+import { isAdminLevel } from "@/lib/auth/access";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function PayrollGajiPage({
   searchParams,
 }: PageProps<"/payroll/gaji">) {
   const session = await getSession();
-  if (session?.role !== "admin") notFound();
+  if (!isAdminLevel(session?.role)) notFound();
 
   const sp = await searchParams;
   const periode = typeof sp.periode === "string" ? sp.periode : currentPeriod();

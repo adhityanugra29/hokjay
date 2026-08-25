@@ -20,6 +20,7 @@ const ROLE_LABEL: Record<UserRole, string> = {
   finance: "Finance",
   purchasing: "Purchasing",
   admin: "Admin",
+  owner: "Owner Hojay",
 };
 
 export interface NavBadgeCounts {

@@ -6,7 +6,7 @@ import type { UserRole } from "@/models/User";
 
 // "/payroll" is Sales-reachable — but only for their own read-only slip
 // gaji; the admin payment dashboard living at the same URL is gated inside
-// app/payroll/**\/page.tsx itself (session.role !== "admin" -> notFound()).
+// app/payroll/**\/page.tsx itself (!isAdminLevel(session.role) -> notFound()).
 // See models/Karyawan.ts, models/Absensi.ts, models/GajiPayment.ts.
 export const SALES_PREFIXES = ["/penjualan", "/katalog", "/invoice", "/produk", "/pelanggan", "/payroll"];
 // Payroll (2026-08-23) folded in the old Bayar Komisi and moved to
@@ -49,8 +49,18 @@ export const ADMIN_ONLY_WRITE_PREFIXES = [
 // Method), so any logged-in role can create/edit them, same as
 // /api/purchase-requests and /api/purchase-bills.
 
+// "owner" (added 2026-08-25, Admin > Kelola User's "Owner Hojay") has the
+// exact same authority as "admin" everywhere in the app — a separate role
+// purely so the business owner's own account is labeled distinctly, not a
+// restricted one. Every place that used to check `role === "admin"` should
+// use this instead, so the two stay in lockstep by construction rather than
+// needing `role === "admin" || role === "owner"` repeated at each call site.
+export function isAdminLevel(role: UserRole | undefined | null): boolean {
+  return role === "admin" || role === "owner";
+}
+
 export function isAllowedPage(role: UserRole, pathname: string): boolean {
-  if (role === "admin") return true;
+  if (isAdminLevel(role)) return true;
   // Dashboard-adjacent content, viewable by every role just like "/" itself.
   if (pathname === "/" || pathname === "/follow-up" || pathname === "/aktivitas") return true;
   const prefixes = ROLE_PREFIXES[role] ?? [];

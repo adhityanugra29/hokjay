@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Karyawan } from "@/models/Karyawan";
 import { getSession } from "@/lib/auth/session";
+import { isAdminLevel } from "@/lib/auth/access";
 
 export async function PATCH(req: Request, ctx: RouteContext<"/api/karyawan/[id]">) {
   await dbConnect();
   const session = await getSession();
-  if (session?.role !== "admin") {
+  if (!isAdminLevel(session?.role)) {
     return NextResponse.json({ error: "Hanya Admin yang bisa mengubah data karyawan" }, { status: 403 });
   }
   const { id } = await ctx.params;
@@ -27,7 +28,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/karyawan/[id]"
 export async function DELETE(_req: Request, ctx: RouteContext<"/api/karyawan/[id]">) {
   await dbConnect();
   const session = await getSession();
-  if (session?.role !== "admin") {
+  if (!isAdminLevel(session?.role)) {
     return NextResponse.json({ error: "Hanya Admin yang bisa menghapus karyawan" }, { status: 403 });
   }
   const { id } = await ctx.params;

@@ -86,7 +86,16 @@ export function CurrencyInput({
       inputMode="numeric"
       required={required}
       value={formatRibuan(raw)}
-      onFocus={() => setFocused(true)}
+      onFocus={(e) => {
+        setFocused(true);
+        // Select-all on focus — otherwise typing into an already-filled
+        // field (e.g. Katalog's per-item price, prefilled with the global
+        // Rekomendasi/Minimum value) just concatenates digits into the
+        // existing number instead of replacing it, which made a custom
+        // price effectively impossible to type cleanly. Per the user's
+        // report 2026-08-25.
+        e.target.select();
+      }}
       onBlur={() => setFocused(false)}
       onChange={(e) => {
         const digits = e.target.value.replace(/\D/g, "");

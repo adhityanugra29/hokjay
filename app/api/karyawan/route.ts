@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Karyawan } from "@/models/Karyawan";
 import { getSession } from "@/lib/auth/session";
+import { isAdminLevel } from "@/lib/auth/access";
 
 /** Karyawan (non-sales staff) roster — Admin-only, see models/Karyawan.ts. */
 export async function GET() {
   await dbConnect();
   const session = await getSession();
-  if (session?.role !== "admin") {
+  if (!isAdminLevel(session?.role)) {
     return NextResponse.json({ error: "Hanya Admin yang bisa mengakses data karyawan" }, { status: 403 });
   }
   const karyawan = await Karyawan.find().sort({ nama: 1 });
@@ -17,7 +18,7 @@ export async function GET() {
 export async function POST(req: Request) {
   await dbConnect();
   const session = await getSession();
-  if (session?.role !== "admin") {
+  if (!isAdminLevel(session?.role)) {
     return NextResponse.json({ error: "Hanya Admin yang bisa menambah karyawan" }, { status: 403 });
   }
   const body = await req.json();

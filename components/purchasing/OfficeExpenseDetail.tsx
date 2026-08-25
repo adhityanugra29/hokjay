@@ -7,6 +7,7 @@ import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/F
 import { Button } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
 import { rupiah, formatDateFull } from "@/lib/format";
+import { isAdminLevel } from "@/lib/auth/access";
 import type { UserRole } from "@/models/User";
 
 export interface OfficeExpenseData {
@@ -109,7 +110,7 @@ export default function OfficeExpenseDetail({ data, role }: { data: OfficeExpens
           <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Status</div>
           <div className="mt-1 font-sans text-[1.1rem] font-bold text-accent">Menunggu Approval</div>
 
-          {role === "admin" ? (
+          {isAdminLevel(role) ? (
             <div className="mt-5">
               {!showTolak ? (
                 <div className="flex flex-wrap gap-2.5">

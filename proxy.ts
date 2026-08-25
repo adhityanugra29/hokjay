@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { decryptSession, SESSION_COOKIE_NAME } from "@/lib/auth/jwt";
-import { isAllowedPage, ADMIN_ONLY_ALL_METHODS_PREFIXES, ADMIN_ONLY_WRITE_PREFIXES } from "@/lib/auth/access";
+import { isAllowedPage, isAdminLevel, ADMIN_ONLY_ALL_METHODS_PREFIXES, ADMIN_ONLY_WRITE_PREFIXES } from "@/lib/auth/access";
 import type { UserRole } from "@/models/User";
 
 // Next.js 16 renamed middleware.ts -> proxy.ts (see
@@ -37,7 +37,7 @@ export default async function proxy(request: NextRequest) {
   const role = session.role as UserRole;
 
   if (pathname.startsWith("/api/")) {
-    if (role !== "admin") {
+    if (!isAdminLevel(role)) {
       const fullyRestricted = ADMIN_ONLY_ALL_METHODS_PREFIXES.some((p) => pathname.startsWith(p));
       const writeRestricted =
         request.method !== "GET" && ADMIN_ONLY_WRITE_PREFIXES.some((p) => pathname.startsWith(p));

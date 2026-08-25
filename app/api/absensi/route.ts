@@ -3,12 +3,13 @@ import { dbConnect } from "@/lib/db";
 import { Absensi } from "@/models/Absensi";
 import { Karyawan } from "@/models/Karyawan";
 import { getSession } from "@/lib/auth/session";
+import { isAdminLevel } from "@/lib/auth/access";
 
 /** Daily attendance — Admin marks who was hadir; see models/Absensi.ts. */
 export async function GET(req: NextRequest) {
   await dbConnect();
   const session = await getSession();
-  if (session?.role !== "admin") {
+  if (!isAdminLevel(session?.role)) {
     return NextResponse.json({ error: "Hanya Admin yang bisa mengakses absensi" }, { status: 403 });
   }
   const { searchParams } = new URL(req.url);
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: Request) {
   await dbConnect();
   const session = await getSession();
-  if (session?.role !== "admin") {
+  if (!session || !isAdminLevel(session.role)) {
     return NextResponse.json({ error: "Hanya Admin yang bisa mencatat absensi" }, { status: 403 });
   }
   const body = await req.json();

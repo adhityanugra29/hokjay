@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { OfficeExpenseRequest } from "@/models/OfficeExpenseRequest";
 import { getSession } from "@/lib/auth/session";
+import { isAdminLevel } from "@/lib/auth/access";
 
 /**
  * Admin-only action, checked here (not via a path-prefix rule in
@@ -14,7 +15,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/office-expenses
   const body = await req.json();
   const session = await getSession();
 
-  if (session?.role !== "admin") {
+  if (!session || !isAdminLevel(session.role)) {
     return NextResponse.json({ error: "Hanya Admin yang bisa menyetujui atau menolak request" }, { status: 403 });
   }
 

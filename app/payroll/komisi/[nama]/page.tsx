@@ -4,12 +4,13 @@ import PageHeader from "@/components/layout/PageHeader";
 import KomisiPaymentForm from "@/components/insentif/KomisiPaymentForm";
 import { getUnpaidCommissionInvoices } from "@/lib/insentif";
 import { getSession } from "@/lib/auth/session";
+import { isAdminLevel } from "@/lib/auth/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function PayrollKomisiSalesPage({ params }: PageProps<"/payroll/komisi/[nama]">) {
   const session = await getSession();
-  if (session?.role !== "admin") redirect("/payroll");
+  if (!isAdminLevel(session?.role)) redirect("/payroll");
 
   const { nama } = await params;
   const salesNama = decodeURIComponent(nama);

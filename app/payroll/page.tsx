@@ -8,6 +8,7 @@ import { getUnpaidCommissionBySales, getUnpaidCommissionInvoices } from "@/lib/i
 import { getCurrentCashBalance } from "@/lib/keuangan";
 import { getSlipGaji } from "@/lib/payroll";
 import { getSession } from "@/lib/auth/session";
+import { isAdminLevel } from "@/lib/auth/access";
 import { dbConnect } from "@/lib/db";
 import { Sales } from "@/models/Sales";
 
@@ -38,7 +39,7 @@ export default async function PayrollPage() {
     );
   }
 
-  if (session.role !== "admin") notFound();
+  if (!isAdminLevel(session.role)) notFound();
 
   await dbConnect();
   const rows = await getUnpaidCommissionBySales();
