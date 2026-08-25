@@ -11,6 +11,7 @@ import { Invoice } from "@/models/Invoice";
  */
 export interface CustomerPriorityRow {
   _id: string;
+  kode: string;
   nama: string;
   kota?: string;
   orderCount: number;
@@ -98,6 +99,7 @@ export async function getPelangganSummary(): Promise<PelangganSummary> {
 
     return {
       _id: String(c._id),
+      kode: c.kode,
       nama: c.nama,
       kota: c.kota || undefined,
       orderCount,

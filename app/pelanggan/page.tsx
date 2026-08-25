@@ -102,7 +102,10 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
             {filteredRows.map((r) => (
               <div key={r._id} className="grid grid-cols-[1.5fr_70px_105px_100px_120px_60px] items-center gap-3.5 border-b border-line py-3.5 text-[0.85rem]">
                 <div>
-                  <div className="font-semibold">{r.nama}</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-semibold">{r.nama}</span>
+                    <span className="font-mono text-[0.65rem] text-muted">{r.kode}</span>
+                  </div>
                   {r.kota && <div className="mt-0.5 font-mono text-[0.7rem] text-muted">{r.kota}</div>}
                 </div>
                 <div className="font-mono text-[0.75rem] text-muted">{r.orderCount} order</div>
