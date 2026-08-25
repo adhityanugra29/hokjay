@@ -50,6 +50,33 @@ interface PrintUnit {
 }
 
 /**
+ * Closing footer — logo + sales list + a footnote personalized with the
+ * logged-in sales' own name/number when available (mirrors the cover's
+ * "Pemesanan" section fallback). Appended directly inside the last
+ * product chunk's own div by the caller (not a separate atomic section)
+ * so it always shares that page — see the chunking comment above. Per the
+ * user's request 2026-08-25.
+ */
+function ClosingFooter({ sales, ownSales }: { sales: CatalogSales[]; ownSales: CatalogSales | undefined }) {
+  return (
+    <div className="mt-6 border-t-2 border-line pt-5">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" width={90} height={50} className="mb-3 h-auto w-[90px]" />
+      {sales.length > 0 && (
+        <div className="text-[13px] text-muted">
+          Sales yang melayani: <span className="font-semibold text-ink">{sales.map((s) => s.nama).join(" · ")}</span>
+        </div>
+      )}
+      <p className="mt-2 text-[13px] leading-relaxed text-muted">
+        {ownSales
+          ? `Hubungi Sales ${ownSales.nama}${ownSales.nomorHp ? ` (${ownSales.nomorHp})` : ""} untuk penawaran harga terbaik.`
+          : "Hubungi sales Anda untuk penawaran harga terbaik."}
+      </p>
+    </div>
+  );
+}
+
+/**
  * Positioned off-screen (not display:none) so html2pdf/html2canvas can
  * render it when "Unduh Katalog (PDF)" is clicked (see KatalogClient) — it
  * needs real layout to snapshot, which display:none elements don't have.
@@ -140,8 +167,8 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
             />
             <span className="text-[13px] tracking-[0.12em] uppercase opacity-70">Katalog · {periodLabel}</span>
           </div>
-          <h1 className="max-w-[20ch] text-[32px] leading-[1.1] font-extrabold">
-            Peralatan dapur hotel &amp; restoran
+          <h1 className="max-w-[26ch] text-[28px] leading-[1.25] font-extrabold">
+            Kitchen Equipment untuk: UMKM, Cafe, Hotel, MBG — Harga Bersahabat
           </h1>
         </div>
         <div className="grid grid-cols-3 border-b-2 border-line">
@@ -224,31 +251,13 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                 </Fragment>
               ))}
 
-              {ci === chunks.length - 1 && (
-                <div className="mt-6 border-t-2 border-line pt-5">
-                  {sales.length > 0 && (
-                    <div className="text-[13px] text-muted">
-                      Sales yang melayani: <span className="font-semibold text-ink">{sales.map((s) => s.nama).join(" · ")}</span>
-                    </div>
-                  )}
-                  <p className="mt-2 text-[13px] leading-relaxed text-muted">
-                    Pesanan custom ukuran bebas tersedia — hubungi sales untuk estimasi harga.
-                  </p>
-                </div>
-              )}
+              {ci === chunks.length - 1 && <ClosingFooter sales={sales} ownSales={ownSales} />}
             </div>
           </Fragment>
         ))}
         {chunks.length === 0 && (
-          <div className="mt-6 border-t-2 border-line px-12 py-8">
-            {sales.length > 0 && (
-              <div className="text-[13px] text-muted">
-                Sales yang melayani: <span className="font-semibold text-ink">{sales.map((s) => s.nama).join(" · ")}</span>
-              </div>
-            )}
-            <p className="mt-2 text-[13px] leading-relaxed text-muted">
-              Pesanan custom ukuran bebas tersedia — hubungi sales untuk estimasi harga.
-            </p>
+          <div className="px-12 py-8">
+            <ClosingFooter sales={sales} ownSales={ownSales} />
           </div>
         )}
       </div>
