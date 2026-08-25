@@ -27,6 +27,10 @@ const ProductSchema = new Schema(
     komisiNominal: { type: Number, required: true, default: 0 },
 
     stok: { type: Number, required: true, default: 0 },
+    // When this stock/product entry actually arrived — distinct from
+    // createdAt (when the record was typed into the system, which can lag
+    // the real arrival by days).
+    tanggalBarangMasuk: { type: Date },
     // Per-product override of LOW_STOCK_THRESHOLD — powers Purchasing's
     // auto-suggested PO list (see lib/purchasing.ts). Defaults to the same
     // global threshold so existing products behave the same until someone

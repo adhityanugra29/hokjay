@@ -20,6 +20,7 @@ export interface ProductFormValues {
   hargaMinimum: string;
   komisiPercent: string;
   stok: string;
+  tanggalBarangMasuk: string;
   stokMinimum: string;
   alertHariTidakTerjual: string;
   panjangCm: string;
@@ -43,6 +44,7 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   hargaMinimum: "",
   komisiPercent: "5",
   stok: "0",
+  tanggalBarangMasuk: "",
   stokMinimum: "5",
   // No longer a form field (see confirmation 2026-08-20) — schema default
   // (45) is preserved by still sending it, just never rendered/edited here.
@@ -72,6 +74,9 @@ export default function ProductForm({
   const [values, setValues] = useState<ProductFormValues>({
     ...EMPTY_BASE,
     category: categories[0] ?? "",
+    // Defaults to today for a brand-new product — it's presumably arriving
+    // as it's being entered; edit mode always has an explicit `initial`.
+    tanggalBarangMasuk: mode === "create" ? new Date().toISOString().slice(0, 10) : "",
     ...initial,
   });
   const [saving, setSaving] = useState(false);
@@ -108,6 +113,7 @@ export default function ProductForm({
       hargaMinimum: Number(values.hargaMinimum),
       komisiPercent: Number(values.komisiPercent),
       stok: Number(values.stok),
+      tanggalBarangMasuk: values.tanggalBarangMasuk ? new Date(values.tanggalBarangMasuk) : undefined,
       stokMinimum: Number(values.stokMinimum) || 0,
       alertHariTidakTerjual: Number(values.alertHariTidakTerjual),
       dimensi:
@@ -254,6 +260,9 @@ export default function ProductForm({
 
           <Field label="Stok Awal">
             <Input type="number" value={values.stok} onChange={(e) => set("stok", e.target.value)} />
+          </Field>
+          <Field label="Tanggal Barang Masuk">
+            <Input type="date" value={values.tanggalBarangMasuk} onChange={(e) => set("tanggalBarangMasuk", e.target.value)} />
           </Field>
 
           <Field label="Stok Minimum" hint="Kalau stok di bawah ini, muncul usulan PO otomatis di Purchasing.">

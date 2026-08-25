@@ -36,6 +36,7 @@ export default async function ProdukEditPage({ params }: PageProps<"/produk/[id]
             hargaMinimum: String(product.hargaMinimum),
             komisiPercent: String(product.komisiPercent),
             stok: String(product.stok),
+            tanggalBarangMasuk: product.tanggalBarangMasuk ? new Date(product.tanggalBarangMasuk).toISOString().slice(0, 10) : "",
             stokMinimum: String(product.stokMinimum ?? 5),
             alertHariTidakTerjual: String(product.alertHariTidakTerjual ?? ""),
             panjangCm: product.dimensi?.panjangCm ? String(product.dimensi.panjangCm) : "",

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Panel, PanelHead, SearchInput, TableScroll } from "@/components/ui/Panel";
 import Pill from "@/components/ui/Pill";
 import { RowActionLink } from "@/components/ui/RowAction";
+import DeleteProductButton from "@/components/produk/DeleteProductButton";
 import SortableHeader from "@/components/ui/SortableHeader";
 import { dbConnect } from "@/lib/db";
 import { Product, type ProductDoc } from "@/models/Product";
@@ -76,7 +77,10 @@ export default async function ProdukListPage({
                 <td className="border-b border-line px-5 py-4.5 text-right font-mono text-[0.8rem]">{p.stok}</td>
                 <td className="border-b border-line px-5 py-4.5">{stockPill(p.stok)}</td>
                 <td className="border-b border-line px-5 py-4.5">
-                  <RowActionLink href={`/produk/${p._id}/edit`}>Ubah</RowActionLink>
+                  <div className="flex flex-wrap gap-2">
+                    <RowActionLink href={`/produk/${p._id}/edit`}>Ubah</RowActionLink>
+                    <DeleteProductButton productId={String(p._id)} productName={p.name} />
+                  </div>
                 </td>
               </tr>
             ))}

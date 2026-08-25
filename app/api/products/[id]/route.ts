@@ -29,6 +29,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/products/[id]"
     "hargaMinimum",
     "komisiPercent",
     "stok",
+    "tanggalBarangMasuk",
     "stokMinimum",
     "alertHariTidakTerjual",
     "dimensi",
@@ -53,4 +54,12 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/products/[id]"
       { status: 400 }
     );
   }
+}
+
+export async function DELETE(_req: Request, ctx: RouteContext<"/api/products/[id]">) {
+  await dbConnect();
+  const { id } = await ctx.params;
+  const product = await Product.findByIdAndDelete(id);
+  if (!product) return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 404 });
+  return NextResponse.json({ ok: true });
 }
