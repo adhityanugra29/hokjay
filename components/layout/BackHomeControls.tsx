@@ -10,13 +10,15 @@ import { useRouter } from "next/navigation";
  * of PageHeader itself instead, styled as quiet flat icon buttons matching
  * the rest of the UI (same treatment as the Hot Products carousel's slide
  * arrows) rather than a bold floating overlay. See confirmation with the
- * user 2026-08-20.
+ * user 2026-08-20. Hidden below md — per the user's request 2026-08-25,
+ * redundant on mobile now that the bottom tab bar (MobileTabBar) already
+ * covers navigation there.
  */
 export default function BackHomeControls() {
   const router = useRouter();
 
   return (
-    <div className="flex gap-1.5">
+    <div className="hidden gap-1.5 md:flex">
       <button
         type="button"
         onClick={() => router.back()}
