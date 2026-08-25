@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { useEffect, useState, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 
 export function FormGrid({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`grid grid-cols-1 gap-4.5 sm:grid-cols-2 ${className}`}>{children}</div>;
@@ -41,4 +41,57 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
 
 export function FormActions({ children }: { children: React.ReactNode }) {
   return <div className="mt-6 flex flex-wrap gap-2.5">{children}</div>;
+}
+
+function formatRibuan(digits: string): string {
+  if (!digits) return "";
+  return Number(digits).toLocaleString("id-ID");
+}
+
+/**
+ * Number input formatted with thousand separators while typing (Indonesian
+ * accounting style — "1.000.000") — per the user's request 2026-08-25.
+ * `value`/`onChange` still carry the plain digit string ("1000000"), same
+ * shape as every other price field in this app's forms; only the on-screen
+ * display is formatted. type="text" (not "number") since browsers strip
+ * non-digit formatting from number inputs — inputMode="numeric" keeps the
+ * numeric keyboard on mobile.
+ */
+export function CurrencyInput({
+  value,
+  onChange,
+  placeholder,
+  required,
+  className = "",
+}: {
+  value: string;
+  onChange: (raw: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  className?: string;
+}) {
+  const [raw, setRaw] = useState(value);
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (!focused) setRaw(value);
+  }, [value, focused]);
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      required={required}
+      value={formatRibuan(raw)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, "");
+        setRaw(digits);
+        onChange(digits);
+      }}
+      placeholder={placeholder}
+      className={`${inputCls} ${className}`}
+    />
+  );
 }

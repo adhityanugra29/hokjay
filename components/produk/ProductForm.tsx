@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/components/ui/Form";
+import { Field, FormGrid, FormActions, Input, Select, Textarea, CurrencyInput } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
 import { rupiah } from "@/lib/format";
@@ -35,6 +35,10 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   name: "",
   merk: "",
   kondisi: "baru",
+  // No longer a form field (see the user's request 2026-08-25) — purely
+  // display (the "Bekas — Kondisi N%" badge in Katalog), never fed into
+  // commission math, so hiding the input is safe. Same "hidden but not
+  // removed" treatment as stokMinimum/alertHariTidakTerjual.
   kondisiPercent: "",
   tipeProduk: "non-elektronik",
   hargaRekomendasi: "",
@@ -212,18 +216,6 @@ export default function ProductForm({
               <option value="bekas">Bekas</option>
             </Select>
           </Field>
-          {values.kondisi === "bekas" && (
-            <Field label="Kondisi (%)">
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={values.kondisiPercent}
-                onChange={(e) => set("kondisiPercent", e.target.value)}
-                placeholder="Contoh: 88"
-              />
-            </Field>
-          )}
           <Field label="Tipe Produk" hint="Menentukan apakah Ketebalan Material berlaku untuk produk ini.">
             <Select
               value={values.tipeProduk}
@@ -238,24 +230,22 @@ export default function ProductForm({
             label="Harga Minimum"
             hint={values.kondisi === "bekas" ? "= \"Harga bottom\" — dipakai untuk hitung komisi barang bekas." : undefined}
           >
-            <Input
+            <CurrencyInput
               required
-              type="number"
               value={values.hargaMinimum}
-              onChange={(e) => set("hargaMinimum", e.target.value)}
-              placeholder="Rp 0"
+              onChange={(v) => set("hargaMinimum", v)}
+              placeholder="0"
             />
           </Field>
           <Field label="Harga Modal" hint="Otomatis = Harga Minimum ÷ 2.">
             <Input disabled value={rupiah(hargaModal)} />
           </Field>
           <Field label="Harga Rekomendasi">
-            <Input
+            <CurrencyInput
               required
-              type="number"
               value={values.hargaRekomendasi}
-              onChange={(e) => set("hargaRekomendasi", e.target.value)}
-              placeholder="Rp 0"
+              onChange={(v) => set("hargaRekomendasi", v)}
+              placeholder="0"
             />
           </Field>
 
