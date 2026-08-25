@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, Textarea, CurrencyInput } from "@/components/ui/Form";
@@ -81,6 +81,8 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
  * per the user's request 2026-08-25 (superseding the single free-typed
  * field from earlier the same day).
  */
+const LAST_KATEGORI_KEY = "horeca-produk-last-kategori";
+
 function DimensiDigitInput({
   value,
   onChange,
@@ -134,6 +136,21 @@ export default function ProductForm({
   const lebarRef = useRef<HTMLInputElement>(null);
   const tinggiRef = useRef<HTMLInputElement>(null);
 
+  // Kategori defaults to whichever one was used last (per the user's request
+  // 2026-08-25) — entering several products of the same category in a row
+  // shouldn't mean reselecting it every time. Only in create mode, and only
+  // reading localStorage after mount (not in useState's initializer) so the
+  // server-rendered HTML and the client's first render still match — same
+  // pattern CartProvider.tsx uses for its own localStorage hydration.
+  useEffect(() => {
+    if (mode !== "create") return;
+    const lastKategori = localStorage.getItem(LAST_KATEGORI_KEY);
+    if (lastKategori && categories.includes(lastKategori)) {
+      setValues((v) => ({ ...v, category: lastKategori }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const komisiNominal = useMemo(() => {
     const pct = Number(values.komisiPercent) || 0;
     const harga = Number(values.hargaRekomendasi) || 0;
@@ -158,8 +175,18 @@ export default function ProductForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError(null);
+
+    // The Kategori field is a free-typed search box now (see the datalist
+    // below) — only accept a value that's actually one of the real
+    // categories, so a typo or partial search term can't get saved as the
+    // product's category.
+    if (!categories.includes(values.category)) {
+      setError("Kategori tidak dikenal — pilih salah satu dari daftar kategori yang ada.");
+      return;
+    }
+
+    setSaving(true);
 
     const payload = {
       name: values.name,
@@ -202,6 +229,7 @@ export default function ProductForm({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal menyimpan produk");
       }
+      localStorage.setItem(LAST_KATEGORI_KEY, values.category);
       router.push("/produk");
       router.refresh();
     } catch (err) {
@@ -230,12 +258,18 @@ export default function ProductForm({
               placeholder="Contoh: Getra"
             />
           </Field>
-          <Field label="Kategori">
-            <Select value={values.category} onChange={(e) => set("category", e.target.value)}>
+          <Field label="Kategori" hint="Ketik untuk cari — defaultnya kategori terakhir yang dipakai.">
+            <Input
+              list="kategori-options"
+              value={values.category}
+              onChange={(e) => set("category", e.target.value)}
+              placeholder="Cari atau pilih kategori..."
+            />
+            <datalist id="kategori-options">
               {categories.map((c) => (
-                <option key={c}>{c}</option>
+                <option key={c} value={c} />
               ))}
-            </Select>
+            </datalist>
             {categories.length === 0 && (
               <div className="mt-1 font-mono text-[0.7rem] text-clay">
                 Belum ada kategori — tambahkan dulu di halaman Admin.
