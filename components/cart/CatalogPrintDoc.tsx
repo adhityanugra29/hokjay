@@ -139,10 +139,17 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
       : undefined;
 
   useEffect(() => {
+    // Deliberately invisible: this fetches on every single page load (this
+    // component is mounted globally), not something the user is waiting on
+    // — opts out of the global "slow fetch shows the loading popup" patch
+    // (see components/ui/LoadingOverlay.tsx) via this header, otherwise a
+    // slow DB response here would pop up "Mohon menunggu" over whatever
+    // page the user is actually looking at.
+    const silent = { headers: { "X-Loading-Overlay": "silent" } };
     Promise.all([
-      fetch("/api/products").then((r) => r.json()),
-      fetch("/api/categories").then((r) => r.json()),
-      fetch("/api/sales").then((r) => r.json()),
+      fetch("/api/products", silent).then((r) => r.json()),
+      fetch("/api/categories", silent).then((r) => r.json()),
+      fetch("/api/sales", silent).then((r) => r.json()),
     ])
       .then(([p, c, s]) => {
         setProducts((p as CatalogProduct[]).filter((x) => !x.isCustom));
