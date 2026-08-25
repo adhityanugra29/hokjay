@@ -16,6 +16,8 @@ interface CustomerOption {
   nama: string;
   alamat: string;
   whatsapp: string;
+  provinsi: string;
+  kota: string;
 }
 interface SalesOption {
   _id: string;
@@ -266,6 +268,15 @@ export default function InvoiceForm({
             onChange={(e) => setShipAddress(e.target.value)}
             placeholder="Otomatis terisi setelah pilih pelanggan"
           />
+        </Field>
+        {/* Provinsi/Kota — read-only, auto-filled from the selected
+            pelanggan's own data (not editable, not saved separately onto
+            the invoice). Per the user's request 2026-08-25. */}
+        <Field label="Provinsi">
+          <Input disabled value={selectedCustomer?.provinsi ?? ""} placeholder="Otomatis terisi setelah pilih pelanggan" />
+        </Field>
+        <Field label="Kota / Kabupaten">
+          <Input disabled value={selectedCustomer?.kota ?? ""} placeholder="Otomatis terisi setelah pilih pelanggan" />
         </Field>
         <Field label="Pilih Kurir">
           <Select value={kurirId} onChange={(e) => setKurirId(e.target.value)}>

@@ -9,6 +9,8 @@ interface CustomerOption {
   nama: string;
   alamat: string;
   whatsapp: string;
+  provinsi: string;
+  kota: string;
 }
 interface SalesOption {
   _id: string;

@@ -29,6 +29,8 @@ export default async function InvoiceBaruPage() {
             nama: c.nama,
             alamat: c.alamat,
             whatsapp: c.whatsapp,
+            provinsi: c.provinsi ?? "",
+            kota: c.kota ?? "",
           }))}
           salesList={salesList.map((s) => ({ _id: String(s._id), nama: s.nama }))}
           couriers={couriers.map((c) => ({ _id: String(c._id), name: c.name }))}

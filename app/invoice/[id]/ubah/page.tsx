@@ -75,7 +75,14 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
             tanggalKirim: invoice.tanggalKirim ? invoice.tanggalKirim.toISOString().slice(0, 10) : undefined,
             shipAddress: invoice.shipAddress ?? undefined,
           }}
-          customers={customers.map((c) => ({ _id: String(c._id), nama: c.nama, alamat: c.alamat, whatsapp: c.whatsapp }))}
+          customers={customers.map((c) => ({
+            _id: String(c._id),
+            nama: c.nama,
+            alamat: c.alamat,
+            whatsapp: c.whatsapp,
+            provinsi: c.provinsi ?? "",
+            kota: c.kota ?? "",
+          }))}
           salesList={salesList.map((s) => ({ _id: String(s._id), nama: s.nama }))}
           couriers={couriers.map((c) => ({ _id: String(c._id), name: c.name }))}
         />
