@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Panel } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input, Select } from "@/components/ui/Form";
+import { Field, FormGrid, FormActions, Input, Select, CurrencyInput } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
 import ItemRowEditor from "./ItemRowEditor";
@@ -278,10 +278,9 @@ export default function InvoiceForm({
           </Select>
         </Field>
         <Field label="Ongkos Kirim">
-          <Input
-            type="number"
-            value={ongkosKirim}
-            onChange={(e) => setOngkosKirim(Number(e.target.value) || 0)}
+          <CurrencyInput
+            value={String(ongkosKirim)}
+            onChange={(v) => setOngkosKirim(v ? Number(v) : 0)}
             placeholder="0"
           />
         </Field>
