@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     filter.$or = [
       { name: { $regex: search, $options: "i" } },
       { sku: { $regex: search, $options: "i" } },
+      { merk: { $regex: search, $options: "i" } },
     ];
   }
 
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
     const sku = body.sku?.trim() || (await nextProductSku(body.name));
     const product = await Product.create({
       name: body.name,
+      merk: body.merk || undefined,
       sku,
       category: body.category,
       kondisi: body.kondisi || "baru",

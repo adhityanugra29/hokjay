@@ -33,6 +33,7 @@ export default async function ProdukListPage({
     filter.$or = [
       { name: { $regex: search, $options: "i" } },
       { sku: { $regex: search, $options: "i" } },
+      { merk: { $regex: search, $options: "i" } },
     ];
   }
   const products = (await Product.find(filter).sort(mongoSort(field, dir))) as HydratedDocument<ProductDoc>[];
@@ -63,7 +64,10 @@ export default async function ProdukListPage({
               <tr key={String(p._id)} className="hover:bg-[#fbfaf5]">
                 <td className="border-b border-line px-5 py-4.5">
                   <div className="font-medium">{p.name}</div>
-                  <div className="font-mono text-[0.7rem] text-muted">{p.category}</div>
+                  <div className="font-mono text-[0.7rem] text-muted">
+                    {p.category}
+                    {p.merk ? ` · ${p.merk}` : ""}
+                  </div>
                 </td>
                 <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{p.sku}</td>
                 <td className="border-b border-line px-5 py-4.5 text-right font-mono text-[0.8rem]">

@@ -18,6 +18,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/products/[id]"
   const update: Record<string, unknown> = {};
   for (const key of [
     "name",
+    "merk",
     "sku",
     "category",
     "kondisi",

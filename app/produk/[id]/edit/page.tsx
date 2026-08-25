@@ -26,6 +26,7 @@ export default async function ProdukEditPage({ params }: PageProps<"/produk/[id]
           categories={categories.map((c) => c.name)}
           initial={{
             name: product.name,
+            merk: product.merk ?? "",
             category: product.category,
             kondisi: product.kondisi as "baru" | "bekas",
             kondisiPercent: product.kondisiPercent ? String(product.kondisiPercent) : "",

@@ -10,6 +10,7 @@ import { rupiah } from "@/lib/format";
 
 export interface ProductFormValues {
   name: string;
+  merk: string;
   category: string;
   kondisi: "baru" | "bekas";
   kondisiPercent: string;
@@ -33,6 +34,7 @@ export interface ProductFormValues {
 
 const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   name: "",
+  merk: "",
   kondisi: "baru",
   kondisiPercent: "",
   tipeProduk: "non-elektronik",
@@ -92,6 +94,7 @@ export default function ProductForm({
 
     const payload = {
       name: values.name,
+      merk: values.merk || undefined,
       category: values.category,
       kondisi: values.kondisi,
       kondisiPercent: values.kondisi === "bekas" && values.kondisiPercent ? Number(values.kondisiPercent) : undefined,
@@ -151,6 +154,13 @@ export default function ProductForm({
               value={values.name}
               onChange={(e) => set("name", e.target.value)}
               placeholder="Contoh: Meja Kerja Stainless Steel 120cm"
+            />
+          </Field>
+          <Field label="Merk" hint="Opsional — nama merek/brand produk.">
+            <Input
+              value={values.merk}
+              onChange={(e) => set("merk", e.target.value)}
+              placeholder="Contoh: Getra"
             />
           </Field>
           <Field label="Kategori">
