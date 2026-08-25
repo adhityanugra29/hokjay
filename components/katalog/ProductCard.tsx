@@ -159,6 +159,7 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
                 name: product.name,
                 hargaJual: product.hargaRekomendasi,
                 hargaMinimum: product.hargaMinimum,
+                hargaRekomendasi: product.hargaRekomendasi,
                 komisiNominal: product.komisiNominal,
                 kondisi: product.kondisi as "baru" | "bekas",
                 stok: product.stok,

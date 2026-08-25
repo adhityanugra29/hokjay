@@ -37,6 +37,10 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
       name: item.namaSnapshot,
       hargaJual: item.hargaJual,
       hargaMinimum: item.hargaMinimumSnapshot,
+      // No snapshot for this one (unlike hargaMinimumSnapshot) — falls back
+      // to the live product's current hargaRekomendasi; custom items (no
+      // product) just don't get the "Pakai Rekomendasi" shortcut.
+      hargaRekomendasi: product?.hargaRekomendasi,
       komisiNominal: item.komisiPerItemSnapshot,
       stok: liveStok,
       qty: item.qty,

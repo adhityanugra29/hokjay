@@ -7,6 +7,8 @@ export interface CartItem {
   name: string;
   hargaJual: number;
   hargaMinimum: number;
+  /** Optional — custom items have no real "recommended" price. Powers the Pakai Minimum/Rekomendasi shortcut buttons in ItemRowEditor. */
+  hargaRekomendasi?: number;
   komisiNominal: number;
   stok: number;
   qty: number;

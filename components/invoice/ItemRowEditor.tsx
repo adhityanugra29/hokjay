@@ -93,6 +93,26 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
         </div>
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[0.62rem] uppercase text-muted">Harga Jual</span>
+          {!item.isCustom && (
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => updateItem(item.productId, { hargaJual: item.hargaMinimum })}
+                className="cursor-pointer border border-line px-1.5 py-0.5 font-mono text-[0.6rem] text-muted hover:border-accent hover:text-accent"
+              >
+                Pakai Minimum
+              </button>
+              {item.hargaRekomendasi !== undefined && (
+                <button
+                  type="button"
+                  onClick={() => updateItem(item.productId, { hargaJual: item.hargaRekomendasi! })}
+                  className="cursor-pointer border border-line px-1.5 py-0.5 font-mono text-[0.6rem] text-muted hover:border-accent hover:text-accent"
+                >
+                  Pakai Rekomendasi
+                </button>
+              )}
+            </div>
+          )}
           <NumberField
             value={item.hargaJual}
             min={hargaFloor}

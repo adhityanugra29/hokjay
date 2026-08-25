@@ -130,6 +130,7 @@ export default function CustomOrderPage() {
               name: product.name,
               hargaJual: product.hargaRekomendasi,
               hargaMinimum: product.hargaMinimum,
+              hargaRekomendasi: product.hargaRekomendasi,
               komisiNominal: product.komisiNominal,
               kondisi: "baru",
               stok: product.stok,
