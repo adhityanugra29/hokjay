@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, Textarea, CurrencyInput } from "@/components/ui/Form";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
 import { rupiah } from "@/lib/format";
@@ -258,18 +259,14 @@ export default function ProductForm({
               placeholder="Contoh: Getra"
             />
           </Field>
-          <Field label="Kategori" hint="Ketik untuk cari — defaultnya kategori terakhir yang dipakai.">
-            <Input
-              list="kategori-options"
+          <Field label="Kategori" hint="Ketik untuk cari, Enter pilih yang paling atas — defaultnya kategori terakhir yang dipakai.">
+            <SearchableSelect
               value={values.category}
-              onChange={(e) => set("category", e.target.value)}
+              onChange={(v) => set("category", v)}
+              options={categories}
               placeholder="Cari atau pilih kategori..."
+              emptyLabel="Tidak ada kategori yang cocok."
             />
-            <datalist id="kategori-options">
-              {categories.map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
             {categories.length === 0 && (
               <div className="mt-1 font-mono text-[0.7rem] text-clay">
                 Belum ada kategori — tambahkan dulu di halaman Admin.
