@@ -43,10 +43,11 @@ function specLine(p: CatalogProduct): string {
  * needs real layout to snapshot, which display:none elements don't have.
  * Never visible to the user and excluded from native browser printing.
  *
- * This brochure (cover → products by category → custom order footnote →
- * closing CTA) only includes products checked in the Katalog page's own
- * selection checkboxes (see CatalogSelectionProvider) — separate from the
- * invoice cart — sourced live from the product/category/sales collections.
+ * This brochure (cover → products by category → closing CTA, which also
+ * carries the custom-order footnote) only includes products checked in
+ * the Katalog page's own selection checkboxes (see CatalogSelectionProvider)
+ * — separate from the invoice cart — sourced live from the
+ * product/category/sales collections.
  */
 export default function CatalogPrintDoc({ user }: { user: { nama: string; role: string } | null }) {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
@@ -99,31 +100,30 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
         data-ready={loaded ? "true" : "false"}
         className="w-[794px] bg-paper font-sans text-ink"
       >
-        {/* Cover */}
-      <div className="bg-[#D4A017] px-12 py-14 text-white">
-        <div className="mb-10 flex items-center justify-between gap-4">
+        {/* Cover — shrunk down (per the user's request 2026-08-25): dropped
+            the description paragraph and tightened the padding/heading size
+            so this header doesn't eat so much of page 1. */}
+      <div className="bg-[#D9C400] px-12 py-7 text-white">
+        <div className="mb-5 flex items-center justify-between gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo/hojay-2b-positif.png"
             alt="HOJAY Kitchen Equipment"
-            width={220}
-            height={122}
-            className="h-auto w-[220px]"
+            width={160}
+            height={89}
+            className="h-auto w-[160px]"
           />
           <span className="text-[13px] tracking-[0.12em] text-[rgba(255,255,255,0.85)] uppercase">
             Katalog · {periodLabel}
           </span>
         </div>
-        <h1 className="max-w-[14ch] text-[52px] leading-[0.98] font-extrabold">
+        <h1 className="max-w-[20ch] text-[32px] leading-[1.1] font-extrabold">
           Peralatan dapur hotel &amp; restoran
         </h1>
-        <p className="mt-6 max-w-[46ch] text-[16px] leading-relaxed text-[rgba(255,255,255,0.9)]">
-          Stainless steel berkualitas, stok siap kirim. Ukuran custom bisa dipesan sesuai kebutuhan dapur Anda.
-        </p>
       </div>
       <div className="grid grid-cols-3 border-b-2 border-line">
         <div className="px-12 py-6">
-          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D4A017] uppercase">Pemesanan</div>
+          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D9C400] uppercase">Pemesanan</div>
           {ownSales ? (
             <div className="text-[15px] leading-relaxed">
               {ownSales.nama}
@@ -139,14 +139,14 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
           )}
         </div>
         <div className="border-l border-line px-6 py-6">
-          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D4A017] uppercase">Isi katalog</div>
+          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D9C400] uppercase">Isi katalog</div>
           <div className="text-[15px] leading-relaxed">
             {selectedProducts.length} produk dipilih
             <br />+ pesanan custom
           </div>
         </div>
         <div className="border-l border-line px-12 py-6">
-          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D4A017] uppercase">Kategori</div>
+          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D9C400] uppercase">Kategori</div>
           <div className="text-[15px] leading-relaxed">{byCategory.length} kategori produk</div>
         </div>
       </div>
@@ -163,7 +163,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
         <div key={group.cat} className="px-12 py-10">
           <div className="mb-6 flex items-baseline justify-between gap-4 border-b-2 border-line pb-4">
             <h2 className="text-[26px] font-extrabold">{group.cat}</h2>
-            <span className="text-[11px] tracking-[0.1em] text-[#D4A017] uppercase">
+            <span className="text-[11px] tracking-[0.1em] text-[#D9C400] uppercase">
               {group.items.length} produk · siap stok
             </span>
           </div>
@@ -190,17 +190,15 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
         </div>
       ))}
 
-      {/* Custom order footnote — the full pricing table + 3-step process
-          page was dropped per the user's request 2026-08-25; this one-line
-          note is all that remains, tucked above the closing CTA. */}
-      <div className="break-inside-avoid border-t-2 border-line px-12 py-6">
-        <p className="text-[13px] leading-relaxed text-muted">
-          Pesanan custom ukuran bebas tersedia — hubungi sales untuk estimasi harga.
-        </p>
-      </div>
-
-      {/* Closing CTA */}
-      <div className="break-inside-avoid bg-[#D4A017] px-12 py-12 text-white">
+      {/* Closing CTA — the custom-order footnote lives inside this same
+          atomic (break-inside-avoid) block now, not as its own section
+          above it. A standalone footnote block could end up as the only
+          thing that doesn't fit on the last content page and get pushed
+          onto an otherwise-empty extra page by itself; folding it into the
+          CTA means it always travels together with a block substantial
+          enough to just extend the actual last page instead. Per the
+          user's request 2026-08-25. */}
+      <div className="break-inside-avoid bg-[#D9C400] px-12 py-12 text-white">
         <div className="mb-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -219,6 +217,9 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
             Sales yang melayani: {sales.map((s) => s.nama).join(" · ")}
           </div>
         )}
+        <p className="mt-6 border-t border-white/25 pt-4 text-[13px] leading-relaxed text-[rgba(255,255,255,0.85)]">
+          Pesanan custom ukuran bebas tersedia — hubungi sales untuk estimasi harga.
+        </p>
       </div>
       </div>
     </div>
