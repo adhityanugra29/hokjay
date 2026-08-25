@@ -31,7 +31,6 @@ export default async function ProdukEditPage({ params }: PageProps<"/produk/[id]
             kondisi: product.kondisi as "baru" | "bekas",
             kondisiPercent: product.kondisiPercent ? String(product.kondisiPercent) : "",
             tipeProduk: (product.tipeProduk as "elektronik" | "non-elektronik") ?? "non-elektronik",
-            hargaBeli: String(product.hargaBeli),
             hargaRekomendasi: String(product.hargaRekomendasi),
             hargaMinimum: String(product.hargaMinimum),
             komisiPercent: String(product.komisiPercent),

@@ -7,18 +7,30 @@ import SortableHeader from "@/components/ui/SortableHeader";
 import { dbConnect } from "@/lib/db";
 import { Product, type ProductDoc } from "@/models/Product";
 import { rupiah } from "@/lib/format";
-import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { parseSort, mongoSort } from "@/lib/sort";
 import type { HydratedDocument } from "mongoose";
 
 export const dynamic = "force-dynamic";
 
-const SORT_FIELDS = ["name", "sku", "hargaRekomendasi", "stok"] as const;
+const SORT_FIELDS = ["name", "sku", "hargaRekomendasi", "stok", "tanggalBarangMasuk"] as const;
 
-function stockPill(stok: number) {
-  if (stok <= 0) return <Pill variant="out">Stok Habis</Pill>;
-  if (stok <= LOW_STOCK_THRESHOLD) return <Pill variant="low">Stok Menipis</Pill>;
-  return <Pill variant="ok">Tersedia</Pill>;
+/**
+ * "Umur Stok" (stock age) — replaces the old quantity-based Stok
+ * Menipis/Habis pill per the user's request 2026-08-25: track how long a
+ * unit has been sitting in the warehouse instead of just how many are
+ * left. Ages off `tanggalBarangMasuk`; falls back to `createdAt` for
+ * products entered before that field existed. Reuses the schema's
+ * existing (previously dormant — see ProductForm.tsx's EMPTY_BASE
+ * comment) `alertHariTidakTerjual` as the "this has been sitting too
+ * long" threshold, so the two features tie together instead of adding a
+ * second, unrelated number.
+ */
+function stockAgePill(referenceDate: Date, alertHari: number) {
+  const umurHari = Math.max(0, Math.floor((Date.now() - referenceDate.getTime()) / 86_400_000));
+  const label = `${umurHari} hari`;
+  if (umurHari >= alertHari) return <Pill variant="out">{label} · Lama</Pill>;
+  if (umurHari >= alertHari * 0.7) return <Pill variant="low">{label}</Pill>;
+  return <Pill variant="ok">{label}</Pill>;
 }
 
 export default async function ProdukListPage({
@@ -54,9 +66,7 @@ export default async function ProdukListPage({
               <SortableHeader label="SKU" sortKey="sku" currentSort={field} currentDir={dir} basePath="/produk" searchParams={sp} />
               <SortableHeader label="Harga Rekomendasi" sortKey="hargaRekomendasi" currentSort={field} currentDir={dir} basePath="/produk" searchParams={sp} align="right" />
               <SortableHeader label="Stok" sortKey="stok" currentSort={field} currentDir={dir} basePath="/produk" searchParams={sp} align="right" />
-              <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                Status
-              </th>
+              <SortableHeader label="Umur Stok" sortKey="tanggalBarangMasuk" currentSort={field} currentDir={dir} basePath="/produk" searchParams={sp} />
               <th className="border-b border-line px-5 py-4" />
             </tr>
           </thead>
@@ -75,7 +85,9 @@ export default async function ProdukListPage({
                   {rupiah(p.hargaRekomendasi)}
                 </td>
                 <td className="border-b border-line px-5 py-4.5 text-right font-mono text-[0.8rem]">{p.stok}</td>
-                <td className="border-b border-line px-5 py-4.5">{stockPill(p.stok)}</td>
+                <td className="border-b border-line px-5 py-4.5">
+                  {stockAgePill(p.tanggalBarangMasuk ?? p.createdAt!, p.alertHariTidakTerjual ?? 45)}
+                </td>
                 <td className="border-b border-line px-5 py-4.5">
                   <div className="flex flex-wrap gap-2">
                     <RowActionLink href={`/produk/${p._id}/edit`}>Ubah</RowActionLink>

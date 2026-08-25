@@ -15,7 +15,6 @@ export interface ProductFormValues {
   kondisi: "baru" | "bekas";
   kondisiPercent: string;
   tipeProduk: "elektronik" | "non-elektronik";
-  hargaBeli: string;
   hargaRekomendasi: string;
   hargaMinimum: string;
   komisiPercent: string;
@@ -39,12 +38,19 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   kondisi: "baru",
   kondisiPercent: "",
   tipeProduk: "non-elektronik",
-  hargaBeli: "",
   hargaRekomendasi: "",
   hargaMinimum: "",
-  komisiPercent: "5",
-  stok: "0",
+  // Matches the real invoice-time commission rule (see the hint text below
+  // the field) — 6% for baru, 10% for bekas. Kept in sync with `kondisi`
+  // by the Kondisi select's onChange, not just this initial value.
+  komisiPercent: "6",
+  stok: "1",
   tanggalBarangMasuk: "",
+  // No longer a form field (see the user's request 2026-08-25) — schema
+  // default (LOW_STOCK_THRESHOLD) is preserved by still sending it, just
+  // never rendered/edited here. Purchasing's auto-suggested PO list still
+  // uses it. Same "hidden but not removed" treatment as
+  // alertHariTidakTerjual below.
   stokMinimum: "5",
   // No longer a form field (see confirmation 2026-08-20) — schema default
   // (45) is preserved by still sending it, just never rendered/edited here.
@@ -54,6 +60,10 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   tinggiCm: "",
   ketebalan: "",
   fotoUrl: "",
+  // No longer form fields (see the user's request 2026-08-25 — just one
+  // photo now) — kept here so an existing product's already-uploaded
+  // samping/belakang photos aren't silently wiped out by a save from this
+  // form, same "hidden but not removed" treatment as above.
   fotoSampingUrl: "",
   fotoBelakangUrl: "",
   deskripsi: "",
@@ -71,13 +81,12 @@ export default function ProductForm({
   categories: string[];
 }) {
   const router = useRouter();
-  const [values, setValues] = useState<ProductFormValues>({
-    ...EMPTY_BASE,
-    category: categories[0] ?? "",
-    // Defaults to today for a brand-new product — it's presumably arriving
-    // as it's being entered; edit mode always has an explicit `initial`.
-    tanggalBarangMasuk: mode === "create" ? new Date().toISOString().slice(0, 10) : "",
-    ...initial,
+  const [values, setValues] = useState<ProductFormValues>(() => {
+    const merged = { ...EMPTY_BASE, category: categories[0] ?? "", ...initial };
+    // Defaults to today whenever there's no real value yet — a brand-new
+    // product being entered now, or an existing one saved before this field
+    // existed. Per the user's request 2026-08-25.
+    return { ...merged, tanggalBarangMasuk: merged.tanggalBarangMasuk || new Date().toISOString().slice(0, 10) };
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,8 +97,20 @@ export default function ProductForm({
     return Math.round((pct / 100) * harga);
   }, [values.komisiPercent, values.hargaRekomendasi]);
 
+  // Harga Modal — per the user's request 2026-08-25: no longer a manual
+  // entry, always Harga Minimum ÷ 2. Still saved into the schema's
+  // `hargaBeli` field (same "cost basis" concept the field already was).
+  const hargaModal = useMemo(() => Math.round((Number(values.hargaMinimum) || 0) / 2), [values.hargaMinimum]);
+
   function set<K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  // Kondisi drives the commission default (6% baru, 10% bekas), matching
+  // the real invoice-time calculation — see the hint on the Komisi field
+  // below. Still just a default: the field stays editable afterward.
+  function setKondisi(kondisi: "baru" | "bekas") {
+    setValues((v) => ({ ...v, kondisi, komisiPercent: kondisi === "bekas" ? "10" : "6" }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -104,11 +125,8 @@ export default function ProductForm({
       kondisi: values.kondisi,
       kondisiPercent: values.kondisi === "bekas" && values.kondisiPercent ? Number(values.kondisiPercent) : undefined,
       tipeProduk: values.tipeProduk,
-      // Create mode has no Harga Beli field anymore (defaults to 0 — cost
-      // basis is meant to come from a future Pembelian Barang/restock-cost
-      // flow instead, see 2026-08-20 discussion); edit mode still sends
-      // whatever's in the field since it's editable there.
-      hargaBeli: Number(values.hargaBeli || 0),
+      // No longer a manual field — always Harga Minimum ÷ 2 (see hargaModal above).
+      hargaBeli: hargaModal,
       hargaRekomendasi: Number(values.hargaRekomendasi),
       hargaMinimum: Number(values.hargaMinimum),
       komisiPercent: Number(values.komisiPercent),
@@ -182,8 +200,8 @@ export default function ProductForm({
             )}
           </Field>
 
-          <Field label="Kondisi">
-            <Select value={values.kondisi} onChange={(e) => set("kondisi", e.target.value as "baru" | "bekas")}>
+          <Field label="Kondisi" hint="Menentukan default Komisi per Item — 6% untuk baru, 10% untuk bekas.">
+            <Select value={values.kondisi} onChange={(e) => setKondisi(e.target.value as "baru" | "bekas")}>
               <option value="baru">Baru</option>
               <option value="bekas">Bekas</option>
             </Select>
@@ -210,25 +228,6 @@ export default function ProductForm({
             </Select>
           </Field>
 
-          {mode === "edit" && (
-            <Field label="Harga Beli">
-              <Input
-                type="number"
-                value={values.hargaBeli}
-                onChange={(e) => set("hargaBeli", e.target.value)}
-                placeholder="Rp 0"
-              />
-            </Field>
-          )}
-          <Field label="Harga Rekomendasi">
-            <Input
-              required
-              type="number"
-              value={values.hargaRekomendasi}
-              onChange={(e) => set("hargaRekomendasi", e.target.value)}
-              placeholder="Rp 0"
-            />
-          </Field>
           <Field
             label="Harga Minimum"
             hint={values.kondisi === "bekas" ? "= \"Harga bottom\" — dipakai untuk hitung komisi barang bekas." : undefined}
@@ -238,6 +237,18 @@ export default function ProductForm({
               type="number"
               value={values.hargaMinimum}
               onChange={(e) => set("hargaMinimum", e.target.value)}
+              placeholder="Rp 0"
+            />
+          </Field>
+          <Field label="Harga Modal" hint="Otomatis = Harga Minimum ÷ 2.">
+            <Input disabled value={rupiah(hargaModal)} />
+          </Field>
+          <Field label="Harga Rekomendasi">
+            <Input
+              required
+              type="number"
+              value={values.hargaRekomendasi}
+              onChange={(e) => set("hargaRekomendasi", e.target.value)}
               placeholder="Rp 0"
             />
           </Field>
@@ -265,10 +276,6 @@ export default function ProductForm({
             <Input type="date" value={values.tanggalBarangMasuk} onChange={(e) => set("tanggalBarangMasuk", e.target.value)} />
           </Field>
 
-          <Field label="Stok Minimum" hint="Kalau stok di bawah ini, muncul usulan PO otomatis di Purchasing.">
-            <Input type="number" min={0} value={values.stokMinimum} onChange={(e) => set("stokMinimum", e.target.value)} />
-          </Field>
-
           <Field label="Panjang (cm)">
             <Input type="number" value={values.panjangCm} onChange={(e) => set("panjangCm", e.target.value)} />
           </Field>
@@ -284,14 +291,8 @@ export default function ProductForm({
             </Field>
           )}
 
-          <Field label="Foto Tampak Depan" hint="Foto ini yang tampil di Katalog, kartu produk, dan PDF katalog.">
+          <Field label="Foto Produk" span2 hint="Tampil di Katalog, kartu produk, dan PDF katalog.">
             <UploadBox folder="products" value={values.fotoUrl} onChange={(url) => set("fotoUrl", url)} />
-          </Field>
-          <Field label="Foto Tampak Samping" hint="Referensi tambahan, tidak tampil di Katalog.">
-            <UploadBox folder="products" value={values.fotoSampingUrl} onChange={(url) => set("fotoSampingUrl", url)} />
-          </Field>
-          <Field label="Foto Tampak Belakang" hint="Referensi tambahan, tidak tampil di Katalog.">
-            <UploadBox folder="products" value={values.fotoBelakangUrl} onChange={(url) => set("fotoBelakangUrl", url)} />
           </Field>
 
           <Field label="Deskripsi (tampil di katalog)" span2>
