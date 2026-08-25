@@ -362,7 +362,7 @@ export default async function DashboardPage() {
           </div>
           <div>
             <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
-              Insentif terkumpul
+              Komisi terkumpul
             </div>
             <div className="mt-1 font-sans text-[1.35rem] font-extrabold tracking-tight">
               {rupiahCompact(insentifTerkumpul)}

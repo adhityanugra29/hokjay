@@ -49,7 +49,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
     <>
       <PageHeader
         title="Invoice"
-        subtitle="Semua tagihan ke pelanggan. Draft belum memotong stok; begitu dikirim, stok dan insentif langsung dihitung."
+        subtitle="Semua tagihan ke pelanggan. Draft belum memotong stok; begitu dikirim, stok dan komisi langsung dihitung."
         actions={<LinkButton href="/katalog">+ Belanja / Buat Invoice</LinkButton>}
       />
       <div className="p-6 md:p-9">
@@ -117,7 +117,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
               <div className="flex items-center gap-4">
                 <div className="text-right">
                   <div className="font-sans text-[1rem] font-extrabold">{rupiah(inv.grandTotal)}</div>
-                  <div className="font-mono text-[0.68rem] text-muted">insentif {rupiah(komisi)}</div>
+                  <div className="font-mono text-[0.68rem] text-muted">komisi {rupiah(komisi)}</div>
                 </div>
                 <div className="flex gap-2">
                   <a

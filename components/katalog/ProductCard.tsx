@@ -177,7 +177,7 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
           </span>
         </div>
 
-        <div className="mt-2.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">Insentif</div>
+        <div className="mt-2.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">Komisi</div>
         <div className="text-[1.05rem] font-extrabold text-accent-700">{rupiah(liveKomisi)}</div>
 
         {(dimText || product.ketebalan) && (

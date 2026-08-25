@@ -10,13 +10,15 @@ import type { UserRole } from "@/models/User";
 // See models/Karyawan.ts, models/Absensi.ts, models/GajiPayment.ts.
 // "/produk" (Inventory) removed per the user's request 2026-08-26 — Sales
 // works from Katalog, doesn't need the raw stock-management view.
-// "/insentif" (Leaderboard Sales) added the same day — Sales can see the
-// ranking board, same URL Finance uses for the full view.
-export const SALES_PREFIXES = ["/katalog", "/invoice", "/pelanggan", "/payroll", "/insentif"];
+// "/insentif" (Komisi/Leaderboard Sales) is NOT listed here — that page is
+// now restricted to Owner Hojay + Super Admin only regardless of role, see
+// INSENTIF_ALLOWED_ROLES below (overrides even the Sales/Finance grants
+// this array would otherwise have implied).
+export const SALES_PREFIXES = ["/katalog", "/invoice", "/pelanggan", "/payroll"];
 // Payroll (2026-08-23) folded in the old Bayar Komisi and moved to
 // Admin-only per the user's explicit confirmation — Finance no longer has
 // a payroll-payment surface at all (was "/bayar-komisi" here before).
-export const FINANCE_PREFIXES = ["/insentif", "/bayar-tagihan", "/keuangan", "/akuntansi"];
+export const FINANCE_PREFIXES = ["/bayar-tagihan", "/keuangan", "/akuntansi"];
 // Inventaris Kantor is its own module (split out from Purchasing 2026-08-23)
 // but Purchasing still needs to reach it — the "Catat sebagai Aset" link
 // from a paid Material Order lands here.
@@ -75,7 +77,19 @@ export function isAdminLevel(role: UserRole | undefined | null): boolean {
 // can't reach what the page itself already hides.
 export const MANAGER_BLOCKED_PREFIXES = ["/akuntansi", "/payroll", "/bayar-tagihan"];
 
+// Insentif/Komisi (Leaderboard Sales) locked down to just these two roles
+// per the user's request 2026-08-26 — nobody else reaches it, not even
+// "admin" or "manager" (isAdminLevel's usual full-access grant doesn't
+// apply here; this check runs before it).
+export const INSENTIF_ALLOWED_ROLES: UserRole[] = ["owner", "super_admin"];
+export function isInsentifAllowed(role: UserRole | undefined | null): boolean {
+  return !!role && INSENTIF_ALLOWED_ROLES.includes(role);
+}
+
 export function isAllowedPage(role: UserRole, pathname: string): boolean {
+  if (pathname === "/insentif" || pathname.startsWith("/insentif/")) {
+    return isInsentifAllowed(role);
+  }
   if (role === "manager") {
     return !MANAGER_BLOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   }

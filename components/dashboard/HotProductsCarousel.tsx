@@ -37,7 +37,7 @@ export default function HotProductsCarousel({ products }: { products: HotProduct
             <div className="mt-1.5 h-[1rem] font-sans text-[0.68rem] text-muted">
               {p.badges.includes("terlaris") ? `🔥 ${p.terjualBulanIni} terjual bulan ini` : ""}
             </div>
-            <div className="mt-1.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">Insentif</div>
+            <div className="mt-1.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">Komisi</div>
             <div className="text-[1.15rem] font-extrabold text-accent-700">{rupiah(p.komisiNominal)}</div>
             <Link
               href="/katalog"
