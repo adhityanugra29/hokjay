@@ -2,6 +2,7 @@ import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import { SearchInput } from "@/components/ui/Panel";
 import { LinkButton } from "@/components/ui/Button";
+import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { rupiah, formatDateShort } from "@/lib/format";
@@ -133,6 +134,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
                   >
                     Edit
                   </Link>
+                  {!inv.dp?.nominal && <DeleteInvoiceButton invoiceId={String(inv._id)} nomor={inv.nomor} />}
                   <Link
                     href={`/invoice/${inv._id}`}
                     className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-white no-underline hover:bg-accent-600"
@@ -176,6 +178,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
                 <div className="font-sans text-[1rem] font-extrabold">{rupiah(inv.grandTotal)}</div>
                 <div className="font-mono text-[0.68rem] text-muted">estimasi</div>
               </div>
+              <DeleteInvoiceButton invoiceId={String(inv._id)} nomor={inv.nomor} />
               <Link
                 href={`/invoice/${inv._id}/ubah`}
                 className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-white no-underline hover:bg-accent-600"

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import InvoiceActions from "@/components/invoice/InvoiceActions";
+import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
 import { LinkButton } from "@/components/ui/Button";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
@@ -25,6 +26,14 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
               <LinkButton variant="ghost" href={`/invoice/${invoice._id}/ubah`}>
                 Ubah Invoice
               </LinkButton>
+            )}
+            {invoice.status !== "paid" && !invoice.dp?.nominal && (
+              <DeleteInvoiceButton
+                invoiceId={String(invoice._id)}
+                nomor={invoice.nomor}
+                redirectTo="/invoice"
+                className="inline-flex items-center justify-center gap-2 rounded border border-line bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-extrabold text-danger transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+              />
             )}
             <InvoiceActions
               nomor={invoice.nomor}
