@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   try {
-    const kode = await nextCustomerCode();
+    const kode = await nextCustomerCode(body.kota);
     const customer = await Customer.create({
       kode,
       nama: body.nama,

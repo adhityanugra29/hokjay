@@ -1,5 +1,6 @@
 import { Counter } from "@/models/Counter";
 import { currentJakartaMonthYear } from "@/lib/timezone";
+import { getPlateCode } from "@/lib/platNomor";
 
 /** Atomically allocates the next number in a named sequence. */
 async function nextSeq(name: string): Promise<number> {
@@ -42,9 +43,22 @@ export async function peekNextInvoiceNumber(): Promise<string> {
   return `INV-${yyyymm}${String(seq).padStart(4, "0")}`;
 }
 
-export async function nextCustomerCode(): Promise<string> {
-  const seq = await nextSeq("customer");
-  return `CUST-${String(seq).padStart(4, "0")}`;
+/**
+ * Format: {kode plat kota}{YY}{MM}{4-digit seq} — e.g. "B26080001" for a
+ * Jakarta customer created August 2026, per the user's request 2026-08-25.
+ * Kota's plate code comes from lib/platNomor.ts (falls back to "B" when
+ * kota is empty/unrecognized — Kota is optional on the customer form).
+ * The 4-digit sequence resets per plat-code per month, matching the
+ * per-bucket reset convention already used elsewhere (nextInvoiceNumber,
+ * nextProductSku).
+ */
+export async function nextCustomerCode(kota?: string): Promise<string> {
+  const plat = getPlateCode(kota);
+  const { year, month } = currentJakartaMonthYear();
+  const yy = String(year).slice(-2);
+  const mm = String(month).padStart(2, "0");
+  const seq = await nextSeq(`customer:${plat}:${year}${mm}`);
+  return `${plat}${yy}${mm}${String(seq).padStart(4, "0")}`;
 }
 
 export async function nextPurchaseRequestCode(): Promise<string> {
