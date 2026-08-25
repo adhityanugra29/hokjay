@@ -16,6 +16,9 @@ export default async function ProdukEditPage({ params }: PageProps<"/produk/[id]
   ]);
   if (!product) notFound();
 
+  const d = product.dimensi;
+  const ukuranText = d && (d.panjangCm || d.lebarCm || d.tinggiCm) ? `${d.panjangCm ?? "?"}x${d.lebarCm ?? "?"}x${d.tinggiCm ?? "?"}` : "";
+
   return (
     <>
       <PageHeader title={`Ubah ${product.name}`} subtitle={`SKU ${product.sku}`} />
@@ -38,9 +41,7 @@ export default async function ProdukEditPage({ params }: PageProps<"/produk/[id]
             tanggalBarangMasuk: product.tanggalBarangMasuk ? new Date(product.tanggalBarangMasuk).toISOString().slice(0, 10) : "",
             stokMinimum: String(product.stokMinimum ?? 5),
             alertHariTidakTerjual: String(product.alertHariTidakTerjual ?? ""),
-            panjangCm: product.dimensi?.panjangCm ? String(product.dimensi.panjangCm) : "",
-            lebarCm: product.dimensi?.lebarCm ? String(product.dimensi.lebarCm) : "",
-            tinggiCm: product.dimensi?.tinggiCm ? String(product.dimensi.tinggiCm) : "",
+            ukuranText,
             ketebalan: product.ketebalan ?? "",
             fotoUrl: product.fotoUrl ?? "",
             fotoSampingUrl: product.fotoSampingUrl ?? "",

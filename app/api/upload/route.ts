@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import path from "node:path";
+import fs from "node:fs/promises";
+import sharp from "sharp";
 import { slugify } from "@/lib/format";
 
 // Vercel's serverless functions have no persistent/writable local disk, so
@@ -15,6 +17,37 @@ export const runtime = "nodejs";
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FOLDERS = ["products", "payments", "kwitansi", "komisi", "rab", "purchasing", "payroll"];
+
+// Product photos only (not payment proofs/receipts/etc.) get a small
+// bottom-right watermark on upload — per the user's request 2026-08-25.
+// Uses the existing boxed HOJAY mark (the same file the sidebar/login page
+// render) rather than a new asset, per the user's confirmation the same
+// day. That file's background is fully opaque (not transparent — checked
+// via sharp metadata), so this reads as a small branded badge stamped in
+// the corner, not a translucent overlay.
+const WATERMARK_PATH = path.join(process.cwd(), "public/logo/hojay-2b-positif.png");
+let watermarkBuffer: Buffer | null = null;
+
+async function watermarkImage(buffer: Buffer, mimeType: string): Promise<Buffer> {
+  if (!watermarkBuffer) watermarkBuffer = await fs.readFile(WATERMARK_PATH);
+
+  const base = sharp(buffer);
+  const meta = await base.metadata();
+  const baseWidth = meta.width ?? 1200;
+  const baseHeight = meta.height ?? 1200;
+
+  const wmWidth = Math.round(baseWidth * 0.18);
+  const margin = Math.round(baseWidth * 0.025);
+  const wm = await sharp(watermarkBuffer).resize({ width: wmWidth }).toBuffer();
+  const wmMeta = await sharp(wm).metadata();
+  const wmHeight = wmMeta.height ?? wmWidth;
+
+  let composited = base.composite([
+    { input: wm, left: Math.max(0, baseWidth - wmWidth - margin), top: Math.max(0, baseHeight - wmHeight - margin) },
+  ]);
+  composited = mimeType === "image/png" ? composited.png() : mimeType === "image/webp" ? composited.webp() : composited.jpeg({ quality: 90 });
+  return composited.toBuffer();
+}
 
 export async function POST(req: Request) {
   const formData = await req.formData();
@@ -39,7 +72,15 @@ export async function POST(req: Request) {
   const pathname = `${folder}/${Date.now()}-${baseName}${ext}`;
 
   try {
-    const blob = await put(pathname, file, { access: "public", token: process.env.Hojay_READ_WRITE_TOKEN });
+    let body: File | Buffer = file;
+    if (folder === "products" && file.type !== "application/pdf") {
+      body = await watermarkImage(Buffer.from(await file.arrayBuffer()), file.type);
+    }
+    const blob = await put(pathname, body, {
+      access: "public",
+      token: process.env.Hojay_READ_WRITE_TOKEN,
+      contentType: file.type,
+    });
     return NextResponse.json({ url: blob.url }, { status: 201 });
   } catch (err) {
     return NextResponse.json(

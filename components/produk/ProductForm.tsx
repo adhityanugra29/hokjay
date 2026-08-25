@@ -22,9 +22,8 @@ export interface ProductFormValues {
   tanggalBarangMasuk: string;
   stokMinimum: string;
   alertHariTidakTerjual: string;
-  panjangCm: string;
-  lebarCm: string;
-  tinggiCm: string;
+  /** Free-typed "120x60x85" — parsed into dimensi.{panjang,lebar,tinggi}Cm on submit (see parseUkuran). */
+  ukuranText: string;
   ketebalan: string;
   fotoUrl: string;
   fotoSampingUrl: string;
@@ -55,9 +54,7 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   // No longer a form field (see confirmation 2026-08-20) — schema default
   // (45) is preserved by still sending it, just never rendered/edited here.
   alertHariTidakTerjual: "45",
-  panjangCm: "",
-  lebarCm: "",
-  tinggiCm: "",
+  ukuranText: "",
   ketebalan: "",
   fotoUrl: "",
   // No longer form fields (see the user's request 2026-08-25 — just one
@@ -68,6 +65,22 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   fotoBelakangUrl: "",
   deskripsi: "",
 };
+
+/**
+ * Parses a free-typed "120x60x85" (any of x/×/X, optional spaces, decimal
+ * comma or dot) into the three separate numbers the schema's `dimensi`
+ * object still expects — per the user's request 2026-08-25: one field in
+ * this form, not three, but lib/pricing.ts's custom-order pricing (a
+ * completely separate form/flow) still needs real panjang/lebar/tinggi
+ * numbers, so the underlying structure is unchanged, only how a regular
+ * catalog product's size is typed in here.
+ */
+function parseUkuran(text: string): { panjangCm?: number; lebarCm?: number; tinggiCm?: number } | undefined {
+  const match = text.match(/(\d+(?:[.,]\d+)?)\s*[x×X*]\s*(\d+(?:[.,]\d+)?)\s*[x×X*]\s*(\d+(?:[.,]\d+)?)/);
+  if (!match) return undefined;
+  const num = (s: string) => Number(s.replace(",", ".")) || undefined;
+  return { panjangCm: num(match[1]), lebarCm: num(match[2]), tinggiCm: num(match[3]) };
+}
 
 export default function ProductForm({
   mode,
@@ -134,14 +147,7 @@ export default function ProductForm({
       tanggalBarangMasuk: values.tanggalBarangMasuk ? new Date(values.tanggalBarangMasuk) : undefined,
       stokMinimum: Number(values.stokMinimum) || 0,
       alertHariTidakTerjual: Number(values.alertHariTidakTerjual),
-      dimensi:
-        values.panjangCm || values.lebarCm || values.tinggiCm
-          ? {
-              panjangCm: Number(values.panjangCm) || undefined,
-              lebarCm: Number(values.lebarCm) || undefined,
-              tinggiCm: Number(values.tinggiCm) || undefined,
-            }
-          : undefined,
+      dimensi: parseUkuran(values.ukuranText),
       ketebalan: values.tipeProduk === "elektronik" ? undefined : values.ketebalan || undefined,
       fotoUrl: values.fotoUrl || undefined,
       fotoSampingUrl: values.fotoSampingUrl || undefined,
@@ -276,29 +282,12 @@ export default function ProductForm({
             <Input type="date" value={values.tanggalBarangMasuk} onChange={(e) => set("tanggalBarangMasuk", e.target.value)} />
           </Field>
 
-          <Field label="Ukuran P × L × T (cm)">
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                value={values.panjangCm}
-                onChange={(e) => set("panjangCm", e.target.value)}
-                placeholder="Panjang"
-              />
-              <span className="text-muted">×</span>
-              <Input
-                type="number"
-                value={values.lebarCm}
-                onChange={(e) => set("lebarCm", e.target.value)}
-                placeholder="Lebar"
-              />
-              <span className="text-muted">×</span>
-              <Input
-                type="number"
-                value={values.tinggiCm}
-                onChange={(e) => set("tinggiCm", e.target.value)}
-                placeholder="Tinggi"
-              />
-            </div>
+          <Field label="Ukuran P × L × T (cm)" hint="Contoh: 120x60x85">
+            <Input
+              value={values.ukuranText}
+              onChange={(e) => set("ukuranText", e.target.value)}
+              placeholder="120x60x85"
+            />
           </Field>
           {values.tipeProduk !== "elektronik" && (
             <Field label="Ketebalan Material">

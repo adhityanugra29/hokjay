@@ -147,12 +147,6 @@ export default function KatalogClient({
           >
             Lihat Produk Custom
           </Link>
-          <Link
-            href="/katalog/request-po"
-            className="inline-block rounded border border-line bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-semibold text-muted hover:border-accent hover:text-accent"
-          >
-            Request Produk PO
-          </Link>
           <button
             type="button"
             onClick={handleMainButtonClick}

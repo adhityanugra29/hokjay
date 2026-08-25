@@ -41,7 +41,11 @@ export default async function ProdukListPage({
   const { field, dir } = parseSort(sp, SORT_FIELDS, "name");
   await dbConnect();
 
-  const filter: Record<string, unknown> = {};
+  // Sold-out products (stok <= 0) no longer show in Inventory's browsing
+  // list — per the user's request 2026-08-25. Nothing is deleted (the
+  // Product doc, and every snapshot of it on past invoices, is untouched);
+  // this is purely a display filter here.
+  const filter: Record<string, unknown> = { stok: { $gt: 0 } };
   if (search) {
     filter.$or = [
       { name: { $regex: search, $options: "i" } },
