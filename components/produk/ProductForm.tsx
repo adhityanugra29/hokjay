@@ -276,14 +276,29 @@ export default function ProductForm({
             <Input type="date" value={values.tanggalBarangMasuk} onChange={(e) => set("tanggalBarangMasuk", e.target.value)} />
           </Field>
 
-          <Field label="Panjang (cm)">
-            <Input type="number" value={values.panjangCm} onChange={(e) => set("panjangCm", e.target.value)} />
-          </Field>
-          <Field label="Lebar (cm)">
-            <Input type="number" value={values.lebarCm} onChange={(e) => set("lebarCm", e.target.value)} />
-          </Field>
-          <Field label="Tinggi (cm)">
-            <Input type="number" value={values.tinggiCm} onChange={(e) => set("tinggiCm", e.target.value)} />
+          <Field label="Ukuran P × L × T (cm)">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={values.panjangCm}
+                onChange={(e) => set("panjangCm", e.target.value)}
+                placeholder="Panjang"
+              />
+              <span className="text-muted">×</span>
+              <Input
+                type="number"
+                value={values.lebarCm}
+                onChange={(e) => set("lebarCm", e.target.value)}
+                placeholder="Lebar"
+              />
+              <span className="text-muted">×</span>
+              <Input
+                type="number"
+                value={values.tinggiCm}
+                onChange={(e) => set("tinggiCm", e.target.value)}
+                placeholder="Tinggi"
+              />
+            </div>
           </Field>
           {values.tipeProduk !== "elektronik" && (
             <Field label="Ketebalan Material">
