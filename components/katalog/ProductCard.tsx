@@ -22,6 +22,8 @@ export interface KatalogProduct {
   dimensi?: { panjangCm?: number | null; lebarCm?: number | null; tinggiCm?: number | null };
   ketebalan?: string;
   fotoUrl?: string;
+  /** Has sold at least once (any StockMovement with alasan "Penjualan") — still pickable, just flagged. */
+  sudahTerjual?: boolean;
 }
 
 export default function ProductCard({ product }: { product: KatalogProduct }) {
@@ -149,6 +151,14 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
           {product.isCustom && (
             <span className="border border-accent px-2.5 py-1 text-[0.66rem] font-semibold text-accent">
               Pesanan Custom
+            </span>
+          )}
+          {/* Informational only — still selectable/pickable for the PDF,
+              just flags that this isn't an untouched-new item anymore. Per
+              the user's request 2026-08-25. */}
+          {product.sudahTerjual && (
+            <span className="border border-gold px-2.5 py-1 text-[0.66rem] font-semibold text-gold">
+              Sudah Terjual
             </span>
           )}
           {product.kondisi === "bekas" ? (

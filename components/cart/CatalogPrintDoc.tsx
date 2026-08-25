@@ -217,7 +217,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
             Sales yang melayani: {sales.map((s) => s.nama).join(" · ")}
           </div>
         )}
-        <p className="mt-6 border-t border-white/25 pt-4 text-[13px] leading-relaxed text-[rgba(255,255,255,0.85)]">
+        <p className="mt-6 border-t border-[rgba(255,255,255,0.25)] pt-4 text-[13px] leading-relaxed text-[rgba(255,255,255,0.85)]">
           Pesanan custom ukuran bebas tersedia — hubungi sales untuk estimasi harga.
         </p>
       </div>
