@@ -28,7 +28,12 @@ export default function DpForm({
   paymentMethods: string[];
 }) {
   const router = useRouter();
-  const [metode, setMetode] = useState<string>(paymentMethods[0] ?? "");
+  // Defaults to whichever configured method reads as "Transfer" (e.g.
+  // "Transfer Bank") — per the user's request 2026-08-25 — falling back to
+  // the first configured method if none matches.
+  const [metode, setMetode] = useState<string>(
+    paymentMethods.find((m) => /transfer/i.test(m)) ?? paymentMethods[0] ?? ""
+  );
   const [nominal, setNominal] = useState("");
   const [buktiUrl, setBuktiUrl] = useState("");
   const [catatan, setCatatan] = useState("");

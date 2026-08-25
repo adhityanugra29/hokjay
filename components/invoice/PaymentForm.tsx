@@ -35,7 +35,12 @@ export default function PaymentForm({
 }) {
   const router = useRouter();
   const sisaTagihan = grandTotal - dpNominal;
-  const [metode, setMetode] = useState<string>(paymentMethods[0] ?? "");
+  // Defaults to whichever configured method reads as "Transfer" (e.g.
+  // "Transfer Bank") — per the user's request 2026-08-25 — falling back to
+  // the first configured method if none matches.
+  const [metode, setMetode] = useState<string>(
+    paymentMethods.find((m) => /transfer/i.test(m)) ?? paymentMethods[0] ?? ""
+  );
   // Cash/Tunai never has a transfer receipt — hide the upload field
   // entirely instead of leaving a pointless-to-fill box. Per the user's
   // request 2026-08-25.
