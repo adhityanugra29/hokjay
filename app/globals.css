@@ -89,3 +89,11 @@ h1, h2, h3, h4 {
     display: none !important;
   }
 }
+
+/* Defaults the print dialog to portrait (A4) instead of whatever
+   orientation the browser/printer last remembered — per the user's
+   request 2026-08-26, for "Cetak Invoice" (window.print()). @page is its
+   own at-rule, applies during print regardless of @media print. */
+@page {
+  size: A4 portrait;
+}
