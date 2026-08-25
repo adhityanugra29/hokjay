@@ -41,6 +41,17 @@ const YELLOW = "#FFC800";
 // than flush with the page bottom.
 const PAGE_HEIGHT_PX = Math.round((297 * 794) / 210);
 
+/**
+ * Shared "Hubungi ..." wording — used both in the cover's "Pemesanan" cell
+ * and the repeating footer's footnote, so the two always read the same.
+ * Per the user's request 2026-08-25.
+ */
+function salesContactLine(ownSales: CatalogSales | undefined): string {
+  return ownSales
+    ? `Hubungi: ${ownSales.nama}${ownSales.nomorHp ? ` - ${ownSales.nomorHp}` : ""} untuk penawaran terbaik`
+    : "Hubungi sales Anda untuk penawaran terbaik";
+}
+
 function specLine(p: CatalogProduct): string {
   const parts: string[] = [];
   // Just "Bekas"/"Baru" — the kondisiPercent number is dropped from every
@@ -78,11 +89,7 @@ function ClosingFooter({ sales, ownSales }: { sales: CatalogSales[]; ownSales: C
           Sales yang melayani: <span className="font-semibold">{sales.map((s) => s.nama).join(" · ")}</span>
         </div>
       )}
-      <p className="mt-2 text-[13px] leading-relaxed opacity-80">
-        {ownSales
-          ? `Hubungi Sales ${ownSales.nama}${ownSales.nomorHp ? ` (${ownSales.nomorHp})` : ""} untuk penawaran harga terbaik.`
-          : "Hubungi sales Anda untuk penawaran harga terbaik."}
-      </p>
+      <p className="mt-2 text-[13px] leading-relaxed opacity-80">{salesContactLine(ownSales)}</p>
     </div>
   );
 }
@@ -196,39 +203,23 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
             Kitchen Equipment untuk: UMKM, Cafe, Hotel, MBG — Harga Bersahabat
           </h1>
         </div>
-        <div className="grid grid-cols-3 border-b-2 border-line">
+        {/* Was a 3-column grid (Pemesanan / Isi katalog / Kategori) — the
+            Kategori column got folded into Isi katalog's wording instead
+            of standing on its own, per the user's request 2026-08-25. */}
+        <div className="grid grid-cols-2 border-b-2 border-line">
           <div className="px-12 py-6">
             <div className="mb-2 text-[12px] tracking-[0.1em] uppercase" style={{ color: YELLOW }}>
               Pemesanan
             </div>
-            {ownSales ? (
-              <div className="text-[15px] leading-relaxed">
-                {ownSales.nama}
-                {ownSales.nomorHp && (
-                  <>
-                    <br />
-                    {ownSales.nomorHp}
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="text-[15px] leading-relaxed">Hubungi sales Anda untuk daftar harga & pemesanan</div>
-            )}
+            <div className="text-[15px] leading-relaxed">{salesContactLine(ownSales)}</div>
           </div>
-          <div className="border-l border-line px-6 py-6">
+          <div className="border-l border-line px-12 py-6">
             <div className="mb-2 text-[12px] tracking-[0.1em] uppercase" style={{ color: YELLOW }}>
               Isi katalog
             </div>
             <div className="text-[15px] leading-relaxed">
-              {selectedProducts.length} produk dipilih
-              <br />+ pesanan custom
+              ({byCategory.length} Kategori - {selectedProducts.length} Produk)
             </div>
-          </div>
-          <div className="border-l border-line px-12 py-6">
-            <div className="mb-2 text-[12px] tracking-[0.1em] uppercase" style={{ color: YELLOW }}>
-              Kategori
-            </div>
-            <div className="text-[15px] leading-relaxed">{byCategory.length} kategori produk</div>
           </div>
         </div>
         </div>
