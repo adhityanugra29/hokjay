@@ -2,6 +2,7 @@
 
 import { useCart } from "@/components/cart/CartProvider";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
+import ZoomableImage from "./ZoomableImage";
 import { rupiah } from "@/lib/format";
 
 export interface KatalogProduct {
@@ -72,8 +73,7 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
           </label>
         )}
         {product.fotoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={product.fotoUrl} alt={product.name} className="h-full w-full object-cover" />
+          <ZoomableImage src={product.fotoUrl} alt={product.name} className="h-full w-full object-cover" />
         ) : (
           "Tidak ada foto"
         )}
