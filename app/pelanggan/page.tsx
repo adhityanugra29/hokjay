@@ -10,12 +10,14 @@ export const dynamic = "force-dynamic";
 /** Pelanggan — "daftar prioritas" per the 2026-08-22 redesign ("3b"): piutang, kebiasaan bayar, dan siapa mulai jarang pesan, bukan buku alamat datar. */
 export default async function PelangganPage({ searchParams }: PageProps<"/pelanggan">) {
   const sp = await searchParams;
-  const filter = sp.filter === "piutang" || sp.filter === "jarang" ? sp.filter : "semua";
+  // "Jarang pesan" filter option removed per the user's request
+  // 2026-08-25 — the "Mulai jarang pesan" stat card above stays (it's
+  // informational, not a filter), only the list filter button is gone.
+  const filter = sp.filter === "piutang" ? "piutang" : "semua";
   const summary = await getPelangganSummary();
 
   const filteredRows = summary.rows.filter((r) => {
     if (filter === "piutang") return r.piutang > 0;
-    if (filter === "jarang") return r.orderCount >= 2 && (r.hariSejakOrderTerakhir ?? 0) > 60;
     return true;
   });
 
@@ -85,12 +87,6 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
                   className={`border px-2.5 py-1.5 font-mono text-[0.7rem] ${filter === "piutang" ? "border-ink bg-ink text-white" : "border-line text-ink hover:border-accent"}`}
                 >
                   Ada piutang
-                </Link>
-                <Link
-                  href="/pelanggan?filter=jarang"
-                  className={`border px-2.5 py-1.5 font-mono text-[0.7rem] ${filter === "jarang" ? "border-ink bg-ink text-white" : "border-line text-ink hover:border-accent"}`}
-                >
-                  Jarang pesan
                 </Link>
               </div>
             </div>
