@@ -47,11 +47,22 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
       <div className="p-6 md:p-9">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
           <div id="invoice-doc" className="border border-line bg-panel p-9">
+            {/* "INVOICE" centered above a logo+company-info / no.+tanggal
+                row — per the user's request 2026-08-25. */}
+            <h2 className="mb-5 text-center font-serif text-2xl tracking-[0.08em]">INVOICE</h2>
             <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b-2 border-ink pb-6">
               <div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" width={110} height={61} className="mb-2 h-auto w-[110px]" />
-                <h2 className="font-serif text-2xl">INVOICE</h2>
+                <div className="font-mono text-[0.72rem] leading-relaxed text-muted">
+                  CV. Horeca Jaya Abadi
+                  <br />
+                  Jalan H.Umar no 24, Bekasi Selatan
+                  <br />
+                  0877-8522-3394 · horecajaya.id@gmail.com
+                  <br />
+                  NPWP: 1000-0000-0770-6458
+                </div>
               </div>
               <div className="text-right font-mono text-[0.75rem] leading-relaxed text-muted">
                 No. {invoice.nomor}
@@ -134,6 +145,14 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                   </div>
                 </>
               ) : null}
+            </div>
+
+            {/* Payment details footnote — per the user's request
+                2026-08-25. */}
+            <div className="mt-9 border-t-2 border-ink pt-5 font-mono text-[0.78rem] leading-relaxed">
+              <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Payment Details</div>
+              <div>No. Rekening: 5771370277 (BCA)</div>
+              <div>Atas Nama: Mohammad Andi Abdillah</div>
             </div>
           </div>
 
