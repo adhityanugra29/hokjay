@@ -142,7 +142,11 @@ export default function KatalogClient({
   }, [products, search, category, sort]);
 
   return (
-    <div className="p-6 md:p-9">
+    // Extra bottom padding on mobile (dropped again at md, where the fixed
+    // bottom cart bar/tab bar don't exist) so the last row of product cards
+    // isn't hidden behind CartBar + the mobile tab bar stacked at the
+    // bottom of the screen. Per the user's report 2026-08-25.
+    <div className="p-6 pb-32 md:p-9">
       <div className="relative -mx-6 -mt-6 mb-7 overflow-hidden border-b-2 border-line bg-paper px-6 py-10 pl-16 md:-mx-9 md:-mt-9 md:px-10 md:pl-14">
         <div className="mb-2 font-sans text-xs uppercase tracking-[0.12em] text-accent">
           Penjualan
@@ -231,7 +235,11 @@ export default function KatalogClient({
         </select>
       </div>
 
-      <div className="grid grid-cols-2 gap-4.5 lg:grid-cols-4">
+      {/* Single column below sm — the two price-preset buttons + currency
+          input on each ProductCard got noticeably more cramped this
+          session, so 2-up was too tight on a phone-width screen. Per the
+          user's report 2026-08-25. */}
+      <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2 lg:grid-cols-4">
         {filtered.map((p) => (
           <ProductCard key={p._id} product={p} />
         ))}

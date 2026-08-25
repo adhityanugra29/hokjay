@@ -3,8 +3,12 @@
 import { createContext, useContext, useState } from "react";
 
 /**
- * Full-screen "Tunggu Sebentar ya" overlay — per the user's request
- * 2026-08-25. Two ways this shows up:
+ * Full-screen "Mohon menunggu" overlay — per the user's request 2026-08-25
+ * (wording updated same day from an earlier "Tunggu Sebentar ya"). Applies
+ * on every screen size, including mobile's bottom tab bar / SubnavTabs
+ * navigation — those are still real route changes, so they hit the same
+ * app/loading.tsx boundary as any other page-to-page navigation. Two ways
+ * this shows up:
  *   1. Automatically on every page-to-page navigation, via app/loading.tsx
  *      (Next.js's built-in route-transition boundary — every page here does
  *      a real DB fetch, so this covers "pindah page" everywhere for free).
@@ -17,7 +21,7 @@ export function LoadingOverlayContent() {
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
       <div className="flex flex-col items-center gap-3.5 border-2 border-ink bg-panel px-8 py-7 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.35)]">
         <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-line border-t-accent" />
-        <div className="font-sans text-[0.9rem] font-semibold text-ink">Tunggu sebentar ya...</div>
+        <div className="font-sans text-[0.9rem] font-semibold text-ink">Mohon menunggu...</div>
       </div>
     </div>
   );

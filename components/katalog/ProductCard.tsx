@@ -114,7 +114,7 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
               price above. Shows on every card at all times (not gated to
               PDF pick mode) since this is also the price used when adding
               to invoice. */}
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
               onClick={() => setPriceMode(product._id, "rekomendasi")}
