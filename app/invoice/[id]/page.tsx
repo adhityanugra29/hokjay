@@ -17,6 +17,10 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
 
   return (
     <>
+      {/* App chrome (title/subtitle/action buttons) has no place on the
+          actual printed document — #invoice-doc below is what "Cetak
+          Invoice" is meant to produce. Per the user's request 2026-08-26. */}
+      <div className="no-print">
       <PageHeader
         title={invoice.nomor}
         subtitle={`DIBUAT ${formatDateLong(invoice.tanggalInvoice ?? invoice.createdAt!).toUpperCase()}`}
@@ -44,6 +48,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
           </>
         }
       />
+      </div>
       <div className="p-6 md:p-9">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
           <div id="invoice-doc" className="border border-line bg-panel p-9">
@@ -147,9 +152,15 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
               ) : null}
             </div>
 
-            {/* Payment details footnote — per the user's request
-                2026-08-25. */}
-            <div className="mt-9 border-t-2 border-ink pt-5 font-mono text-[0.78rem] leading-relaxed">
+            {/* Payment details footnote — a single element placed once at
+                the very end of the document (not repeated per page like
+                the Katalog PDF's footer — this uses native browser print
+                pagination, not the Katalog's manual per-page chunking), so
+                it only ever shows up on whichever page the content
+                naturally ends on. break-inside-avoid keeps it from being
+                split across a page boundary if it lands right at one. Per
+                the user's request 2026-08-25/26. */}
+            <div className="mt-9 border-t-2 border-ink pt-5 font-mono text-[0.78rem] leading-relaxed [break-inside:avoid]">
               <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Payment Details</div>
               <div>No. Rekening: 5771370277 (BCA)</div>
               <div>Atas Nama: Mohammad Andi Abdillah</div>

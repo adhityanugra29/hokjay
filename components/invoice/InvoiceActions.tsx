@@ -27,8 +27,18 @@ export default function InvoiceActions({
   }
 
   return (
-    <Button variant="clay" onClick={sendWA}>
-      Kirim ke Pelanggan (WA)
-    </Button>
+    <>
+      <Button variant="clay" onClick={sendWA}>
+        Kirim ke Pelanggan (WA)
+      </Button>
+      {/* Native browser print, not a PDF re-render — #invoice-doc (the
+          printable document itself) is styled for this, and the app chrome
+          around it (sidebar, PageHeader, this sidebar column) is already
+          marked .no-print / hidden for print. Per the user's request
+          2026-08-26. */}
+      <Button variant="ghost" onClick={() => window.print()}>
+        Cetak Invoice
+      </Button>
+    </>
   );
 }
