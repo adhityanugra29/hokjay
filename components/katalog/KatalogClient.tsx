@@ -92,7 +92,13 @@ export default function KatalogClient({
           margin: 0,
           filename: `Katalog-CV-HORECA-JAYA_${tanggal}.pdf`,
           image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
+          // scrollY/scrollX: html2canvas otherwise captures from the
+          // *current* window scroll position — since the button that
+          // triggers this sits far down the page (after browsing/picking
+          // products), whatever the user had scrolled to leaked into the
+          // capture and pushed the real content off the first page,
+          // leaving it blank. Per the user's report 2026-08-25.
+          html2canvas: { scale: 2, useCORS: true, scrollY: -window.scrollY, scrollX: 0 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         })
         .from(element)

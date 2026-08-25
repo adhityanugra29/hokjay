@@ -6,6 +6,7 @@ import CartBar from "@/components/cart/CartBar";
 import CatalogPrintDoc from "@/components/cart/CatalogPrintDoc";
 import { CatalogSelectionProvider } from "@/components/katalog/CatalogSelectionProvider";
 import { ActiveCustomerProvider } from "@/components/penjualan/ActiveCustomerProvider";
+import { LoadingOverlayProvider } from "@/components/ui/LoadingOverlay";
 import { getSession } from "@/lib/auth/session";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
@@ -44,17 +45,19 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="id" className={archivo.variable}>
       <body className="min-h-screen bg-paper text-ink font-sans antialiased">
-        <ActiveCustomerProvider>
-          <CartProvider>
-            <CatalogSelectionProvider>
-              <AppShell user={user} badgeCounts={badgeCounts}>
-                {children}
-              </AppShell>
-              {user && <CartBar />}
-              {user && <CatalogPrintDoc />}
-            </CatalogSelectionProvider>
-          </CartProvider>
-        </ActiveCustomerProvider>
+        <LoadingOverlayProvider>
+          <ActiveCustomerProvider>
+            <CartProvider>
+              <CatalogSelectionProvider>
+                <AppShell user={user} badgeCounts={badgeCounts}>
+                  {children}
+                </AppShell>
+                {user && <CartBar />}
+                {user && <CatalogPrintDoc />}
+              </CatalogSelectionProvider>
+            </CartProvider>
+          </ActiveCustomerProvider>
+        </LoadingOverlayProvider>
       </body>
     </html>
   );
