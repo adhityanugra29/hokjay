@@ -7,7 +7,7 @@ import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/F
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { JENIS_USAHA_OPTIONS } from "@/lib/constants";
-import { INDONESIA_REGIONS } from "@/lib/wilayah";
+import { INDONESIA_REGIONS, guessRegionFromAddress } from "@/lib/wilayah";
 
 export default function CustomerForm() {
   const router = useRouter();
@@ -147,6 +147,15 @@ export default function CustomerForm() {
               required
               value={values.alamat}
               onChange={(e) => setValues((v) => ({ ...v, alamat: e.target.value }))}
+              // Auto-fills Provinsi/Kota by scanning the pasted alamat for a
+              // kota/kabupaten name — only when neither is already set, so
+              // it never clobbers a manual pick. Per the user's request
+              // 2026-08-25 (sales usually pastes a full WhatsApp address).
+              onBlur={(e) => {
+                if (values.provinsi || values.kota) return;
+                const guess = guessRegionFromAddress(e.target.value);
+                if (guess) setValues((v) => ({ ...v, provinsi: guess.provinsi, kota: guess.kota }));
+              }}
               placeholder="Alamat lengkap untuk pengiriman & penagihan"
             />
           </Field>

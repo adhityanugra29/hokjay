@@ -5,7 +5,7 @@ import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/F
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button } from "@/components/ui/Button";
 import { JENIS_USAHA_OPTIONS } from "@/lib/constants";
-import { INDONESIA_REGIONS } from "@/lib/wilayah";
+import { INDONESIA_REGIONS, guessRegionFromAddress } from "@/lib/wilayah";
 
 export interface CreatedCustomer {
   _id: string;
@@ -156,6 +156,13 @@ export default function InlineCustomerForm({
             required
             value={values.alamat}
             onChange={(e) => setValues((v) => ({ ...v, alamat: e.target.value }))}
+            // Auto-fills Provinsi/Kota from the pasted alamat — same as
+            // CustomerForm.tsx. Per the user's request 2026-08-25.
+            onBlur={(e) => {
+              if (values.provinsi || values.kota) return;
+              const guess = guessRegionFromAddress(e.target.value);
+              if (guess) setValues((v) => ({ ...v, provinsi: guess.provinsi, kota: guess.kota }));
+            }}
             placeholder="Alamat lengkap untuk pengiriman & penagihan"
           />
         </Field>

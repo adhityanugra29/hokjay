@@ -696,3 +696,51 @@ export const INDONESIA_REGIONS: ProvinceRegion[] = [
     ]
   }
 ];
+
+/**
+ * Guesses Provinsi/Kota by scanning a free-text alamat for a kota/kabupaten
+ * name from INDONESIA_REGIONS — per the user's request 2026-08-25 (sales
+ * pastes a full WhatsApp address, auto-fills the required Provinsi/Kota
+ * fields instead of making them retype it). Longest-name-wins so e.g.
+ * "Kota Jakarta Selatan" matches before a shorter unrelated substring
+ * would; when only the bare name appears (no "Kota"/"Kab." prefix in the
+ * address, e.g. "...Bekasi Selatan...") and both a Kota and a Kab. share
+ * that name, "Kota X" is preferred over "Kab. X" as the more common
+ * everyday reading. Not typo-tolerant (exact substring only, case/space
+ * insensitive) — good enough for a real address someone actually typed,
+ * not a spell-checker.
+ */
+export function guessRegionFromAddress(alamat: string): { provinsi: string; kota: string } | null {
+  const haystack = alamat.toLowerCase().replace(/\s+/g, " ");
+
+  const candidates: { provinsi: string; kota: string; bareName: string }[] = [];
+  for (const region of INDONESIA_REGIONS) {
+    for (const kota of region.kota) {
+      const bareName = kota.replace(/^kab\.?\s+/i, "").replace(/^kota\s+/i, "").trim();
+      candidates.push({ provinsi: region.provinsi, kota, bareName });
+    }
+  }
+
+  // Longest full name first (checked against the full "Kota X"/"Kab. X"
+  // string), then longest bare name — so a specific, prefixed mention wins
+  // over an ambiguous bare one, and a longer/more specific bare name (e.g.
+  // "Jakarta Selatan") wins over a shorter one ("Jakarta") that would also
+  // match.
+  const byFullName = [...candidates].sort((a, b) => b.kota.length - a.kota.length);
+  for (const c of byFullName) {
+    if (haystack.includes(c.kota.toLowerCase())) return { provinsi: c.provinsi, kota: c.kota };
+  }
+
+  const byBareName = [...candidates].sort((a, b) => b.bareName.length - a.bareName.length);
+  for (const c of byBareName) {
+    if (haystack.includes(c.bareName.toLowerCase())) {
+      // Ambiguous bare match (e.g. "Bekasi" alone) — prefer "Kota X" over
+      // "Kab. X" among everything sharing this exact bare name.
+      const tied = candidates.filter((x) => x.bareName === c.bareName && haystack.includes(x.bareName.toLowerCase()));
+      const preferred = tied.find((x) => /^kota\s/i.test(x.kota)) ?? tied[0];
+      return { provinsi: preferred.provinsi, kota: preferred.kota };
+    }
+  }
+
+  return null;
+}
