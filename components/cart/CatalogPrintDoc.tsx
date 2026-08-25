@@ -81,15 +81,19 @@ interface PrintUnit {
  */
 function ClosingFooter({ sales, ownSales }: { sales: CatalogSales[]; ownSales: CatalogSales | undefined }) {
   return (
-    <div className="px-12 py-6" style={{ background: YELLOW, color: "#201e1d" }}>
+    <div className="flex items-center gap-6 px-12 py-6" style={{ background: YELLOW, color: "#201e1d" }}>
+      {/* Logo pinned to the far left edge, text to its right — per the
+          user's request 2026-08-25 (was stacked logo-above-text before). */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" width={90} height={50} className="mb-3 h-auto w-[90px]" />
-      {sales.length > 0 && (
-        <div className="text-[13px] opacity-80">
-          Sales yang melayani: <span className="font-semibold">{sales.map((s) => s.nama).join(" · ")}</span>
-        </div>
-      )}
-      <p className="mt-2 text-[13px] leading-relaxed opacity-80">{salesContactLine(ownSales)}</p>
+      <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" width={90} height={50} className="h-auto w-[90px] shrink-0" />
+      <div>
+        {sales.length > 0 && (
+          <div className="text-[13px] opacity-80">
+            Sales yang melayani: <span className="font-semibold">{sales.map((s) => s.nama).join(" · ")}</span>
+          </div>
+        )}
+        <p className="mt-1 text-[13px] leading-relaxed opacity-80">{salesContactLine(ownSales)}</p>
+      </div>
     </div>
   );
 }
@@ -215,10 +219,18 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
           </div>
           <div className="border-l border-line px-12 py-6">
             <div className="mb-2 text-[12px] tracking-[0.1em] uppercase" style={{ color: YELLOW }}>
-              Isi katalog
+              Daftar Isi Katalog
             </div>
-            <div className="text-[15px] leading-relaxed">
-              ({byCategory.length} Kategori - {selectedProducts.length} Produk)
+            {/* Real per-category breakdown instead of one aggregate count —
+                category names/counts are whatever the user actually picked
+                on /katalog, not a fixed list. Per the user's request
+                2026-08-25. */}
+            <div className="text-[14px] leading-relaxed">
+              {byCategory.map((group) => (
+                <div key={group.cat}>
+                  {group.cat}: {group.items.length} produk
+                </div>
+              ))}
             </div>
           </div>
         </div>
