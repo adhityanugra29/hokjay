@@ -43,7 +43,9 @@ const PAGE_HEIGHT_PX = Math.round((297 * 794) / 210);
 
 function specLine(p: CatalogProduct): string {
   const parts: string[] = [];
-  parts.push(p.kondisi === "bekas" ? `Bekas — kondisi ${p.kondisiPercent ?? "-"}%` : "Baru");
+  // Just "Bekas"/"Baru" — the kondisiPercent number is dropped from every
+  // status label per the user's request 2026-08-25.
+  parts.push(p.kondisi === "bekas" ? "Bekas" : "Baru");
   if (p.dimensi?.panjangCm && p.dimensi?.lebarCm && p.dimensi?.tinggiCm) {
     parts.push(`${p.dimensi.panjangCm}×${p.dimensi.lebarCm}×${p.dimensi.tinggiCm} cm`);
   }

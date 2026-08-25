@@ -56,8 +56,11 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
       : null;
 
   const stockStatusLabel = product.stok <= 0 ? "Stok Habis" : `Stok ${product.stok} unit`;
-  const kondisiLabel =
-    product.kondisi === "bekas" ? `Bekas — Kondisi ${product.kondisiPercent ?? "—"}%` : "Baru";
+  // Just "Bekas" / "Baru" — the kondisiPercent number was dropped from
+  // every status label per the user's request 2026-08-25 (kondisiPercent
+  // itself stays on the product / still editable in the form, it's only
+  // hidden from this display).
+  const kondisiLabel = product.kondisi === "bekas" ? "Bekas" : "Baru";
   const specsText = [
     dimText ? `Dimensi: ${dimText}` : null,
     product.ketebalan ? `Ketebalan: ${product.ketebalan}` : null,
@@ -161,13 +164,17 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
               Sudah Terjual
             </span>
           )}
-          {product.kondisi === "bekas" ? (
-            <span className="border border-line px-2.5 py-1 text-[0.66rem] text-muted">
-              Bekas — Kondisi {product.kondisiPercent ?? "—"}%
-            </span>
-          ) : (
-            <span className="border border-line px-2.5 py-1 text-[0.66rem] text-muted">Baru</span>
-          )}
+          {/* Just "Bekas"/"Baru" — the kondisiPercent number is dropped
+              from the label (still stored/editable on the product itself,
+              just not shown here). Filled with a bright color instead of
+              the usual neutral outline badge so the status reads at a
+              glance. Per the user's request 2026-08-25. */}
+          <span
+            className="px-2.5 py-1 text-[0.66rem] font-semibold text-white"
+            style={{ background: product.kondisi === "bekas" ? "#D97706" : "#16A34A" }}
+          >
+            {kondisiLabel}
+          </span>
         </div>
 
         <div className="mt-2.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">Insentif</div>
