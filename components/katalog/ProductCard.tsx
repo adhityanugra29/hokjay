@@ -26,9 +26,11 @@ export interface KatalogProduct {
 
 export default function ProductCard({ product }: { product: KatalogProduct }) {
   const { items, addItem, updateItem, removeItem } = useCart();
-  const { isSelected, toggle, pickMode, getPriceMode, togglePriceMode, setCustomPrice, getEffectivePrice } = useCatalogSelection();
+  const { isSelected, toggle, pickMode, getPriceMode, setPriceMode, customPrices, setCustomPrice, getEffectivePrice } =
+    useCatalogSelection();
   const cartItem = items.find((i) => i.productId === product._id);
   const selected = isSelected(product._id);
+  const hasCustomPrice = customPrices[product._id] !== undefined;
   // Price toggle (Harga Rekomendasi/Minimum, + manual custom typing) shows
   // on every product card at all times — not just while picking products
   // for the PDF — and this is the price actually used for "+ Tambah ke
@@ -104,18 +106,36 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
             value={String(effectivePrice)}
             onChange={(v) => setCustomPrice(product._id, v ? Number(v) : 0)}
           />
-          {/* Per-product preset toggle — click flips between Harga
-              Rekomendasi/Minimum and discards any manually-typed custom
+          {/* Two separate preset buttons (per the user's request 2026-08-25,
+              replacing the earlier single flip-label toggle) — each picks
+              its price directly and discards any manually-typed custom
               price above. Shows on every card at all times (not gated to
               PDF pick mode) since this is also the price used when adding
-              to invoice. Per the user's request 2026-08-25. */}
-          <button
-            type="button"
-            onClick={() => togglePriceMode(product._id)}
-            className="w-fit cursor-pointer border border-line px-2.5 py-1 font-mono text-[0.64rem] font-semibold text-ink hover:bg-[#f3f2ec]"
-          >
-            {getPriceMode(product._id) === "minimum" ? "Harga Minimum" : "Harga Rekomendasi"}
-          </button>
+              to invoice. */}
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => setPriceMode(product._id, "rekomendasi")}
+              className={`cursor-pointer border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
+                getPriceMode(product._id) === "rekomendasi" && !hasCustomPrice
+                  ? "border-accent bg-accent text-white"
+                  : "border-line text-ink hover:bg-[#f3f2ec]"
+              }`}
+            >
+              Harga Rekomendasi
+            </button>
+            <button
+              type="button"
+              onClick={() => setPriceMode(product._id, "minimum")}
+              className={`cursor-pointer border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
+                getPriceMode(product._id) === "minimum" && !hasCustomPrice
+                  ? "border-accent bg-accent text-white"
+                  : "border-line text-ink hover:bg-[#f3f2ec]"
+              }`}
+            >
+              Harga Minimum
+            </button>
+          </div>
         </div>
         <div className="mt-2.5 text-[0.72rem] text-muted">
           {product.stok <= 0 ? (

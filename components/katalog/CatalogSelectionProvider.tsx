@@ -24,14 +24,14 @@ interface CatalogSelectionContextValue {
   pickMode: boolean;
   startPicking: () => void;
   cancelPicking: () => void;
-  // Which preset price each item shows in the PDF — per-product (per the
-  // user's request 2026-08-25, replacing the earlier global toggle), stored
-  // as an override map keyed by product id and defaulting to "rekomendasi"
-  // when a product has no entry. Overridable further via customPrices.
-  // Read by both ProductCard (the per-item toggle button + override input
-  // live there) and CatalogPrintDoc (what actually prints).
+  // Which preset price each item shows — per-product (per the user's
+  // request 2026-08-25, replacing the earlier global toggle), stored as an
+  // override map keyed by product id and defaulting to "rekomendasi" when a
+  // product has no entry. Overridable further via customPrices. Read by
+  // both ProductCard (the two Harga Rekomendasi/Minimum buttons + override
+  // input live there) and CatalogPrintDoc (what actually prints).
   getPriceMode: (id: string) => CatalogPriceMode;
-  togglePriceMode: (id: string) => void;
+  setPriceMode: (id: string, mode: CatalogPriceMode) => void;
   customPrices: Record<string, number>;
   setCustomPrice: (id: string, price: number | undefined) => void;
   getEffectivePrice: (product: { _id: string; hargaRekomendasi: number; hargaMinimum: number }) => number;
@@ -116,12 +116,9 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
     return priceModes[id] ?? "rekomendasi";
   }
 
-  function togglePriceMode(id: string) {
-    setPriceModes((prev) => ({
-      ...prev,
-      [id]: (prev[id] ?? "rekomendasi") === "rekomendasi" ? "minimum" : "rekomendasi",
-    }));
-    // Switching preset discards any manually-typed custom price for this
+  function setPriceMode(id: string, mode: CatalogPriceMode) {
+    setPriceModes((prev) => ({ ...prev, [id]: mode }));
+    // Picking a preset discards any manually-typed custom price for this
     // item — mirrors the existing "pakai Harga Minimum/Rekomendasi" link.
     setCustomPrice(id, undefined);
   }
@@ -152,7 +149,7 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
         startPicking,
         cancelPicking,
         getPriceMode,
-        togglePriceMode,
+        setPriceMode,
         customPrices,
         setCustomPrice,
         getEffectivePrice,
