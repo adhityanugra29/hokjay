@@ -16,7 +16,7 @@ export default function KatalogClient({
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
   const [downloading, setDownloading] = useState(false);
-  const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
+  const { selected, selectAll, pickMode, startPicking, cancelPicking, priceMode, setPriceMode } = useCatalogSelection();
 
   // Staged flow: idle button ("Buat Katalog") -> click reveals checkboxes +
   // "Pilih Semua" (label stays "Buat Katalog", disabled while 0 selected) ->
@@ -168,15 +168,44 @@ export default function KatalogClient({
       </div>
 
       {pickMode && (
-        <label className="mb-3 flex w-fit cursor-pointer items-center gap-2 text-[0.8rem] text-muted select-none">
-          <input
-            type="checkbox"
-            checked={filtered.length > 0 && filtered.every((p) => selected.has(p._id))}
-            onChange={() => selectAll(filtered.map((p) => p._id))}
-            className="h-4 w-4 accent-accent"
-          />
-          Pilih Semua ({filtered.length} produk yang tampil)
-        </label>
+        <div className="mb-5 flex flex-wrap items-center gap-4">
+          <label className="flex w-fit cursor-pointer items-center gap-2 text-[0.8rem] text-muted select-none">
+            <input
+              type="checkbox"
+              checked={filtered.length > 0 && filtered.every((p) => selected.has(p._id))}
+              onChange={() => selectAll(filtered.map((p) => p._id))}
+              className="h-4 w-4 accent-accent"
+            />
+            Pilih Semua ({filtered.length} produk yang tampil)
+          </label>
+
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Harga di PDF:</span>
+            <div className="inline-flex overflow-hidden rounded border border-line">
+              <button
+                type="button"
+                onClick={() => setPriceMode("rekomendasi")}
+                className={`px-3 py-1.5 font-sans text-[0.78rem] font-semibold ${
+                  priceMode === "rekomendasi" ? "bg-accent text-white" : "bg-panel text-ink hover:bg-[#f3f2ec]"
+                }`}
+              >
+                Harga Rekomendasi
+              </button>
+              <button
+                type="button"
+                onClick={() => setPriceMode("minimum")}
+                className={`border-l border-line px-3 py-1.5 font-sans text-[0.78rem] font-semibold ${
+                  priceMode === "minimum" ? "bg-accent text-white" : "bg-panel text-ink hover:bg-[#f3f2ec]"
+                }`}
+              >
+                Harga Minimum
+              </button>
+            </div>
+            <span className="font-mono text-[0.68rem] text-muted">
+              berlaku untuk semua yang dipilih — bisa diubah per produk di bawah
+            </span>
+          </div>
+        </div>
       )}
 
       <div className="mb-5 flex flex-wrap items-center gap-2.5">

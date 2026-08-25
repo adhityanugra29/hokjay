@@ -3,6 +3,7 @@
 import { useCart } from "@/components/cart/CartProvider";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 import ZoomableImage from "./ZoomableImage";
+import { CurrencyInput } from "@/components/ui/Form";
 import { rupiah } from "@/lib/format";
 
 export interface KatalogProduct {
@@ -24,9 +25,11 @@ export interface KatalogProduct {
 
 export default function ProductCard({ product }: { product: KatalogProduct }) {
   const { items, addItem, updateItem, removeItem } = useCart();
-  const { isSelected, toggle, pickMode } = useCatalogSelection();
+  const { isSelected, toggle, pickMode, priceMode, customPrices, setCustomPrice, getEffectivePrice } = useCatalogSelection();
   const cartItem = items.find((i) => i.productId === product._id);
   const selected = isSelected(product._id);
+  const hasCustomPrice = customPrices[product._id] !== undefined;
+  const effectivePrice = getEffectivePrice(product);
 
   const dims = product.dimensi;
   const dimText =
@@ -90,6 +93,28 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
             <>Stok: <span className="font-medium text-ink">{product.stok}</span> unit</>
           )}
         </div>
+
+        {pickMode && selected && (
+          <div className="mt-2.5 border-t border-dashed border-line pt-2.5">
+            <div className="flex items-center justify-between font-mono text-[0.62rem] uppercase text-muted">
+              <span>Harga di PDF</span>
+              {hasCustomPrice && (
+                <button
+                  type="button"
+                  onClick={() => setCustomPrice(product._id, undefined)}
+                  className="cursor-pointer text-accent underline underline-offset-2 normal-case"
+                >
+                  pakai {priceMode === "minimum" ? "Harga Minimum" : "Harga Rekomendasi"}
+                </button>
+              )}
+            </div>
+            <CurrencyInput
+              value={String(effectivePrice)}
+              onChange={(v) => setCustomPrice(product._id, v ? Number(v) : 0)}
+              className="mt-1"
+            />
+          </div>
+        )}
 
         <div className="mt-2 flex flex-wrap gap-1.5">
           {product.isCustom && (

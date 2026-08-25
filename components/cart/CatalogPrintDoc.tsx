@@ -13,6 +13,7 @@ interface CatalogProduct {
   kondisi: "baru" | "bekas";
   kondisiPercent?: number;
   hargaRekomendasi: number;
+  hargaMinimum: number;
   dimensi?: { panjangCm?: number; lebarCm?: number; tinggiCm?: number };
   ketebalan?: string;
   fotoUrl?: string;
@@ -52,7 +53,7 @@ export default function CatalogPrintDoc() {
   const [categories, setCategories] = useState<string[]>([]);
   const [sales, setSales] = useState<CatalogSales[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const { selected } = useCatalogSelection();
+  const { selected, getEffectivePrice } = useCatalogSelection();
 
   useEffect(() => {
     Promise.all([
@@ -152,7 +153,7 @@ export default function CatalogPrintDoc() {
                 <p className="mt-1 text-[12.5px] leading-snug text-muted">{specLine(p)}</p>
                 <div className="mt-2 flex items-baseline justify-between gap-3 border-t border-line pt-2">
                   <span className="text-[11px] text-muted">{p.sku}</span>
-                  <span className="text-[16px] font-extrabold">{rupiah(p.hargaRekomendasi)}</span>
+                  <span className="text-[16px] font-extrabold">{rupiah(getEffectivePrice(p))}</span>
                 </div>
               </div>
             ))}
