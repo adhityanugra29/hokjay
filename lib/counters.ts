@@ -77,15 +77,27 @@ export async function nextAssetCode(): Promise<string> {
   return `AST-${String(seq).padStart(3, "0")}`;
 }
 
-/** Derives a short SKU prefix from a product name's initials, e.g. "Blender Komersial 2L" -> "BK". */
-export async function nextProductSku(name: string): Promise<string> {
-  const letters = name
-    .split(/\s+/)
-    .map((w) => w.replace(/[^A-Za-z]/g, "")[0])
-    .filter(Boolean)
-    .join("")
-    .toUpperCase();
-  const prefix = (letters || "PRD").slice(0, 4).padEnd(2, "X");
+/**
+ * Derives a short SKU prefix from the product's CATEGORY (per the user's
+ * request 2026-08-25 — was previously derived from the product name's
+ * initials). Multi-word categories use each word's initial (e.g. "Working
+ * Table" -> "WT"); a single-word category uses its first 3 letters instead
+ * (e.g. "Kompor" -> "KOM") since a lone initial would be too ambiguous. The
+ * sequence is per-prefix so every category gets its own 001, 002, ...
+ * numbering, e.g. "WT_001".
+ */
+export async function nextProductSku(category: string): Promise<string> {
+  const words = category.trim().split(/\s+/).filter(Boolean);
+  let letters: string;
+  if (words.length > 1) {
+    letters = words
+      .map((w) => w.replace(/[^A-Za-z]/g, "")[0] ?? "")
+      .join("")
+      .toUpperCase();
+  } else {
+    letters = (words[0] ?? "").replace(/[^A-Za-z]/g, "").toUpperCase();
+  }
+  const prefix = words.length > 1 ? (letters || "PRD").slice(0, 4) : (letters || "PRD").slice(0, 3).padEnd(2, "X");
   const seq = await nextSeq(`sku:${prefix}`);
-  return `${prefix}-${String(seq).padStart(2, "0")}`;
+  return `${prefix}_${String(seq).padStart(3, "0")}`;
 }

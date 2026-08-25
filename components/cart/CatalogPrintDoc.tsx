@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { rupiah } from "@/lib/format";
 import { useCatalogSelection } from "@/components/katalog/CatalogSelectionProvider";
 
@@ -27,6 +27,11 @@ interface CatalogSales {
   nomorHp?: string;
 }
 
+// Bright yellow (per the user's request 2026-08-25 — replaces an earlier
+// gold/lemon pick). Bright yellow doesn't hold up under white text, so
+// every background use below pairs it with dark ink text instead.
+const YELLOW = "#FFC800";
+
 function specLine(p: CatalogProduct): string {
   const parts: string[] = [];
   parts.push(p.kondisi === "bekas" ? `Bekas — kondisi ${p.kondisiPercent ?? "-"}%` : "Baru");
@@ -37,17 +42,23 @@ function specLine(p: CatalogProduct): string {
   return parts.join(" · ");
 }
 
+/** One print unit in the flattened, chunked product sequence — see chunking below. */
+interface PrintUnit {
+  product: CatalogProduct;
+  /** Category label to print right above this product — only set on the first product of a new category. */
+  categoryLabel?: string;
+}
+
 /**
  * Positioned off-screen (not display:none) so html2pdf/html2canvas can
  * render it when "Unduh Katalog (PDF)" is clicked (see KatalogClient) — it
  * needs real layout to snapshot, which display:none elements don't have.
  * Never visible to the user and excluded from native browser printing.
  *
- * This brochure (cover → products by category → closing CTA, which also
- * carries the custom-order footnote) only includes products checked in
- * the Katalog page's own selection checkboxes (see CatalogSelectionProvider)
- * — separate from the invoice cart — sourced live from the
- * product/category/sales collections.
+ * This brochure (cover → products, exactly 3 per page → closing footer)
+ * only includes products checked in the Katalog page's own selection
+ * checkboxes (see CatalogSelectionProvider) — separate from the invoice
+ * cart — sourced live from the product/category/sales collections.
  */
 export default function CatalogPrintDoc({ user }: { user: { nama: string; role: string } | null }) {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
@@ -85,6 +96,18 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
     .map((cat) => ({ cat, items: selectedProducts.filter((p) => p.category === cat) }))
     .filter((g) => g.items.length > 0);
 
+  // Flatten category groups into one ordered list (category header still
+  // marked on each group's first item), then chunk into pages of exactly 3
+  // products — per the user's request 2026-08-25 ("1 page itu tolong
+  // berisikan 3 produk saja"). A hard page-break is inserted between chunks
+  // (html2pdf's "legacy" pagebreak mode, enabled in KatalogClient, breaks at
+  // any element carrying the html2pdf__page-break class).
+  const flat: PrintUnit[] = byCategory.flatMap((group) =>
+    group.items.map((product, i) => ({ product, categoryLabel: i === 0 ? group.cat : undefined }))
+  );
+  const chunks: PrintUnit[][] = [];
+  for (let i = 0; i < flat.length; i += 3) chunks.push(flat.slice(i, i + 3));
+
   const today = new Date();
   const periodLabel = today.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
 
@@ -102,125 +125,132 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
       >
         {/* Cover — shrunk down (per the user's request 2026-08-25): dropped
             the description paragraph and tightened the padding/heading size
-            so this header doesn't eat so much of page 1. */}
-      <div className="bg-[#D9C400] px-12 py-7 text-white">
-        <div className="mb-5 flex items-center justify-between gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo/hojay-2b-positif.png"
-            alt="HOJAY Kitchen Equipment"
-            width={160}
-            height={89}
-            className="h-auto w-[160px]"
-          />
-          <span className="text-[13px] tracking-[0.12em] text-[rgba(255,255,255,0.85)] uppercase">
-            Katalog · {periodLabel}
-          </span>
+            so this header doesn't eat so much of page 1. Dark text on the
+            bright yellow background for real contrast (white doesn't hold
+            up against this shade). */}
+        <div className="px-12 py-7" style={{ background: YELLOW, color: "#201e1d" }}>
+          <div className="mb-5 flex items-center justify-between gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo/hojay-2b-positif.png"
+              alt="HOJAY Kitchen Equipment"
+              width={160}
+              height={89}
+              className="h-auto w-[160px]"
+            />
+            <span className="text-[13px] tracking-[0.12em] uppercase opacity-70">Katalog · {periodLabel}</span>
+          </div>
+          <h1 className="max-w-[20ch] text-[32px] leading-[1.1] font-extrabold">
+            Peralatan dapur hotel &amp; restoran
+          </h1>
         </div>
-        <h1 className="max-w-[20ch] text-[32px] leading-[1.1] font-extrabold">
-          Peralatan dapur hotel &amp; restoran
-        </h1>
-      </div>
-      <div className="grid grid-cols-3 border-b-2 border-line">
-        <div className="px-12 py-6">
-          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D9C400] uppercase">Pemesanan</div>
-          {ownSales ? (
+        <div className="grid grid-cols-3 border-b-2 border-line">
+          <div className="px-12 py-6">
+            <div className="mb-2 text-[12px] tracking-[0.1em] uppercase" style={{ color: YELLOW }}>
+              Pemesanan
+            </div>
+            {ownSales ? (
+              <div className="text-[15px] leading-relaxed">
+                {ownSales.nama}
+                {ownSales.nomorHp && (
+                  <>
+                    <br />
+                    {ownSales.nomorHp}
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="text-[15px] leading-relaxed">Hubungi sales Anda untuk daftar harga & pemesanan</div>
+            )}
+          </div>
+          <div className="border-l border-line px-6 py-6">
+            <div className="mb-2 text-[12px] tracking-[0.1em] uppercase" style={{ color: YELLOW }}>
+              Isi katalog
+            </div>
             <div className="text-[15px] leading-relaxed">
-              {ownSales.nama}
-              {ownSales.nomorHp && (
-                <>
-                  <br />
-                  {ownSales.nomorHp}
-                </>
+              {selectedProducts.length} produk dipilih
+              <br />+ pesanan custom
+            </div>
+          </div>
+          <div className="border-l border-line px-12 py-6">
+            <div className="mb-2 text-[12px] tracking-[0.1em] uppercase" style={{ color: YELLOW }}>
+              Kategori
+            </div>
+            <div className="text-[15px] leading-relaxed">{byCategory.length} kategori produk</div>
+          </div>
+        </div>
+
+        {/* Products — exactly 3 per page. Each chunk after the first starts
+            on a fresh page (html2pdf__page-break marker); each individual
+            product row stays break-inside-avoid so it's never cut in half.
+            The closing footer (sales list + custom-order note) is appended
+            directly inside the LAST chunk's own div — not a separate
+            section — so it always shares that final page instead of ever
+            becoming the sole reason for an extra trailing page. Per the
+            user's request 2026-08-25. */}
+        {chunks.map((chunk, ci) => (
+          <Fragment key={ci}>
+            {ci > 0 && <div className="html2pdf__page-break" />}
+            <div className="px-12 py-8">
+              {chunk.map(({ product: p, categoryLabel }) => (
+                <Fragment key={p._id}>
+                  {categoryLabel && (
+                    <div className="mb-4 flex items-baseline justify-between gap-4 border-b-2 border-line pb-3">
+                      <h2 className="text-[22px] font-extrabold">{categoryLabel}</h2>
+                    </div>
+                  )}
+                  <div className="mb-5 flex gap-5 break-inside-avoid border-t border-line pt-5">
+                    {p.fotoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.fotoUrl}
+                        alt={p.name}
+                        className="h-[165px] w-[220px] shrink-0 bg-surface object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-[165px] w-[220px] shrink-0 items-center justify-center bg-surface text-[0.75rem] text-muted">
+                        Tidak ada foto
+                      </div>
+                    )}
+                    <div className="flex flex-1 flex-col">
+                      <h4 className="text-[18px] font-bold">{p.name}</h4>
+                      <p className="mt-1.5 text-[13px] leading-snug text-muted">{specLine(p)}</p>
+                      <div className="mt-auto flex items-baseline justify-between gap-3 border-t border-line pt-2.5">
+                        <span className="text-[11px] text-muted">{p.sku}</span>
+                        <span className="text-[19px] font-extrabold">{rupiah(getEffectivePrice(p))}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Fragment>
+              ))}
+
+              {ci === chunks.length - 1 && (
+                <div className="mt-6 border-t-2 border-line pt-5">
+                  {sales.length > 0 && (
+                    <div className="text-[13px] text-muted">
+                      Sales yang melayani: <span className="font-semibold text-ink">{sales.map((s) => s.nama).join(" · ")}</span>
+                    </div>
+                  )}
+                  <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                    Pesanan custom ukuran bebas tersedia — hubungi sales untuk estimasi harga.
+                  </p>
+                </div>
               )}
             </div>
-          ) : (
-            <div className="text-[15px] leading-relaxed">Hubungi sales Anda untuk daftar harga & pemesanan</div>
-          )}
-        </div>
-        <div className="border-l border-line px-6 py-6">
-          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D9C400] uppercase">Isi katalog</div>
-          <div className="text-[15px] leading-relaxed">
-            {selectedProducts.length} produk dipilih
-            <br />+ pesanan custom
-          </div>
-        </div>
-        <div className="border-l border-line px-12 py-6">
-          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D9C400] uppercase">Kategori</div>
-          <div className="text-[15px] leading-relaxed">{byCategory.length} kategori produk</div>
-        </div>
-      </div>
-
-      {/* Products by category — no break-inside-avoid on this outer wrapper
-          (only on each individual product card below): a category with
-          many products can be taller than a full page, so forcing the
-          whole section atomic pushed it entirely onto page 2 and left
-          page 1 mostly blank under the cover. Letting the category flow
-          across pages (while still protecting each product card from
-          being split mid-card) keeps page 1 filled with real content.
-          Per the user's report 2026-08-25. */}
-      {byCategory.map((group) => (
-        <div key={group.cat} className="px-12 py-10">
-          <div className="mb-6 flex items-baseline justify-between gap-4 border-b-2 border-line pb-4">
-            <h2 className="text-[26px] font-extrabold">{group.cat}</h2>
-            <span className="text-[11px] tracking-[0.1em] text-[#D9C400] uppercase">
-              {group.items.length} produk · siap stok
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-x-10 gap-y-6">
-            {group.items.map((p) => (
-              <div key={p._id} className="break-inside-avoid border-t border-line pt-4">
-                {p.fotoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.fotoUrl} alt={p.name} className="mb-3 aspect-4/3 w-full bg-surface object-cover" />
-                ) : (
-                  <div className="mb-3 flex aspect-4/3 w-full items-center justify-center bg-surface text-[0.75rem] text-muted">
-                    Tidak ada foto
-                  </div>
-                )}
-                <h4 className="text-[16px] font-bold">{p.name}</h4>
-                <p className="mt-1 text-[12.5px] leading-snug text-muted">{specLine(p)}</p>
-                <div className="mt-2 flex items-baseline justify-between gap-3 border-t border-line pt-2">
-                  <span className="text-[11px] text-muted">{p.sku}</span>
-                  <span className="text-[16px] font-extrabold">{rupiah(getEffectivePrice(p))}</span>
-                </div>
+          </Fragment>
+        ))}
+        {chunks.length === 0 && (
+          <div className="mt-6 border-t-2 border-line px-12 py-8">
+            {sales.length > 0 && (
+              <div className="text-[13px] text-muted">
+                Sales yang melayani: <span className="font-semibold text-ink">{sales.map((s) => s.nama).join(" · ")}</span>
               </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      {/* Closing CTA — the custom-order footnote lives inside this same
-          atomic (break-inside-avoid) block now, not as its own section
-          above it. A standalone footnote block could end up as the only
-          thing that doesn't fit on the last content page and get pushed
-          onto an otherwise-empty extra page by itself; folding it into the
-          CTA means it always travels together with a block substantial
-          enough to just extend the actual last page instead. Per the
-          user's request 2026-08-25. */}
-      <div className="break-inside-avoid bg-[#D9C400] px-12 py-12 text-white">
-        <div className="mb-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo/hojay-2b-positif.png"
-            alt="HOJAY Kitchen Equipment"
-            width={150}
-            height={83}
-            className="h-auto w-[150px]"
-          />
-        </div>
-        <h2 className="max-w-[26ch] text-[30px] leading-tight font-extrabold">
-          Kirim daftar barangmu hari ini, invoice keluar hari ini juga.
-        </h2>
-        {sales.length > 0 && (
-          <div className="mt-6 text-[14px] text-[rgba(255,255,255,0.9)]">
-            Sales yang melayani: {sales.map((s) => s.nama).join(" · ")}
+            )}
+            <p className="mt-2 text-[13px] leading-relaxed text-muted">
+              Pesanan custom ukuran bebas tersedia — hubungi sales untuk estimasi harga.
+            </p>
           </div>
         )}
-        <p className="mt-6 border-t border-[rgba(255,255,255,0.25)] pt-4 text-[13px] leading-relaxed text-[rgba(255,255,255,0.85)]">
-          Pesanan custom ukuran bebas tersedia — hubungi sales untuk estimasi harga.
-        </p>
-      </div>
       </div>
     </div>
   );

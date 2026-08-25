@@ -27,8 +27,12 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Jualan",
     items: [
-      { href: "/penjualan", label: "Penjualan Baru", icon: "cart" },
-      { href: "/katalog", label: "Katalog", icon: "grid" },
+      // "Penjualan Baru" (a separate "pick customer first" page at
+      // /penjualan) was merged into this row per the user's request
+      // 2026-08-25 — Katalog is now the direct start of the sales flow,
+      // customer picking happens at invoice time instead (InvoiceForm's
+      // own inline picker).
+      { href: "/katalog", label: "Katalog", icon: "cart" },
       { href: "/invoice", label: "Invoice", icon: "document", badge: "invoiceCount" },
       { href: "/pelanggan", label: "Pelanggan", icon: "users" },
       // Moved from "Uang" into "Jualan" per the user's request 2026-08-23.

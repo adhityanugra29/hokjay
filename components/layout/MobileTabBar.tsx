@@ -21,7 +21,7 @@ import type { UserRole } from "@/models/User";
  * /invoice/[id] still highlights "Jualan").
  */
 const GROUP_CANDIDATES: Record<string, string[]> = {
-  Jualan: ["/penjualan", "/katalog", "/invoice", "/pelanggan", "/insentif"],
+  Jualan: ["/katalog", "/invoice", "/pelanggan", "/insentif"],
   Barang: ["/produk", "/purchasing", "/inventaris-kantor"],
   Uang: ["/keuangan", "/akuntansi", "/payroll", "/bayar-tagihan"],
 };

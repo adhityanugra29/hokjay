@@ -7,7 +7,6 @@ import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
-import { useActiveCustomer } from "@/components/penjualan/ActiveCustomerProvider";
 import ItemRowEditor from "./ItemRowEditor";
 import { computeLineCommission } from "@/lib/commission";
 import { rupiah } from "@/lib/format";
@@ -66,14 +65,14 @@ export default function InvoiceForm({
 }) {
   const router = useRouter();
   const { items, clear } = useCart();
-  const { activeCustomer } = useActiveCustomer();
 
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
-  // Pelanggan is picked upstream on /penjualan (or already set when editing
-  // an existing invoice) — this form shows it read-only at the top by
-  // default, only opening back up to a picker when there's genuinely no
-  // customer yet or the user explicitly clicks "Ubah". Confirmed with the
-  // user 2026-08-23.
+  // Pelanggan is picked right here, inline — this form shows it read-only
+  // at the top once picked, only opening back up to a picker when there's
+  // genuinely no customer yet or the user explicitly clicks "Ubah".
+  // Customer-picking used to happen upstream on a separate /penjualan page
+  // before browsing Katalog; that page was dropped and picking moved here
+  // (invoice time) per the user's request 2026-08-25.
   const [editingCustomer, setEditingCustomer] = useState(false);
   const [shipAddress, setShipAddress] = useState(initial?.shipAddress ?? "");
   const [salesId, setSalesId] = useState(initial?.salesId ?? "");
@@ -87,20 +86,6 @@ export default function InvoiceForm({
   const [ongkosKirim, setOngkosKirim] = useState(initial?.ongkosKirim ?? 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // The customer is now picked upstream on /penjualan before browsing the
-  // Katalog, so a new invoice should arrive with one already in hand
-  // (still editable here). activeCustomer hydrates from localStorage a
-  // tick after mount, so this can't just be a useState initializer — sync
-  // it in once it's available, but only if nothing's been chosen yet (an
-  // explicit `initial` from editing an existing invoice always wins).
-  useEffect(() => {
-    if (mode === "create" && !initial?.customerId && activeCustomer && !customerId) {
-      setCustomerId(activeCustomer.id);
-      setShipAddress((prev) => prev || activeCustomer.alamat);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCustomer]);
 
   // Logged in as sales -> "Sales (Yang Closing)" auto-fills with their own
   // account, matched by nama against the Sales roster (same nama-matching
@@ -206,10 +191,10 @@ export default function InvoiceForm({
 
   return (
     <Panel className="max-w-4xl p-7">
-      {/* Pelanggan sits at the very top and is read-only by default — it's
-          already picked upstream (on /penjualan, or from the invoice being
-          edited); "Ubah" reopens the picker inline instead of it being a
-          plain editable dropdown mixed in with the rest of the fields. */}
+      {/* Pelanggan sits at the very top and is read-only by default once
+          picked (or already set from the invoice being edited); "Ubah"
+          reopens the picker inline instead of it being a plain editable
+          dropdown mixed in with the rest of the fields. */}
       <div className="mb-5 border border-line bg-[#f7f5ee] p-4">
         <label className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Pelanggan</label>
         {showCustomerPicker ? (

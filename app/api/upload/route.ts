@@ -38,14 +38,23 @@ async function watermarkImage(buffer: Buffer, mimeType: string): Promise<Buffer>
 
   const wmWidth = Math.round(baseWidth * 0.18);
   const margin = Math.round(baseWidth * 0.025);
-  const wm = await sharp(watermarkBuffer).resize({ width: wmWidth }).toBuffer();
+  // Explicit lanczos3 kernel + PNG output for the resize step (rather than
+  // whatever format sharp infers) keeps the badge's edges crisp — the
+  // source file (public/logo/hojay-2b-positif.png) is a high-res 3900x2169
+  // PNG, so this is a pure downscale, never an upscale. Per the user's
+  // report 2026-08-25 that the watermark looked blurry in the Katalog PDF.
+  const wm = await sharp(watermarkBuffer).resize({ width: wmWidth, kernel: sharp.kernel.lanczos3 }).png().toBuffer();
   const wmMeta = await sharp(wm).metadata();
   const wmHeight = wmMeta.height ?? wmWidth;
 
   let composited = base.composite([
     { input: wm, left: Math.max(0, baseWidth - wmWidth - margin), top: Math.max(0, baseHeight - wmHeight - margin) },
   ]);
-  composited = mimeType === "image/png" ? composited.png() : mimeType === "image/webp" ? composited.webp() : composited.jpeg({ quality: 90 });
+  // Quality bumped 90 -> 96: the composite gets re-encoded as JPEG here
+  // (one recompression pass on top of whatever the original upload already
+  // was), and the watermark's fine text/edges showed that pass the most.
+  composited =
+    mimeType === "image/png" ? composited.png() : mimeType === "image/webp" ? composited.webp() : composited.jpeg({ quality: 96 });
   return composited.toBuffer();
 }
 

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   try {
-    const sku = body.sku?.trim() || (await nextProductSku(body.name));
+    const sku = body.sku?.trim() || (await nextProductSku(body.category));
     const product = await Product.create({
       name: body.name,
       merk: body.merk || undefined,

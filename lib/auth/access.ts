@@ -8,7 +8,7 @@ import type { UserRole } from "@/models/User";
 // gaji; the admin payment dashboard living at the same URL is gated inside
 // app/payroll/**\/page.tsx itself (!isAdminLevel(session.role) -> notFound()).
 // See models/Karyawan.ts, models/Absensi.ts, models/GajiPayment.ts.
-export const SALES_PREFIXES = ["/penjualan", "/katalog", "/invoice", "/produk", "/pelanggan", "/payroll"];
+export const SALES_PREFIXES = ["/katalog", "/invoice", "/produk", "/pelanggan", "/payroll"];
 // Payroll (2026-08-23) folded in the old Bayar Komisi and moved to
 // Admin-only per the user's explicit confirmation — Finance no longer has
 // a payroll-payment surface at all (was "/bayar-komisi" here before).

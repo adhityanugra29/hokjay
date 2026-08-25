@@ -210,7 +210,7 @@ async function main() {
 
   const products = [];
   for (const p of productSeed) {
-    const sku = await nextProductSku(p.name);
+    const sku = await nextProductSku(p.category);
     products.push(await Product.create({ ...p, sku }));
   }
   const productByName = new Map(products.map((p) => [p.name, p]));

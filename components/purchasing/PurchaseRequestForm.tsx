@@ -2,38 +2,44 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
-import { useActiveCustomer } from "@/components/penjualan/ActiveCustomerProvider";
 
 interface SalesOption {
+  _id: string;
+  nama: string;
+}
+interface CustomerOption {
   _id: string;
   nama: string;
 }
 
 /**
  * Katalog's "Request Produk PO" — for an item not yet in the
- * catalog/warehouse that a customer needs, tied to the active customer
- * picked on /penjualan. Lands on Purchasing's desk (under the "Request
- * Produk PO" tab) as a PurchaseRequest ticket for them to source and
- * eventually turn into a Tagihan Pembelian — see
+ * catalog/warehouse that a customer needs. Lands on Purchasing's desk
+ * (under the "Request Produk PO" tab) as a PurchaseRequest ticket for them
+ * to source and eventually turn into a Tagihan Pembelian — see
  * components/purchasing/PurchaseBillForm.tsx. This is exclusively a
  * resale-merchandise flow — for office operational expenses (listrik,
  * wifi, pulsa, dll) see components/purchasing/OfficeExpenseForm.tsx
  * instead (confirmed with the user 2026-08-23: those are a separate,
  * simpler request/approval flow with no customer or product involved).
+ * Picks its own pelanggan inline (used to rely on the shared "active
+ * customer" picked on /penjualan; that page was dropped per the user's
+ * request 2026-08-25, so this is now self-contained).
  */
 export default function PurchaseRequestForm({
   salesList,
+  customers,
   redirectTo,
 }: {
   salesList: SalesOption[];
+  customers: CustomerOption[];
   redirectTo: string;
 }) {
   const router = useRouter();
-  const { activeCustomer } = useActiveCustomer();
+  const [customerId, setCustomerId] = useState("");
 
   const [namaBarang, setNamaBarang] = useState("");
   const [deskripsi, setDeskripsi] = useState("");
@@ -50,8 +56,9 @@ export default function PurchaseRequestForm({
       setError("Nama barang wajib diisi.");
       return;
     }
-    if (!activeCustomer) {
-      setError("Pilih pelanggan dulu di halaman Penjualan.");
+    const customer = customers.find((c) => c._id === customerId);
+    if (!customer) {
+      setError("Pilih pelanggan terlebih dahulu.");
       return;
     }
     const sales = salesList.find((s) => s._id === salesId);
@@ -70,8 +77,8 @@ export default function PurchaseRequestForm({
           namaBarang,
           deskripsi: deskripsi || undefined,
           qty: Number(qty) || 1,
-          customerId: activeCustomer.id,
-          customerNama: activeCustomer.nama,
+          customerId: customer._id,
+          customerNama: customer.nama,
           salesId: sales._id,
           salesNama: sales.nama,
           catatan: catatan || undefined,
@@ -93,26 +100,17 @@ export default function PurchaseRequestForm({
   return (
     <Panel className="max-w-2xl p-7">
       <form onSubmit={handleSubmit}>
-        <div className="mb-5 border border-line bg-[#f7f5ee] p-4 font-sans text-[0.85rem]">
-          {activeCustomer ? (
-            <>
-              Untuk pelanggan: <span className="font-semibold text-ink">{activeCustomer.nama}</span>{" "}
-              <Link href="/penjualan" className="text-accent underline underline-offset-2">
-                Ganti
-              </Link>
-            </>
-          ) : (
-            <>
-              Belum ada pelanggan aktif —{" "}
-              <Link href="/penjualan" className="text-accent underline underline-offset-2">
-                pilih pelanggan dulu
-              </Link>
-              .
-            </>
-          )}
-        </div>
-
         <FormGrid>
+          <Field label="Pelanggan" span2>
+            <Select required value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+              <option value="">— Pilih pelanggan —</option>
+              {customers.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.nama}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <Field label="Nama Barang" span2>
             <Input
               required

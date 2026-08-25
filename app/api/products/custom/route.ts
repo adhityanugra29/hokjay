@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   const dims = `${panjangCm}x${lebarCm}x${tinggiCm}cm`;
   const name = `Custom: ${tier.label} ${dims}`;
-  const sku = await nextProductSku(name);
+  const sku = await nextProductSku(CUSTOM_CATEGORY_NAME);
 
   const product = await Product.create({
     name,

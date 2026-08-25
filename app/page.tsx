@@ -128,14 +128,14 @@ export default async function DashboardPage() {
 
         <div className="flex flex-col">
           <Link
-            href="/penjualan"
+            href="/katalog"
             className="flex min-h-[44px] items-center justify-between gap-3 bg-accent px-4 py-[18px] text-white no-underline"
           >
             <span>
               <span className="block font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
                 Paling sering
               </span>
-              <b className="mt-1.5 block font-sans text-[1.15rem] tracking-tight">Penjualan Baru</b>
+              <b className="mt-1.5 block font-sans text-[1.15rem] tracking-tight">Katalog</b>
             </span>
             <NavIcon name="chevron-right" size={22} />
           </Link>
@@ -230,13 +230,13 @@ export default async function DashboardPage() {
         <div className="px-6 pt-7 md:px-9">
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
             <Link
-              href="/penjualan"
+              href="/katalog"
               className="flex min-h-[132px] flex-col bg-accent p-5 text-white no-underline hover:bg-accent-600"
             >
               <NavIcon name="cart" size={20} />
               <div className="mt-auto">
                 <div className="font-sans text-[1.2rem] font-extrabold tracking-tight">Jual barang</div>
-                <div className="mt-1 font-sans text-[0.75rem] text-white/85">Pilih pelanggan → katalog → invoice</div>
+                <div className="mt-1 font-sans text-[0.75rem] text-white/85">Jelajahi katalog → buat invoice</div>
               </div>
             </Link>
             <Link
