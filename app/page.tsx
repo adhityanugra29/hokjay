@@ -48,7 +48,7 @@ export default async function DashboardPage() {
   const totalNeedsAction = followUpAll.length + (lowStock.length > 0 ? 1 : 0);
 
   const penjualanBulanIni = ranking.reduce((s, r) => s + r.totalPenjualan, 0);
-  const belumTertagih = followUpAll.filter((i) => i.status === "unpaid").reduce((s, i) => s + i.grandTotal, 0);
+  const belumTertagih = followUpAll.filter((i) => i.status === "unpaid").reduce((s, i) => s + i.sisaTagihan, 0);
   const insentifTerkumpul = ranking.reduce((s, r) => s + r.totalKomisi, 0);
 
   const lowStockNilai = lowStockSuggestions.reduce((s, p) => s + p.usulTotal, 0);
@@ -291,7 +291,7 @@ export default async function DashboardPage() {
                 <div>
                   <div className="font-sans text-[0.95rem] font-bold">{inv.customerNama}</div>
                   <div className="mt-0.5 font-sans text-[0.75rem] text-muted">
-                    {inv.nomor} · {rupiah(inv.grandTotal)} · sales {inv.salesNama}
+                    {inv.nomor} · {rupiah(inv.sisaTagihan)} · sales {inv.salesNama}
                   </div>
                 </div>
               </div>

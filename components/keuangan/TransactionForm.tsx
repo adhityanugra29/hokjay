@@ -13,8 +13,12 @@ type Tipe = "masuk" | "keluar";
 
 const EXPENSE_ACCOUNTS = manualExpenseAccounts();
 const INCOME_ACCOUNTS = manualIncomeAccounts();
-const EXPENSE_CATEGORIES = CASHFLOW_CATEGORIES.filter((c) => c !== "Pembayaran Invoice" && c !== "Pendapatan Lain-lain");
-const INCOME_CATEGORIES = CASHFLOW_CATEGORIES.filter((c) => c !== "Pembayaran Invoice" && c !== "Pembelian Stok");
+const EXPENSE_CATEGORIES = CASHFLOW_CATEGORIES.filter(
+  (c) => c !== "Pembayaran Invoice" && c !== "DP Invoice" && c !== "Pendapatan Lain-lain"
+);
+const INCOME_CATEGORIES = CASHFLOW_CATEGORIES.filter(
+  (c) => c !== "Pembayaran Invoice" && c !== "DP Invoice" && c !== "Pembelian Stok"
+);
 
 export default function TransactionForm({ defaultTipe = "keluar" }: { defaultTipe?: Tipe }) {
   const router = useRouter();

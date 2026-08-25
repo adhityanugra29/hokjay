@@ -61,6 +61,20 @@ const InvoiceSchema = new Schema(
       catatan: { type: String },
     },
 
+    // Down payment — a one-time partial payment recorded separately from
+    // full settlement (see lib/services/receiveDp.ts). Reduces what's still
+    // owed (grandTotal - dp.nominal) without moving status off "unpaid";
+    // the real cash received is still posted to Keuangan/Akuntansi
+    // immediately, same as a full payment. Confirmed with the user
+    // 2026-08-25.
+    dp: {
+      nominal: { type: Number },
+      tanggal: { type: Date },
+      metode: { type: String },
+      buktiUrl: { type: String },
+      catatan: { type: String },
+    },
+
     komisiCair: { type: Boolean, default: false },
     komisiCairTanggal: { type: Date },
     // Proof-of-transfer for the commission payout — same value across every

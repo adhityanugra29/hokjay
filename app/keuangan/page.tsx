@@ -30,7 +30,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
   ]);
 
   const piutang = followUp.filter((i) => i.status === "unpaid");
-  const totalPiutang = piutang.reduce((s, i) => s + i.grandTotal, 0);
+  const totalPiutang = piutang.reduce((s, i) => s + i.sisaTagihan, 0);
   const tertuaHari = piutang.length > 0 ? Math.max(...piutang.map((i) => i.hariBerjalan)) : 0;
 
   const displayedRows = cashBook.rows.filter((r) => {

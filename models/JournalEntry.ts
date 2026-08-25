@@ -15,6 +15,7 @@ const SOURCE_TYPES = [
   "invoice-hpp",
   "invoice-komisi",
   "invoice-lunas",
+  "invoice-dp",
   "komisi-cair",
   "cashflow-keluar",
   "cashflow-masuk",

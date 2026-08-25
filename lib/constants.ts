@@ -13,6 +13,7 @@ export const STOCK_REASONS = [
 
 export const CASHFLOW_CATEGORIES = [
   "Pembayaran Invoice",
+  "DP Invoice",
   "Pembelian Stok",
   "Operasional",
   "Gaji",

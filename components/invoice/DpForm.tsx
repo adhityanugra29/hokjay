@@ -8,69 +8,54 @@ import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
 import { rupiah } from "@/lib/format";
 
-interface CourierOption {
-  _id: string;
-  name: string;
-}
-
-export default function PaymentForm({
+/**
+ * Records a one-time DP on an already-finalized invoice — mirrors
+ * PaymentForm.tsx's shape, but posts to /api/invoices/[id]/dp instead and
+ * doesn't touch status/shipping (that's still Tandai Lunas's job). See
+ * lib/services/receiveDp.ts. Confirmed with the user 2026-08-25.
+ */
+export default function DpForm({
   invoiceId,
   nomor,
   customerNama,
-  salesNama,
   grandTotal,
-  dpNominal = 0,
   paymentMethods,
-  couriers,
 }: {
   invoiceId: string;
   nomor: string;
   customerNama: string;
-  salesNama: string;
   grandTotal: number;
-  /** Already received via "Catat DP" — the field below defaults to the remaining balance instead of the full total. */
-  dpNominal?: number;
   paymentMethods: string[];
-  couriers: CourierOption[];
 }) {
   const router = useRouter();
-  const sisaTagihan = grandTotal - dpNominal;
   const [metode, setMetode] = useState<string>(paymentMethods[0] ?? "");
-  const [nominal, setNominal] = useState(String(sisaTagihan));
+  const [nominal, setNominal] = useState("");
   const [buktiUrl, setBuktiUrl] = useState("");
-  const [tanggalKirim, setTanggalKirim] = useState("");
-  const [kurirId, setKurirId] = useState("");
-  const [noResi, setNoResi] = useState("");
   const [catatan, setCatatan] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const nominalNum = Number(nominal) || 0;
+  const sisaSetelahDp = grandTotal - nominalNum;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/invoices/${invoiceId}/pay`, {
+      const res = await fetch(`/api/invoices/${invoiceId}/dp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          metode,
-          nominalDiterima: Number(nominal),
-          buktiUrl: buktiUrl || undefined,
-          tanggalKirim: tanggalKirim || undefined,
-          kurir: kurirId ? couriers.find((c) => c._id === kurirId)?.name : undefined,
-          noResi: noResi || undefined,
-          catatan: catatan || undefined,
-        }),
+        body: JSON.stringify({ metode, nominal: nominalNum, buktiUrl: buktiUrl || undefined, catatan: catatan || undefined }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Gagal mengonfirmasi pembayaran");
+        throw new Error(body.error || "Gagal mencatat DP");
       }
       router.push(`/invoice/${invoiceId}`);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal mengonfirmasi pembayaran");
+      setError(err instanceof Error ? err.message : "Gagal mencatat DP");
     } finally {
       setSaving(false);
     }
@@ -81,8 +66,16 @@ export default function PaymentForm({
       <Panel className="p-7">
         <form onSubmit={handleSubmit}>
           <FormGrid>
-            <Field label="Bukti Transfer" span2>
-              <UploadBox folder="payments" value={buktiUrl} onChange={setBuktiUrl} />
+            <Field label="Nominal DP">
+              <Input
+                required
+                type="number"
+                min={1}
+                max={grandTotal - 1}
+                value={nominal}
+                onChange={(e) => setNominal(e.target.value)}
+                placeholder="Rp 0"
+              />
             </Field>
             <Field label="Metode Pembayaran">
               <Select value={metode} onChange={(e) => setMetode(e.target.value)}>
@@ -91,24 +84,8 @@ export default function PaymentForm({
                 ))}
               </Select>
             </Field>
-            <Field label="Nominal Diterima">
-              <Input type="number" value={nominal} onChange={(e) => setNominal(e.target.value)} />
-            </Field>
-            <Field label="Tanggal Pengiriman Barang">
-              <Input type="date" value={tanggalKirim} onChange={(e) => setTanggalKirim(e.target.value)} />
-            </Field>
-            <Field label="Kurir / Pengiriman">
-              <Select value={kurirId} onChange={(e) => setKurirId(e.target.value)}>
-                <option value="">— Pilih kurir —</option>
-                {couriers.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="No. Resi (opsional)">
-              <Input value={noResi} onChange={(e) => setNoResi(e.target.value)} placeholder="Contoh: JNE-8827301" />
+            <Field label="Bukti Transfer" span2>
+              <UploadBox folder="payments" value={buktiUrl} onChange={setBuktiUrl} />
             </Field>
             <Field label="Catatan (opsional)" span2>
               <Textarea
@@ -123,8 +100,8 @@ export default function PaymentForm({
           {error && <div className="mt-3 font-mono text-[0.75rem] text-danger">{error}</div>}
 
           <FormActions>
-            <Button variant="clay" type="submit" disabled={saving}>
-              {saving ? "Memproses..." : "Konfirmasi & Tandai Lunas"}
+            <Button variant="clay" type="submit" disabled={saving || nominalNum <= 0 || nominalNum >= grandTotal}>
+              {saving ? "Memproses..." : "Catat DP"}
             </Button>
             <LinkButton variant="ghost" href={`/invoice/${invoiceId}`}>
               Batal
@@ -141,28 +118,22 @@ export default function PaymentForm({
             <br />
             Pelanggan: {customerNama}
             <br />
-            Sales: {salesNama}
-            <br />
             Total: <span className="font-semibold text-ink">{rupiah(grandTotal)}</span>
-            {dpNominal > 0 && (
-              <>
-                <br />
-                DP sudah diterima: <span className="font-semibold text-ink">{rupiah(dpNominal)}</span>
-                <br />
-                Sisa tagihan: <span className="font-semibold text-ink">{rupiah(sisaTagihan)}</span>
-              </>
-            )}
           </div>
+        </div>
+        <div className="mb-3.5 border border-line bg-panel p-5">
+          <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Sisa Setelah DP</h3>
+          <div className="font-sans text-[1.3rem] font-extrabold">{rupiah(Math.max(0, sisaSetelahDp))}</div>
         </div>
         <div className="border border-line bg-panel p-5">
           <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">
-            Apa yang terjadi setelah konfirmasi
+            Apa yang terjadi setelah dicatat
           </h3>
           <div className="font-mono text-[0.75rem] leading-relaxed text-muted">
-            • Status invoice → Lunas
+            • Status invoice tetap Belum Bayar — DP bukan pelunasan
             <br />
-            • Bukti transfer tersimpan sebagai riwayat
-            <br />• Arus kas "Uang Masuk" tercatat otomatis
+            • Arus kas "Uang Masuk" tercatat otomatis sebesar DP
+            <br />• Sisa tagihan berkurang, dilunasi lewat Tandai Lunas nanti
           </div>
         </div>
       </div>

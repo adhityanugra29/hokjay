@@ -26,10 +26,15 @@ export async function payInvoice(invoiceId: string, input: PayInvoiceInput) {
   if (invoice.status === "paid") throw new Error("Invoice sudah lunas");
   if (invoice.status === "draft") throw new Error("Invoice masih draft, kirim dulu sebelum konfirmasi pembayaran");
 
+  // If a DP was already received, its share of the Piutang was already
+  // credited (see lib/services/receiveDp.ts) — only the remaining balance
+  // actually changes hands, and gets recorded, at final settlement.
+  const sisaTagihan = invoice.grandTotal - (invoice.dp?.nominal ?? 0);
+
   invoice.status = "paid";
   invoice.payment = {
     metode: input.metode,
-    nominalDiterima: input.nominalDiterima ?? invoice.grandTotal,
+    nominalDiterima: input.nominalDiterima ?? sisaTagihan,
     buktiUrl: input.buktiUrl,
     tanggalBayar: new Date(),
     noResi: input.noResi,
@@ -47,11 +52,11 @@ export async function payInvoice(invoiceId: string, input: PayInvoiceInput) {
     keterangan: `Pembayaran invoice lunas — ${invoice.customer!.nama}`,
     kategori: "Pembayaran Invoice",
     referensi: invoice.nomor,
-    nominal: invoice.grandTotal,
+    nominal: sisaTagihan,
     invoice: invoice._id,
   });
 
-  await postInvoicePaid(invoice);
+  await postInvoicePaid(invoice, sisaTagihan);
 
   return invoice;
 }

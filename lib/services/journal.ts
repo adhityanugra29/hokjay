@@ -76,10 +76,17 @@ export async function postInvoiceFinalized(invoice: InvoiceLike, hppTotal: numbe
   }
 }
 
-/** Posts the journal for an invoice payment confirmation (status -> paid). */
-export async function postInvoicePaid(invoice: InvoiceLike) {
+/**
+ * Posts the journal for an invoice payment confirmation (status -> paid).
+ * `nominal` defaults to the full grandTotal, but the caller (payInvoice)
+ * passes the remaining balance instead when a DP was already received —
+ * the DP's share of the Piutang was already credited by postInvoiceDp, so
+ * crediting the full grandTotal again here would double-count it.
+ */
+export async function postInvoicePaid(invoice: InvoiceLike, nominal?: number) {
   await dbConnect();
   const kasAkun = invoice.payment?.metode === "Tunai" ? "1-1100" : "1-1200";
+  const amount = nominal ?? invoice.grandTotal;
 
   await JournalEntry.create({
     tanggal: invoice.payment?.tanggalBayar ?? new Date(),
@@ -87,7 +94,22 @@ export async function postInvoicePaid(invoice: InvoiceLike) {
     sumberTipe: "invoice-lunas",
     sumberLabel: invoice.nomor,
     invoice: invoice._id,
-    lines: [line(kasAkun, { debit: invoice.grandTotal }), line("1-2000", { credit: invoice.grandTotal })],
+    lines: [line(kasAkun, { debit: amount }), line("1-2000", { credit: amount })],
+  });
+}
+
+/** Posts the journal for a DP (down payment) received on an invoice — reduces Piutang by the DP amount without touching status. */
+export async function postInvoiceDp(invoice: InvoiceLike, nominal: number, metode: string) {
+  await dbConnect();
+  const kasAkun = metode === "Tunai" ? "1-1100" : "1-1200";
+
+  await JournalEntry.create({
+    tanggal: invoice.dp?.tanggal ?? new Date(),
+    deskripsi: `DP invoice ${invoice.nomor} — ${invoice.customer?.nama ?? "-"}`,
+    sumberTipe: "invoice-dp",
+    sumberLabel: invoice.nomor,
+    invoice: invoice._id,
+    lines: [line(kasAkun, { debit: nominal }), line("1-2000", { credit: nominal })],
   });
 }
 

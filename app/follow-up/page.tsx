@@ -12,7 +12,7 @@ export default async function FollowUpPage() {
   const rows = await getFollowUpInvoices();
   const bySales = summarizeFollowUpBySales(rows);
 
-  const totalNilai = rows.reduce((s, r) => s + r.grandTotal, 0);
+  const totalNilai = rows.reduce((s, r) => s + r.sisaTagihan, 0);
   const totalKomisi = rows.reduce((s, r) => s + r.komisiPotensial, 0);
   const unpaidCount = rows.filter((r) => r.status === "unpaid").length;
   const draftCount = rows.filter((r) => r.status === "draft").length;
@@ -110,7 +110,12 @@ export default async function FollowUpPage() {
                     </td>
                     <td className="border-b border-line px-5 py-4.5 font-medium">{r.customerNama}</td>
                     <td className="border-b border-line px-5 py-4.5">{r.salesNama}</td>
-                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{rupiah(r.grandTotal)}</td>
+                    <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
+                      {rupiah(r.sisaTagihan)}
+                      {r.sisaTagihan !== r.grandTotal && (
+                        <div className="mt-0.5 text-[0.68rem] text-muted">sudah DP, dari {rupiah(r.grandTotal)}</div>
+                      )}
+                    </td>
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem] font-medium text-accent-700">
                       {rupiah(r.komisiPotensial)}
                     </td>

@@ -112,6 +112,18 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                 <span>Total</span>
                 <span>{rupiah(invoice.grandTotal)}</span>
               </div>
+              {invoice.dp?.nominal ? (
+                <>
+                  <div className="flex justify-between py-1.5 text-[0.88rem]">
+                    <span>DP ({formatDateShort(invoice.dp.tanggal ?? invoice.createdAt!)})</span>
+                    <span>− {rupiah(invoice.dp.nominal)}</span>
+                  </div>
+                  <div className="mt-1 flex justify-between border-t border-line pt-2 font-serif text-base font-semibold">
+                    <span>Sisa Tagihan</span>
+                    <span>{rupiah(invoice.grandTotal - invoice.dp.nominal)}</span>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
 
@@ -126,10 +138,24 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                 {invoice.status === "unpaid" && "Belum Dibayar"}
                 {invoice.status === "paid" && "Lunas"}
               </div>
+              {invoice.dp?.nominal ? (
+                <div className="mt-3.5 border-l-4 border-accent bg-[#f7f5ee] py-2 pl-3 font-mono text-[0.75rem] leading-relaxed">
+                  DP diterima <b>{rupiah(invoice.dp.nominal)}</b> ({formatDateShort(invoice.dp.tanggal ?? invoice.createdAt!)})
+                  <br />
+                  Sisa tagihan <b className="text-accent-700">{rupiah(invoice.grandTotal - invoice.dp.nominal)}</b>
+                </div>
+              ) : null}
               {invoice.status === "unpaid" && (
-                <LinkButton href={`/invoice/${invoice._id}/bayar`} className="mt-3.5 w-full">
-                  Tandai Lunas Manual
-                </LinkButton>
+                <div className="mt-3.5 flex flex-col gap-2">
+                  <LinkButton href={`/invoice/${invoice._id}/bayar`} className="w-full">
+                    Tandai Lunas Manual
+                  </LinkButton>
+                  {!invoice.dp?.nominal && (
+                    <LinkButton variant="ghost" href={`/invoice/${invoice._id}/dp`} className="w-full">
+                      Catat DP
+                    </LinkButton>
+                  )}
+                </div>
               )}
               {invoice.status === "draft" && (
                 <div className="mt-3.5 font-mono text-[0.72rem] text-muted">

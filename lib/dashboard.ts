@@ -84,6 +84,8 @@ export interface FollowUpInvoiceRow {
   customerNama: string;
   salesNama: string;
   grandTotal: number;
+  /** grandTotal minus any DP already received — what's actually still owed. Same as grandTotal when there's no DP. */
+  sisaTagihan: number;
   komisiPotensial: number;
   hariBerjalan: number;
 }
@@ -118,6 +120,7 @@ export async function getFollowUpInvoices(): Promise<FollowUpInvoiceRow[]> {
       customerNama: inv.customer?.nama || "—",
       salesNama: inv.sales?.nama ?? "—",
       grandTotal: inv.grandTotal,
+      sisaTagihan: inv.grandTotal - (inv.dp?.nominal ?? 0),
       komisiPotensial,
       hariBerjalan,
     };
