@@ -85,7 +85,25 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
         {/* Fixed-height name block + Insentif called out bold/red, matching
             the Hot Products carousel cards (see confirmation 2026-08-20). */}
         <div className="line-clamp-2 min-h-[2.75rem] text-[0.92rem] leading-snug font-medium">{product.name}</div>
-        <div className="mt-1.5 text-[0.85rem] font-extrabold">{rupiah(product.hargaRekomendasi)}</div>
+        {pickMode && selected ? (
+          <div className="mt-1.5">
+            <CurrencyInput
+              value={String(effectivePrice)}
+              onChange={(v) => setCustomPrice(product._id, v ? Number(v) : 0)}
+            />
+            {hasCustomPrice && (
+              <button
+                type="button"
+                onClick={() => setCustomPrice(product._id, undefined)}
+                className="mt-1 cursor-pointer font-mono text-[0.64rem] text-accent underline underline-offset-2"
+              >
+                pakai {priceMode === "minimum" ? "Harga Minimum" : "Harga Rekomendasi"}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="mt-1.5 text-[0.85rem] font-extrabold">{rupiah(product.hargaRekomendasi)}</div>
+        )}
         <div className="mt-2.5 text-[0.72rem] text-muted">
           {product.stok <= 0 ? (
             <span className="text-accent-700">Stok Habis</span>
@@ -93,28 +111,6 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
             <>Stok: <span className="font-medium text-ink">{product.stok}</span> unit</>
           )}
         </div>
-
-        {pickMode && selected && (
-          <div className="mt-2.5 border-t border-dashed border-line pt-2.5">
-            <div className="flex items-center justify-between font-mono text-[0.62rem] uppercase text-muted">
-              <span>Harga di PDF</span>
-              {hasCustomPrice && (
-                <button
-                  type="button"
-                  onClick={() => setCustomPrice(product._id, undefined)}
-                  className="cursor-pointer text-accent underline underline-offset-2 normal-case"
-                >
-                  pakai {priceMode === "minimum" ? "Harga Minimum" : "Harga Rekomendasi"}
-                </button>
-              )}
-            </div>
-            <CurrencyInput
-              value={String(effectivePrice)}
-              onChange={(v) => setCustomPrice(product._id, v ? Number(v) : 0)}
-              className="mt-1"
-            />
-          </div>
-        )}
 
         <div className="mt-2 flex flex-wrap gap-1.5">
           {product.isCustom && (
