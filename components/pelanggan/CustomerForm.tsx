@@ -7,6 +7,7 @@ import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/F
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { JENIS_USAHA_OPTIONS } from "@/lib/constants";
+import { INDONESIA_REGIONS } from "@/lib/wilayah";
 
 export default function CustomerForm() {
   const router = useRouter();
@@ -18,10 +19,15 @@ export default function CustomerForm() {
     whatsapp: "",
     email: "",
     alamat: "",
+    provinsi: "",
     kota: "",
     termHari: "0",
     catatan: "",
   });
+  // Kota/Kabupaten options narrow to whichever provinsi is picked — per the
+  // user's request 2026-08-25. Picking a different provinsi clears
+  // whatever kota was already chosen since it likely doesn't belong there.
+  const kotaOptions = INDONESIA_REGIONS.find((r) => r.provinsi === values.provinsi)?.kota ?? [];
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,11 +126,20 @@ export default function CustomerForm() {
               placeholder="Alamat lengkap untuk pengiriman & penagihan"
             />
           </Field>
-          <Field label="Kota (opsional)">
-            <Input
+          <Field label="Provinsi (opsional)">
+            <SearchableSelect
+              value={values.provinsi}
+              onChange={(v) => setValues((prev) => ({ ...prev, provinsi: v, kota: "" }))}
+              options={INDONESIA_REGIONS.map((r) => r.provinsi)}
+              placeholder="Ketik untuk cari provinsi..."
+            />
+          </Field>
+          <Field label="Kota / Kabupaten (opsional)">
+            <SearchableSelect
               value={values.kota}
-              onChange={(e) => setValues((v) => ({ ...v, kota: e.target.value }))}
-              placeholder="Contoh: Semarang"
+              onChange={(v) => setValues((prev) => ({ ...prev, kota: v }))}
+              options={kotaOptions}
+              placeholder={values.provinsi ? "Ketik untuk cari kota/kabupaten..." : "Pilih provinsi dulu"}
             />
           </Field>
           {/* Termin Pembayaran hidden from the form per the user's request

@@ -14,6 +14,11 @@ const CustomerSchema = new Schema(
     // payment-term credit window (0 = tunai/cash, due immediately) used to
     // compute "kebiasaan bayar" (tepat waktu / tempo N hari / lewat N hari).
     kota: { type: String, trim: true },
+    // Added 2026-08-25 — dropdown+search pair on the form (see lib/wilayah.ts
+    // for the provinsi -> kota/kabupaten options), kept as separate plain
+    // strings (not a ref) since this is just address data, not a real
+    // lookup table elsewhere in the app.
+    provinsi: { type: String, trim: true },
     termHari: { type: Number, default: 0, min: 0 },
     catatan: { type: String },
   },

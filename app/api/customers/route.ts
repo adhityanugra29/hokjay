@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       email: body.email || undefined,
       alamat: body.alamat,
       kota: body.kota || undefined,
+      provinsi: body.provinsi || undefined,
       termHari: body.termHari !== undefined && body.termHari !== "" ? Number(body.termHari) : undefined,
       catatan: body.catatan || undefined,
     });
