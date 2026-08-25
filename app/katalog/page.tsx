@@ -11,8 +11,11 @@ export default async function KatalogPage() {
   const [products, categories, soldProductIds] = await Promise.all([
     // Custom-order products live on their own page (/katalog/custom) so
     // they don't clutter the regular stocked catalog — see confirmation
-    // with the user 2026-08-19.
-    Product.find({ isCustom: { $ne: true } })
+    // with the user 2026-08-19. Sold-out (stok 0) products are hidden too
+    // — per the user's request 2026-08-25 — mirroring the same "hide, don't
+    // delete" convention already used on Inventory's list (the stock/history
+    // data stays intact, it just doesn't show here to browse/sell).
+    Product.find({ isCustom: { $ne: true }, stok: { $gt: 0 } })
       .sort({ name: 1 })
       .lean(),
     Category.find().sort({ name: 1 }).lean(),
