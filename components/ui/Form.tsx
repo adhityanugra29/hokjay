@@ -1,4 +1,4 @@
-import { useEffect, useState, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { forwardRef, useEffect, useState, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 
 export function FormGrid({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`grid grid-cols-1 gap-4.5 sm:grid-cols-2 ${className}`}>{children}</div>;
@@ -24,12 +24,15 @@ export function Field({
   );
 }
 
-const inputCls =
+export const inputCls =
   "w-full rounded-[3px] border border-line bg-paper px-3.5 py-2.5 font-sans text-[0.9rem] text-ink placeholder:text-muted outline-offset-1 focus:outline-2 focus:outline-moss disabled:cursor-not-allowed disabled:bg-[#efece3] disabled:text-muted";
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`${inputCls} ${props.className ?? ""}`} />;
-}
+// forwardRef so callers that need to move focus programmatically (e.g. the
+// Ukuran P x L x T auto-advance fields) can attach a ref — every existing
+// non-ref usage is unaffected.
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input(props, ref) {
+  return <input {...props} ref={ref} className={`${inputCls} ${props.className ?? ""}`} />;
+});
 
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...props} className={`${inputCls} ${props.className ?? ""}`} />;

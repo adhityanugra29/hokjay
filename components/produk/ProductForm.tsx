@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, Textarea, CurrencyInput } from "@/components/ui/Form";
@@ -22,8 +22,9 @@ export interface ProductFormValues {
   tanggalBarangMasuk: string;
   stokMinimum: string;
   alertHariTidakTerjual: string;
-  /** Free-typed "120x60x85" — parsed into dimensi.{panjang,lebar,tinggi}Cm on submit (see parseUkuran). */
-  ukuranText: string;
+  panjangCm: string;
+  lebarCm: string;
+  tinggiCm: string;
   ketebalan: string;
   fotoUrl: string;
   fotoSampingUrl: string;
@@ -34,7 +35,9 @@ export interface ProductFormValues {
 const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   name: "",
   merk: "",
-  kondisi: "baru",
+  // Defaults to "bekas" per the user's request 2026-08-25 (most products
+  // entered here are used stock) — komisiPercent below is kept in sync.
+  kondisi: "bekas",
   // No longer a form field (see the user's request 2026-08-25) — purely
   // display (the "Bekas — Kondisi N%" badge in Katalog), never fed into
   // commission math, so hiding the input is safe. Same "hidden but not
@@ -46,7 +49,7 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   // Matches the real invoice-time commission rule (see the hint text below
   // the field) — 6% for baru, 10% for bekas. Kept in sync with `kondisi`
   // by the Kondisi select's onChange, not just this initial value.
-  komisiPercent: "6",
+  komisiPercent: "10",
   stok: "1",
   tanggalBarangMasuk: "",
   // No longer a form field (see the user's request 2026-08-25) — schema
@@ -58,8 +61,10 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   // No longer a form field (see confirmation 2026-08-20) — schema default
   // (45) is preserved by still sending it, just never rendered/edited here.
   alertHariTidakTerjual: "45",
-  ukuranText: "",
-  ketebalan: "",
+  panjangCm: "",
+  lebarCm: "",
+  tinggiCm: "",
+  ketebalan: "1mm",
   fotoUrl: "",
   // No longer form fields (see the user's request 2026-08-25 — just one
   // photo now) — kept here so an existing product's already-uploaded
@@ -71,19 +76,38 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
 };
 
 /**
- * Parses a free-typed "120x60x85" (any of x/×/X, optional spaces, decimal
- * comma or dot) into the three separate numbers the schema's `dimensi`
- * object still expects — per the user's request 2026-08-25: one field in
- * this form, not three, but lib/pricing.ts's custom-order pricing (a
- * completely separate form/flow) still needs real panjang/lebar/tinggi
- * numbers, so the underlying structure is unchanged, only how a regular
- * catalog product's size is typed in here.
+ * One P/L/T box — max 3 digits, "000" placeholder, auto-advances to
+ * `nextRef` the moment the 3rd digit lands. Back to three separate inputs
+ * per the user's request 2026-08-25 (superseding the single free-typed
+ * field from earlier the same day).
  */
-function parseUkuran(text: string): { panjangCm?: number; lebarCm?: number; tinggiCm?: number } | undefined {
-  const match = text.match(/(\d+(?:[.,]\d+)?)\s*[x×X*]\s*(\d+(?:[.,]\d+)?)\s*[x×X*]\s*(\d+(?:[.,]\d+)?)/);
-  if (!match) return undefined;
-  const num = (s: string) => Number(s.replace(",", ".")) || undefined;
-  return { panjangCm: num(match[1]), lebarCm: num(match[2]), tinggiCm: num(match[3]) };
+function DimensiDigitInput({
+  value,
+  onChange,
+  nextRef,
+  inputRef,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  nextRef?: React.RefObject<HTMLInputElement | null>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
+}) {
+  return (
+    <Input
+      ref={inputRef}
+      type="text"
+      inputMode="numeric"
+      maxLength={3}
+      placeholder="000"
+      value={value}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, "").slice(0, 3);
+        onChange(digits);
+        if (digits.length === 3) nextRef?.current?.focus();
+      }}
+      className="text-center"
+    />
+  );
 }
 
 export default function ProductForm({
@@ -107,6 +131,8 @@ export default function ProductForm({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lebarRef = useRef<HTMLInputElement>(null);
+  const tinggiRef = useRef<HTMLInputElement>(null);
 
   const komisiNominal = useMemo(() => {
     const pct = Number(values.komisiPercent) || 0;
@@ -151,7 +177,14 @@ export default function ProductForm({
       tanggalBarangMasuk: values.tanggalBarangMasuk ? new Date(values.tanggalBarangMasuk) : undefined,
       stokMinimum: Number(values.stokMinimum) || 0,
       alertHariTidakTerjual: Number(values.alertHariTidakTerjual),
-      dimensi: parseUkuran(values.ukuranText),
+      dimensi:
+        values.panjangCm || values.lebarCm || values.tinggiCm
+          ? {
+              panjangCm: Number(values.panjangCm) || undefined,
+              lebarCm: Number(values.lebarCm) || undefined,
+              tinggiCm: Number(values.tinggiCm) || undefined,
+            }
+          : undefined,
       ketebalan: values.tipeProduk === "elektronik" ? undefined : values.ketebalan || undefined,
       fotoUrl: values.fotoUrl || undefined,
       fotoSampingUrl: values.fotoSampingUrl || undefined,
@@ -272,12 +305,14 @@ export default function ProductForm({
             <Input type="date" value={values.tanggalBarangMasuk} onChange={(e) => set("tanggalBarangMasuk", e.target.value)} />
           </Field>
 
-          <Field label="Ukuran P × L × T (cm)" hint="Contoh: 120x60x85">
-            <Input
-              value={values.ukuranText}
-              onChange={(e) => set("ukuranText", e.target.value)}
-              placeholder="120x60x85"
-            />
+          <Field label="Ukuran P × L × T (cm)">
+            <div className="flex items-center gap-2">
+              <DimensiDigitInput value={values.panjangCm} onChange={(v) => set("panjangCm", v)} nextRef={lebarRef} />
+              <span className="text-muted">×</span>
+              <DimensiDigitInput value={values.lebarCm} onChange={(v) => set("lebarCm", v)} nextRef={tinggiRef} inputRef={lebarRef} />
+              <span className="text-muted">×</span>
+              <DimensiDigitInput value={values.tinggiCm} onChange={(v) => set("tinggiCm", v)} inputRef={tinggiRef} />
+            </div>
           </Field>
           {values.tipeProduk !== "elektronik" && (
             <Field label="Ketebalan Material">
