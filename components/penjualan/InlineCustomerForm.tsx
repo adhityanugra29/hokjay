@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/components/ui/Form";
+import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/Form";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button } from "@/components/ui/Button";
 import { JENIS_USAHA_OPTIONS } from "@/lib/constants";
 
@@ -30,6 +31,7 @@ export default function InlineCustomerForm({
     nama: "",
     namaToko: "",
     jenisUsaha: "",
+    jenisUsahaLainnya: "",
     whatsapp: "",
     email: "",
     alamat: "",
@@ -43,10 +45,17 @@ export default function InlineCustomerForm({
     setSaving(true);
     setError(null);
     try {
+      const payload = {
+        ...values,
+        jenisUsaha:
+          values.jenisUsaha === "Lainnya" && values.jenisUsahaLainnya.trim()
+            ? values.jenisUsahaLainnya.trim()
+            : values.jenisUsaha,
+      };
       const res = await fetch("/api/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -81,19 +90,23 @@ export default function InlineCustomerForm({
           />
         </Field>
         <Field label="Jenis Usaha">
-          <Select
-            required
+          <SearchableSelect
             value={values.jenisUsaha}
-            onChange={(e) => setValues((v) => ({ ...v, jenisUsaha: e.target.value }))}
-          >
-            <option value="">— Pilih jenis usaha —</option>
-            {JENIS_USAHA_OPTIONS.map((j) => (
-              <option key={j} value={j}>
-                {j}
-              </option>
-            ))}
-          </Select>
+            onChange={(v) => setValues((prev) => ({ ...prev, jenisUsaha: v }))}
+            options={[...JENIS_USAHA_OPTIONS]}
+            placeholder="Ketik untuk cari jenis usaha..."
+          />
         </Field>
+        {values.jenisUsaha === "Lainnya" && (
+          <Field label="Sebutkan Jenis Usaha">
+            <Input
+              required
+              value={values.jenisUsahaLainnya}
+              onChange={(e) => setValues((v) => ({ ...v, jenisUsahaLainnya: e.target.value }))}
+              placeholder="Contoh: Katering Rumahan"
+            />
+          </Field>
+        )}
         <Field label="No. WhatsApp">
           <Input
             required

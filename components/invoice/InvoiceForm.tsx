@@ -27,6 +27,14 @@ interface CourierOption {
   name: string;
 }
 
+// Tanggal Pengiriman defaults to H+3 (today + 3 days) on a fresh invoice —
+// per the user's request 2026-08-25.
+function defaultTanggalKirim(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
+  return d.toISOString().slice(0, 10);
+}
+
 export interface InvoiceFormInitial {
   customerId?: string;
   salesId?: string;
@@ -45,6 +53,7 @@ export default function InvoiceForm({
   mode = "create",
   invoiceId,
   initial,
+  currentUser,
 }: {
   customers: CustomerOption[];
   salesList: SalesOption[];
@@ -53,6 +62,7 @@ export default function InvoiceForm({
   mode?: "create" | "edit";
   invoiceId?: string;
   initial?: InvoiceFormInitial;
+  currentUser?: { nama: string; role: string } | null;
 }) {
   const router = useRouter();
   const { items, clear } = useCart();
@@ -70,7 +80,9 @@ export default function InvoiceForm({
   const [tanggalInvoice, setTanggalInvoice] = useState(
     initial?.tanggalInvoice ?? new Date().toISOString().slice(0, 10)
   );
-  const [tanggalKirim, setTanggalKirim] = useState(initial?.tanggalKirim ?? "");
+  const [tanggalKirim, setTanggalKirim] = useState(
+    initial?.tanggalKirim ?? (mode === "create" ? defaultTanggalKirim() : "")
+  );
   const [kurirId, setKurirId] = useState(initial?.kurirId ?? "");
   const [ongkosKirim, setOngkosKirim] = useState(initial?.ongkosKirim ?? 0);
   const [saving, setSaving] = useState(false);
@@ -89,6 +101,19 @@ export default function InvoiceForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCustomer]);
+
+  // Logged in as sales -> "Sales (Yang Closing)" auto-fills with their own
+  // account, matched by nama against the Sales roster (same nama-matching
+  // convention used elsewhere, e.g. Insentif ranking). Only on a fresh
+  // invoice with nothing picked yet — never overrides an explicit pick or
+  // an existing invoice being edited. Per the user's request 2026-08-25.
+  useEffect(() => {
+    if (mode === "create" && !initial?.salesId && !salesId && currentUser?.role === "sales") {
+      const own = salesList.find((s) => s.nama.trim().toLowerCase() === currentUser.nama.trim().toLowerCase());
+      if (own) setSalesId(own._id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, salesList]);
 
   const selectedCourier = couriers.find((c) => c._id === kurirId);
   const subtotalProduk = useMemo(

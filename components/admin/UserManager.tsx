@@ -14,6 +14,7 @@ interface SalesRow {
   aktif: boolean;
   bank?: string;
   nomorRekening?: string;
+  nomorHp?: string;
   rekeningTerverifikasi?: boolean;
   statusKepegawaian?: "tetap" | "freelance";
   gajiPokok?: number;
@@ -24,6 +25,7 @@ const BLANK = {
   nama: "",
   bank: "",
   nomorRekening: "",
+  nomorHp: "",
   statusKepegawaian: "freelance" as "tetap" | "freelance",
   gajiPokok: "",
   targetBulanan: "",
@@ -47,6 +49,7 @@ export default function UserManager() {
     nama: "",
     bank: "",
     nomorRekening: "",
+    nomorHp: "",
     statusKepegawaian: "freelance" as "tetap" | "freelance",
     gajiPokok: "",
     targetBulanan: "",
@@ -106,6 +109,7 @@ export default function UserManager() {
       nama: s.nama,
       bank: s.bank ?? "",
       nomorRekening: s.nomorRekening ?? "",
+      nomorHp: s.nomorHp ?? "",
       statusKepegawaian: s.statusKepegawaian ?? "freelance",
       gajiPokok: s.gajiPokok ? String(s.gajiPokok) : "",
       targetBulanan: s.targetBulanan ? String(s.targetBulanan) : "",
@@ -155,6 +159,9 @@ export default function UserManager() {
             <Field label="Nomor Rekening (opsional)">
               <Input value={values.nomorRekening} onChange={(e) => setValues((v) => ({ ...v, nomorRekening: e.target.value }))} />
             </Field>
+            <Field label="Nomor HP/WA (opsional)" hint="Ditampilkan di PDF Katalog saat sales ini login sendiri.">
+              <Input value={values.nomorHp} onChange={(e) => setValues((v) => ({ ...v, nomorHp: e.target.value }))} placeholder="08xxxxxxxxxx" />
+            </Field>
             <Field label="Status Kepegawaian" hint="Menentukan apakah sales ini dapat gaji pokok bulanan lewat Payroll.">
               <Select
                 value={values.statusKepegawaian}
@@ -202,6 +209,9 @@ export default function UserManager() {
                 Rekening
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
+                Nomor HP/WA
+              </th>
+              <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
                 Terverifikasi
               </th>
               <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
@@ -223,6 +233,9 @@ export default function UserManager() {
                   <td className="border-b border-line px-5 py-4.5 font-medium">{s.nama}</td>
                   <td className="border-b border-line px-5 py-4.5 font-mono text-[0.75rem] text-muted">
                     {s.bank ? `${s.bank} · ${s.nomorRekening}` : "—"}
+                  </td>
+                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.75rem] text-muted">
+                    {s.nomorHp || "—"}
                   </td>
                   <td className="border-b border-line px-5 py-4.5">
                     <label className="flex cursor-pointer items-center gap-2">
@@ -271,7 +284,7 @@ export default function UserManager() {
                 </tr>
                 {editingId === s._id && (
                   <tr>
-                    <td colSpan={7} className="border-b border-line bg-[#f7f5ee] p-5">
+                    <td colSpan={8} className="border-b border-line bg-[#f7f5ee] p-5">
                       <form onSubmit={handleEditSubmit}>
                         <FormGrid>
                           <Field label="Nama">
@@ -282,6 +295,9 @@ export default function UserManager() {
                           </Field>
                           <Field label="Nomor Rekening">
                             <Input value={editValues.nomorRekening} onChange={(e) => setEditValues((v) => ({ ...v, nomorRekening: e.target.value }))} />
+                          </Field>
+                          <Field label="Nomor HP/WA">
+                            <Input value={editValues.nomorHp} onChange={(e) => setEditValues((v) => ({ ...v, nomorHp: e.target.value }))} placeholder="08xxxxxxxxxx" />
                           </Field>
                           <Field label="Status Kepegawaian">
                             <Select
@@ -327,7 +343,7 @@ export default function UserManager() {
             ))}
             {!loading && sales.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                <td colSpan={8} className="px-5 py-8 text-center font-mono text-sm text-muted">
                   Belum ada user/sales.
                 </td>
               </tr>

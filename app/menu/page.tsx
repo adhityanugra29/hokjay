@@ -7,7 +7,6 @@ import { Invoice } from "@/models/Invoice";
 import { Product } from "@/models/Product";
 import { PurchaseBill } from "@/models/PurchaseBill";
 import { OfficeExpenseRequest } from "@/models/OfficeExpenseRequest";
-import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import MenuBackButton from "@/components/layout/MenuBackButton";
 import LogoutButton from "@/components/layout/LogoutButton";
 import Logo from "@/components/layout/Logo";
@@ -46,13 +45,14 @@ export default async function MenuPage() {
   if (!session) return null;
 
   await dbConnect();
-  const [invoiceCount, lowStock, materialOrderUnpaid, jobOrderPending] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const [invoiceCount, produkBaru, materialOrderUnpaid, jobOrderPending] = await Promise.all([
     Invoice.countDocuments({ status: { $in: ["draft", "unpaid"] } }),
-    Product.countDocuments({ stok: { $lte: LOW_STOCK_THRESHOLD }, isCustom: { $ne: true } }),
+    Product.countDocuments({ createdAt: { $gte: sevenDaysAgo }, isCustom: { $ne: true } }),
     PurchaseBill.countDocuments({ status: "belum_dibayar" }),
     OfficeExpenseRequest.countDocuments({ status: "diajukan" }),
   ]);
-  const counts = { invoiceCount, lowStock };
+  const counts = { invoiceCount, produkBaru };
 
   const visibleGroups = NAV_GROUPS.map((g) => ({
     label: g.label,
@@ -62,7 +62,7 @@ export default async function MenuPage() {
         (item): MenuItem => ({
           href: item.href,
           label: item.label,
-          badge: item.badge === "invoiceCount" ? counts.invoiceCount : item.badge === "lowStock" ? counts.lowStock : undefined,
+          badge: item.badge === "invoiceCount" ? counts.invoiceCount : item.badge === "produkBaru" ? counts.produkBaru : undefined,
         })
       ),
   })).filter((g) => g.label !== null && g.items.length > 0) as { label: string; items: MenuItem[] }[];

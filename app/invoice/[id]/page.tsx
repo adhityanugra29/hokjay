@@ -135,7 +135,10 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                   className={`h-2 w-2 rounded-full ${invoice.status === "paid" ? "bg-moss" : "bg-gold"}`}
                 />
                 {invoice.status === "draft" && "Draft — belum dikirim"}
-                {invoice.status === "unpaid" && "Belum Dibayar"}
+                {invoice.status === "unpaid" &&
+                  (invoice.dp?.nominal
+                    ? `Sudah DP ${Math.round((invoice.dp.nominal / invoice.grandTotal) * 100)}%`
+                    : "Belum Dibayar")}
                 {invoice.status === "paid" && "Lunas"}
               </div>
               {invoice.dp?.nominal ? (

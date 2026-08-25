@@ -11,7 +11,6 @@ import { getSession } from "@/lib/auth/session";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Product } from "@/models/Product";
-import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -29,17 +28,20 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const session = await getSession();
   const user = session ? { nama: session.nama, role: session.role } : null;
 
-  // Sidebar badge counts (Invoice's "N", Inventory's "N tipis") — cheap
-  // counts, only fetched once per request when there's someone to show them
-  // to. See components/layout/AppShell.tsx / lib/nav.ts.
-  let badgeCounts: { invoiceCount: number; lowStock: number } | undefined;
+  // Sidebar badge counts (Invoice's "N", Inventory's "N Produk Baru") —
+  // cheap counts, only fetched once per request when there's someone to
+  // show them to. See components/layout/AppShell.tsx / lib/nav.ts.
+  // Inventory's badge switched from "stok tipis" to "produk baru" (products
+  // added in the last 7 days) per the user's request 2026-08-25.
+  let badgeCounts: { invoiceCount: number; produkBaru: number } | undefined;
   if (user) {
     await dbConnect();
-    const [invoiceCount, lowStock] = await Promise.all([
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [invoiceCount, produkBaru] = await Promise.all([
       Invoice.countDocuments({ status: { $in: ["draft", "unpaid"] } }),
-      Product.countDocuments({ stok: { $lte: LOW_STOCK_THRESHOLD }, isCustom: { $ne: true } }),
+      Product.countDocuments({ createdAt: { $gte: sevenDaysAgo }, isCustom: { $ne: true } }),
     ]);
-    badgeCounts = { invoiceCount, lowStock };
+    badgeCounts = { invoiceCount, produkBaru };
   }
 
   return (
@@ -53,7 +55,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   {children}
                 </AppShell>
                 {user && <CartBar />}
-                {user && <CatalogPrintDoc />}
+                {user && <CatalogPrintDoc user={user} />}
               </CatalogSelectionProvider>
             </CartProvider>
           </ActiveCustomerProvider>

@@ -100,7 +100,14 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
                 <div className="font-mono text-[9px] text-muted">hari</div>
               </div>
               <div>
-                <div className="font-sans text-[1rem] font-bold">{inv.customer?.nama ?? "—"}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-sans text-[1rem] font-bold">{inv.customer?.nama ?? "—"}</span>
+                  {inv.dp?.nominal ? (
+                    <span className="border border-gold px-1.5 py-0.5 font-mono text-[0.62rem] font-bold text-gold">
+                      Sudah DP {Math.round((inv.dp.nominal / inv.grandTotal) * 100)}%
+                    </span>
+                  ) : null}
+                </div>
                 <div className="mt-0.5 font-mono text-[0.72rem] text-muted">
                   {inv.nomor} · {formatDateShort(inv.tanggalInvoice ?? inv.get("createdAt"))} · sales {inv.sales?.nama} ·{" "}
                   {inv.items.length} item{inv.kurir ? ` · kirim via ${inv.kurir}` : ""}

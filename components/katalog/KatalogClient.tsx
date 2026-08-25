@@ -16,7 +16,7 @@ export default function KatalogClient({
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
   const [downloading, setDownloading] = useState(false);
-  const { selected, selectAll, pickMode, startPicking, cancelPicking, priceMode, setPriceMode } = useCatalogSelection();
+  const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
 
   // Staged flow: idle button ("Buat Katalog") -> click reveals checkboxes +
   // "Pilih Semua" (label stays "Buat Katalog", disabled while 0 selected) ->
@@ -100,7 +100,20 @@ export default function KatalogClient({
           // leaving it blank. Per the user's report 2026-08-25.
           html2canvas: { scale: 2, useCORS: true, scrollY: -window.scrollY, scrollX: 0 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        })
+          // Explicitly drop html2pdf's default "avoid-all" pagebreak mode —
+          // it auto-avoids splitting ANY element that doesn't fit the
+          // remaining space on the current page, which for the short cover
+          // section meant the first product category (taller than what's
+          // left of page 1) got pushed whole onto page 2, leaving page 1
+          // mostly blank underneath the cover. "css" still respects the
+          // break-inside-avoid classes already used deliberately on
+          // category/product/CTA blocks. Per the user's report 2026-08-25.
+          pagebreak: { mode: ["css", "legacy"] },
+          // "as any": the bundled html2pdf.js type declaration (type.d.ts)
+          // doesn't know about "pagebreak" even though the library supports
+          // it at runtime — narrower than casting the whole call.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
         .from(element)
         .save();
     } catch (err) {
@@ -184,33 +197,6 @@ export default function KatalogClient({
             />
             Pilih Semua ({filtered.length} produk yang tampil)
           </label>
-
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Harga di PDF:</span>
-            <div className="inline-flex overflow-hidden rounded border border-line">
-              <button
-                type="button"
-                onClick={() => setPriceMode("rekomendasi")}
-                className={`px-3 py-1.5 font-sans text-[0.78rem] font-semibold ${
-                  priceMode === "rekomendasi" ? "bg-accent text-white" : "bg-panel text-ink hover:bg-[#f3f2ec]"
-                }`}
-              >
-                Harga Rekomendasi
-              </button>
-              <button
-                type="button"
-                onClick={() => setPriceMode("minimum")}
-                className={`border-l border-line px-3 py-1.5 font-sans text-[0.78rem] font-semibold ${
-                  priceMode === "minimum" ? "bg-accent text-white" : "bg-panel text-ink hover:bg-[#f3f2ec]"
-                }`}
-              >
-                Harga Minimum
-              </button>
-            </div>
-            <span className="font-mono text-[0.68rem] text-muted">
-              berlaku untuk semua yang dipilih — bisa diubah per produk di bawah
-            </span>
-          </div>
         </div>
       )}
 

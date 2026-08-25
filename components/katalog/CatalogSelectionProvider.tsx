@@ -24,12 +24,14 @@ interface CatalogSelectionContextValue {
   pickMode: boolean;
   startPicking: () => void;
   cancelPicking: () => void;
-  // Which price every selected item shows in the PDF by default — a global
-  // toggle (per the user's request 2026-08-25), overridable per item via
-  // customPrices. Read by both ProductCard (the toggle UI + per-item
-  // override input live there) and CatalogPrintDoc (what actually prints).
-  priceMode: CatalogPriceMode;
-  setPriceMode: (mode: CatalogPriceMode) => void;
+  // Which preset price each item shows in the PDF — per-product (per the
+  // user's request 2026-08-25, replacing the earlier global toggle), stored
+  // as an override map keyed by product id and defaulting to "rekomendasi"
+  // when a product has no entry. Overridable further via customPrices.
+  // Read by both ProductCard (the per-item toggle button + override input
+  // live there) and CatalogPrintDoc (what actually prints).
+  getPriceMode: (id: string) => CatalogPriceMode;
+  togglePriceMode: (id: string) => void;
   customPrices: Record<string, number>;
   setCustomPrice: (id: string, price: number | undefined) => void;
   getEffectivePrice: (product: { _id: string; hargaRekomendasi: number; hargaMinimum: number }) => number;
@@ -37,22 +39,22 @@ interface CatalogSelectionContextValue {
 
 const CatalogSelectionContext = createContext<CatalogSelectionContextValue | null>(null);
 const STORAGE_KEY = "horeca-catalog-selection";
-const PRICE_MODE_KEY = "horeca-catalog-price-mode";
+const PRICE_MODES_KEY = "horeca-catalog-price-modes";
 const CUSTOM_PRICES_KEY = "horeca-catalog-custom-prices";
 
 export function CatalogSelectionProvider({ children }: { children: React.ReactNode }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [hydrated, setHydrated] = useState(false);
   const [pickMode, setPickMode] = useState(false);
-  const [priceMode, setPriceModeState] = useState<CatalogPriceMode>("rekomendasi");
+  const [priceModes, setPriceModes] = useState<Record<string, CatalogPriceMode>>({});
   const [customPrices, setCustomPrices] = useState<Record<string, number>>({});
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setSelected(new Set(JSON.parse(raw)));
-      const rawMode = localStorage.getItem(PRICE_MODE_KEY);
-      if (rawMode === "rekomendasi" || rawMode === "minimum") setPriceModeState(rawMode);
+      const rawModes = localStorage.getItem(PRICE_MODES_KEY);
+      if (rawModes) setPriceModes(JSON.parse(rawModes));
       const rawCustom = localStorage.getItem(CUSTOM_PRICES_KEY);
       if (rawCustom) setCustomPrices(JSON.parse(rawCustom));
     } catch {
@@ -66,8 +68,8 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
   }, [selected, hydrated]);
 
   useEffect(() => {
-    if (hydrated) localStorage.setItem(PRICE_MODE_KEY, priceMode);
-  }, [priceMode, hydrated]);
+    if (hydrated) localStorage.setItem(PRICE_MODES_KEY, JSON.stringify(priceModes));
+  }, [priceModes, hydrated]);
 
   useEffect(() => {
     if (hydrated) localStorage.setItem(CUSTOM_PRICES_KEY, JSON.stringify(customPrices));
@@ -107,10 +109,21 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
     setPickMode(false);
     clearAll();
     setCustomPrices({});
+    setPriceModes({});
   }
 
-  function setPriceMode(mode: CatalogPriceMode) {
-    setPriceModeState(mode);
+  function getPriceMode(id: string): CatalogPriceMode {
+    return priceModes[id] ?? "rekomendasi";
+  }
+
+  function togglePriceMode(id: string) {
+    setPriceModes((prev) => ({
+      ...prev,
+      [id]: (prev[id] ?? "rekomendasi") === "rekomendasi" ? "minimum" : "rekomendasi",
+    }));
+    // Switching preset discards any manually-typed custom price for this
+    // item — mirrors the existing "pakai Harga Minimum/Rekomendasi" link.
+    setCustomPrice(id, undefined);
   }
 
   function setCustomPrice(id: string, price: number | undefined) {
@@ -124,7 +137,7 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
 
   function getEffectivePrice(product: { _id: string; hargaRekomendasi: number; hargaMinimum: number }) {
     if (customPrices[product._id] !== undefined) return customPrices[product._id];
-    return priceMode === "minimum" ? product.hargaMinimum : product.hargaRekomendasi;
+    return getPriceMode(product._id) === "minimum" ? product.hargaMinimum : product.hargaRekomendasi;
   }
 
   return (
@@ -138,8 +151,8 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
         pickMode,
         startPicking,
         cancelPicking,
-        priceMode,
-        setPriceMode,
+        getPriceMode,
+        togglePriceMode,
         customPrices,
         setCustomPrice,
         getEffectivePrice,

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { rupiah } from "@/lib/format";
-import { CUSTOM_ORDER_CATEGORIES } from "@/lib/constants";
 import { useCatalogSelection } from "@/components/katalog/CatalogSelectionProvider";
 
 interface CatalogProduct {
@@ -25,6 +24,7 @@ interface CatalogSales {
   _id: string;
   nama: string;
   aktif: boolean;
+  nomorHp?: string;
 }
 
 function specLine(p: CatalogProduct): string {
@@ -43,17 +43,27 @@ function specLine(p: CatalogProduct): string {
  * needs real layout to snapshot, which display:none elements don't have.
  * Never visible to the user and excluded from native browser printing.
  *
- * This brochure (cover → products by category → custom order pricing →
+ * This brochure (cover → products by category → custom order footnote →
  * closing CTA) only includes products checked in the Katalog page's own
  * selection checkboxes (see CatalogSelectionProvider) — separate from the
  * invoice cart — sourced live from the product/category/sales collections.
  */
-export default function CatalogPrintDoc() {
+export default function CatalogPrintDoc({ user }: { user: { nama: string; role: string } | null }) {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [sales, setSales] = useState<CatalogSales[]>([]);
   const [loaded, setLoaded] = useState(false);
   const { selected, getEffectivePrice } = useCatalogSelection();
+
+  // When a sales rep is logged in and generates their own catalog, the
+  // "Pemesanan" section shows their own name + WA number (matched by nama
+  // against the Sales roster) instead of the generic line — per the user's
+  // request 2026-08-25. Other roles (admin/finance/purchasing) keep the
+  // generic text since there's no single "own" sales record for them.
+  const ownSales =
+    user?.role === "sales"
+      ? sales.find((s) => s.nama.trim().toLowerCase() === user.nama.trim().toLowerCase())
+      : undefined;
 
   useEffect(() => {
     Promise.all([
@@ -90,7 +100,7 @@ export default function CatalogPrintDoc() {
         className="w-[794px] bg-paper font-sans text-ink"
       >
         {/* Cover */}
-      <div className="bg-accent px-12 py-14 text-white">
+      <div className="bg-[#D4A017] px-12 py-14 text-white">
         <div className="mb-10 flex items-center justify-between gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -113,28 +123,47 @@ export default function CatalogPrintDoc() {
       </div>
       <div className="grid grid-cols-3 border-b-2 border-line">
         <div className="px-12 py-6">
-          <div className="mb-2 text-[12px] tracking-[0.1em] text-accent uppercase">Pemesanan</div>
-          <div className="text-[15px] leading-relaxed">Hubungi sales Anda untuk daftar harga & pemesanan</div>
+          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D4A017] uppercase">Pemesanan</div>
+          {ownSales ? (
+            <div className="text-[15px] leading-relaxed">
+              {ownSales.nama}
+              {ownSales.nomorHp && (
+                <>
+                  <br />
+                  {ownSales.nomorHp}
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="text-[15px] leading-relaxed">Hubungi sales Anda untuk daftar harga & pemesanan</div>
+          )}
         </div>
         <div className="border-l border-line px-6 py-6">
-          <div className="mb-2 text-[12px] tracking-[0.1em] text-accent uppercase">Isi katalog</div>
+          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D4A017] uppercase">Isi katalog</div>
           <div className="text-[15px] leading-relaxed">
             {selectedProducts.length} produk dipilih
             <br />+ pesanan custom
           </div>
         </div>
         <div className="border-l border-line px-12 py-6">
-          <div className="mb-2 text-[12px] tracking-[0.1em] text-accent uppercase">Kategori</div>
+          <div className="mb-2 text-[12px] tracking-[0.1em] text-[#D4A017] uppercase">Kategori</div>
           <div className="text-[15px] leading-relaxed">{byCategory.length} kategori produk</div>
         </div>
       </div>
 
-      {/* Products by category */}
+      {/* Products by category — no break-inside-avoid on this outer wrapper
+          (only on each individual product card below): a category with
+          many products can be taller than a full page, so forcing the
+          whole section atomic pushed it entirely onto page 2 and left
+          page 1 mostly blank under the cover. Letting the category flow
+          across pages (while still protecting each product card from
+          being split mid-card) keeps page 1 filled with real content.
+          Per the user's report 2026-08-25. */}
       {byCategory.map((group) => (
-        <div key={group.cat} className="break-inside-avoid px-12 py-10">
+        <div key={group.cat} className="px-12 py-10">
           <div className="mb-6 flex items-baseline justify-between gap-4 border-b-2 border-line pb-4">
             <h2 className="text-[26px] font-extrabold">{group.cat}</h2>
-            <span className="text-[11px] tracking-[0.1em] text-accent uppercase">
+            <span className="text-[11px] tracking-[0.1em] text-[#D4A017] uppercase">
               {group.items.length} produk · siap stok
             </span>
           </div>
@@ -161,54 +190,17 @@ export default function CatalogPrintDoc() {
         </div>
       ))}
 
-      {/* Custom order pricing */}
-      <div className="break-inside-avoid px-12 py-10">
-        <div className="mb-4 flex items-baseline justify-between gap-4 border-b-2 border-line pb-4">
-          <h2 className="text-[26px] font-extrabold">Pesanan custom</h2>
-          <span className="text-[11px] tracking-[0.1em] text-accent uppercase">Estimasi awal · ukuran bebas</span>
-        </div>
-        <p className="mt-4 max-w-[64ch] text-[14px] leading-relaxed">
-          Sebutkan ukuran, ketebalan pelat, dan jumlah unit — kami hitung estimasi di tempat. Harga di bawah
-          adalah titik mulai per unit dasar sebelum penyesuaian dimensi.
+      {/* Custom order footnote — the full pricing table + 3-step process
+          page was dropped per the user's request 2026-08-25; this one-line
+          note is all that remains, tucked above the closing CTA. */}
+      <div className="break-inside-avoid border-t-2 border-line px-12 py-6">
+        <p className="text-[13px] leading-relaxed text-muted">
+          Pesanan custom ukuran bebas tersedia — hubungi sales untuk estimasi harga.
         </p>
-        <table className="mt-5 w-full border-collapse text-[14px]">
-          <thead>
-            <tr>
-              <th className="border-b-2 border-line py-2 text-left text-[11px] tracking-[0.08em] text-muted uppercase">
-                Kategori
-              </th>
-              <th className="border-b-2 border-line py-2 text-right text-[11px] tracking-[0.08em] text-muted uppercase">
-                Mulai dari
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {CUSTOM_ORDER_CATEGORIES.map((c) => (
-              <tr key={c.id}>
-                <td className="border-b border-line py-3 font-bold">{c.label}</td>
-                <td className="border-b border-line py-3 text-right">{rupiah(c.rate)} / unit</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="mt-8 grid grid-cols-3 gap-8 border-t-2 border-line pt-8">
-          {[
-            { n: "1", t: "Kirim daftar barang", d: "Sebutkan kode produk dan jumlahnya ke sales Anda." },
-            { n: "2", t: "Terima invoice", d: "Rincian ongkir per zona dan tenggat pembayaran." },
-            { n: "3", t: "Barang dikirim", d: "Stok siap kirim 1–3 hari kerja, custom 7–14 hari kerja." },
-          ].map((s) => (
-            <div key={s.n}>
-              <div className="text-[30px] leading-none font-extrabold text-accent">{s.n}</div>
-              <h5 className="mt-3 mb-2 text-[15px] font-bold">{s.t}</h5>
-              <p className="text-[13px] leading-relaxed text-muted">{s.d}</p>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Closing CTA */}
-      <div className="break-inside-avoid bg-accent px-12 py-12 text-white">
+      <div className="break-inside-avoid bg-[#D4A017] px-12 py-12 text-white">
         <div className="mb-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

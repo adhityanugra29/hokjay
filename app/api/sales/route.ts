@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       aktif: true,
       bank: body.bank || undefined,
       nomorRekening: body.nomorRekening || undefined,
+      nomorHp: body.nomorHp || undefined,
       statusKepegawaian: body.statusKepegawaian === "tetap" ? "tetap" : "freelance",
       gajiPokok: Number(body.gajiPokok) || 0,
       targetBulanan: Number(body.targetBulanan) || 0,

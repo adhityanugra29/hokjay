@@ -25,7 +25,7 @@ const ROLE_LABEL: Record<UserRole, string> = {
 
 export interface NavBadgeCounts {
   invoiceCount: number;
-  lowStock: number;
+  produkBaru: number;
 }
 
 export default function AppShell({
@@ -44,7 +44,7 @@ export default function AppShell({
     return <>{children}</>;
   }
 
-  const counts = badgeCounts ?? { invoiceCount: 0, lowStock: 0 };
+  const counts = badgeCounts ?? { invoiceCount: 0, produkBaru: 0 };
   const visibleGroups = NAV_GROUPS.map((g) => ({
     ...g,
     items: g.items.filter((item) => isAllowedPage(user.role, item.href)),
@@ -73,7 +73,7 @@ export default function AppShell({
                 )}
                 {group.items.map((item) => {
                   const active = isActive(pathname, item.href);
-                  const badgeValue = item.badge === "invoiceCount" ? counts.invoiceCount : counts.lowStock;
+                  const badgeValue = item.badge === "invoiceCount" ? counts.invoiceCount : counts.produkBaru;
                   const showBadge = badgeValue > 0;
                   return (
                     <Link
@@ -98,7 +98,7 @@ export default function AppShell({
                           {badgeValue}
                         </span>
                       )}
-                      {showBadge && item.badge === "lowStock" && (
+                      {showBadge && item.badge === "produkBaru" && (
                         <span
                           className={`border px-1.5 py-0.5 text-[10px] font-semibold ${
                             active
@@ -106,7 +106,7 @@ export default function AppShell({
                               : "border-white/30 text-white/70"
                           }`}
                         >
-                          {badgeValue} tipis
+                          {badgeValue} Produk Baru
                         </span>
                       )}
                     </Link>

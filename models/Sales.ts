@@ -13,6 +13,11 @@ const SalesSchema = new Schema(
     bank: { type: String, trim: true },
     nomorRekening: { type: String, trim: true },
     rekeningTerverifikasi: { type: Boolean, default: false },
+    // WhatsApp/phone number shown on the Katalog PDF's "Pemesanan" section
+    // for that sales' own account (matched by nama against the logged-in
+    // User — see components/cart/CatalogPrintDoc.tsx). Per the user's
+    // request 2026-08-25.
+    nomorHp: { type: String, trim: true },
     // Payroll (2026-08-23): "tetap" sales get a monthly gaji pokok on top
     // of commission; "freelance" sales only ever earn commission — gajiPokok
     // is ignored for them even if a stray value is set. See lib/payroll.ts.

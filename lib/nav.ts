@@ -13,7 +13,7 @@ export interface NavLeaf {
   label: string;
   icon: NavIconName;
   /** Which live count (see app/layout.tsx) this row's badge chip shows, if any. */
-  badge?: "invoiceCount" | "lowStock";
+  badge?: "invoiceCount" | "produkBaru";
 }
 
 export interface NavGroup {
@@ -41,7 +41,7 @@ export const NAV_GROUPS: NavGroup[] = [
       // Riwayat Stok isn't its own nav row — redundant with Inventory,
       // which already surfaces it as a tab (app/produk/(list)/layout.tsx).
       // Removed per the user's request 2026-08-22.
-      { href: "/produk", label: "Inventory", icon: "box", badge: "lowStock" },
+      { href: "/produk", label: "Inventory", icon: "box", badge: "produkBaru" },
       { href: "/purchasing", label: "Purchasing", icon: "truck" },
       // Split out from Purchasing into its own module per the user's
       // request 2026-08-23 — it's asset tracking, not procurement.

@@ -5,6 +5,7 @@ import { useCatalogSelection } from "./CatalogSelectionProvider";
 import ZoomableImage from "./ZoomableImage";
 import { CurrencyInput } from "@/components/ui/Form";
 import { rupiah } from "@/lib/format";
+import { computeLineCommission } from "@/lib/commission";
 
 export interface KatalogProduct {
   _id: string;
@@ -25,11 +26,24 @@ export interface KatalogProduct {
 
 export default function ProductCard({ product }: { product: KatalogProduct }) {
   const { items, addItem, updateItem, removeItem } = useCart();
-  const { isSelected, toggle, pickMode, priceMode, customPrices, setCustomPrice, getEffectivePrice } = useCatalogSelection();
+  const { isSelected, toggle, pickMode, getPriceMode, togglePriceMode, setCustomPrice, getEffectivePrice } = useCatalogSelection();
   const cartItem = items.find((i) => i.productId === product._id);
   const selected = isSelected(product._id);
-  const hasCustomPrice = customPrices[product._id] !== undefined;
+  // Price toggle (Harga Rekomendasi/Minimum, + manual custom typing) shows
+  // on every product card at all times — not just while picking products
+  // for the PDF — and this is the price actually used for "+ Tambah ke
+  // Invoice" below. Per the user's request 2026-08-25.
   const effectivePrice = getEffectivePrice(product);
+  // Live insentif — matches the exact formula used at real invoice time
+  // (lib/commission.ts), computed against whatever price is currently
+  // showing instead of the static komisiNominal snapshotted at
+  // product-save time. Per the user's request 2026-08-25.
+  const liveKomisi = computeLineCommission({
+    isCustom: product.isCustom,
+    kondisi: product.kondisi as "baru" | "bekas",
+    hargaJual: effectivePrice,
+    hargaMinimum: product.hargaMinimum,
+  });
 
   const dims = product.dimensi;
   const dimText =
@@ -85,25 +99,24 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
         {/* Fixed-height name block + Insentif called out bold/red, matching
             the Hot Products carousel cards (see confirmation 2026-08-20). */}
         <div className="line-clamp-2 min-h-[2.75rem] text-[0.92rem] leading-snug font-medium">{product.name}</div>
-        {pickMode && selected ? (
-          <div className="mt-1.5">
-            <CurrencyInput
-              value={String(effectivePrice)}
-              onChange={(v) => setCustomPrice(product._id, v ? Number(v) : 0)}
-            />
-            {hasCustomPrice && (
-              <button
-                type="button"
-                onClick={() => setCustomPrice(product._id, undefined)}
-                className="mt-1 cursor-pointer font-mono text-[0.64rem] text-accent underline underline-offset-2"
-              >
-                pakai {priceMode === "minimum" ? "Harga Minimum" : "Harga Rekomendasi"}
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="mt-1.5 text-[0.85rem] font-extrabold">{rupiah(product.hargaRekomendasi)}</div>
-        )}
+        <div className="mt-1.5 flex flex-col gap-1.5">
+          <CurrencyInput
+            value={String(effectivePrice)}
+            onChange={(v) => setCustomPrice(product._id, v ? Number(v) : 0)}
+          />
+          {/* Per-product preset toggle — click flips between Harga
+              Rekomendasi/Minimum and discards any manually-typed custom
+              price above. Shows on every card at all times (not gated to
+              PDF pick mode) since this is also the price used when adding
+              to invoice. Per the user's request 2026-08-25. */}
+          <button
+            type="button"
+            onClick={() => togglePriceMode(product._id)}
+            className="w-fit cursor-pointer border border-line px-2.5 py-1 font-mono text-[0.64rem] font-semibold text-ink hover:bg-[#f3f2ec]"
+          >
+            {getPriceMode(product._id) === "minimum" ? "Harga Minimum" : "Harga Rekomendasi"}
+          </button>
+        </div>
         <div className="mt-2.5 text-[0.72rem] text-muted">
           {product.stok <= 0 ? (
             <span className="text-accent-700">Stok Habis</span>
@@ -127,10 +140,8 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
           )}
         </div>
 
-        <div className="mt-2.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">
-          Insentif {product.komisiPercent}%
-        </div>
-        <div className="text-[1.05rem] font-extrabold text-accent-700">{rupiah(product.komisiNominal)}</div>
+        <div className="mt-2.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">Insentif</div>
+        <div className="text-[1.05rem] font-extrabold text-accent-700">{rupiah(liveKomisi)}</div>
 
         {(dimText || product.ketebalan) && (
           <div className="mt-2.5 border-t border-dashed border-line pt-2.5 font-mono text-[0.7rem] leading-relaxed text-muted">
@@ -178,10 +189,10 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
               addItem({
                 productId: product._id,
                 name: product.name,
-                hargaJual: product.hargaRekomendasi,
+                hargaJual: effectivePrice,
                 hargaMinimum: product.hargaMinimum,
                 hargaRekomendasi: product.hargaRekomendasi,
-                komisiNominal: product.komisiNominal,
+                komisiNominal: liveKomisi,
                 kondisi: product.kondisi as "baru" | "bekas",
                 stok: product.stok,
                 fotoUrl: product.fotoUrl,

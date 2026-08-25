@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/components/ui/Form";
+import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/Form";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { JENIS_USAHA_OPTIONS } from "@/lib/constants";
 
@@ -13,6 +14,7 @@ export default function CustomerForm() {
     nama: "",
     namaToko: "",
     jenisUsaha: "",
+    jenisUsahaLainnya: "",
     whatsapp: "",
     email: "",
     alamat: "",
@@ -28,10 +30,20 @@ export default function CustomerForm() {
     setSaving(true);
     setError(null);
     try {
+      // "Lainnya" isn't a real business category — when picked, the typed
+      // free-text replaces it as the actual stored jenisUsaha (the schema
+      // has no separate field for it, just one free-text jenisUsaha).
+      const payload = {
+        ...values,
+        jenisUsaha:
+          values.jenisUsaha === "Lainnya" && values.jenisUsahaLainnya.trim()
+            ? values.jenisUsahaLainnya.trim()
+            : values.jenisUsaha,
+      };
       const res = await fetch("/api/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -67,19 +79,23 @@ export default function CustomerForm() {
             />
           </Field>
           <Field label="Jenis Usaha">
-            <Select
-              required
+            <SearchableSelect
               value={values.jenisUsaha}
-              onChange={(e) => setValues((v) => ({ ...v, jenisUsaha: e.target.value }))}
-            >
-              <option value="">— Pilih jenis usaha —</option>
-              {JENIS_USAHA_OPTIONS.map((j) => (
-                <option key={j} value={j}>
-                  {j}
-                </option>
-              ))}
-            </Select>
+              onChange={(v) => setValues((prev) => ({ ...prev, jenisUsaha: v }))}
+              options={[...JENIS_USAHA_OPTIONS]}
+              placeholder="Ketik untuk cari jenis usaha..."
+            />
           </Field>
+          {values.jenisUsaha === "Lainnya" && (
+            <Field label="Sebutkan Jenis Usaha">
+              <Input
+                required
+                value={values.jenisUsahaLainnya}
+                onChange={(e) => setValues((v) => ({ ...v, jenisUsahaLainnya: e.target.value }))}
+                placeholder="Contoh: Katering Rumahan"
+              />
+            </Field>
+          )}
           <Field label="No. WhatsApp">
             <Input
               required
@@ -111,15 +127,9 @@ export default function CustomerForm() {
               placeholder="Contoh: Semarang"
             />
           </Field>
-          <Field label="Termin Pembayaran" hint="0 = tunai (bayar di tempat)">
-            <Input
-              type="number"
-              min={0}
-              value={values.termHari}
-              onChange={(e) => setValues((v) => ({ ...v, termHari: e.target.value }))}
-              placeholder="Jumlah hari, contoh: 30"
-            />
-          </Field>
+          {/* Termin Pembayaran hidden from the form per the user's request
+              2026-08-25 — termHari stays in state/payload (always "0" =
+              tunai) since Pelanggan's "kebiasaan bayar" calc still reads it. */}
           <Field label="Catatan (opsional)" span2>
             <Textarea
               rows={3}

@@ -6,16 +6,18 @@ import { Customer } from "@/models/Customer";
 import { Sales } from "@/models/Sales";
 import { Courier } from "@/models/Courier";
 import { peekNextInvoiceNumber } from "@/lib/counters";
+import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function InvoiceBaruPage() {
   await dbConnect();
-  const [customers, salesList, couriers, nextNumber] = await Promise.all([
+  const [customers, salesList, couriers, nextNumber, session] = await Promise.all([
     Customer.find().sort({ nama: 1 }).lean(),
     Sales.find({ aktif: true }).sort({ nama: 1 }).lean(),
     Courier.find().sort({ name: 1 }).lean(),
     peekNextInvoiceNumber(),
+    getSession(),
   ]);
 
   return (
@@ -33,6 +35,7 @@ export default async function InvoiceBaruPage() {
             salesList={salesList.map((s) => ({ _id: String(s._id), nama: s.nama }))}
             couriers={couriers.map((c) => ({ _id: String(c._id), name: c.name }))}
             nextNumberHint={nextNumber}
+            currentUser={session ? { nama: session.nama, role: session.role } : null}
           />
         </RequireActiveCustomer>
       </div>

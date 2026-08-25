@@ -36,6 +36,10 @@ export default function PaymentForm({
   const router = useRouter();
   const sisaTagihan = grandTotal - dpNominal;
   const [metode, setMetode] = useState<string>(paymentMethods[0] ?? "");
+  // Cash/Tunai never has a transfer receipt — hide the upload field
+  // entirely instead of leaving a pointless-to-fill box. Per the user's
+  // request 2026-08-25.
+  const isCash = /tunai|cash/i.test(metode);
   const [nominal, setNominal] = useState(String(sisaTagihan));
   const [buktiUrl, setBuktiUrl] = useState("");
   const [tanggalKirim, setTanggalKirim] = useState("");
@@ -81,11 +85,19 @@ export default function PaymentForm({
       <Panel className="p-7">
         <form onSubmit={handleSubmit}>
           <FormGrid>
-            <Field label="Bukti Transfer" span2>
-              <UploadBox folder="payments" value={buktiUrl} onChange={setBuktiUrl} />
-            </Field>
+            {!isCash && (
+              <Field label="Bukti Transfer" span2>
+                <UploadBox folder="payments" value={buktiUrl} onChange={setBuktiUrl} />
+              </Field>
+            )}
             <Field label="Metode Pembayaran">
-              <Select value={metode} onChange={(e) => setMetode(e.target.value)}>
+              <Select
+                value={metode}
+                onChange={(e) => {
+                  setMetode(e.target.value);
+                  if (/tunai|cash/i.test(e.target.value)) setBuktiUrl("");
+                }}
+              >
                 {paymentMethods.map((m) => (
                   <option key={m}>{m}</option>
                 ))}

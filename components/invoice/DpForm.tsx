@@ -37,6 +37,9 @@ export default function DpForm({
 
   const nominalNum = Number(nominal) || 0;
   const sisaSetelahDp = grandTotal - nominalNum;
+  // Cash/Tunai never has a transfer receipt — hide the upload field
+  // entirely. Per the user's request 2026-08-25.
+  const isCash = /tunai|cash/i.test(metode);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,15 +81,23 @@ export default function DpForm({
               />
             </Field>
             <Field label="Metode Pembayaran">
-              <Select value={metode} onChange={(e) => setMetode(e.target.value)}>
+              <Select
+                value={metode}
+                onChange={(e) => {
+                  setMetode(e.target.value);
+                  if (/tunai|cash/i.test(e.target.value)) setBuktiUrl("");
+                }}
+              >
                 {paymentMethods.map((m) => (
                   <option key={m}>{m}</option>
                 ))}
               </Select>
             </Field>
-            <Field label="Bukti Transfer" span2>
-              <UploadBox folder="payments" value={buktiUrl} onChange={setBuktiUrl} />
-            </Field>
+            {!isCash && (
+              <Field label="Bukti Transfer" span2>
+                <UploadBox folder="payments" value={buktiUrl} onChange={setBuktiUrl} />
+              </Field>
+            )}
             <Field label="Catatan (opsional)" span2>
               <Textarea
                 rows={2}
