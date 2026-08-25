@@ -49,8 +49,9 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
           <div id="invoice-doc" className="border border-line bg-panel p-9">
             <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b-2 border-ink pb-6">
               <div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" width={110} height={61} className="mb-2 h-auto w-[110px]" />
                 <h2 className="font-serif text-2xl">INVOICE</h2>
-                <div className="mt-1.5 font-mono text-[0.75rem] text-muted">CV HORECA JAYA</div>
               </div>
               <div className="text-right font-mono text-[0.75rem] leading-relaxed text-muted">
                 No. {invoice.nomor}
