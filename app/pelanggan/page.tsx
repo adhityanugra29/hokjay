@@ -2,6 +2,7 @@ import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import { RowActionLink } from "@/components/ui/RowAction";
+import MobilePelangganList from "@/components/pelanggan/MobilePelangganList";
 import { getPelangganSummary } from "@/lib/pelanggan";
 import { rupiah, rupiahCompact } from "@/lib/format";
 
@@ -21,12 +22,18 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
     return true;
   });
 
-  const KEBIASAAN_COLOR: Record<string, string> = {
-    "tepat-waktu": "text-muted",
-    tempo: "text-muted",
-    lewat: "text-accent",
-    "belum-pernah": "text-muted/60",
-  };
+  const emptyMessage =
+    filter === "semua" ? (
+      <>
+        Belum ada pelanggan.{" "}
+        <Link href="/pelanggan/baru" className="text-accent underline underline-offset-2">
+          Tambah pelanggan pertama
+        </Link>
+        .
+      </>
+    ) : (
+      "Tidak ada pelanggan yang cocok dengan filter ini."
+    );
 
   return (
     <>
@@ -36,15 +43,17 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
         actions={<LinkButton href="/pelanggan/baru">+ Pelanggan baru</LinkButton>}
       />
       <div className="p-6 md:p-9">
-        <div className="mb-6 grid grid-cols-2 border-2 border-ink bg-panel lg:grid-cols-4">
-          <div className="min-w-0 border-b border-r border-line p-4 sm:p-4.5 lg:border-b-0">
+        {/* "Mulai jarang pesan" stat card removed per the user's request
+            2026-08-25 — down to 3 cards, 1-column on mobile. */}
+        <div className="mb-6 grid grid-cols-1 border-2 border-ink bg-panel sm:grid-cols-3">
+          <div className="min-w-0 border-b border-line p-4 sm:border-r sm:border-b-0 sm:p-4.5">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Pelanggan aktif
             </div>
             <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold sm:text-[1.3rem]">{summary.pelangganAktif}</div>
             <div className="mt-1 font-mono text-[0.68rem] text-muted">pesan dalam 90 hari</div>
           </div>
-          <div className="min-w-0 border-b border-line p-4 sm:p-4.5 lg:border-b-0 lg:border-r">
+          <div className="min-w-0 border-b border-line p-4 sm:border-r sm:border-b-0 sm:p-4.5">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Total piutang
             </div>
@@ -53,19 +62,12 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
             </div>
             <div className="mt-1 font-mono text-[0.68rem] text-muted">tersebar di {summary.piutangCustomerCount} pelanggan</div>
           </div>
-          <div className="min-w-0 border-r border-line p-4 sm:p-4.5">
+          <div className="min-w-0 p-4 sm:p-4.5">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Lewat jatuh tempo
             </div>
             <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold sm:text-[1.3rem]">{summary.lewatJatuhTempoCount} pelanggan</div>
             <div className="mt-1 font-mono text-[0.68rem] text-muted">senilai {rupiahCompact(summary.lewatJatuhTempoTotal)}</div>
-          </div>
-          <div className="min-w-0 bg-ink p-4 text-white sm:p-4.5">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
-              Mulai jarang pesan
-            </div>
-            <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold sm:text-[1.3rem]">{summary.jarangPesanCount} pelanggan</div>
-            <div className="mt-1 font-mono text-[0.68rem] text-white/55">biasa rutin, kini &gt;60 hari diam</div>
           </div>
         </div>
 
@@ -91,51 +93,41 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
               </div>
             </div>
 
-            <div className="grid grid-cols-[1.5fr_70px_105px_100px_120px_60px] gap-3.5 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted">
-              <span>Pelanggan</span>
-              <span>Frekuensi</span>
-              <span className="text-right">Nilai belanja</span>
-              <span className="text-right">Piutang</span>
-              <span>Kebiasaan bayar</span>
-              <span />
-            </div>
-            {filteredRows.map((r) => (
-              <div key={r._id} className="grid grid-cols-[1.5fr_70px_105px_100px_120px_60px] items-center gap-3.5 border-b border-line py-3.5 text-[0.85rem]">
-                <div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-semibold">{r.nama}</span>
-                    <span className="font-mono text-[0.65rem] text-muted">{r.kode}</span>
+            {/* Mobile card list below md; the fixed-column grid table takes
+                over at md+. Per the user's request 2026-08-25. */}
+            <MobilePelangganList rows={filteredRows} emptyMessage={emptyMessage} />
+            <div className="hidden md:block">
+              {/* "Kebiasaan bayar" column removed per the user's request
+                  2026-08-25. */}
+              <div className="grid grid-cols-[100px_1.5fr_70px_105px_100px_60px] gap-3.5 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted">
+                <span>Kode</span>
+                <span>Pelanggan</span>
+                <span>Frekuensi</span>
+                <span className="text-right">Nilai belanja</span>
+                <span className="text-right">Piutang</span>
+                <span />
+              </div>
+              {filteredRows.map((r) => (
+                <div key={r._id} className="grid grid-cols-[100px_1.5fr_70px_105px_100px_60px] items-center gap-3.5 border-b border-line py-3.5 text-[0.85rem]">
+                  <div className="font-mono text-[0.7rem] text-muted">{r.kode}</div>
+                  <div>
+                    <div className="font-semibold">{r.nama}</div>
+                    {r.kota && <div className="mt-0.5 font-mono text-[0.7rem] text-muted">{r.kota}</div>}
                   </div>
-                  {r.kota && <div className="mt-0.5 font-mono text-[0.7rem] text-muted">{r.kota}</div>}
+                  <div className="font-mono text-[0.75rem] text-muted">{r.orderCount} order</div>
+                  <div className="text-right font-bold">{rupiahCompact(r.nilaiBelanja)}</div>
+                  <div className={`text-right font-bold ${r.piutang > 0 ? "text-accent" : "text-muted/40"}`}>
+                    {r.piutang > 0 ? rupiahCompact(r.piutang) : "0"}
+                  </div>
+                  <div className="text-right">
+                    <RowActionLink href={`/pelanggan/${r._id}`}>Riwayat</RowActionLink>
+                  </div>
                 </div>
-                <div className="font-mono text-[0.75rem] text-muted">{r.orderCount} order</div>
-                <div className="text-right font-bold">{rupiahCompact(r.nilaiBelanja)}</div>
-                <div className={`text-right font-bold ${r.piutang > 0 ? "text-accent" : "text-muted/40"}`}>
-                  {r.piutang > 0 ? rupiahCompact(r.piutang) : "0"}
-                </div>
-                <div className={`font-mono text-[0.7rem] font-bold uppercase tracking-wide ${KEBIASAAN_COLOR[r.kebiasaanBayar]}`}>
-                  {r.kebiasaanBayarLabel}
-                </div>
-                <div className="text-right">
-                  <RowActionLink href={`/pelanggan/${r._id}`}>Riwayat</RowActionLink>
-                </div>
-              </div>
-            ))}
-            {filteredRows.length === 0 && (
-              <div className="border-b border-line py-10 text-center font-mono text-sm text-muted">
-                {filter === "semua" ? (
-                  <>
-                    Belum ada pelanggan.{" "}
-                    <Link href="/pelanggan/baru" className="text-accent underline underline-offset-2">
-                      Tambah pelanggan pertama
-                    </Link>
-                    .
-                  </>
-                ) : (
-                  "Tidak ada pelanggan yang cocok dengan filter ini."
-                )}
-              </div>
-            )}
+              ))}
+              {filteredRows.length === 0 && (
+                <div className="border-b border-line py-10 text-center font-mono text-sm text-muted">{emptyMessage}</div>
+              )}
+            </div>
           </div>
 
           <div>
