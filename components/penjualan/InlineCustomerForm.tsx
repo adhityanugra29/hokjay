@@ -5,6 +5,7 @@ import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/F
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button } from "@/components/ui/Button";
 import { JENIS_USAHA_OPTIONS } from "@/lib/constants";
+import { INDONESIA_REGIONS } from "@/lib/wilayah";
 
 export interface CreatedCustomer {
   _id: string;
@@ -35,15 +36,24 @@ export default function InlineCustomerForm({
     whatsapp: "",
     email: "",
     alamat: "",
+    provinsi: "",
+    kota: "",
     catatan: "",
   });
+  // Kota/Kabupaten options narrow to whichever provinsi is picked, same as
+  // CustomerForm.tsx.
+  const kotaOptions = INDONESIA_REGIONS.find((r) => r.provinsi === values.provinsi)?.kota ?? [];
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError(null);
+    // Provinsi/Kota are wajib — same as CustomerForm.tsx (both feed the
+    // Kode Customer plate prefix). Per the user's request 2026-08-25.
+    if (!values.provinsi) return setError("Provinsi wajib diisi.");
+    if (!values.kota) return setError("Kota / Kabupaten wajib diisi.");
+    setSaving(true);
     try {
       const payload = {
         ...values,
@@ -121,6 +131,24 @@ export default function InlineCustomerForm({
             value={values.email}
             onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
             placeholder="Contoh: sari@email.com"
+          />
+        </Field>
+        {/* Provinsi -> Kota -> Alamat, in that order — per the user's
+            request 2026-08-25. */}
+        <Field label="Provinsi">
+          <SearchableSelect
+            value={values.provinsi}
+            onChange={(v) => setValues((prev) => ({ ...prev, provinsi: v, kota: "" }))}
+            options={INDONESIA_REGIONS.map((r) => r.provinsi)}
+            placeholder="Ketik untuk cari provinsi..."
+          />
+        </Field>
+        <Field label="Kota / Kabupaten">
+          <SearchableSelect
+            value={values.kota}
+            onChange={(v) => setValues((prev) => ({ ...prev, kota: v }))}
+            options={kotaOptions}
+            placeholder={values.provinsi ? "Ketik untuk cari kota/kabupaten..." : "Pilih provinsi dulu"}
           />
         </Field>
         <Field label="Alamat" span2>

@@ -33,8 +33,14 @@ export default function CustomerForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError(null);
+    // Provinsi/Kota are wajib (not opsional) per the user's request
+    // 2026-08-25 — SearchableSelect isn't a real <select>, so the
+    // browser's native `required` doesn't catch an empty value; checked
+    // explicitly here instead.
+    if (!values.provinsi) return setError("Provinsi wajib diisi.");
+    if (!values.kota) return setError("Kota / Kabupaten wajib diisi.");
+    setSaving(true);
     try {
       // "Lainnya" isn't a real business category — when picked, the typed
       // free-text replaces it as the actual stored jenisUsaha (the schema
@@ -118,15 +124,9 @@ export default function CustomerForm() {
               placeholder="Contoh: sari@email.com"
             />
           </Field>
-          <Field label="Alamat" span2>
-            <Input
-              required
-              value={values.alamat}
-              onChange={(e) => setValues((v) => ({ ...v, alamat: e.target.value }))}
-              placeholder="Alamat lengkap untuk pengiriman & penagihan"
-            />
-          </Field>
-          <Field label="Provinsi (opsional)">
+          {/* Provinsi -> Kota -> Alamat, in that order — per the user's
+              request 2026-08-25. */}
+          <Field label="Provinsi">
             <SearchableSelect
               value={values.provinsi}
               onChange={(v) => setValues((prev) => ({ ...prev, provinsi: v, kota: "" }))}
@@ -134,12 +134,20 @@ export default function CustomerForm() {
               placeholder="Ketik untuk cari provinsi..."
             />
           </Field>
-          <Field label="Kota / Kabupaten (opsional)">
+          <Field label="Kota / Kabupaten">
             <SearchableSelect
               value={values.kota}
               onChange={(v) => setValues((prev) => ({ ...prev, kota: v }))}
               options={kotaOptions}
               placeholder={values.provinsi ? "Ketik untuk cari kota/kabupaten..." : "Pilih provinsi dulu"}
+            />
+          </Field>
+          <Field label="Alamat" span2>
+            <Input
+              required
+              value={values.alamat}
+              onChange={(e) => setValues((v) => ({ ...v, alamat: e.target.value }))}
+              placeholder="Alamat lengkap untuk pengiriman & penagihan"
             />
           </Field>
           {/* Termin Pembayaran hidden from the form per the user's request
