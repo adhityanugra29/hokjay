@@ -3,7 +3,7 @@ import { dbConnect } from "@/lib/db";
 import { Sales } from "@/models/Sales";
 import { GajiPayment } from "@/models/GajiPayment";
 import { getSession } from "@/lib/auth/session";
-import { isAdminLevel } from "@/lib/auth/access";
+import { isPayrollAdminLevel } from "@/lib/auth/access";
 import { recordCashflow } from "@/lib/services/recordCashflow";
 
 /**
@@ -17,7 +17,7 @@ import { recordCashflow } from "@/lib/services/recordCashflow";
 export async function POST(req: Request) {
   await dbConnect();
   const session = await getSession();
-  if (!session || !isAdminLevel(session.role)) {
+  if (!session || !isPayrollAdminLevel(session.role)) {
     return NextResponse.json({ error: "Hanya Admin yang bisa membayar gaji" }, { status: 403 });
   }
 

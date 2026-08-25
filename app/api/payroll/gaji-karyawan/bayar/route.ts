@@ -4,7 +4,7 @@ import { Karyawan } from "@/models/Karyawan";
 import { Absensi } from "@/models/Absensi";
 import { GajiPayment } from "@/models/GajiPayment";
 import { getSession } from "@/lib/auth/session";
-import { isAdminLevel } from "@/lib/auth/access";
+import { isPayrollAdminLevel } from "@/lib/auth/access";
 import { recordCashflow } from "@/lib/services/recordCashflow";
 
 function periodRange(periode: string) {
@@ -16,7 +16,7 @@ function periodRange(periode: string) {
 export async function POST(req: Request) {
   await dbConnect();
   const session = await getSession();
-  if (!session || !isAdminLevel(session.role)) {
+  if (!session || !isPayrollAdminLevel(session.role)) {
     return NextResponse.json({ error: "Hanya Admin yang bisa membayar gaji" }, { status: 403 });
   }
 

@@ -8,7 +8,11 @@ import type { UserRole } from "@/models/User";
 // gaji; the admin payment dashboard living at the same URL is gated inside
 // app/payroll/**\/page.tsx itself (!isAdminLevel(session.role) -> notFound()).
 // See models/Karyawan.ts, models/Absensi.ts, models/GajiPayment.ts.
-export const SALES_PREFIXES = ["/katalog", "/invoice", "/produk", "/pelanggan", "/payroll"];
+// "/produk" (Inventory) removed per the user's request 2026-08-26 — Sales
+// works from Katalog, doesn't need the raw stock-management view.
+// "/insentif" (Leaderboard Sales) added the same day — Sales can see the
+// ranking board, same URL Finance uses for the full view.
+export const SALES_PREFIXES = ["/katalog", "/invoice", "/pelanggan", "/payroll", "/insentif"];
 // Payroll (2026-08-23) folded in the old Bayar Komisi and moved to
 // Admin-only per the user's explicit confirmation — Finance no longer has
 // a payroll-payment surface at all (was "/bayar-komisi" here before).
@@ -60,10 +64,29 @@ export function isAdminLevel(role: UserRole | undefined | null): boolean {
   return role === "admin" || role === "owner" || role === "super_admin" || role === "manager";
 }
 
+// "manager" (2026-08-26): admin-level everywhere EXCEPT these three —
+// Akuntansi, Payroll, and Bayar Tagihan stay off-limits even though
+// isAdminLevel(manager) is true (that flag still covers every other
+// admin-gated action app-wide, e.g. Admin > Kelola User, Category/
+// Courier/Payment Method management). Absensi and Karyawan are part of
+// Payroll's own domain (not separately nav-reachable), so they're covered
+// by the "/payroll" prefix too — see isPayrollAdminLevel below, used at
+// those specific API routes instead of isAdminLevel so a raw request
+// can't reach what the page itself already hides.
+export const MANAGER_BLOCKED_PREFIXES = ["/akuntansi", "/payroll", "/bayar-tagihan"];
+
 export function isAllowedPage(role: UserRole, pathname: string): boolean {
+  if (role === "manager") {
+    return !MANAGER_BLOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  }
   if (isAdminLevel(role)) return true;
   // Dashboard-adjacent content, viewable by every role just like "/" itself.
   if (pathname === "/" || pathname === "/follow-up" || pathname === "/aktivitas") return true;
   const prefixes = ROLE_PREFIXES[role] ?? [];
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/** isAdminLevel, but false for "manager" — for the handful of API routes that are specifically Payroll's own domain (absensi, karyawan, gaji payout) so Manager can't reach them via a raw request either, not just the page. */
+export function isPayrollAdminLevel(role: UserRole | undefined | null): boolean {
+  return isAdminLevel(role) && role !== "manager";
 }
