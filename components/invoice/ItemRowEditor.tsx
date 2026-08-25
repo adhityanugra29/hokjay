@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CartItem } from "@/components/cart/CartProvider";
 import { useCart } from "@/components/cart/CartProvider";
+import { CurrencyInput } from "@/components/ui/Form";
 import { computeLineCommission } from "@/lib/commission";
 import { rupiah } from "@/lib/format";
 
@@ -65,8 +66,6 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
     hargaJual: item.hargaJual,
     hargaMinimum: item.hargaMinimum,
   });
-  const hargaFloor = item.isCustom ? 0 : item.hargaMinimum;
-
   return (
     <div className="mb-2.5 border border-line p-4">
       <div className="mb-2.5 flex items-center gap-2.5">
@@ -94,11 +93,12 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[0.62rem] uppercase text-muted">Harga Jual</span>
           {/* "Pakai Minimum"/"Pakai Rekomendasi" preset buttons removed per
-              the user's request 2026-08-25 — harga jual is typed directly. */}
-          <NumberField
-            value={item.hargaJual}
-            min={hargaFloor}
-            onCommit={(hargaJual) => updateItem(item.productId, { hargaJual })}
+              the user's request 2026-08-25 — harga jual is typed directly.
+              CurrencyInput (accounting-style thousand separators) per the
+              user's report 2026-08-25 that this field wasn't formatted yet. */}
+          <CurrencyInput
+            value={String(item.hargaJual)}
+            onChange={(v) => updateItem(item.productId, { hargaJual: v ? Number(v) : 0 })}
           />
           {!item.isCustom && (
             <span className="font-mono text-[0.64rem] text-clay">Harga Minimum: {rupiah(item.hargaMinimum)}</span>
@@ -106,10 +106,9 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
         </div>
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[0.62rem] uppercase text-muted">Diskon /unit</span>
-          <NumberField
-            value={item.diskonPerUnit}
-            min={0}
-            onCommit={(diskonPerUnit) => updateItem(item.productId, { diskonPerUnit })}
+          <CurrencyInput
+            value={String(item.diskonPerUnit)}
+            onChange={(v) => updateItem(item.productId, { diskonPerUnit: v ? Number(v) : 0 })}
           />
         </div>
         <div className="flex flex-col gap-1">

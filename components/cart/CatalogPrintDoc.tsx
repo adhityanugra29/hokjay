@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { rupiah } from "@/lib/format";
 import { useCatalogSelection } from "@/components/katalog/CatalogSelectionProvider";
 
@@ -31,6 +31,15 @@ interface CatalogSales {
 // gold/lemon pick). Bright yellow doesn't hold up under white text, so
 // every background use below pairs it with dark ink text instead.
 const YELLOW = "#FFC800";
+
+// One A4 page's content height in CSS px at this document's own scale: the
+// container is 794px wide (≈210mm at 96dpi, matching html2pdf's jsPDF a4
+// portrait output), so 297mm of page height maps to 297 * (794/210) ≈ 1123px
+// here. Used to pin the footer band to the true bottom edge of every page
+// instead of wherever the content happens to end — per the user's report
+// 2026-08-25 that the footer's placement looked "static"/floating rather
+// than flush with the page bottom.
+const PAGE_HEIGHT_PX = Math.round((297 * 794) / 210);
 
 function specLine(p: CatalogProduct): string {
   const parts: string[] = [];
@@ -95,6 +104,17 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
   const [loaded, setLoaded] = useState(false);
   const { selected, getEffectivePrice } = useCatalogSelection();
 
+  // Measures the cover+stats block's real rendered height so page 1's
+  // product chunk can be given exactly (PAGE_HEIGHT_PX - coverHeight) of
+  // room — pages 2+ start fresh right after a forced page-break, so they
+  // just get the full PAGE_HEIGHT_PX. See the flex-col + mt-auto footer
+  // wrapper below.
+  const coverRef = useRef<HTMLDivElement>(null);
+  const [coverHeight, setCoverHeight] = useState<number | null>(null);
+  useEffect(() => {
+    if (coverRef.current) setCoverHeight(coverRef.current.offsetHeight);
+  }, [loaded]);
+
   // When a sales rep is logged in and generates their own catalog, the
   // "Pemesanan" section shows their own name + WA number (matched by nama
   // against the Sales roster) instead of the generic line — per the user's
@@ -155,7 +175,9 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
             the description paragraph and tightened the padding/heading size
             so this header doesn't eat so much of page 1. Dark text on the
             bright yellow background for real contrast (white doesn't hold
-            up against this shade). */}
+            up against this shade). Wrapped (with the stats grid below) in
+            a ref so its real height can be measured — see coverHeight. */}
+        <div ref={coverRef}>
         <div className="px-12 py-7" style={{ background: YELLOW, color: "#201e1d" }}>
           <div className="mb-5 flex items-center justify-between gap-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -207,17 +229,25 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
             <div className="text-[15px] leading-relaxed">{byCategory.length} kategori produk</div>
           </div>
         </div>
+        </div>
 
         {/* Products — exactly 3 per page. Each chunk after the first starts
             on a fresh page (html2pdf__page-break marker); each individual
             product row stays break-inside-avoid so it's never cut in half.
-            The footer band (logo + sales list + footnote) repeats at the
-            bottom of every page — rendered right after each chunk's
-            products, before that chunk's page-break — acting as a divider
-            between pages. Per the user's request 2026-08-25. */}
+            Each page is a flex column pinned to a real A4 page's height
+            (PAGE_HEIGHT_PX, minus the cover's own height on page 1 only),
+            with the footer band pushed to the very bottom via mt-auto —
+            instead of the footer sitting wherever the 3 products happened
+            to end. Per the user's report 2026-08-25 that the footer's
+            placement looked static/floating rather than flush with the
+            page bottom. */}
         {chunks.map((chunk, ci) => (
           <Fragment key={ci}>
             {ci > 0 && <div className="html2pdf__page-break" />}
+            <div
+              className="flex flex-col"
+              style={{ minHeight: PAGE_HEIGHT_PX - (ci === 0 ? (coverHeight ?? 0) : 0) }}
+            >
             <div className="px-12 py-8">
               {chunk.map(({ product: p, categoryLabel }) => (
                 <Fragment key={p._id}>
@@ -251,7 +281,10 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                 </Fragment>
               ))}
             </div>
-            <ClosingFooter sales={sales} ownSales={ownSales} />
+            <div className="mt-auto">
+              <ClosingFooter sales={sales} ownSales={ownSales} />
+            </div>
+            </div>
           </Fragment>
         ))}
         {chunks.length === 0 && <ClosingFooter sales={sales} ownSales={ownSales} />}
