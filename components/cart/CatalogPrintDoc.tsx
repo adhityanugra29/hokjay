@@ -50,24 +50,24 @@ interface PrintUnit {
 }
 
 /**
- * Closing footer — logo + sales list + a footnote personalized with the
- * logged-in sales' own name/number when available (mirrors the cover's
- * "Pemesanan" section fallback). Appended directly inside the last
- * product chunk's own div by the caller (not a separate atomic section)
- * so it always shares that page — see the chunking comment above. Per the
- * user's request 2026-08-25.
+ * Page-bottom footer band — logo + sales list + a footnote personalized
+ * with the logged-in sales' own name/number when available (mirrors the
+ * cover's "Pemesanan" section fallback). Repeats on EVERY product page
+ * (rendered once per chunk, right before that chunk's page-break) as a
+ * divider between pages, styled with the same yellow background as the
+ * cover header. Per the user's request 2026-08-25.
  */
 function ClosingFooter({ sales, ownSales }: { sales: CatalogSales[]; ownSales: CatalogSales | undefined }) {
   return (
-    <div className="mt-6 border-t-2 border-line pt-5">
+    <div className="px-12 py-6" style={{ background: YELLOW, color: "#201e1d" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" width={90} height={50} className="mb-3 h-auto w-[90px]" />
       {sales.length > 0 && (
-        <div className="text-[13px] text-muted">
-          Sales yang melayani: <span className="font-semibold text-ink">{sales.map((s) => s.nama).join(" · ")}</span>
+        <div className="text-[13px] opacity-80">
+          Sales yang melayani: <span className="font-semibold">{sales.map((s) => s.nama).join(" · ")}</span>
         </div>
       )}
-      <p className="mt-2 text-[13px] leading-relaxed text-muted">
+      <p className="mt-2 text-[13px] leading-relaxed opacity-80">
         {ownSales
           ? `Hubungi Sales ${ownSales.nama}${ownSales.nomorHp ? ` (${ownSales.nomorHp})` : ""} untuk penawaran harga terbaik.`
           : "Hubungi sales Anda untuk penawaran harga terbaik."}
@@ -82,10 +82,11 @@ function ClosingFooter({ sales, ownSales }: { sales: CatalogSales[]; ownSales: C
  * needs real layout to snapshot, which display:none elements don't have.
  * Never visible to the user and excluded from native browser printing.
  *
- * This brochure (cover → products, exactly 3 per page → closing footer)
- * only includes products checked in the Katalog page's own selection
- * checkboxes (see CatalogSelectionProvider) — separate from the invoice
- * cart — sourced live from the product/category/sales collections.
+ * This brochure (cover → products, exactly 3 per page, each page closed
+ * by a repeating yellow footer band) only includes products checked in
+ * the Katalog page's own selection checkboxes (see
+ * CatalogSelectionProvider) — separate from the invoice cart — sourced
+ * live from the product/category/sales collections.
  */
 export default function CatalogPrintDoc({ user }: { user: { nama: string; role: string } | null }) {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
@@ -210,11 +211,10 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
         {/* Products — exactly 3 per page. Each chunk after the first starts
             on a fresh page (html2pdf__page-break marker); each individual
             product row stays break-inside-avoid so it's never cut in half.
-            The closing footer (sales list + custom-order note) is appended
-            directly inside the LAST chunk's own div — not a separate
-            section — so it always shares that final page instead of ever
-            becoming the sole reason for an extra trailing page. Per the
-            user's request 2026-08-25. */}
+            The footer band (logo + sales list + footnote) repeats at the
+            bottom of every page — rendered right after each chunk's
+            products, before that chunk's page-break — acting as a divider
+            between pages. Per the user's request 2026-08-25. */}
         {chunks.map((chunk, ci) => (
           <Fragment key={ci}>
             {ci > 0 && <div className="html2pdf__page-break" />}
@@ -250,16 +250,11 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                   </div>
                 </Fragment>
               ))}
-
-              {ci === chunks.length - 1 && <ClosingFooter sales={sales} ownSales={ownSales} />}
             </div>
+            <ClosingFooter sales={sales} ownSales={ownSales} />
           </Fragment>
         ))}
-        {chunks.length === 0 && (
-          <div className="px-12 py-8">
-            <ClosingFooter sales={sales} ownSales={ownSales} />
-          </div>
-        )}
+        {chunks.length === 0 && <ClosingFooter sales={sales} ownSales={ownSales} />}
       </div>
     </div>
   );
