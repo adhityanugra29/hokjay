@@ -109,7 +109,21 @@ export function isAllowedPage(role: UserRole, pathname: string): boolean {
   // Dashboard-adjacent content, viewable by every role just like "/" itself.
   // "/akun-saya" (2026-08-26) — self-service password change, same as
   // everyone gets a "Keluar" button regardless of role.
-  if (pathname === "/" || pathname === "/follow-up" || pathname === "/aktivitas" || pathname === "/akun-saya") return true;
+  // "/menu" (2026-08-26 fix) — the mobile bottom tab bar's "Menu" tab links
+  // here for EVERY role, but this page was missing from this list, so
+  // proxy.ts's middleware silently redirected any non-admin-level role
+  // straight back to "/" on click ("Menu" tab appeared broken/unresponsive
+  // — it was actually navigating, just immediately bounced). The page
+  // itself is just a filtered nav hub (every link on it already re-checks
+  // isAllowedPage), no reason it needs its own gate.
+  if (
+    pathname === "/" ||
+    pathname === "/follow-up" ||
+    pathname === "/aktivitas" ||
+    pathname === "/akun-saya" ||
+    pathname === "/menu"
+  )
+    return true;
   const prefixes = ROLE_PREFIXES[role] ?? [];
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
