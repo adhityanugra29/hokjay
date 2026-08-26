@@ -69,8 +69,19 @@ function salesContactLine(ownSales: CatalogSales | undefined): string {
 // with only a small margin on top — tight enough to stop wasting a whole
 // product's worth of blank space, still enough margin to absorb a
 // two-line product name.
-const FOOTER_HEIGHT_PX = 130;
-const PRODUCTS_CONTAINER_VPAD_PX = 64; // px-12 py-8 on the products wrapper — py-8 = 32px top + 32px bottom, exact (not an estimate).
+// Lowered 130 -> 110 (2026-08-26) alongside dropping the footer's "Sales
+// yang melayani" line — one line shorter now, so the logo (its own ~50px +
+// 48px vertical padding) is what actually sets the floor.
+const FOOTER_HEIGHT_PX = 110;
+// px-12 py-8 on the products wrapper — py-8 = 32px top + 32px bottom, exact.
+// Every page after the first gets extra top padding (pt-16 instead of
+// py-8's 32px, so 64px) — per the user's report 2026-08-26 that a repeated
+// "Working Table" heading looked cut off right at the top of a page that
+// starts immediately after a forced html2pdf__page-break. 32px apparently
+// wasn't enough clearance from wherever html2pdf's own page-slicing lands
+// relative to our marker; doubled for real margin instead of guessing again.
+const PRODUCTS_CONTAINER_VPAD_PX = 64;
+const CONTINUATION_PAGE_VPAD_PX = 96; // pt-16 (64) + pb-8 (32)
 const CATEGORY_HEADER_PX = 90;
 const PRODUCT_ROW_PX = 200;
 // Used only for the handful of renders before coverRef's real height lands
@@ -97,7 +108,8 @@ function packIntoPages(flat: PrintUnit[], coverHeight: number): PrintUnit[][] {
   let i = 0;
   while (i < flat.length) {
     const isFirstPage = pages.length === 0;
-    const budget = PAGE_HEIGHT_PX - PRODUCTS_CONTAINER_VPAD_PX - FOOTER_HEIGHT_PX - (isFirstPage ? coverHeight : 0);
+    const vpad = isFirstPage ? PRODUCTS_CONTAINER_VPAD_PX : CONTINUATION_PAGE_VPAD_PX;
+    const budget = PAGE_HEIGHT_PX - vpad - FOOTER_HEIGHT_PX - (isFirstPage ? coverHeight : 0);
     const page: PrintUnit[] = [];
     let used = 0;
     while (i < flat.length) {
@@ -133,14 +145,16 @@ interface PrintUnit {
 }
 
 /**
- * Page-bottom footer band — logo + sales list + a footnote personalized
- * with the logged-in sales' own name/number when available (mirrors the
- * cover's "Pemesanan" section fallback). Repeats on EVERY product page
+ * Page-bottom footer band — logo + a contact line personalized with the
+ * logged-in sales' own name/number when available (mirrors the cover's
+ * "Pemesanan" section fallback). Repeats on EVERY product page
  * (rendered once per chunk, right before that chunk's page-break) as a
  * divider between pages, styled with the same yellow background as the
- * cover header. Per the user's request 2026-08-25.
+ * cover header. Per the user's request 2026-08-25. The "Sales yang
+ * melayani: ..." line (listing every active sales, not just whoever
+ * generated this catalog) was dropped 2026-08-26 per the user's request.
  */
-function ClosingFooter({ sales, ownSales }: { sales: CatalogSales[]; ownSales: CatalogSales | undefined }) {
+function ClosingFooter({ ownSales }: { ownSales: CatalogSales | undefined }) {
   return (
     <div className="flex items-center gap-6 px-12 py-6" style={{ background: YELLOW, color: "#201e1d" }}>
       {/* Logo pinned to the far left edge, text to its right — per the
@@ -148,12 +162,7 @@ function ClosingFooter({ sales, ownSales }: { sales: CatalogSales[]; ownSales: C
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" width={90} height={50} className="h-auto w-[90px] shrink-0" />
       <div>
-        {sales.length > 0 && (
-          <div className="text-[13px] opacity-80">
-            Sales yang melayani: <span className="font-semibold">{sales.map((s) => s.nama).join(" · ")}</span>
-          </div>
-        )}
-        <p className="mt-1 text-[13px] leading-relaxed opacity-80">{salesContactLine(ownSales)}</p>
+        <p className="text-[13px] leading-relaxed opacity-80">{salesContactLine(ownSales)}</p>
       </div>
     </div>
   );
@@ -347,11 +356,11 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
         {chunks.map((chunk, ci) => (
           <Fragment key={ci}>
             {ci > 0 && <div className="html2pdf__page-break" />}
-            <div className="px-12 py-8">
+            <div className={ci === 0 ? "px-12 py-8" : "px-12 pb-8 pt-16"}>
               {chunk.map(({ product: p, categoryLabel }) => (
                 <Fragment key={p._id}>
                   {categoryLabel && (
-                    <div className="mb-4 flex items-baseline justify-between gap-4 border-b-2 border-line pb-3">
+                    <div className="mb-4 flex items-baseline justify-between gap-4 border-b-2 border-line pb-3 break-inside-avoid">
                       <h2 className="text-[22px] font-extrabold">{categoryLabel}</h2>
                     </div>
                   )}
@@ -380,10 +389,10 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                 </Fragment>
               ))}
             </div>
-            <ClosingFooter sales={sales} ownSales={ownSales} />
+            <ClosingFooter ownSales={ownSales} />
           </Fragment>
         ))}
-        {chunks.length === 0 && <ClosingFooter sales={sales} ownSales={ownSales} />}
+        {chunks.length === 0 && <ClosingFooter ownSales={ownSales} />}
       </div>
     </div>
   );

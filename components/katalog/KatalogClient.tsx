@@ -11,10 +11,15 @@ import { useCatalogSelection } from "./CatalogSelectionProvider";
 // jangan blur") that was too aggressive — html2canvas rasterizes text the
 // same as everything else, so a lower scale means fewer literal pixels per
 // character, not just a smaller file. Restored to 2 (the original,
-// known-crisp value) for legibility; JPEG_QUALITY stays the main
-// size lever instead, plus the adaptive packing above now fitting more
-// products per page (fewer total pages) does most of the file-size work.
-const KATALOG_PDF_JPEG_QUALITY = 0.82;
+// known-crisp value). JPEG_QUALITY went through the same lesson: 0.78, then
+// 0.82, still read as blurry on the small 11-13px SKU/spec text — JPEG's
+// block-based compression is genuinely rough on fine text edges regardless
+// of resolution once quality drops much below "near-lossless". Raised to
+// 0.94 (close to the original 0.98) so legibility is no longer a trade-off
+// at all; the adaptive packing fitting more products per page (fewer total
+// pages) is now the main thing keeping file size down instead of these two
+// knobs.
+const KATALOG_PDF_JPEG_QUALITY = 0.94;
 const KATALOG_PDF_RENDER_SCALE = 2;
 
 export default function KatalogClient({
