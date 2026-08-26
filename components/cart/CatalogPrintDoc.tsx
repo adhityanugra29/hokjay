@@ -283,7 +283,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
           <span className="text-[13px] tracking-[0.12em] uppercase opacity-70">Katalog · {periodLabel}</span>
         </div>
         <h1 className="max-w-[26ch] text-[28px] leading-[1.25] font-extrabold">
-          Kitchen Equipment untuk: UMKM, Cafe, Hotel, MBG — Harga Bersahabat
+          Kitchen Equipment untuk: UMKM, Cafe, Hotel — Harga Bersahabat
         </h1>
       </div>
       {/* Was a 3-column grid (Pemesanan / Isi katalog / Kategori) — the
