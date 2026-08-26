@@ -33,6 +33,7 @@ export default async function KatalogPage() {
       products={products.map((p) => ({
         _id: String(p._id),
         name: p.name,
+        sku: p.sku,
         category: p.category,
         hargaRekomendasi: p.hargaRekomendasi,
         hargaMinimum: p.hargaMinimum,

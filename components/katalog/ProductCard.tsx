@@ -10,6 +10,7 @@ import { computeLineCommission } from "@/lib/commission";
 export interface KatalogProduct {
   _id: string;
   name: string;
+  sku: string;
   category: string;
   hargaRekomendasi: number;
   hargaMinimum: number;

@@ -139,9 +139,25 @@ export default function KatalogClient({
 
   const filtered = useMemo(() => {
     let list = products;
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(q));
+    const q = search.trim().toLowerCase();
+    if (q) {
+      // A pure-number query (e.g. "80") also matches an exact P/L/T
+      // dimension — per the user's request 2026-08-26 ("kalau user ketik
+      // '80' maka akan muncul produk yang PxLxT ada angka 80 nya"),
+      // confirmed as an exact match per dimension (80 matches a 80cm side,
+      // not 180 or 800) rather than a substring match, so the numbers stay
+      // meaningful as actual sizes. Still OR'd with the usual name/SKU
+      // text search, not a replacement for it.
+      const asNumber = /^\d+(\.\d+)?$/.test(q) ? Number(q) : null;
+      list = list.filter((p) => {
+        if (p.name.toLowerCase().includes(q)) return true;
+        if (p.sku.toLowerCase().includes(q)) return true;
+        if (asNumber !== null) {
+          const { panjangCm, lebarCm, tinggiCm } = p.dimensi ?? {};
+          if (panjangCm === asNumber || lebarCm === asNumber || tinggiCm === asNumber) return true;
+        }
+        return false;
+      });
     }
     if (category) list = list.filter((p) => p.category === category);
     if (sort === "price-asc") list = [...list].sort((a, b) => a.hargaRekomendasi - b.hargaRekomendasi);

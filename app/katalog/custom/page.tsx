@@ -38,6 +38,7 @@ export default async function KatalogCustomPage() {
               product={{
                 _id: String(p._id),
                 name: p.name,
+                sku: p.sku,
                 category: p.category,
                 hargaRekomendasi: p.hargaRekomendasi,
                 hargaMinimum: p.hargaMinimum,
