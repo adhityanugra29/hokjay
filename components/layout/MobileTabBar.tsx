@@ -21,9 +21,9 @@ import type { UserRole } from "@/models/User";
  * /invoice/[id] still highlights "Jualan").
  */
 const GROUP_CANDIDATES: Record<string, string[]> = {
-  Jualan: ["/katalog", "/invoice", "/pelanggan", "/insentif", "/komisi-saya"],
+  Jualan: ["/katalog", "/invoice", "/pelanggan", "/insentif"],
   Barang: ["/produk", "/purchasing", "/inventaris-kantor"],
-  Uang: ["/keuangan", "/akuntansi", "/payroll", "/bayar-tagihan"],
+  Uang: ["/keuangan", "/akuntansi", "/payroll", "/bayar-tagihan", "/komisi-saya"],
 };
 const GROUP_ICON: Record<string, NavIconName> = { Jualan: "cart", Barang: "box", Uang: "cashbox" };
 
