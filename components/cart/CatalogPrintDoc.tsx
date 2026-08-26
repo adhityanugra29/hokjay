@@ -347,15 +347,22 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
             footer pinned flush to the physical page bottom, but forcing
             EVERY page to precisely PAGE_HEIGHT_PX (a CSS-px estimate) left
             no room for the small per-page rounding that inevitably happens
-            once html2canvas/jsPDF re-measure the actual rendered canvas —
-            enough accumulated drift across several pages to occasionally
-            spill a sliver of content onto a genuinely blank extra page.
-            Letting each page be exactly as tall as its real content is
-            immune to that: no page can ever round up past a physical page
-            boundary it wasn't already safely under. */}
+            once html2canvas/jsPDF re-measure the actual rendered canvas.
+            Letting each page be exactly as tall as its real content avoids
+            that. */}
         {chunks.map((chunk, ci) => (
           <Fragment key={ci}>
-            {ci > 0 && <div className="html2pdf__page-break" />}
+            {/* h-16: the marker itself now carries real height (2026-08-26,
+                after the user reported a repeated "Working Table" heading
+                bleeding across a page boundary — its top half rendered as a
+                sliver at the very bottom of the previous page instead of
+                cleanly starting the next one). A zero-height marker asks
+                html2pdf's canvas-slicing to cut at one exact pixel row with
+                no margin for error; giving it real height turns that single
+                risky pixel into a wide safe band the slice can land anywhere
+                inside without clipping either the footer above or the
+                heading below. */}
+            {ci > 0 && <div className="html2pdf__page-break h-16" />}
             <div className={ci === 0 ? "px-12 py-8" : "px-12 pb-8 pt-16"}>
               {chunk.map(({ product: p, categoryLabel }) => (
                 <Fragment key={p._id}>
