@@ -132,6 +132,66 @@ export async function getSalesBoard(period: string): Promise<SalesBoard> {
   return { rows, teamTotal, teamTarget, teamPercent, teamGap, daysRemaining };
 }
 
+export interface MyCommissionTertahan {
+  invoiceId: string;
+  nomor: string;
+  customerNama: string;
+  hariBerjalan: number;
+  komisi: number;
+}
+
+export interface MyCommissionSummary {
+  period: string;
+  /** Komisi from this period's already-paid invoices — safe, not contingent on the customer still paying. */
+  sudahAman: number;
+  /** Komisi from this period's still-unpaid invoices — only realized once the customer actually pays. */
+  tertahan: number;
+  totalBerjalan: number;
+  tertahanInvoices: MyCommissionTertahan[];
+}
+
+/**
+ * One sales's own commission for the period, split by what's already safe
+ * (invoice paid) vs held up (invoice still unpaid) — powers "Komisi Saya"
+ * (mobile "9b" mockup, 2026-08-26). Deliberately not the same split as
+ * komisiCair (Payroll's own-been-disbursed-yet tracking) — this is about
+ * whether the *customer* has paid, which is what actually determines
+ * whether the commission is real yet from the sales rep's perspective.
+ */
+export async function getMyCommissionSummary(salesNama: string, period: string): Promise<MyCommissionSummary> {
+  await dbConnect();
+  const { start, end } = periodRange(period);
+  const invoices = await Invoice.find({
+    "sales.nama": salesNama,
+    tanggalInvoice: { $gte: start, $lt: end },
+    status: { $in: ["paid", "unpaid"] },
+  }).sort({ tanggalInvoice: 1 });
+
+  let sudahAman = 0;
+  let tertahan = 0;
+  const tertahanInvoices: MyCommissionTertahan[] = [];
+  const now = Date.now();
+  for (const inv of invoices) {
+    const komisi = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
+    if (inv.status === "paid") {
+      sudahAman += komisi;
+    } else {
+      tertahan += komisi;
+      const baseDate = inv.tanggalInvoice ?? inv.get("createdAt");
+      tertahanInvoices.push({
+        invoiceId: String(inv._id),
+        nomor: inv.nomor,
+        customerNama: inv.customer?.nama ?? "—",
+        hariBerjalan: Math.max(0, Math.floor((now - new Date(baseDate).getTime()) / 86_400_000)),
+        komisi,
+      });
+    }
+  }
+  tertahanInvoices.sort((a, b) => b.hariBerjalan - a.hariBerjalan);
+
+  return { period, sudahAman, tertahan, totalBerjalan: sudahAman + tertahan, tertahanInvoices };
+}
+
 export interface UnpaidCommissionSales {
   salesNama: string;
   invoiceCount: number;

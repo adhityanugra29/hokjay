@@ -4,8 +4,9 @@ import NavIcon from "@/components/layout/NavIcons";
 import Logo from "@/components/layout/Logo";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { dbConnect } from "@/lib/db";
-import { currentPeriod, getSalesRanking } from "@/lib/insentif";
+import { currentPeriod, getSalesRanking, getMyCommissionSummary } from "@/lib/insentif";
 import { getFollowUpInvoices, getLowStockProducts } from "@/lib/dashboard";
+import { getMyDormantCustomers } from "@/lib/pelanggan";
 import { getKeuanganSummary, getCurrentCashBalance } from "@/lib/keuangan";
 import { getActivityLog } from "@/lib/activity";
 import { getPurchasingSummary, getBayarTagihanSummary, getLowStockSuggestions } from "@/lib/purchasing";
@@ -27,19 +28,33 @@ export default async function DashboardPage() {
 
   const canSeePurchasing = isAllowedPage(role, "/purchasing");
   const canSeeBayarTagihan = isAllowedPage(role, "/bayar-tagihan");
+  const isSales = role === "sales";
 
-  const [followUpAll, ranking, lowStock, keuangan, activity, kasSekarang, purchasingSummary, bayarTagihanSummary, lowStockSuggestions] =
-    await Promise.all([
-      getFollowUpInvoices(),
-      getSalesRanking(currentPeriod()),
-      getLowStockProducts(3),
-      getKeuanganSummary(thisMonthRange),
-      getActivityLog(50),
-      getCurrentCashBalance(),
-      canSeePurchasing ? getPurchasingSummary() : null,
-      canSeeBayarTagihan ? getBayarTagihanSummary() : null,
-      getLowStockSuggestions(),
-    ]);
+  const [
+    followUpAll,
+    ranking,
+    lowStock,
+    keuangan,
+    activity,
+    kasSekarang,
+    purchasingSummary,
+    bayarTagihanSummary,
+    lowStockSuggestions,
+    mySummary,
+    myDormant,
+  ] = await Promise.all([
+    getFollowUpInvoices(),
+    getSalesRanking(currentPeriod()),
+    getLowStockProducts(3),
+    getKeuanganSummary(thisMonthRange),
+    getActivityLog(50),
+    getCurrentCashBalance(),
+    canSeePurchasing ? getPurchasingSummary() : null,
+    canSeeBayarTagihan ? getBayarTagihanSummary() : null,
+    getLowStockSuggestions(),
+    isSales && session ? getMyCommissionSummary(session.nama, currentPeriod()) : null,
+    isSales && session ? getMyDormantCustomers(session.nama, 3) : [],
+  ]);
   const recentActivityCount = activity.filter((a) => Date.now() - a.tanggal.getTime() < 24 * 60 * 60 * 1000).length;
 
   const draftCount = followUpAll.filter((i) => i.status === "draft").length;
@@ -53,9 +68,47 @@ export default async function DashboardPage() {
 
   const lowStockNilai = lowStockSuggestions.reduce((s, p) => s + p.usulTotal, 0);
 
+  // Sales rep's own numbers, derived from data already fetched above — no
+  // extra queries needed. "Peringkat saya" reuses the same getSalesRanking
+  // call the desktop leaderboard-adjacent stats use.
+  const myUnpaid = followUpAll.filter((i) => i.status === "unpaid" && i.salesNama === session?.nama);
+  const myDraft = followUpAll.filter((i) => i.status === "draft" && i.salesNama === session?.nama);
+  const myRankIndex = ranking.findIndex((r) => r.salesNama === session?.nama);
+
+  // "9a" mobile (Sales-only) — own unpaid invoices (oldest first, "Tagih"),
+  // own drafts ("Lanjut"), own dormant customers ("Hubungi"). No sales-target
+  // progress bar and no "Penawaran"/quote rows — neither concept exists in
+  // the data model yet, skipped per the user's explicit confirmation
+  // 2026-08-26 rather than inventing placeholder data.
+  const salesUrgentRows: { key: string; title: string; subtitle: string; nilai?: number; href: string; urgent: boolean }[] = [
+    ...myUnpaid.slice(0, 3).map((inv) => ({
+      key: `inv-${inv.invoiceId}`,
+      title: `${inv.customerNama} · ${inv.hariBerjalan} hari belum bayar`,
+      subtitle: `${inv.nomor} · komisi ${rupiahCompact(inv.komisiPotensial)}`,
+      nilai: inv.sisaTagihan,
+      href: `/invoice/${inv.invoiceId}`,
+      urgent: true,
+    })),
+    ...myDraft.slice(0, 2).map((inv) => ({
+      key: `draft-${inv.invoiceId}`,
+      title: `Draft ${inv.customerNama}`,
+      subtitle: `${inv.nomor} · belum dikirim`,
+      nilai: inv.grandTotal,
+      href: `/invoice/${inv.invoiceId}/ubah`,
+      urgent: false,
+    })),
+    ...myDormant.slice(0, 2).map((c) => ({
+      key: `dormant-${c._id}`,
+      title: `${c.nama} · sudah ${c.hariSejakOrderTerakhir} hari sepi`,
+      subtitle: `${c.orderCount}x order sebelumnya`,
+      href: `/pelanggan/${c._id}`,
+      urgent: false,
+    })),
+  ].slice(0, 5);
+
   // "7a" mobile — up to 4 urgency rows, worst (red border) first, matching
   // the mockup's category set where the app actually has the data for it.
-  const mobileUrgentRows = [
+  const genericUrgentRows = [
     unpaidCount > 0
       ? {
           key: "invoice",
@@ -97,6 +150,8 @@ export default async function DashboardPage() {
         }
       : null,
   ].filter((r): r is NonNullable<typeof r> => r !== null);
+
+  const mobileUrgentRows = isSales ? salesUrgentRows : genericUrgentRows;
 
   return (
     <>
@@ -144,26 +199,45 @@ export default async function DashboardPage() {
             className="flex min-h-[44px] items-center justify-between gap-3 border-b border-line bg-white px-4 py-4 no-underline"
           >
             <span>
-              <b className="block font-sans text-[0.95rem] tracking-tight text-ink">Terima Pembayaran</b>
-              <span className="mt-0.5 block font-sans text-[0.72rem] text-muted">{unpaidCount} invoice menunggu</span>
+              <b className="block font-sans text-[0.95rem] tracking-tight text-ink">
+                {isSales ? "Invoice Saya" : "Terima Pembayaran"}
+              </b>
+              <span className="mt-0.5 block font-sans text-[0.72rem] text-muted">
+                {isSales ? myUnpaid.length : unpaidCount} invoice menunggu
+              </span>
             </span>
             <NavIcon name="chevron-right" size={20} />
           </Link>
-          <Link
-            href="/keuangan/transaksi"
-            className="flex min-h-[44px] items-center justify-between gap-3 border-b-2 border-ink bg-white px-4 py-4 no-underline"
-          >
-            <span>
-              <b className="block font-sans text-[0.95rem] tracking-tight text-ink">Catat Pengeluaran</b>
-              <span className="mt-0.5 block font-sans text-[0.72rem] text-muted">Kas sekarang {rupiah(kasSekarang)}</span>
-            </span>
-            <NavIcon name="chevron-right" size={20} />
-          </Link>
+          {isSales ? (
+            <Link
+              href="/komisi-saya"
+              className="flex min-h-[44px] items-center justify-between gap-3 border-b-2 border-ink bg-white px-4 py-4 no-underline"
+            >
+              <span>
+                <b className="block font-sans text-[0.95rem] tracking-tight text-ink">Komisi Saya</b>
+                <span className="mt-0.5 block font-sans text-[0.72rem] text-muted">
+                  Berjalan bulan ini {rupiah(mySummary?.totalBerjalan ?? 0)}
+                </span>
+              </span>
+              <NavIcon name="chevron-right" size={20} />
+            </Link>
+          ) : (
+            <Link
+              href="/keuangan/transaksi"
+              className="flex min-h-[44px] items-center justify-between gap-3 border-b-2 border-ink bg-white px-4 py-4 no-underline"
+            >
+              <span>
+                <b className="block font-sans text-[0.95rem] tracking-tight text-ink">Catat Pengeluaran</b>
+                <span className="mt-0.5 block font-sans text-[0.72rem] text-muted">Kas sekarang {rupiah(kasSekarang)}</span>
+              </span>
+              <NavIcon name="chevron-right" size={20} />
+            </Link>
+          )}
         </div>
 
         <div className="flex items-baseline justify-between px-4 pb-2 pt-[18px]">
           <span className="font-sans text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
-            Perlu diurus hari ini
+            {isSales ? "Dikejar hari ini" : "Perlu diurus hari ini"}
           </span>
           <span className="font-sans text-[11px] font-bold text-accent">{mobileUrgentRows.length} hal</span>
         </div>
@@ -180,7 +254,9 @@ export default async function DashboardPage() {
                 <b className="block font-sans text-[0.85rem] text-ink">{row.title}</b>
                 <span className="mt-0.5 block font-sans text-[0.72rem] text-muted">{row.subtitle}</span>
               </span>
-              <b className="whitespace-nowrap font-sans text-[0.82rem] tracking-tight text-ink">{rupiahCompact(row.nilai)}</b>
+              {row.nilai !== undefined && (
+                <b className="whitespace-nowrap font-sans text-[0.82rem] tracking-tight text-ink">{rupiahCompact(row.nilai)}</b>
+              )}
             </Link>
           ))}
           {mobileUrgentRows.length === 0 && (
@@ -190,18 +266,41 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 border-t border-line bg-white">
-          <div className="border-r border-line px-4 py-3.5">
-            <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">Kas sekarang</div>
-            <div className="mt-1 font-sans text-[1.15rem] font-extrabold tracking-tight">{rupiahCompact(kasSekarang)}</div>
-          </div>
-          <div className="px-4 py-3.5">
-            <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">
-              Penjualan {MONTH_NAMES[nowJakarta.month - 1]}
+        {isSales ? (
+          <div className="grid grid-cols-3 border-t border-line bg-white">
+            <div className="border-r border-line px-3 py-3.5">
+              <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">Komisi</div>
+              <div className="mt-1 font-sans text-[1.05rem] font-extrabold tracking-tight">
+                {rupiahCompact(mySummary?.totalBerjalan ?? 0)}
+              </div>
             </div>
-            <div className="mt-1 font-sans text-[1.15rem] font-extrabold tracking-tight">{rupiahCompact(penjualanBulanIni)}</div>
+            <div className="border-r border-line px-3 py-3.5">
+              <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">Order jalan</div>
+              <div className="mt-1 font-sans text-[1.05rem] font-extrabold tracking-tight">
+                {myUnpaid.length + myDraft.length}
+              </div>
+            </div>
+            <div className="px-3 py-3.5">
+              <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">Peringkat</div>
+              <div className="mt-1 font-sans text-[1.05rem] font-extrabold tracking-tight">
+                {myRankIndex >= 0 ? `#${myRankIndex + 1} dari ${ranking.length}` : "—"}
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-2 border-t border-line bg-white">
+            <div className="border-r border-line px-4 py-3.5">
+              <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">Kas sekarang</div>
+              <div className="mt-1 font-sans text-[1.15rem] font-extrabold tracking-tight">{rupiahCompact(kasSekarang)}</div>
+            </div>
+            <div className="px-4 py-3.5">
+              <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">
+                Penjualan {MONTH_NAMES[nowJakarta.month - 1]}
+              </div>
+              <div className="mt-1 font-sans text-[1.15rem] font-extrabold tracking-tight">{rupiahCompact(penjualanBulanIni)}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ───────── Desktop ───────── */}

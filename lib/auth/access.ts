@@ -86,9 +86,21 @@ export function isInsentifAllowed(role: UserRole | undefined | null): boolean {
   return !!role && INSENTIF_ALLOWED_ROLES.includes(role);
 }
 
+// "Komisi Saya" (2026-08-26) — a Sales rep's own commission summary, distinct
+// from the full multi-sales leaderboard at /insentif (Owner+Super Admin
+// only). Restricted to role "sales" specifically, not just "not admin" —
+// admin-level accounts aren't Sales reps, so there's no "own data" for them
+// to see here; same override-before-admin-bypass pattern as isInsentifAllowed.
+export function isKomisiSayaAllowed(role: UserRole | undefined | null): boolean {
+  return role === "sales";
+}
+
 export function isAllowedPage(role: UserRole, pathname: string): boolean {
   if (pathname === "/insentif" || pathname.startsWith("/insentif/")) {
     return isInsentifAllowed(role);
+  }
+  if (pathname === "/komisi-saya" || pathname.startsWith("/komisi-saya/")) {
+    return isKomisiSayaAllowed(role);
   }
   if (role === "manager") {
     return !MANAGER_BLOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));

@@ -158,3 +158,45 @@ export async function getPelangganSummary(): Promise<PelangganSummary> {
     kotaTerbesar,
   };
 }
+
+export interface MyDormantCustomer {
+  _id: string;
+  nama: string;
+  hariSejakOrderTerakhir: number;
+  orderCount: number;
+}
+
+/**
+ * Customers this specific sales rep has personally sold to before who've
+ * gone quiet (same >60-day/2+-order "jarang pesan" threshold as the app-wide
+ * summary above) — powers the "SEPI · Hubungi" rows on the Sales mobile
+ * homepage ("9a" mockup, 2026-08-26). Customer has no persisted
+ * assigned-sales field, so "served by this sales rep" is derived from
+ * whether any of their invoices carry this sales's nama.
+ */
+export async function getMyDormantCustomers(salesNama: string, limit = 5): Promise<MyDormantCustomer[]> {
+  await dbConnect();
+  const myInvoices = await Invoice.find({ "sales.nama": salesNama, "customer.ref": { $ne: null } }).lean();
+
+  const byCustomer = new Map<string, typeof myInvoices>();
+  for (const inv of myInvoices) {
+    const key = String(inv.customer?.ref);
+    const list = byCustomer.get(key) ?? [];
+    list.push(inv);
+    byCustomer.set(key, list);
+  }
+
+  const now = Date.now();
+  const rows: MyDormantCustomer[] = [];
+  for (const [custId, invs] of byCustomer) {
+    const paid = invs.filter((i) => i.status === "paid");
+    if (paid.length < 2) continue;
+    const lastDate = Math.max(...invs.map((i) => new Date(i.tanggalInvoice ?? i.createdAt).getTime()));
+    const hari = Math.floor((now - lastDate) / 86_400_000);
+    if (hari <= JARANG_PESAN_HARI) continue;
+    const nama = invs[0].customer?.nama || "—";
+    rows.push({ _id: custId, nama, hariSejakOrderTerakhir: hari, orderCount: paid.length });
+  }
+
+  return rows.sort((a, b) => b.hariSejakOrderTerakhir - a.hariSejakOrderTerakhir).slice(0, limit);
+}

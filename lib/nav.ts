@@ -37,6 +37,10 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/pelanggan", label: "Pelanggan", icon: "users" },
       // Moved from "Uang" into "Jualan" per the user's request 2026-08-23.
       { href: "/insentif", label: "Leaderboard Sales", icon: "trophy" },
+      // Sales-only own-commission view (2026-08-26) — isAllowedPage gates
+      // this to role "sales" specifically (see isKomisiSayaAllowed), so it
+      // never shows up for anyone else even though they see this same group.
+      { href: "/komisi-saya", label: "Komisi Saya", icon: "trophy" },
     ],
   },
   {
