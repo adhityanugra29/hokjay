@@ -15,8 +15,33 @@ import { slugify } from "@/lib/format";
 export const runtime = "nodejs";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB — the ORIGINAL upload; compressed output is much smaller.
 const ALLOWED_FOLDERS = ["products", "payments", "kwitansi", "komisi", "rab", "purchasing", "payroll"];
+
+// Every uploaded photo gets resized/recompressed before it ever reaches Blob
+// storage — per the user's report 2026-08-26 that photos were slow to load.
+// Phone cameras routinely produce 3000-4000px, multi-MB JPEGs that then get
+// displayed as a Katalog card (~240px) or an invoice thumbnail; nothing here
+// was shrinking that down before this change, so every view downloaded the
+// full original. 1600px is generous headroom for the largest place a photo
+// actually renders (Katalog PDF pages, ~794px-wide container) while still
+// keeping receipt/kwitansi text legible.
+const MAX_DIMENSION = 1600;
+const JPEG_QUALITY = 80;
+const WEBP_QUALITY = 80;
+
+/** Resize (never upscale) + recompress. `.rotate()` with no args applies the
+ * EXIF orientation tag before sharp strips metadata on output — otherwise a
+ * portrait phone photo can come out sideways once EXIF is gone. */
+async function compressImage(buffer: Buffer, mimeType: string): Promise<Buffer> {
+  const resized = sharp(buffer)
+    .rotate()
+    .resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: "inside", withoutEnlargement: true });
+
+  if (mimeType === "image/png") return resized.png({ compressionLevel: 9 }).toBuffer();
+  if (mimeType === "image/webp") return resized.webp({ quality: WEBP_QUALITY }).toBuffer();
+  return resized.jpeg({ quality: JPEG_QUALITY, mozjpeg: true }).toBuffer();
+}
 
 // Product photos only (not payment proofs/receipts/etc.) get a small
 // bottom-right watermark on upload — per the user's request 2026-08-25.
@@ -28,10 +53,11 @@ const ALLOWED_FOLDERS = ["products", "payments", "kwitansi", "komisi", "rab", "p
 const WATERMARK_PATH = path.join(process.cwd(), "public/logo/hojay-2b-positif.png");
 let watermarkBuffer: Buffer | null = null;
 
-async function watermarkImage(buffer: Buffer, mimeType: string): Promise<Buffer> {
+/** Takes an already-compressed buffer (see compressImage above) and stamps the watermark on top of it. */
+async function watermarkImage(compressed: Buffer, mimeType: string): Promise<Buffer> {
   if (!watermarkBuffer) watermarkBuffer = await fs.readFile(WATERMARK_PATH);
 
-  const base = sharp(buffer);
+  const base = sharp(compressed);
   const meta = await base.metadata();
   const baseWidth = meta.width ?? 1200;
   const baseHeight = meta.height ?? 1200;
@@ -50,11 +76,12 @@ async function watermarkImage(buffer: Buffer, mimeType: string): Promise<Buffer>
   let composited = base.composite([
     { input: wm, left: Math.max(0, baseWidth - wmWidth - margin), top: Math.max(0, baseHeight - wmHeight - margin) },
   ]);
-  // Quality bumped 90 -> 96: the composite gets re-encoded as JPEG here
-  // (one recompression pass on top of whatever the original upload already
-  // was), and the watermark's fine text/edges showed that pass the most.
   composited =
-    mimeType === "image/png" ? composited.png() : mimeType === "image/webp" ? composited.webp() : composited.jpeg({ quality: 96 });
+    mimeType === "image/png"
+      ? composited.png({ compressionLevel: 9 })
+      : mimeType === "image/webp"
+        ? composited.webp({ quality: WEBP_QUALITY })
+        : composited.jpeg({ quality: JPEG_QUALITY, mozjpeg: true });
   return composited.toBuffer();
 }
 
@@ -82,8 +109,11 @@ export async function POST(req: Request) {
 
   try {
     let body: File | Buffer = file;
-    if (folder === "products" && file.type !== "application/pdf") {
-      body = await watermarkImage(Buffer.from(await file.arrayBuffer()), file.type);
+    if (file.type !== "application/pdf") {
+      body = await compressImage(Buffer.from(await file.arrayBuffer()), file.type);
+      if (folder === "products") {
+        body = await watermarkImage(body, file.type);
+      }
     }
     const blob = await put(pathname, body, {
       access: "public",

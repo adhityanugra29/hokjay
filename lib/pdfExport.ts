@@ -1,5 +1,19 @@
 "use client";
 
+// Shared html2pdf.js render settings — every PDF export in this app (this
+// file, KatalogClient's Katalog PDF, DownloadReportButton's Akuntansi
+// reports) should use the same two knobs so file size stays predictable
+// everywhere. Lowered from quality 0.98 / scale 2 per the user's report
+// 2026-08-26 that downloaded PDFs were slow to load — 0.98 is near-lossless
+// JPEG (barely smaller than the source render) and scale 2 rasterizes at
+// 2x pixel density; together they produced multi-page catalogs several MB
+// in size. 0.85 quality is still visually clean for product photos and
+// document text, and scale 1.5 is still sharper than a 100% render while
+// cutting the pixel count (and therefore file size) by more than half
+// versus scale 2 ((1.5/2)^2 ≈ 56%).
+export const PDF_JPEG_QUALITY = 0.85;
+export const PDF_RENDER_SCALE = 1.5;
+
 /**
  * Builds an off-screen container, fills it with the given HTML, captures it
  * with html2pdf.js, and triggers a direct download — then cleans up. Used
@@ -38,8 +52,8 @@ export async function downloadReportPdf(opts: {
       .set({
         margin: 10,
         filename: opts.filename,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        image: { type: "jpeg", quality: PDF_JPEG_QUALITY },
+        html2canvas: { scale: PDF_RENDER_SCALE, useCORS: true },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       })
       .from(container)

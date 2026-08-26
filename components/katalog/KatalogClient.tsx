@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
+import { PDF_JPEG_QUALITY, PDF_RENDER_SCALE } from "@/lib/pdfExport";
 
 export default function KatalogClient({
   products,
@@ -91,14 +92,14 @@ export default function KatalogClient({
           // width and crop the right edge instead of shrinking to fit.
           margin: 0,
           filename: `Katalog-CV-HORECA-JAYA_${tanggal}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
+          image: { type: "jpeg", quality: PDF_JPEG_QUALITY },
           // scrollY/scrollX: html2canvas otherwise captures from the
           // *current* window scroll position — since the button that
           // triggers this sits far down the page (after browsing/picking
           // products), whatever the user had scrolled to leaked into the
           // capture and pushed the real content off the first page,
           // leaving it blank. Per the user's report 2026-08-25.
-          html2canvas: { scale: 2, useCORS: true, scrollY: -window.scrollY, scrollX: 0 },
+          html2canvas: { scale: PDF_RENDER_SCALE, useCORS: true, scrollY: -window.scrollY, scrollX: 0 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
           // Explicitly drop html2pdf's default "avoid-all" pagebreak mode —
           // it auto-avoids splitting ANY element that doesn't fit the
