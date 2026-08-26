@@ -123,6 +123,12 @@ export default async function MenuPage() {
         </div>
 
         <div className="mt-auto border-t border-white/20">
+          <Link
+            href="/akun-saya"
+            className="flex min-h-[44px] items-center justify-start border-b border-white/15 px-4 py-3.5 font-sans text-[0.85rem] font-semibold text-white no-underline"
+          >
+            Ganti Password
+          </Link>
           <LogoutButton className="flex w-full min-h-[44px] items-center justify-start px-4 py-3.5 font-sans text-[0.85rem] font-bold text-accent">
             Keluar
           </LogoutButton>

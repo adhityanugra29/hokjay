@@ -107,7 +107,9 @@ export function isAllowedPage(role: UserRole, pathname: string): boolean {
   }
   if (isAdminLevel(role)) return true;
   // Dashboard-adjacent content, viewable by every role just like "/" itself.
-  if (pathname === "/" || pathname === "/follow-up" || pathname === "/aktivitas") return true;
+  // "/akun-saya" (2026-08-26) — self-service password change, same as
+  // everyone gets a "Keluar" button regardless of role.
+  if (pathname === "/" || pathname === "/follow-up" || pathname === "/aktivitas" || pathname === "/akun-saya") return true;
   const prefixes = ROLE_PREFIXES[role] ?? [];
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }

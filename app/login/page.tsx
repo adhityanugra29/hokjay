@@ -6,9 +6,11 @@ import { Field, FormActions, Input } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 import { Panel } from "@/components/ui/Panel";
 import Logo from "@/components/layout/Logo";
+import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
+  const { show, hide } = useLoadingOverlay();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -18,6 +20,14 @@ export default function LoginPage() {
     e.preventDefault();
     setSaving(true);
     setError(null);
+    // Shown immediately on submit rather than waiting for the fetch patch's
+    // 2s auto-threshold (LoadingOverlay.tsx) — login is exactly the moment
+    // someone's staring at the screen wondering if their click registered.
+    // Left showing on success (no hide() call) since the page unloads
+    // straight into a hard navigation — see the window.location.href note
+    // below — so the overlay stays up through that redirect instead of
+    // flickering off right before the new page starts loading.
+    show();
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -36,8 +46,8 @@ export default function LoginPage() {
       const next = searchParams.get("next") || "/";
       window.location.href = next;
     } catch (err) {
+      hide();
       setError(err instanceof Error ? err.message : "Gagal login");
-    } finally {
       setSaving(false);
     }
   }

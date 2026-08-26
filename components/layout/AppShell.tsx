@@ -120,10 +120,10 @@ export default function AppShell({
 
           <div className="mt-auto border-t border-white/20 px-5 py-[14px] text-[11px] leading-relaxed text-white/55">
             <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="text-[12px] font-medium text-white/85">{user.nama}</div>
+              <Link href="/akun-saya" className="min-w-0 no-underline hover:opacity-80">
+                <div className="truncate text-[12px] font-medium text-white/85">{user.nama}</div>
                 <div className="text-[10.5px] text-white/45">{ROLE_LABEL[user.role]}</div>
-              </div>
+              </Link>
               <LogoutButton className="cursor-pointer border border-white/25 px-2.5 py-1.5 text-[10px] font-semibold text-white/80 hover:border-accent hover:text-white">
                 Keluar
               </LogoutButton>
