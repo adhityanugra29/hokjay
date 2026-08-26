@@ -37,7 +37,7 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
   return (
     <Panel>
       <PanelHead title="Riwayat stok masuk & keluar">
-        <form>
+        <form className="w-full sm:w-auto">
           <SearchInput name="search" defaultValue={search as string} placeholder="Cari produk..." />
         </form>
       </PanelHead>

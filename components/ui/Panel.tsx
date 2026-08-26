@@ -30,10 +30,16 @@ export function PanelHead({
 }
 
 export function SearchInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  // Full width below sm, capped at 220px from sm up — per the user's
+  // request 2026-08-26 ("responsif dengan tabelnya"): the fixed 220px was
+  // cramped/undersized relative to the full-width table/card list it sits
+  // above on a phone screen. The wrapping <form> at each call site also
+  // needs w-full sm:w-auto for this to actually stretch (a bare <form> has
+  // no width of its own to fill).
   return (
     <input
       {...props}
-      className="w-[220px] rounded border border-line bg-surface px-3 py-2 font-sans text-[0.78rem] text-ink"
+      className="w-full rounded border border-line bg-surface px-3 py-2 font-sans text-[0.78rem] text-ink sm:w-[220px]"
     />
   );
 }

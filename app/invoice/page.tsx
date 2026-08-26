@@ -76,7 +76,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
             </div>
             <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{paidThisMonth.length}</div>
           </div>
-          <form className="ml-auto flex items-center px-4 py-3.5">
+          <form className="flex w-full items-center px-4 py-3.5 sm:ml-auto sm:w-auto">
             <SearchInput name="search" defaultValue={search as string} placeholder="Cari no. invoice atau pelanggan..." />
           </form>
         </div>

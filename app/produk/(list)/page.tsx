@@ -66,7 +66,7 @@ export default async function ProdukListPage({
   return (
     <Panel>
       <PanelHead title="Semua Produk">
-        <form>
+        <form className="w-full sm:w-auto">
           <SearchInput name="search" defaultValue={search as string} placeholder="Cari produk atau SKU..." />
         </form>
       </PanelHead>
