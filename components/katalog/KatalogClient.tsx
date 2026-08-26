@@ -92,57 +92,51 @@ export default function KatalogClient({
         )
       );
 
-      const { default: html2pdf } = await import("html2pdf.js");
+      // Per-page capture (2026-08-26) — replaces html2pdf.js's single-shot
+      // "capture the whole document, then slice it into pages" approach.
+      // That slicing turned out to be unreliable to pin exactly on our own
+      // page boundaries (repeated reports of a repeated category heading
+      // bleeding across a page boundary, no matter how much buffer space
+      // got added around the marker). CatalogPrintDoc.tsx now renders each
+      // page as its own fixed-size `[data-print-page]` div; each one is
+      // captured here as its own independent canvas and added as its own
+      // jsPDF page directly — there's no shared canvas to slice, so nothing
+      // can bleed from one page's capture into another's.
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
+      const pageEls = Array.from(element.querySelectorAll<HTMLElement>("[data-print-page]"));
+      if (pageEls.length === 0) {
+        alert("Tidak ada halaman untuk diunduh.");
+        return;
+      }
+
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pageWidthMM = pdf.internal.pageSize.getWidth();
+      const pageHeightMM = pdf.internal.pageSize.getHeight();
+
+      for (let i = 0; i < pageEls.length; i++) {
+        // scrollY/scrollX: html2canvas otherwise captures from the
+        // *current* window scroll position — since the button that
+        // triggers this sits far down the page (after browsing/picking
+        // products), whatever the user had scrolled to leaked into the
+        // capture. Per the user's report 2026-08-25.
+        const canvas = await html2canvas(pageEls[i], {
+          scale: KATALOG_PDF_RENDER_SCALE,
+          useCORS: true,
+          scrollY: -window.scrollY,
+          scrollX: 0,
+        });
+        const imgData = canvas.toDataURL("image/jpeg", KATALOG_PDF_JPEG_QUALITY);
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMM, pageHeightMM);
+      }
+
       const today = new Date();
       const tanggal = [
         String(today.getDate()).padStart(2, "0"),
         String(today.getMonth() + 1).padStart(2, "0"),
         today.getFullYear(),
       ].join("-");
-
-      await html2pdf()
-        .set({
-          // No extra page margin here — the container is already sized to
-          // A4 width (794px ≈ 210mm @ 96dpi) with its own inner padding, so
-          // an additional html2pdf margin would push it past the printable
-          // width and crop the right edge instead of shrinking to fit.
-          margin: 0,
-          filename: `Katalog-CV-HORECA-JAYA_${tanggal}.pdf`,
-          image: { type: "jpeg", quality: KATALOG_PDF_JPEG_QUALITY },
-          // scrollY/scrollX: html2canvas otherwise captures from the
-          // *current* window scroll position — since the button that
-          // triggers this sits far down the page (after browsing/picking
-          // products), whatever the user had scrolled to leaked into the
-          // capture and pushed the real content off the first page,
-          // leaving it blank. Per the user's report 2026-08-25.
-          html2canvas: { scale: KATALOG_PDF_RENDER_SCALE, useCORS: true, scrollY: -window.scrollY, scrollX: 0 },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          // Explicitly drop html2pdf's default "avoid-all" pagebreak mode —
-          // it auto-avoids splitting ANY element that doesn't fit the
-          // remaining space on the current page, which for the short cover
-          // section meant the first product category (taller than what's
-          // left of page 1) got pushed whole onto page 2, leaving page 1
-          // mostly blank underneath the cover. "css" respects both the
-          // explicit .html2pdf__page-break markers (one per chunk boundary,
-          // computed by packIntoPages in CatalogPrintDoc.tsx) and the
-          // break-inside-avoid classes on category/product/CTA blocks.
-          // "legacy" mode intentionally dropped (2026-08-26, after the user
-          // reported blank pages persisting even with adaptive per-page
-          // packing) — it does its OWN independent pixel-position page
-          // slicing on top of "css", blind to our explicit markers and to
-          // page 1 being a different height than the rest (it loses
-          // coverHeight up front). Any rounding drift between that blind
-          // slicing and our DOM-aware breaks could reintroduce a stray
-          // near-empty page on longer catalogs; "css" alone breaks only
-          // where we explicitly tell it to.
-          pagebreak: { mode: ["css"] },
-          // "as any": the bundled html2pdf.js type declaration (type.d.ts)
-          // doesn't know about "pagebreak" even though the library supports
-          // it at runtime — narrower than casting the whole call.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
-        .from(element)
-        .save();
+      pdf.save(`Katalog-CV-HORECA-JAYA_${tanggal}.pdf`);
     } catch (err) {
       // html2pdf/html2canvas failures otherwise vanish as an unhandled
       // rejection — no visible feedback beyond the button re-enabling —
