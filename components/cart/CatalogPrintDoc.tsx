@@ -35,10 +35,10 @@ const YELLOW = "#FFC800";
 // One A4 page's content height in CSS px at this document's own scale: the
 // container is 794px wide (≈210mm at 96dpi, matching html2pdf's jsPDF a4
 // portrait output), so 297mm of page height maps to 297 * (794/210) ≈ 1123px
-// here. Used to pin the footer band to the true bottom edge of every page
-// instead of wherever the content happens to end — per the user's report
-// 2026-08-25 that the footer's placement looked "static"/floating rather
-// than flush with the page bottom.
+// here. Used as the per-page height budget packIntoPages packs products
+// against (see below) — not to force every page's rendered height to this
+// exact number (that was tried and dropped, see the products section's own
+// comment further down).
 const PAGE_HEIGHT_PX = Math.round((297 * 794) / 210);
 
 /**
@@ -54,26 +54,25 @@ function salesContactLine(ownSales: CatalogSales | undefined): string {
 
 // ── Adaptive per-page product count (2026-08-26) ──────────────────────────
 // Replaces the old fixed "exactly 3 products per page" chunker. Root cause
-// of the blank/near-empty pages the user reported: the cover's real height
-// is dynamic (grows with how many categories get listed in "Daftar Isi
-// Katalog"), but the old chunker packed exactly 3 products onto page 1
-// regardless of how much room the cover left — when the cover happened to
-// be tall, page 1's true content (cover + 3 products + footer) quietly
-// exceeded one physical page, and html2pdf's own overflow handling silently
-// inserted an extra page for the spillover, which read as "kosong" since it
-// usually held just one leftover product. Packing against a real height
-// budget instead means a page always gets as many products as safely fit —
-// typically ~2 on page 1 (cover eats the most room) and ~4 on later pages,
-// automatically dropping to 3 if a page happens to pick up more than one
-// category header. All five *_PX constants below are deliberately
-// safety-padded above their measured/estimated real footprint (never
-// trimmed to the minimum) so packing stays conservative — underfilling a
-// page by a few px of blank space is fine, overflowing into a phantom page
-// is the actual bug being fixed.
-const FOOTER_HEIGHT_PX = 160;
+// of the original blank/near-empty pages: the cover's real height is
+// dynamic (grows with how many categories get listed in "Daftar Isi
+// Katalog"), but the old chunker packed a fixed count onto every page
+// regardless of how much room the cover left. Packing against a real height
+// budget instead means a page always gets as many products as safely fit.
+//
+// The four *_PX constants below were first written as deliberately
+// over-padded guesses, which (per the user's report against a real
+// rendered PDF) left ~300px of dead space above the footer on page 1 —
+// only 1 product fit a page that visibly had room for 2. Recalibrated here
+// against that actual render (image height ≈ page height; footer/category/
+// product-row proportions measured directly off it) instead of guessing,
+// with only a small margin on top — tight enough to stop wasting a whole
+// product's worth of blank space, still enough margin to absorb a
+// two-line product name.
+const FOOTER_HEIGHT_PX = 130;
 const PRODUCTS_CONTAINER_VPAD_PX = 64; // px-12 py-8 on the products wrapper — py-8 = 32px top + 32px bottom, exact (not an estimate).
-const CATEGORY_HEADER_PX = 70;
-const PRODUCT_ROW_PX = 225;
+const CATEGORY_HEADER_PX = 90;
+const PRODUCT_ROW_PX = 200;
 // Used only for the handful of renders before coverRef's real height lands
 // (see coverHeight state below) — generous on purpose so a transient
 // under-measurement never lets page 1 overpack before the real number
@@ -86,6 +85,12 @@ const DEFAULT_COVER_HEIGHT_PX = 450;
  * up front, every page loses the footer + container padding). Always places
  * at least one item per page even if it alone exceeds the remaining budget,
  * so an unusually tall single product/category can't stall the packer.
+ *
+ * Every page's FIRST item always gets billed CATEGORY_HEADER_PX, whether or
+ * not it's a genuine new-category start — a category that spans more than
+ * one page repeats its heading at the top of each continuation page (see
+ * the categoryLabel back-fill after this call), so that heading's height
+ * always needs budgeting for, not just at true category boundaries.
  */
 function packIntoPages(flat: PrintUnit[], coverHeight: number): PrintUnit[][] {
   const pages: PrintUnit[][] = [];
@@ -96,7 +101,8 @@ function packIntoPages(flat: PrintUnit[], coverHeight: number): PrintUnit[][] {
     const page: PrintUnit[] = [];
     let used = 0;
     while (i < flat.length) {
-      const cost = PRODUCT_ROW_PX + (flat[i].categoryLabel ? CATEGORY_HEADER_PX : 0);
+      const isPageStart = page.length === 0;
+      const cost = PRODUCT_ROW_PX + (flat[i].categoryLabel || isPageStart ? CATEGORY_HEADER_PX : 0);
       if (page.length > 0 && used + cost > budget) break;
       used += cost;
       page.push(flat[i]);
@@ -181,11 +187,10 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
     .map((cat) => ({ cat, items: selectedProducts.filter((p) => p.category === cat) }))
     .filter((g) => g.items.length > 0);
 
-  // Measures the cover+stats block's real rendered height so page 1's
-  // product chunk can be given exactly (PAGE_HEIGHT_PX - coverHeight) of
-  // room — pages 2+ start fresh right after a forced page-break, so they
-  // just get the full PAGE_HEIGHT_PX. See the flex-col + mt-auto footer
-  // wrapper below.
+  // Measures the cover+stats block's real rendered height so packIntoPages
+  // can give page 1's product budget exactly (PAGE_HEIGHT_PX - coverHeight)
+  // of room — pages 2+ have no cover eating into their budget, so they just
+  // get the full PAGE_HEIGHT_PX.
   //
   // Depends on byCategory.length, not just [loaded] (2026-08-26 fix) — the
   // cover's "Daftar Isi Katalog" list grows/shrinks with how many
@@ -244,7 +249,15 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
   const flat: PrintUnit[] = byCategory.flatMap((group) =>
     group.items.map((product, i) => ({ product, categoryLabel: i === 0 ? group.cat : undefined }))
   );
-  const chunks: PrintUnit[][] = packIntoPages(flat, coverHeight ?? DEFAULT_COVER_HEIGHT_PX);
+  // Back-fill a repeated category heading onto every page's first product
+  // when it's a mid-category continuation (packIntoPages already budgeted
+  // CATEGORY_HEADER_PX for this) — per the user's request 2026-08-26, so a
+  // category that spans several pages (e.g. "Working Table" across pages
+  // 2-4) still shows its name at the top of every one of those pages, not
+  // only the first.
+  const chunks: PrintUnit[][] = packIntoPages(flat, coverHeight ?? DEFAULT_COVER_HEIGHT_PX).map((page) =>
+    page.map((unit, i) => (i === 0 && !unit.categoryLabel ? { ...unit, categoryLabel: unit.product.category } : unit))
+  );
 
   const today = new Date();
   const periodLabel = today.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
@@ -314,23 +327,26 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
         </div>
 
         {/* Products — packed per page by remaining height (packIntoPages),
-            not a fixed count. Each chunk after the first starts
-            on a fresh page (html2pdf__page-break marker); each individual
-            product row stays break-inside-avoid so it's never cut in half.
-            Each page is a flex column pinned to a real A4 page's height
-            (PAGE_HEIGHT_PX, minus the cover's own height on page 1 only),
-            with the footer band pushed to the very bottom via mt-auto —
-            instead of the footer sitting wherever the 3 products happened
-            to end. Per the user's report 2026-08-25 that the footer's
-            placement looked static/floating rather than flush with the
-            page bottom. */}
+            not a fixed count. Each chunk after the first starts on a fresh
+            page (html2pdf__page-break marker); each individual product row
+            stays break-inside-avoid so it's never cut in half.
+            No forced min-height/flush-bottom footer here anymore (dropped
+            2026-08-26) — a page that got fewer products than the true page
+            height budgeted for now just ends after its last product plus
+            the footer's own natural margin, instead of being stretched to
+            exactly PAGE_HEIGHT_PX. That stretching was meant to keep the
+            footer pinned flush to the physical page bottom, but forcing
+            EVERY page to precisely PAGE_HEIGHT_PX (a CSS-px estimate) left
+            no room for the small per-page rounding that inevitably happens
+            once html2canvas/jsPDF re-measure the actual rendered canvas —
+            enough accumulated drift across several pages to occasionally
+            spill a sliver of content onto a genuinely blank extra page.
+            Letting each page be exactly as tall as its real content is
+            immune to that: no page can ever round up past a physical page
+            boundary it wasn't already safely under. */}
         {chunks.map((chunk, ci) => (
           <Fragment key={ci}>
             {ci > 0 && <div className="html2pdf__page-break" />}
-            <div
-              className="flex flex-col"
-              style={{ minHeight: PAGE_HEIGHT_PX - (ci === 0 ? (coverHeight ?? 0) : 0) }}
-            >
             <div className="px-12 py-8">
               {chunk.map(({ product: p, categoryLabel }) => (
                 <Fragment key={p._id}>
@@ -364,10 +380,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                 </Fragment>
               ))}
             </div>
-            <div className="mt-auto">
-              <ClosingFooter sales={sales} ownSales={ownSales} />
-            </div>
-            </div>
+            <ClosingFooter sales={sales} ownSales={ownSales} />
           </Fragment>
         ))}
         {chunks.length === 0 && <ClosingFooter sales={sales} ownSales={ownSales} />}

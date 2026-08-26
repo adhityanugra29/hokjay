@@ -6,12 +6,16 @@ import ProductCard, { type KatalogProduct } from "./ProductCard";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 
 // Katalog PDF is the heaviest export in the app (photo-dense, often many
-// pages) — a bit more aggressive than the shared PDF_JPEG_QUALITY/
-// PDF_RENDER_SCALE used by the mostly-text Akuntansi reports (lib/pdfExport
-// .ts). Per the user's request 2026-08-26. Still comfortably above the point
-// where product photos or price text start looking soft.
-const KATALOG_PDF_JPEG_QUALITY = 0.78;
-const KATALOG_PDF_RENDER_SCALE = 1.35;
+// pages). RENDER_SCALE was first dropped to 1.35 to shrink file size, but
+// per the user's direct report against a real downloaded PDF ("tulisan
+// jangan blur") that was too aggressive — html2canvas rasterizes text the
+// same as everything else, so a lower scale means fewer literal pixels per
+// character, not just a smaller file. Restored to 2 (the original,
+// known-crisp value) for legibility; JPEG_QUALITY stays the main
+// size lever instead, plus the adaptive packing above now fitting more
+// products per page (fewer total pages) does most of the file-size work.
+const KATALOG_PDF_JPEG_QUALITY = 0.82;
+const KATALOG_PDF_RENDER_SCALE = 2;
 
 export default function KatalogClient({
   products,
