@@ -70,10 +70,10 @@ function salesContactLine(ownSales: CatalogSales | undefined): string {
 // trimmed to the minimum) so packing stays conservative — underfilling a
 // page by a few px of blank space is fine, overflowing into a phantom page
 // is the actual bug being fixed.
-const FOOTER_HEIGHT_PX = 150;
+const FOOTER_HEIGHT_PX = 160;
 const PRODUCTS_CONTAINER_VPAD_PX = 64; // px-12 py-8 on the products wrapper — py-8 = 32px top + 32px bottom, exact (not an estimate).
-const CATEGORY_HEADER_PX = 64;
-const PRODUCT_ROW_PX = 215;
+const CATEGORY_HEADER_PX = 70;
+const PRODUCT_ROW_PX = 225;
 // Used only for the handful of renders before coverRef's real height lands
 // (see coverHeight state below) — generous on purpose so a transient
 // under-measurement never lets page 1 overpack before the real number
@@ -173,16 +173,36 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
   const [loaded, setLoaded] = useState(false);
   const { selected, getEffectivePrice } = useCatalogSelection();
 
+  // selectedProducts/byCategory computed up here (not further down where
+  // they used to live) specifically so the coverHeight effect right below
+  // can depend on byCategory.length — see that effect's comment.
+  const selectedProducts = products.filter((p) => selected.has(p._id));
+  const byCategory = categories
+    .map((cat) => ({ cat, items: selectedProducts.filter((p) => p.category === cat) }))
+    .filter((g) => g.items.length > 0);
+
   // Measures the cover+stats block's real rendered height so page 1's
   // product chunk can be given exactly (PAGE_HEIGHT_PX - coverHeight) of
   // room — pages 2+ start fresh right after a forced page-break, so they
   // just get the full PAGE_HEIGHT_PX. See the flex-col + mt-auto footer
   // wrapper below.
+  //
+  // Depends on byCategory.length, not just [loaded] (2026-08-26 fix) — the
+  // cover's "Daftar Isi Katalog" list grows/shrinks with how many
+  // categories the user has picked on /katalog, so its real height changes
+  // every time the selection changes, not just once at initial data load.
+  // With only [loaded], this effect fired exactly once — while selected was
+  // still empty (nothing picked yet) — captured a short "no categories
+  // listed yet" cover height, and never re-measured after the user actually
+  // picked products and the cover grew taller. packIntoPages then kept
+  // budgeting page 1 against that stale, too-short cover height, silently
+  // overpacking it — the actual root cause of the recurring blank/near-empty
+  // pages, more products picked (more categories listed) making it worse.
   const coverRef = useRef<HTMLDivElement>(null);
   const [coverHeight, setCoverHeight] = useState<number | null>(null);
   useEffect(() => {
     if (coverRef.current) setCoverHeight(coverRef.current.offsetHeight);
-  }, [loaded]);
+  }, [loaded, byCategory.length]);
 
   // When a sales rep is logged in and generates their own catalog, the
   // "Pemesanan" section shows their own name + WA number (matched by nama
@@ -215,17 +235,12 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
       .finally(() => setLoaded(true));
   }, []);
 
-  const selectedProducts = products.filter((p) => selected.has(p._id));
-  const byCategory = categories
-    .map((cat) => ({ cat, items: selectedProducts.filter((p) => p.category === cat) }))
-    .filter((g) => g.items.length > 0);
-
   // Flatten category groups into one ordered list (category header still
   // marked on each group's first item), then pack into pages by real
   // remaining height instead of a fixed count — see packIntoPages above.
-  // A hard page-break is inserted between chunks (html2pdf's "legacy"
-  // pagebreak mode, enabled in KatalogClient, breaks at any element
-  // carrying the html2pdf__page-break class).
+  // A hard page-break is inserted between chunks ("css" pagebreak mode,
+  // enabled in KatalogClient, breaks at any element carrying the
+  // html2pdf__page-break class).
   const flat: PrintUnit[] = byCategory.flatMap((group) =>
     group.items.map((product, i) => ({ product, categoryLabel: i === 0 ? group.cat : undefined }))
   );

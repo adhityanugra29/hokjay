@@ -113,10 +113,20 @@ export default function KatalogClient({
           // remaining space on the current page, which for the short cover
           // section meant the first product category (taller than what's
           // left of page 1) got pushed whole onto page 2, leaving page 1
-          // mostly blank underneath the cover. "css" still respects the
-          // break-inside-avoid classes already used deliberately on
-          // category/product/CTA blocks. Per the user's report 2026-08-25.
-          pagebreak: { mode: ["css", "legacy"] },
+          // mostly blank underneath the cover. "css" respects both the
+          // explicit .html2pdf__page-break markers (one per chunk boundary,
+          // computed by packIntoPages in CatalogPrintDoc.tsx) and the
+          // break-inside-avoid classes on category/product/CTA blocks.
+          // "legacy" mode intentionally dropped (2026-08-26, after the user
+          // reported blank pages persisting even with adaptive per-page
+          // packing) — it does its OWN independent pixel-position page
+          // slicing on top of "css", blind to our explicit markers and to
+          // page 1 being a different height than the rest (it loses
+          // coverHeight up front). Any rounding drift between that blind
+          // slicing and our DOM-aware breaks could reintroduce a stray
+          // near-empty page on longer catalogs; "css" alone breaks only
+          // where we explicitly tell it to.
+          pagebreak: { mode: ["css"] },
           // "as any": the bundled html2pdf.js type declaration (type.d.ts)
           // doesn't know about "pagebreak" even though the library supports
           // it at runtime — narrower than casting the whole call.
