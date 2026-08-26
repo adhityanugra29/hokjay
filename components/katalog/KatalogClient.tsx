@@ -4,7 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
-import { PDF_JPEG_QUALITY, PDF_RENDER_SCALE } from "@/lib/pdfExport";
+
+// Katalog PDF is the heaviest export in the app (photo-dense, often many
+// pages) — a bit more aggressive than the shared PDF_JPEG_QUALITY/
+// PDF_RENDER_SCALE used by the mostly-text Akuntansi reports (lib/pdfExport
+// .ts). Per the user's request 2026-08-26. Still comfortably above the point
+// where product photos or price text start looking soft.
+const KATALOG_PDF_JPEG_QUALITY = 0.78;
+const KATALOG_PDF_RENDER_SCALE = 1.35;
 
 export default function KatalogClient({
   products,
@@ -92,14 +99,14 @@ export default function KatalogClient({
           // width and crop the right edge instead of shrinking to fit.
           margin: 0,
           filename: `Katalog-CV-HORECA-JAYA_${tanggal}.pdf`,
-          image: { type: "jpeg", quality: PDF_JPEG_QUALITY },
+          image: { type: "jpeg", quality: KATALOG_PDF_JPEG_QUALITY },
           // scrollY/scrollX: html2canvas otherwise captures from the
           // *current* window scroll position — since the button that
           // triggers this sits far down the page (after browsing/picking
           // products), whatever the user had scrolled to leaked into the
           // capture and pushed the real content off the first page,
           // leaving it blank. Per the user's report 2026-08-25.
-          html2canvas: { scale: PDF_RENDER_SCALE, useCORS: true, scrollY: -window.scrollY, scrollX: 0 },
+          html2canvas: { scale: KATALOG_PDF_RENDER_SCALE, useCORS: true, scrollY: -window.scrollY, scrollX: 0 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
           // Explicitly drop html2pdf's default "avoid-all" pagebreak mode —
           // it auto-avoids splitting ANY element that doesn't fit the

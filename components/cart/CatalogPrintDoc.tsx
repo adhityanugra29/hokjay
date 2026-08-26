@@ -44,12 +44,67 @@ const PAGE_HEIGHT_PX = Math.round((297 * 794) / 210);
 /**
  * Shared "Hubungi ..." wording — used both in the cover's "Pemesanan" cell
  * and the repeating footer's footnote, so the two always read the same.
- * Per the user's request 2026-08-25.
+ * Per the user's request 2026-08-26.
  */
 function salesContactLine(ownSales: CatalogSales | undefined): string {
   return ownSales
-    ? `Hubungi: ${ownSales.nama}${ownSales.nomorHp ? ` - ${ownSales.nomorHp}` : ""} untuk penawaran terbaik`
+    ? `Hubungi sales Anda untuk penawaran terbaik: ${ownSales.nama}${ownSales.nomorHp ? ` - ${ownSales.nomorHp}` : ""}`
     : "Hubungi sales Anda untuk penawaran terbaik";
+}
+
+// ── Adaptive per-page product count (2026-08-26) ──────────────────────────
+// Replaces the old fixed "exactly 3 products per page" chunker. Root cause
+// of the blank/near-empty pages the user reported: the cover's real height
+// is dynamic (grows with how many categories get listed in "Daftar Isi
+// Katalog"), but the old chunker packed exactly 3 products onto page 1
+// regardless of how much room the cover left — when the cover happened to
+// be tall, page 1's true content (cover + 3 products + footer) quietly
+// exceeded one physical page, and html2pdf's own overflow handling silently
+// inserted an extra page for the spillover, which read as "kosong" since it
+// usually held just one leftover product. Packing against a real height
+// budget instead means a page always gets as many products as safely fit —
+// typically ~2 on page 1 (cover eats the most room) and ~4 on later pages,
+// automatically dropping to 3 if a page happens to pick up more than one
+// category header. All five *_PX constants below are deliberately
+// safety-padded above their measured/estimated real footprint (never
+// trimmed to the minimum) so packing stays conservative — underfilling a
+// page by a few px of blank space is fine, overflowing into a phantom page
+// is the actual bug being fixed.
+const FOOTER_HEIGHT_PX = 150;
+const PRODUCTS_CONTAINER_VPAD_PX = 64; // px-12 py-8 on the products wrapper — py-8 = 32px top + 32px bottom, exact (not an estimate).
+const CATEGORY_HEADER_PX = 64;
+const PRODUCT_ROW_PX = 215;
+// Used only for the handful of renders before coverRef's real height lands
+// (see coverHeight state below) — generous on purpose so a transient
+// under-measurement never lets page 1 overpack before the real number
+// arrives.
+const DEFAULT_COVER_HEIGHT_PX = 450;
+
+/**
+ * Greedily packs the flattened product list into pages, each capped by how
+ * much vertical room that page actually has left (page 1 loses `coverHeight`
+ * up front, every page loses the footer + container padding). Always places
+ * at least one item per page even if it alone exceeds the remaining budget,
+ * so an unusually tall single product/category can't stall the packer.
+ */
+function packIntoPages(flat: PrintUnit[], coverHeight: number): PrintUnit[][] {
+  const pages: PrintUnit[][] = [];
+  let i = 0;
+  while (i < flat.length) {
+    const isFirstPage = pages.length === 0;
+    const budget = PAGE_HEIGHT_PX - PRODUCTS_CONTAINER_VPAD_PX - FOOTER_HEIGHT_PX - (isFirstPage ? coverHeight : 0);
+    const page: PrintUnit[] = [];
+    let used = 0;
+    while (i < flat.length) {
+      const cost = PRODUCT_ROW_PX + (flat[i].categoryLabel ? CATEGORY_HEADER_PX : 0);
+      if (page.length > 0 && used + cost > budget) break;
+      used += cost;
+      page.push(flat[i]);
+      i++;
+    }
+    pages.push(page);
+  }
+  return pages;
 }
 
 function specLine(p: CatalogProduct): string {
@@ -104,8 +159,9 @@ function ClosingFooter({ sales, ownSales }: { sales: CatalogSales[]; ownSales: C
  * needs real layout to snapshot, which display:none elements don't have.
  * Never visible to the user and excluded from native browser printing.
  *
- * This brochure (cover → products, exactly 3 per page, each page closed
- * by a repeating yellow footer band) only includes products checked in
+ * This brochure (cover → products, packed per page by remaining height —
+ * see packIntoPages — each page closed by a repeating yellow footer band)
+ * only includes products checked in
  * the Katalog page's own selection checkboxes (see
  * CatalogSelectionProvider) — separate from the invoice cart — sourced
  * live from the product/category/sales collections.
@@ -165,16 +221,15 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
     .filter((g) => g.items.length > 0);
 
   // Flatten category groups into one ordered list (category header still
-  // marked on each group's first item), then chunk into pages of exactly 3
-  // products — per the user's request 2026-08-25 ("1 page itu tolong
-  // berisikan 3 produk saja"). A hard page-break is inserted between chunks
-  // (html2pdf's "legacy" pagebreak mode, enabled in KatalogClient, breaks at
-  // any element carrying the html2pdf__page-break class).
+  // marked on each group's first item), then pack into pages by real
+  // remaining height instead of a fixed count — see packIntoPages above.
+  // A hard page-break is inserted between chunks (html2pdf's "legacy"
+  // pagebreak mode, enabled in KatalogClient, breaks at any element
+  // carrying the html2pdf__page-break class).
   const flat: PrintUnit[] = byCategory.flatMap((group) =>
     group.items.map((product, i) => ({ product, categoryLabel: i === 0 ? group.cat : undefined }))
   );
-  const chunks: PrintUnit[][] = [];
-  for (let i = 0; i < flat.length; i += 3) chunks.push(flat.slice(i, i + 3));
+  const chunks: PrintUnit[][] = packIntoPages(flat, coverHeight ?? DEFAULT_COVER_HEIGHT_PX);
 
   const today = new Date();
   const periodLabel = today.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
@@ -243,7 +298,8 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
         </div>
         </div>
 
-        {/* Products — exactly 3 per page. Each chunk after the first starts
+        {/* Products — packed per page by remaining height (packIntoPages),
+            not a fixed count. Each chunk after the first starts
             on a fresh page (html2pdf__page-break marker); each individual
             product row stays break-inside-avoid so it's never cut in half.
             Each page is a flex column pinned to a real A4 page's height
