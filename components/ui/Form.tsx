@@ -66,12 +66,19 @@ export function CurrencyInput({
   placeholder,
   required,
   className = "",
+  showPrefix = false,
 }: {
   value: string;
   onChange: (raw: string) => void;
   placeholder?: string;
   required?: boolean;
   className?: string;
+  /** Shows a visual "Rp" prefix inside the field — opt-in (default off, so
+   * every other existing CurrencyInput usage keeps its current look) since
+   * this was requested specifically for Katalog's price field, where users
+   * were reading the plain typed number as something other than a price.
+   * See confirmation 2026-08-26. */
+  showPrefix?: boolean;
 }) {
   const [raw, setRaw] = useState(value);
   const [focused, setFocused] = useState(false);
@@ -80,7 +87,7 @@ export function CurrencyInput({
     if (!focused) setRaw(value);
   }, [value, focused]);
 
-  return (
+  const input = (
     <input
       type="text"
       inputMode="numeric"
@@ -103,7 +110,18 @@ export function CurrencyInput({
         onChange(digits);
       }}
       placeholder={placeholder}
-      className={`${inputCls} ${className}`}
+      className={`${inputCls} ${showPrefix ? "pl-9" : ""} ${className}`}
     />
+  );
+
+  if (!showPrefix) return input;
+
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 font-sans text-[0.9rem] text-muted">
+        Rp
+      </span>
+      {input}
+    </div>
   );
 }

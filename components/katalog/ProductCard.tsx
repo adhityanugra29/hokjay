@@ -111,6 +111,7 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
           <CurrencyInput
             value={String(effectivePrice)}
             onChange={(v) => setCustomPrice(product._id, v ? Number(v) : 0)}
+            showPrefix
           />
           {/* Two separate preset buttons (per the user's request 2026-08-25,
               replacing the earlier single flip-label toggle) — each picks
@@ -178,8 +179,14 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
           </span>
         </div>
 
-        <div className="mt-2.5 text-[0.68rem] uppercase tracking-[0.08em] text-muted">Komisi</div>
-        <div className="text-[1.05rem] font-extrabold text-accent-700">{rupiah(liveKomisi)}</div>
+        {/* Small, label-styled badge (not a bold/large number) — per the
+            user's report 2026-08-26 that a big accent-colored Komisi figure
+            read as competing with the actual price above it, easy to
+            mistake for a second price. */}
+        <div className="mt-2.5 inline-flex w-fit items-center gap-1.5 border border-line px-2 py-1 text-[0.66rem] text-muted">
+          <span className="uppercase tracking-[0.06em]">Komisi</span>
+          <span className="font-semibold text-ink">{rupiah(liveKomisi)}</span>
+        </div>
 
         {(dimText || product.ketebalan) && (
           <div className="mt-2.5 border-t border-dashed border-line pt-2.5 font-mono text-[0.7rem] leading-relaxed text-muted">
