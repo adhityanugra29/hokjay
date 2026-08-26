@@ -74,6 +74,47 @@ export default async function DashboardPage() {
   const myUnpaid = followUpAll.filter((i) => i.status === "unpaid" && i.salesNama === session?.nama);
   const myDraft = followUpAll.filter((i) => i.status === "draft" && i.salesNama === session?.nama);
   const myRankIndex = ranking.findIndex((r) => r.salesNama === session?.nama);
+  const myPenjualanBulanIni = ranking.find((r) => r.salesNama === session?.nama)?.totalPenjualan ?? 0;
+  const myBelumTertagih = myUnpaid.reduce((s, i) => s + i.sisaTagihan, 0);
+
+  // Desktop's "Perlu ditindak" list, Sales version — same three sources as
+  // the mobile "9a" rows above, just shaped for the desktop card row
+  // (FollowUpStatusBadge + a single action button) instead of the mobile
+  // day-count/left-border row. Not capped to 5 like mobile since desktop
+  // has the room to show all of it.
+  const salesNeedsAction: {
+    key: string;
+    badgeStatus: "draft" | "unpaid" | "sepi";
+    title: string;
+    subtitle: string;
+    actionLabel: string;
+    actionHref: string;
+  }[] = [
+    ...myUnpaid.map((inv) => ({
+      key: `inv-${inv.invoiceId}`,
+      badgeStatus: "unpaid" as const,
+      title: inv.customerNama,
+      subtitle: `${inv.nomor} · ${rupiah(inv.sisaTagihan)} · ${inv.hariBerjalan} hari`,
+      actionLabel: "Lihat",
+      actionHref: `/invoice/${inv.invoiceId}`,
+    })),
+    ...myDraft.map((inv) => ({
+      key: `draft-${inv.invoiceId}`,
+      badgeStatus: "draft" as const,
+      title: inv.customerNama,
+      subtitle: `${inv.nomor} · ${rupiah(inv.grandTotal)} · belum dikirim`,
+      actionLabel: "Lanjutkan",
+      actionHref: `/invoice/${inv.invoiceId}/ubah`,
+    })),
+    ...myDormant.map((c) => ({
+      key: `dormant-${c._id}`,
+      badgeStatus: "sepi" as const,
+      title: c.nama,
+      subtitle: `${c.orderCount}x order sebelumnya · sudah ${c.hariSejakOrderTerakhir} hari sepi`,
+      actionLabel: "Lihat",
+      actionHref: `/pelanggan/${c._id}`,
+    })),
+  ];
 
   // "9a" mobile (Sales-only) — own unpaid invoices (oldest first, "Tagih"),
   // own drafts ("Lanjut"), own dormant customers ("Hubungi"). No sales-target
@@ -344,66 +385,104 @@ export default async function DashboardPage() {
             >
               <div className="flex items-start justify-between">
                 <NavIcon name="document" size={20} />
-                {(unpaidCount + draftCount) > 0 && (
+                {(isSales ? myUnpaid.length + myDraft.length : unpaidCount + draftCount) > 0 && (
                   <span className="bg-ink px-1.5 py-0.5 text-[10.5px] font-bold text-white">
-                    {unpaidCount + draftCount} nunggu
+                    {isSales ? myUnpaid.length + myDraft.length : unpaidCount + draftCount} nunggu
                   </span>
                 )}
               </div>
               <div className="mt-auto">
-                <div className="font-sans text-[1.2rem] font-extrabold tracking-tight text-ink">Tagih invoice</div>
+                <div className="font-sans text-[1.2rem] font-extrabold tracking-tight text-ink">
+                  {isSales ? "Invoice saya" : "Tagih invoice"}
+                </div>
                 <div className="mt-1 font-sans text-[0.75rem] text-muted">
-                  {unpaidCount} belum bayar · {draftCount} draft belum dikirim
+                  {isSales ? myUnpaid.length : unpaidCount} belum bayar · {isSales ? myDraft.length : draftCount} draft belum dikirim
                 </div>
               </div>
             </Link>
-            <Link
-              href="/keuangan/transaksi"
-              className="flex min-h-[132px] flex-col border border-line bg-panel p-5 no-underline hover:border-accent"
-            >
-              <NavIcon name="cashbox" size={20} />
-              <div className="mt-auto">
-                <div className="font-sans text-[1.2rem] font-extrabold tracking-tight text-ink">Catat uang</div>
-                <div className="mt-1 font-sans text-[0.75rem] text-muted">Pemasukan atau pengeluaran toko</div>
-              </div>
-            </Link>
+            {isSales ? (
+              <Link
+                href="/komisi-saya"
+                className="flex min-h-[132px] flex-col border border-line bg-panel p-5 no-underline hover:border-accent"
+              >
+                <NavIcon name="trophy" size={20} />
+                <div className="mt-auto">
+                  <div className="font-sans text-[1.2rem] font-extrabold tracking-tight text-ink">Komisi saya</div>
+                  <div className="mt-1 font-sans text-[0.75rem] text-muted">
+                    Berjalan bulan ini {rupiah(mySummary?.totalBerjalan ?? 0)}
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <Link
+                href="/keuangan/transaksi"
+                className="flex min-h-[132px] flex-col border border-line bg-panel p-5 no-underline hover:border-accent"
+              >
+                <NavIcon name="cashbox" size={20} />
+                <div className="mt-auto">
+                  <div className="font-sans text-[1.2rem] font-extrabold tracking-tight text-ink">Catat uang</div>
+                  <div className="mt-1 font-sans text-[0.75rem] text-muted">Pemasukan atau pengeluaran toko</div>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
 
         <div className="px-6 pt-8 pb-6 md:px-9">
           <div className="flex items-baseline justify-between gap-2.5 border-b-2 border-ink pb-2.5">
             <div className="font-sans text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
-              Perlu ditindak — {totalNeedsAction} hal
+              {isSales ? "Dikejar hari ini" : "Perlu ditindak"} — {isSales ? salesNeedsAction.length : totalNeedsAction} hal
             </div>
-            <Link href="/follow-up" className="font-sans text-[0.75rem] text-accent no-underline hover:underline">
-              lihat semua →
-            </Link>
+            {!isSales && (
+              <Link href="/follow-up" className="font-sans text-[0.75rem] text-accent no-underline hover:underline">
+                lihat semua →
+              </Link>
+            )}
           </div>
 
-          {needsAction.map((inv) => (
-            <div
-              key={inv.invoiceId}
-              className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-line py-3.5"
-            >
-              <div className="flex items-center gap-3">
-                <FollowUpStatusBadge status={inv.status} />
-                <div>
-                  <div className="font-sans text-[0.95rem] font-bold">{inv.customerNama}</div>
-                  <div className="mt-0.5 font-sans text-[0.75rem] text-muted">
-                    {inv.nomor} · {rupiah(inv.sisaTagihan)} · sales {inv.salesNama}
+          {isSales
+            ? salesNeedsAction.map((row) => (
+                <div key={row.key} className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-line py-3.5">
+                  <div className="flex items-center gap-3">
+                    <FollowUpStatusBadge status={row.badgeStatus} />
+                    <div>
+                      <div className="font-sans text-[0.95rem] font-bold">{row.title}</div>
+                      <div className="mt-0.5 font-sans text-[0.75rem] text-muted">{row.subtitle}</div>
+                    </div>
                   </div>
+                  <Link
+                    href={row.actionHref}
+                    className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent no-underline hover:bg-accent hover:text-white"
+                  >
+                    {row.actionLabel}
+                  </Link>
                 </div>
-              </div>
-              <Link
-                href={inv.status === "draft" ? `/invoice/${inv.invoiceId}/ubah` : `/invoice/${inv.invoiceId}`}
-                className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent no-underline hover:bg-accent hover:text-white"
-              >
-                {inv.status === "draft" ? "Lanjutkan" : "Lihat"}
-              </Link>
-            </div>
-          ))}
+              ))
+            : needsAction.map((inv) => (
+                <div
+                  key={inv.invoiceId}
+                  className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-line py-3.5"
+                >
+                  <div className="flex items-center gap-3">
+                    <FollowUpStatusBadge status={inv.status} />
+                    <div>
+                      <div className="font-sans text-[0.95rem] font-bold">{inv.customerNama}</div>
+                      <div className="mt-0.5 font-sans text-[0.75rem] text-muted">
+                        {inv.nomor} · {rupiah(inv.sisaTagihan)} · sales {inv.salesNama}
+                      </div>
+                    </div>
+                  </div>
+                  <Link
+                    href={inv.status === "draft" ? `/invoice/${inv.invoiceId}/ubah` : `/invoice/${inv.invoiceId}`}
+                    className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent no-underline hover:bg-accent hover:text-white"
+                  >
+                    {inv.status === "draft" ? "Lanjutkan" : "Lihat"}
+                  </Link>
+                </div>
+              ))}
 
-          {lowStock.length > 0 && (
+          {/* Stok tipis — not shown to Sales, who has no Inventory access. */}
+          {!isSales && lowStock.length > 0 && (
             <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-line py-3.5">
               <div className="flex items-center gap-3">
                 <span className="border border-line px-2 py-0.5 font-sans text-[10px] font-bold uppercase tracking-wide text-muted">
@@ -427,11 +506,18 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          {needsAction.length === 0 && lowStock.length === 0 && (
-            <div className="border-b border-line py-8 text-center font-sans text-sm text-muted">
-              Tidak ada yang perlu ditindak. 🎉
-            </div>
-          )}
+          {isSales
+            ? salesNeedsAction.length === 0 && (
+                <div className="border-b border-line py-8 text-center font-sans text-sm text-muted">
+                  Tidak ada yang perlu ditindak. 🎉
+                </div>
+              )
+            : needsAction.length === 0 &&
+              lowStock.length === 0 && (
+                <div className="border-b border-line py-8 text-center font-sans text-sm text-muted">
+                  Tidak ada yang perlu ditindak. 🎉
+                </div>
+              )}
         </div>
 
         <div className="grid grid-cols-2 gap-6 border-t-2 border-ink bg-panel px-6 py-5 md:grid-cols-4 md:px-9">
@@ -440,7 +526,7 @@ export default async function DashboardPage() {
               Penjualan {MONTH_NAMES[nowJakarta.month - 1]}
             </div>
             <div className="mt-1 font-sans text-[1.35rem] font-extrabold tracking-tight">
-              {rupiahCompact(penjualanBulanIni)}
+              {rupiahCompact(isSales ? myPenjualanBulanIni : penjualanBulanIni)}
             </div>
           </div>
           <div>
@@ -448,23 +534,32 @@ export default async function DashboardPage() {
               Belum tertagih
             </div>
             <div className="mt-1 font-sans text-[1.35rem] font-extrabold tracking-tight text-accent">
-              {rupiahCompact(belumTertagih)}
+              {rupiahCompact(isSales ? myBelumTertagih : belumTertagih)}
             </div>
           </div>
+          {isSales ? (
+            <div>
+              <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Peringkat</div>
+              <div className="mt-1 font-sans text-[1.35rem] font-extrabold tracking-tight">
+                {myRankIndex >= 0 ? `#${myRankIndex + 1} dari ${ranking.length}` : "—"}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+                Kas bersih bulan ini
+              </div>
+              <div className="mt-1 font-sans text-[1.35rem] font-extrabold tracking-tight">
+                {rupiahCompact(keuangan.netTotal)}
+              </div>
+            </div>
+          )}
           <div>
             <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
-              Kas bersih bulan ini
+              Komisi {isSales ? "saya (berjalan)" : "terkumpul"}
             </div>
             <div className="mt-1 font-sans text-[1.35rem] font-extrabold tracking-tight">
-              {rupiahCompact(keuangan.netTotal)}
-            </div>
-          </div>
-          <div>
-            <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
-              Komisi terkumpul
-            </div>
-            <div className="mt-1 font-sans text-[1.35rem] font-extrabold tracking-tight">
-              {rupiahCompact(insentifTerkumpul)}
+              {rupiahCompact(isSales ? (mySummary?.totalBerjalan ?? 0) : insentifTerkumpul)}
             </div>
           </div>
         </div>
