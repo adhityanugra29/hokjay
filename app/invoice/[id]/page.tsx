@@ -6,6 +6,7 @@ import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
 import { LinkButton } from "@/components/ui/Button";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
+import { Sales } from "@/models/Sales";
 import { rupiah, formatDateLong, formatDateShort } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,13 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
   await dbConnect();
   const invoice = await Invoice.findById(id);
   if (!invoice) notFound();
+
+  // Live lookup rather than a snapshot on the invoice itself — a phone
+  // number changing should show up on invoices printed afterward, unlike
+  // hargaMinimumSnapshot etc. which deliberately freeze at booking time.
+  // Per the user's request 2026-08-28.
+  const salesDoc = invoice.sales?.ref ? await Sales.findById(invoice.sales.ref).lean() : null;
+  const salesNomorHp = salesDoc?.nomorHp ?? undefined;
 
   // Feeds InvoicePrintDoc — the hidden, multi-page layout InvoiceActions'
   // "Unduh Invoice (PDF)" button actually captures (html2canvas + jsPDF,
@@ -32,6 +40,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     tanggalKirim: invoice.tanggalKirim ? invoice.tanggalKirim.toISOString() : undefined,
     kurir: invoice.kurir ?? undefined,
     salesNama: invoice.sales!.nama,
+    salesNomorHp,
     items: invoice.items.map((item) => ({
       namaSnapshot: item.namaSnapshot,
       dimensiSnapshot: item.dimensiSnapshot ?? undefined,
@@ -110,7 +119,15 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                     block on the left, right below Tanggal — was down in
                     the 3-column row below. Per the user's request
                     2026-08-27. */}
-                <div className="mt-2 border-t border-line pt-2">Sales Consultant: {invoice.sales!.nama}</div>
+                <div className="mt-2 border-t border-line pt-2">
+                  Sales Consultant: {invoice.sales!.nama}
+                  {salesNomorHp && (
+                    <>
+                      <br />
+                      {salesNomorHp}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -233,6 +250,17 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                   Thank you for entrusting
                   <br />
                   your kitchen equipment to us.
+                </div>
+                {/* Sales name + phone repeated here at the very close of
+                    the document — per the user's request 2026-08-28. */}
+                <div className="mt-1 font-mono text-[0.72rem] leading-relaxed text-muted">
+                  {invoice.sales!.nama}
+                  {salesNomorHp && (
+                    <>
+                      <br />
+                      {salesNomorHp}
+                    </>
+                  )}
                 </div>
               </div>
             </div>

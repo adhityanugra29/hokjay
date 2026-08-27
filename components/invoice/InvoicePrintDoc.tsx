@@ -21,6 +21,7 @@ export interface InvoicePrintData {
   tanggalKirim?: string;
   kurir?: string;
   salesNama: string;
+  salesNomorHp?: string;
   items: InvoicePrintItem[];
   subtotalProduk: number;
   ongkosKirim: number;
@@ -169,6 +170,17 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
             <br />
             your kitchen equipment to us.
           </div>
+          {/* Sales name + phone repeated here at the very close of the
+              document — per the user's request 2026-08-28. */}
+          <div className="mt-1 font-mono text-[0.72rem] leading-relaxed text-muted">
+            {invoice.salesNama}
+            {invoice.salesNomorHp && (
+              <>
+                <br />
+                {invoice.salesNomorHp}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -204,7 +216,15 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
           {/* Sales moved up here, level with the CV. Horeca Jaya block on
               the left, right below Tanggal — was down in the 3-column row
               below. Per the user's request 2026-08-27. */}
-          <div className="mt-2 border-t border-line pt-2">Sales Consultant: {invoice.salesNama}</div>
+          <div className="mt-2 border-t border-line pt-2">
+            Sales Consultant: {invoice.salesNama}
+            {invoice.salesNomorHp && (
+              <>
+                <br />
+                {invoice.salesNomorHp}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
