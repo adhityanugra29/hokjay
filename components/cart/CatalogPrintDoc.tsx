@@ -353,12 +353,33 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                     )}
                     <div className="mb-5 flex gap-5 border-t border-line pt-5">
                       {p.fotoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={p.fotoUrl}
-                          alt={p.name}
-                          className="h-[165px] w-[220px] shrink-0 bg-surface object-cover"
-                        />
+                        // CSS background-image + background-size:cover
+                        // instead of <img object-cover> — html2canvas
+                        // doesn't reliably honor the object-fit CSS property
+                        // on <img> elements (a known limitation), so a tall/
+                        // portrait photo forced into this landscape 220x165
+                        // box could come out visibly stretched/squashed in
+                        // the exported PDF even though it displays correctly
+                        // crop-to-fill everywhere else in the app. background
+                        // -size:cover doesn't have that gap. Per the user's
+                        // report 2026-08-26 ("beberapa foto ada yang terasa
+                        // seperti gepeng").
+                        //
+                        // The hidden <img> underneath exists purely so
+                        // KatalogClient's "wait for every image to finish
+                        // loading before capturing" check (which walks
+                        // element.querySelectorAll("img")) still covers this
+                        // photo — browsers share the HTTP cache between an
+                        // <img src> request and a CSS background-image url()
+                        // to the same URL, so by the time this loads, the
+                        // background-image paints from cache instantly.
+                        <div
+                          className="h-[165px] w-[220px] shrink-0 bg-surface bg-cover bg-center"
+                          style={{ backgroundImage: `url(${p.fotoUrl})` }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={p.fotoUrl} alt={p.name} className="hidden" aria-hidden />
+                        </div>
                       ) : (
                         <div className="flex h-[165px] w-[220px] shrink-0 items-center justify-center bg-surface text-[0.75rem] text-muted">
                           Tidak ada foto
