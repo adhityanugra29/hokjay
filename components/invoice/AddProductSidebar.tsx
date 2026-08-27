@@ -123,8 +123,11 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
             placeholder="Cari nama, SKU, atau ukuran..."
             className="w-full rounded border border-line bg-panel px-3 py-2 font-sans text-[0.8rem]"
           />
-          <div className="flex gap-2">
-            <div className="flex-1">
+          {/* Wraps on a narrow phone instead of squeezing both controls
+              into an unusably thin sliver — per the user's request
+              2026-08-27 ("pastikan berjalan dengan lancar" di mobile). */}
+          <div className="flex flex-wrap gap-2">
+            <div className="min-w-[140px] flex-1">
               <SearchableSelect
                 value={category || ALL_CATEGORIES_LABEL}
                 onChange={(v) => setCategory(v === ALL_CATEGORIES_LABEL ? "" : v)}
@@ -135,7 +138,7 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="rounded border border-line bg-panel px-2.5 py-2 font-mono text-[0.72rem] text-ink"
+              className="min-w-[110px] flex-1 rounded border border-line bg-panel px-2.5 py-2 font-mono text-[0.72rem] text-ink"
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>
@@ -175,6 +178,13 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
                 hargaMinimum: p.hargaMinimum,
               });
               const kondisiLabel = p.kondisi === "bekas" ? "Bekas" : "Baru";
+              // Per the user's request 2026-08-27 ("ukuranya itu krusial")
+              // — dimensions matter for a sales rep deciding this is the
+              // right item, same P x L x T shown on the main Katalog card.
+              const dimText =
+                p.dimensi?.panjangCm && p.dimensi?.lebarCm && p.dimensi?.tinggiCm
+                  ? `${p.dimensi.panjangCm}×${p.dimensi.lebarCm}×${p.dimensi.tinggiCm} cm`
+                  : null;
               return (
                 <div key={p._id} className="flex items-center gap-2.5 border border-line bg-[#fbfaf5] p-2">
                   <div className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden bg-surface text-[0.55rem] text-muted">
@@ -187,6 +197,7 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="line-clamp-1 text-[0.76rem] font-medium text-ink">{p.name}</div>
+                    {dimText && <div className="mt-0.5 font-mono text-[0.62rem] text-muted">{dimText}</div>}
                     <div className="mt-0.5 flex flex-wrap items-center gap-1 font-mono text-[0.64rem] text-muted">
                       <span>{rupiah(p.hargaRekomendasi)}</span>
                       <span
