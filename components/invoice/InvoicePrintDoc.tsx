@@ -138,26 +138,31 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
           </>
         ) : null}
       </div>
-      <div className="mt-9 border-t-2 border-ink pt-5 font-mono text-[0.78rem] leading-relaxed">
-        <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Payment Details</div>
-        <div>No. Rekening: 5771370277 (BCA)</div>
-        <div>Atas Nama: Mohammad Andi Abdillah</div>
-      </div>
-      {/* Closing logo + thank-you line — per the user's request 2026-08-27.
-          "Thank you for trusting your kitchen with us" reversed the
-          object of "trust X with Y" (would literally read as trusting the
-          kitchen itself with "us"); corrected to "trusting us with your
-          kitchen" — you trust HOJAY to take care of your kitchen. */}
-      <div className="mt-9 flex flex-col items-center gap-2 text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo/hojay-2b-positif.png"
-          alt="HOJAY Kitchen Equipment"
-          width={90}
-          height={50}
-          className="h-auto w-[90px] opacity-80"
-        />
-        <div className="font-serif text-[0.82rem] italic text-muted">Thank you for trusting us with your kitchen.</div>
+      {/* Payment Details + closing logo/thank-you note side by side, same
+          row — per the user's request 2026-08-27 (was stacked below
+          before). Translated from the user's own Indonesian wording
+          ("Terimakasih sudah mempercayakan Peralatan dapur anda kepada
+          kami") rather than the earlier English attempt, which read
+          backwards. */}
+      <div className="mt-9 flex flex-wrap items-start justify-between gap-6 border-t-2 border-ink pt-5">
+        <div className="font-mono text-[0.78rem] leading-relaxed">
+          <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Payment Details</div>
+          <div>No. Rekening: 5771370277 (BCA)</div>
+          <div>Atas Nama: Mohammad Andi Abdillah</div>
+        </div>
+        <div className="flex flex-col items-center gap-2 text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo/hojay-2b-positif.png"
+            alt="HOJAY Kitchen Equipment"
+            width={90}
+            height={50}
+            className="h-auto w-[90px] opacity-80"
+          />
+          <div className="font-serif text-[0.82rem] italic text-muted">
+            Thank you for entrusting your kitchen equipment to us.
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -189,12 +194,14 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
           No. {invoice.nomor}
           <br />
           Tanggal: {formatDateLong(invoice.tanggal)}
+          {/* Sales moved up here, level with the CV. Horeca Jaya block on
+              the left, right below Tanggal — was down in the 3-column row
+              below. Per the user's request 2026-08-27. */}
+          <div className="mt-2 border-t border-line pt-2">Sales Consultant: {invoice.salesNama}</div>
         </div>
       </div>
 
-      {/* 4 columns — Sales pushed flush to the right edge (ml-auto),
-          Tanggal Pengiriman split out of Alamat Pengiriman's line into its
-          own column, wider gap between columns. Per the user's request
+      {/* 3 columns, wider gap between them. Per the user's request
           2026-08-27 ("terlalu mepet"). */}
       <div className="mb-7 flex flex-wrap items-start gap-x-12 gap-y-5">
         <div>
@@ -212,10 +219,6 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
             {invoice.tanggalKirim ? formatDateShort(invoice.tanggalKirim) : "—"}
             {invoice.kurir ? ` · ${invoice.kurir}` : ""}
           </div>
-        </div>
-        <div className="ml-auto text-right">
-          <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Sales</div>
-          <div className="font-medium">{invoice.salesNama}</div>
         </div>
       </div>
     </div>
