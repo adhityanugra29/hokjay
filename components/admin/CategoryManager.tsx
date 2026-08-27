@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { Input } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +17,14 @@ export default function CategoryManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Inline rename (2026-08-27, per the user's request "di kelola kategori
+  // bisa hapus dan edit ya") — Hapus already existed, this fills in the
+  // missing Edit. Same pattern as AccountManager's inline-edit-row.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch("/api/categories");
@@ -53,6 +61,32 @@ export default function CategoryManager() {
     await fetch(`/api/categories/${id}`, { method: "DELETE" });
   }
 
+  function startEdit(c: CategoryRow) {
+    setEditingId(c._id);
+    setEditName(c.name);
+    setEditError(null);
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingId || !editName.trim()) return;
+    setEditSaving(true);
+    setEditError(null);
+    const res = await fetch(`/api/categories/${editingId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: editName }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setEditError(body.error || "Gagal mengubah kategori");
+    } else {
+      setEditingId(null);
+      await load();
+    }
+    setEditSaving(false);
+  }
+
   return (
     <Panel>
       <PanelHead title="Kelola Kategori Produk">
@@ -76,12 +110,40 @@ export default function CategoryManager() {
           </thead>
           <tbody>
             {categories.map((c) => (
-              <tr key={c._id} className="hover:bg-[#fbfaf5]">
-                <td className="border-b border-line px-5 py-4.5 font-medium">{c.name}</td>
-                <td className="border-b border-line px-5 py-4.5">
-                  <RowActionButton onClick={() => removeCategory(c._id)}>Hapus</RowActionButton>
-                </td>
-              </tr>
+              <Fragment key={c._id}>
+                <tr className="hover:bg-[#fbfaf5]">
+                  <td className="border-b border-line px-5 py-4.5 font-medium">{c.name}</td>
+                  <td className="border-b border-line px-5 py-4.5">
+                    <div className="flex flex-wrap gap-2">
+                      <RowActionButton onClick={() => (editingId === c._id ? setEditingId(null) : startEdit(c))}>
+                        {editingId === c._id ? "Batal" : "Ubah"}
+                      </RowActionButton>
+                      <RowActionButton onClick={() => removeCategory(c._id)}>Hapus</RowActionButton>
+                    </div>
+                  </td>
+                </tr>
+                {editingId === c._id && (
+                  <tr>
+                    <td colSpan={2} className="border-b border-line bg-[#f7f5ee] p-5">
+                      <form onSubmit={saveEdit} className="flex flex-wrap items-center gap-2.5">
+                        <Input
+                          autoFocus
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="max-w-xs"
+                        />
+                        <Button type="submit" disabled={editSaving}>
+                          {editSaving ? "Menyimpan..." : "Simpan"}
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={() => setEditingId(null)}>
+                          Batal
+                        </Button>
+                        {editError && <div className="font-mono text-[0.72rem] text-danger">{editError}</div>}
+                      </form>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
             {!loading && categories.length === 0 && (
               <tr>
