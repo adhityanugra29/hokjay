@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, CurrencyInput } from "@/components/ui/Form";
-import { Button, LinkButton } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
 import ItemRowEditor from "./ItemRowEditor";
 import InlineCustomerForm, { type CreatedCustomer } from "./InlineCustomerForm";
@@ -97,6 +97,7 @@ export default function InvoiceForm({
   const [kurirId, setKurirId] = useState(initial?.kurirId ?? "");
   const [ongkosKirim, setOngkosKirim] = useState(initial?.ongkosKirim ?? 0);
   const [saving, setSaving] = useState(false);
+  const [canceling, setCanceling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // "+ Tambah Produk" navigates away to /katalog and back — that remounts
@@ -280,6 +281,58 @@ export default function InvoiceForm({
     } finally {
       setSaving(false);
     }
+  }
+
+  // "Batal" deletes the invoice outright rather than just discarding
+  // unsaved changes — per the user's explicit request 2026-08-27, with a
+  // confirm() warning first since it's destructive either way. Edit mode
+  // has a real Invoice document to delete (server-side guards in
+  // deleteInvoice.ts still apply — e.g. refuses if a DP was already
+  // received, surfaced here via the error message). Create mode never has
+  // a saved record yet at this point (only Simpan/Simpan sebagai Draft
+  // create one, and both navigate away immediately after), so there's
+  // nothing to call the API for — just the cart to clear.
+  async function handleCancel() {
+    if (mode === "edit") {
+      if (
+        !confirm(
+          `Hapus invoice ${nextNumberHint}? Tindakan ini akan menghapus invoice ini sepenuhnya dan tidak bisa dibatalkan.`
+        )
+      ) {
+        return;
+      }
+      setCanceling(true);
+      try {
+        const res = await fetch(`/api/invoices/${invoiceId}`, { method: "DELETE" });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || "Gagal menghapus invoice");
+        }
+        clear();
+        try {
+          sessionStorage.removeItem(draftKey);
+        } catch {
+          // ignore — nothing to clean up if storage was never available
+        }
+        router.push("/invoice");
+        router.refresh();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Gagal menghapus invoice");
+        setCanceling(false);
+      }
+      return;
+    }
+
+    if (items.length > 0 && !confirm("Batalkan? Produk yang sudah dipilih di keranjang akan dikosongkan.")) {
+      return;
+    }
+    clear();
+    try {
+      sessionStorage.removeItem(draftKey);
+    } catch {
+      // ignore — nothing to clean up if storage was never available
+    }
+    router.push("/invoice");
   }
 
   const showCustomerPicker = !customerId || editingCustomer;
@@ -475,15 +528,15 @@ export default function InvoiceForm({
       {error && <div className="mt-3 font-mono text-[0.75rem] text-danger">{error}</div>}
 
       <FormActions>
-        <Button variant="clay" disabled={saving} onClick={() => submit("unpaid")}>
+        <Button variant="clay" disabled={saving || canceling} onClick={() => submit("unpaid")}>
           {saving ? "Menyimpan..." : mode === "edit" ? "Simpan Perubahan" : "Simpan & Kirim Invoice"}
         </Button>
-        <Button variant="ghost" disabled={saving} onClick={() => submit("draft")}>
+        <Button variant="ghost" disabled={saving || canceling} onClick={() => submit("draft")}>
           Simpan sebagai Draft
         </Button>
-        <LinkButton variant="ghost" href={mode === "edit" ? `/invoice/${invoiceId}` : "/invoice"}>
-          Batal
-        </LinkButton>
+        <Button variant="ghost" disabled={saving || canceling} onClick={handleCancel}>
+          {canceling ? "Menghapus..." : "Batal"}
+        </Button>
       </FormActions>
 
       {mode === "edit" && <AddProductSidebar open={addingProduct} onClose={() => setAddingProduct(false)} />}

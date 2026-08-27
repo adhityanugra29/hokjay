@@ -165,7 +165,17 @@ export default function ProductCard({
       ? `${dims.panjangCm}cm x ${dims.lebarCm}cm x ${dims.tinggiCm}cm`
       : null;
 
-  const stockStatusLabel = product.stok <= 0 ? "Stok Habis" : `Stok ${product.stok} unit`;
+  // Stok already committed to a Booked/Sudah DP invoice doesn't physically
+  // leave the shelf (that only happens at actual payment, see
+  // lib/services/payInvoice.ts) — but showing the full raw stok here would
+  // let a sales rep promise units that are already spoken for. This is a
+  // display/qty-cap-only guard, not a real reservation: it never touches
+  // Product.stok or accounting. The card itself only ever disappears once
+  // stok is truly 0 (i.e. actually sold/paid) — a fully Booked/DP'd
+  // product with plenty of raw stok left just shows 0 available here,
+  // still visible with its badges. Per the user's request 2026-08-27.
+  const availableQty = Math.max(0, product.stok - (product.bookedQty ?? 0) - (product.dpQty ?? 0));
+  const stockStatusLabel = availableQty <= 0 ? "Tidak Tersedia" : `Tersedia ${availableQty} unit`;
   // Just "Bekas" / "Baru" — the kondisiPercent number was dropped from
   // every status label per the user's request 2026-08-25 (kondisiPercent
   // itself stays on the product / still editable in the form, it's only
@@ -303,10 +313,10 @@ export default function ProductCard({
           </div>
         </div>
         <div className="mt-2.5 text-[0.72rem] text-muted">
-          {product.stok <= 0 ? (
-            <span className="text-accent-700">Stok Habis</span>
+          {availableQty <= 0 ? (
+            <span className="text-accent-700">Tidak Tersedia</span>
           ) : (
-            <>Stok: <span className="font-medium text-ink">{product.stok}</span> unit</>
+            <>Tersedia: <span className="font-medium text-ink">{availableQty}</span> unit</>
           )}
         </div>
 
@@ -394,7 +404,7 @@ export default function ProductCard({
             <button
               type="button"
               onClick={() => handleQtyChange(1)}
-              disabled={cartItem.qty >= product.stok}
+              disabled={cartItem.qty >= availableQty}
               className="h-9 w-[38px] cursor-pointer bg-accent text-base font-semibold text-white hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Tambah jumlah"
             >
@@ -404,7 +414,7 @@ export default function ProductCard({
         ) : (
           <button
             type="button"
-            disabled={product.stok <= 0}
+            disabled={availableQty <= 0}
             onClick={() =>
               addItem({
                 productId: product._id,
@@ -414,7 +424,7 @@ export default function ProductCard({
                 hargaRekomendasi: product.hargaRekomendasi,
                 komisiNominal: liveKomisi,
                 kondisi: product.kondisi as "baru" | "bekas",
-                stok: product.stok,
+                stok: availableQty,
                 fotoUrl: product.fotoUrl,
                 kondisiLabel,
                 stockStatusLabel,
@@ -423,7 +433,7 @@ export default function ProductCard({
             }
             className="mt-auto w-full cursor-pointer border border-accent bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-white transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {product.stok <= 0 ? "Stok Habis" : "+ Tambah ke Invoice"}
+            {availableQty <= 0 ? "Tidak Tersedia" : "+ Tambah ke Invoice"}
           </button>
         )}
       </div>

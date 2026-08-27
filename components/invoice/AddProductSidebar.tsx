@@ -153,6 +153,16 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
           <div className="flex flex-col gap-2">
             {filtered.map((p) => {
               const cartItem = items.find((i) => i.productId === p._id);
+              // Same "Booked/DP units aren't really free" guard as the main
+              // Katalog card — but this invoice's OWN already-added qty is
+              // added back first, since it's counted in p.bookedQty/dpQty
+              // too (this is a real persisted "unpaid" invoice being
+              // edited) and would otherwise wrongly cap against itself.
+              // Per the user's request 2026-08-27.
+              const availableQty = Math.max(
+                0,
+                p.stok - (p.bookedQty ?? 0) - (p.dpQty ?? 0) + (cartItem?.qty ?? 0)
+              );
               return (
                 <div key={p._id} className="flex items-center gap-2.5 border border-line bg-[#fbfaf5] p-2">
                   <div className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden bg-surface text-[0.55rem] text-muted">
@@ -187,13 +197,15 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
                       </span>
                       <button
                         type="button"
-                        disabled={cartItem.qty >= p.stok}
+                        disabled={cartItem.qty >= availableQty}
                         onClick={() => updateItem(p._id, { qty: cartItem.qty + 1 })}
                         className="h-7 w-7 cursor-pointer bg-accent text-[0.85rem] font-semibold text-white hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         +
                       </button>
                     </div>
+                  ) : availableQty <= 0 ? (
+                    <span className="flex-none font-mono text-[0.66rem] text-accent-700">Tidak Tersedia</span>
                   ) : (
                     <button
                       type="button"
@@ -206,7 +218,7 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
                           hargaRekomendasi: p.hargaRekomendasi,
                           komisiNominal: p.komisiNominal,
                           kondisi: p.kondisi,
-                          stok: p.stok,
+                          stok: availableQty,
                           fotoUrl: p.fotoUrl,
                         })
                       }
