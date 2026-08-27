@@ -214,7 +214,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                 <div>No. Rekening: 5771370277 (BCA)</div>
                 <div>Atas Nama: Mohammad Andi Abdillah</div>
               </div>
-              <div className="flex flex-col items-center gap-2 text-center">
+              <div className="flex flex-col items-end gap-2 text-right">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/logo/hojay-2b-positif.png"
@@ -224,7 +224,9 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                   className="h-auto w-[90px] opacity-80"
                 />
                 <div className="font-serif text-[0.82rem] italic text-muted">
-                  Thank you for entrusting your kitchen equipment to us.
+                  Thank you for entrusting
+                  <br />
+                  your kitchen equipment to us.
                 </div>
               </div>
             </div>

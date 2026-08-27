@@ -150,7 +150,10 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
           <div>No. Rekening: 5771370277 (BCA)</div>
           <div>Atas Nama: Mohammad Andi Abdillah</div>
         </div>
-        <div className="flex flex-col items-center gap-2 text-center">
+        {/* Logo flush right, sentence wrapped to 2 short lines instead of
+            one long one — more compact. Per the user's request
+            2026-08-27. */}
+        <div className="flex flex-col items-end gap-2 text-right">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo/hojay-2b-positif.png"
@@ -160,7 +163,9 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
             className="h-auto w-[90px] opacity-80"
           />
           <div className="font-serif text-[0.82rem] italic text-muted">
-            Thank you for entrusting your kitchen equipment to us.
+            Thank you for entrusting
+            <br />
+            your kitchen equipment to us.
           </div>
         </div>
       </div>
