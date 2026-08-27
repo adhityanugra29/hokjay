@@ -24,31 +24,36 @@ interface CourierOption {
 /**
  * Pre-loads the cart with an existing invoice's items on mount, then renders
  * the invoice form in edit mode — so fixing a mistake doesn't mean re-typing
- * everything from an empty Katalog browse.
+ * everything from scratch.
  *
- * The `loaded` ref used to be the only guard against re-loading — but it's
- * a fresh `useRef(false)` on every mount, and "+ Tambah Produk" navigates
- * away to /katalog and remounts this component when the user comes back.
- * That re-ran loadItems(items) with the ORIGINAL server-fetched invoice
- * items, silently discarding whatever product was just added on Katalog
- * (the cart got overwritten back to the pre-edit state). Per the user's
- * report 2026-08-27.
+ * History of this one effect, because it's been genuinely tricky to get
+ * right:
  *
- * A sessionStorage "already seeded" marker was tried next, but that had its
- * own bug: the marker survives for the whole tab session regardless of
- * whether the user ever actually comes back to THIS invoice — click Edit
- * once, leave without submitting (e.g. make an unrelated new invoice,
- * which clears the cart on submit), then click Edit on this same invoice
- * again later in the same tab, and the stale marker skipped reseeding an
- * now-empty cart, showing the edit form with zero items ("data ke-reset").
- * Per the user's report 2026-08-27.
+ * 1. Originally guarded only by a `useRef(false)` — but "+ Tambah Produk"
+ *    used to navigate away to /katalog and back, remounting this component
+ *    (fresh ref) and re-running loadItems(items) with the ORIGINAL
+ *    server-fetched invoice items, discarding whatever was just added on
+ *    Katalog. Per the user's report 2026-08-27.
+ * 2. A sessionStorage "already seeded" marker was tried next — but it
+ *    survived for the whole tab session regardless of whether the user
+ *    ever actually came back to THIS invoice, so a later fresh visit to
+ *    the same invoice (cart legitimately empty by then) wrongly skipped
+ *    reseeding, showing a blank form. Per the user's report 2026-08-27.
+ * 3. Replaced with "only seed if the cart is currently empty" — this
+ *    happened to also fix (2), but was still built around (1)'s premise
+ *    of a Katalog round-trip remounting this component mid-edit. Per the
+ *    user's report 2026-08-28 ("produk tereset" after saving once,
+ *    viewing the invoice, then editing it again), this heuristic itself
+ *    turned out to be the wrong idea to begin with.
  *
- * Fixed by dropping the marker entirely: only seed when the cart is
- * currently EMPTY. A genuine Katalog round-trip leaves the cart non-empty
- * (this invoice's original items, plus whatever was just added) — skipped,
- * preserving the addition. Anything else that leaves the cart empty by the
- * time this mounts (a fresh visit, or a stale marker's exact failure mode
- * above) correctly reseeds instead of showing a blank form.
+ * "+ Tambah Produk" no longer navigates anywhere at all — it's
+ * AddProductSidebar.tsx, an in-place overlay, added the same day as (1)'s
+ * fix. That means this component now only ever remounts on a genuine fresh
+ * navigation to this invoice's edit page — there's no round-trip left to
+ * preserve additions across. Simplified to just always seed from the
+ * server's current items on every mount: exactly what this invoice has
+ * right now, no heuristics, no cases left where "skip it" was ever the
+ * intent.
  */
 export default function EditInvoiceLoader({
   invoiceId,
@@ -67,13 +72,13 @@ export default function EditInvoiceLoader({
   salesList: SalesOption[];
   couriers: CourierOption[];
 }) {
-  const { items: cartItems, loadItems } = useCart();
+  const { loadItems } = useCart();
   const loaded = useRef(false);
 
   useEffect(() => {
     if (loaded.current) return;
     loaded.current = true;
-    if (cartItems.length === 0) loadItems(items);
+    loadItems(items);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

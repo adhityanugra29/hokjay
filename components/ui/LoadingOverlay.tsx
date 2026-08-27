@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 /**
  * Full-screen "Mohon menunggu" overlay — per the user's request 2026-08-25
@@ -91,6 +92,21 @@ const LoadingOverlayContext = createContext<LoadingOverlayContextValue | null>(n
 
 export function LoadingOverlayProvider({ children }: { children: React.ReactNode }) {
   const [count, setCount] = useState(0);
+  const pathname = usePathname();
+
+  // Whenever the route actually changes, whatever a caller was showing this
+  // overlay for has resolved — clear it here instead of trusting the
+  // triggering component to call hide() itself. A component that calls
+  // show() right before router.push() can get unmounted BY that very
+  // navigation before it ever observes the transition finishing (e.g. via
+  // useTransition's isPending), so hide() sometimes never ran — the
+  // overlay was reported stuck showing on the destination page 2026-08-28.
+  // This is the reliable fallback: the provider itself lives in the root
+  // layout and never unmounts across navigation, so it's always around to
+  // see the pathname actually land.
+  useEffect(() => {
+    setCount(0);
+  }, [pathname]);
 
   function show() {
     setCount((c) => c + 1);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, CurrencyInput } from "@/components/ui/Form";
@@ -76,22 +76,15 @@ export default function InvoiceForm({
   // the overlay used to hide the instant the save fetch() resolved, but
   // the router.push() navigation that follows still takes a moment to
   // actually land, leaving a ~1s gap with nothing showing. Per the user's
-  // report 2026-08-28. useTransition's isPending stays true until the
-  // destination page has actually rendered (the documented way to track
-  // App Router navigation completion) — wasPendingRef only calls
-  // hideLoading() on the falling edge, so it can't spuriously decrement
-  // the overlay's shared show/hide counter on an unrelated render.
-  const [isPending, startTransition] = useTransition();
-  const wasPendingRef = useRef(false);
-  useEffect(() => {
-    if (isPending) {
-      wasPendingRef.current = true;
-    } else if (wasPendingRef.current) {
-      wasPendingRef.current = false;
-      hideLoading();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPending]);
+  // report 2026-08-28. showLoading() is called before navigating and
+  // deliberately never paired with a hideLoading() call in the success
+  // path here — LoadingOverlayProvider itself clears it the moment the
+  // route actually changes (see components/ui/LoadingOverlay.tsx), which
+  // is more reliable than this component trying to track the transition
+  // itself (an earlier attempt using useTransition's isPending got stuck
+  // showing on the destination page — this component can get unmounted by
+  // the very navigation it's waiting on, before it ever observes isPending
+  // fall back to false).
 
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
   // Pelanggan is picked right here, inline — this form shows it read-only
@@ -298,15 +291,12 @@ export default function InvoiceForm({
       } catch {
         // ignore — nothing to clean up if storage was never available
       }
-      // showLoading() called above is deliberately NOT matched with a
-      // hideLoading() here — startTransition's isPending (watched by the
-      // effect above) stays true until the destination page has actually
-      // rendered, so the overlay keeps showing through the navigation
-      // instead of dropping the instant this fetch resolved.
-      startTransition(() => {
-        router.push(status === "draft" ? "/invoice" : `/invoice/${invoice._id}`);
-        router.refresh();
-      });
+      // showLoading() called above is deliberately not matched with a
+      // hideLoading() here — LoadingOverlayProvider clears it itself once
+      // the route actually changes (see components/ui/LoadingOverlay.tsx),
+      // so it stays visible through the whole navigation.
+      router.push(status === "draft" ? "/invoice" : `/invoice/${invoice._id}`);
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan invoice");
       hideLoading(); // no navigation follows an error — nothing else will clear this
@@ -345,12 +335,10 @@ export default function InvoiceForm({
         } catch {
           // ignore — nothing to clean up if storage was never available
         }
-        // Same reasoning as submit() above — hideLoading() is deliberately
-        // left to the isPending effect instead of being called here.
-        startTransition(() => {
-          router.push("/invoice");
-          router.refresh();
-        });
+        // Same reasoning as submit() above — LoadingOverlayProvider clears
+        // the overlay itself once the route changes.
+        router.push("/invoice");
+        router.refresh();
       } catch (err) {
         await alert(err instanceof Error ? err.message : "Gagal menghapus invoice");
         hideLoading();
@@ -370,9 +358,7 @@ export default function InvoiceForm({
       // ignore — nothing to clean up if storage was never available
     }
     showLoading();
-    startTransition(() => {
-      router.push("/invoice");
-    });
+    router.push("/invoice");
   }
 
   const showCustomerPicker = !customerId || editingCustomer;
