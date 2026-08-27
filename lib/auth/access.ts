@@ -87,22 +87,26 @@ export const MANAGER_BLOCKED_PREFIXES = ["/akuntansi", "/payroll", "/bayar-tagih
 // ALLOWED while only these two of its sub-tabs are blocked.
 export const MANAGER_BLOCKED_ADMIN_PREFIXES = ["/admin/user", "/admin/keuangan"];
 
-// Insentif/Komisi (Leaderboard Sales) locked down to just these two roles
-// per the user's request 2026-08-26 — nobody else reaches it, not even
-// "admin" or "manager" (isAdminLevel's usual full-access grant doesn't
-// apply here; this check runs before it).
-export const INSENTIF_ALLOWED_ROLES: UserRole[] = ["owner", "super_admin"];
+// Insentif/Komisi (Leaderboard Sales) locked down to just these roles per
+// the user's request 2026-08-26 — nobody else reaches it, not even a plain
+// "admin" (isAdminLevel's usual full-access grant doesn't apply here; this
+// check runs before it). "manager" added back in 2026-08-27 — Manager
+// Hojay is "sales juga, tapi diberikan otoritas lebih", so they're meant
+// to see the leaderboard (and appear on it) same as any other sales rep.
+export const INSENTIF_ALLOWED_ROLES: UserRole[] = ["owner", "super_admin", "manager"];
 export function isInsentifAllowed(role: UserRole | undefined | null): boolean {
   return !!role && INSENTIF_ALLOWED_ROLES.includes(role);
 }
 
 // "Komisi Saya" (2026-08-26) — a Sales rep's own commission summary, distinct
 // from the full multi-sales leaderboard at /insentif (Owner+Super Admin
-// only). Restricted to role "sales" specifically, not just "not admin" —
-// admin-level accounts aren't Sales reps, so there's no "own data" for them
-// to see here; same override-before-admin-bypass pattern as isInsentifAllowed.
+// only). Restricted to "sales" and "manager" specifically, not just "not
+// admin" — Manager Hojay is "sales juga, tapi diberikan otoritas lebih"
+// (2026-08-27), so their own commission belongs here too; every OTHER
+// admin-level role isn't a Sales rep, so there's no "own data" for them to
+// see. Same override-before-admin-bypass pattern as isInsentifAllowed.
 export function isKomisiSayaAllowed(role: UserRole | undefined | null): boolean {
-  return role === "sales";
+  return role === "sales" || role === "manager";
 }
 
 export function isAllowedPage(role: UserRole, pathname: string): boolean {

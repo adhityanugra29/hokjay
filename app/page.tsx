@@ -28,7 +28,11 @@ export default async function DashboardPage() {
 
   const canSeePurchasing = isAllowedPage(role, "/purchasing");
   const canSeeBayarTagihan = isAllowedPage(role, "/bayar-tagihan");
-  const isSales = role === "sales";
+  // Manager Hojay included (2026-08-27) — "mereka sales juga, tapi
+  // diberikan otoritas lebih": the personalized Sales homepage (own
+  // invoices/commission/dormant customers) applies to them too, not just
+  // role "sales".
+  const isSales = role === "sales" || role === "manager";
 
   const [
     followUpAll,

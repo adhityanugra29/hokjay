@@ -279,13 +279,15 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
     if (coverRef.current) setCoverHeight(coverRef.current.offsetHeight);
   }, [loaded, byCategory.length]);
 
-  // When a sales rep is logged in and generates their own catalog, the
-  // "Pemesanan" section shows their own name + WA number (matched by nama
-  // against the Sales roster) instead of the generic line — per the user's
-  // request 2026-08-25. Other roles (admin/finance/purchasing) keep the
-  // generic text since there's no single "own" sales record for them.
+  // When a sales rep (or a manager — "mereka sales juga, tapi diberikan
+  // otoritas lebih", 2026-08-27) is logged in and generates their own
+  // catalog, the "Pemesanan" section shows their own name + WA number
+  // (matched by nama against the Sales roster) instead of the generic line
+  // — per the user's request 2026-08-25. Other roles (admin/finance/
+  // purchasing) keep the generic text since there's no single "own" sales
+  // record for them.
   const ownSales =
-    user?.role === "sales"
+    user?.role === "sales" || user?.role === "manager"
       ? sales.find((s) => s.nama.trim().toLowerCase() === user.nama.trim().toLowerCase())
       : undefined;
 
