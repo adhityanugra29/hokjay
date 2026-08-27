@@ -1,32 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProductForm, { type ProductFormValues } from "@/components/produk/ProductForm";
-
-interface RawProduct {
-  name: string;
-  merk?: string;
-  category: string;
-  kondisi: "baru" | "bekas";
-  kondisiPercent?: number;
-  tipeProduk?: "elektronik" | "non-elektronik";
-  hargaRekomendasi: number;
-  hargaMinimum: number;
-  komisiPercent: number;
-  stok: number;
-  tanggalBarangMasuk?: string;
-  stokMinimum?: number;
-  alertHariTidakTerjual?: number;
-  dimensi?: { panjangCm?: number | null; lebarCm?: number | null; tinggiCm?: number | null };
-  ketebalan?: string;
-  dayaListrik?: string;
-  fotoUrl?: string;
-  fotoSampingUrl?: string;
-  fotoBelakangUrl?: string;
-  deskripsi?: string;
-  sku: string;
-}
+import type { KatalogProduct } from "./ProductCard";
 
 /**
  * "Edit" pencil on a Katalog product card opens this instead of navigating
@@ -34,89 +11,64 @@ interface RawProduct {
  * spotted while browsing the catalog without losing their place. Per the
  * user's request 2026-08-27 ("supaya tidak bolak balik" — the user's own
  * follow-up, replacing an earlier navigate-to-Inventory idea). Reuses the
- * exact same ProductForm as Inventory's edit page, fed by the same
- * GET /api/products/[id] + field-mapping ProdukEditPage already does.
+ * exact same ProductForm as Inventory's edit page.
+ *
+ * Used to fetch GET /api/products/[id] on open — but that's a real network
+ * round trip (plus a cold Vercel function on an infrequently-hit route)
+ * every single click, which the user reported as a noticeable delay
+ * 2026-08-27. Katalog's own page load already ran Product.find() and has
+ * every field this form needs sitting in memory; app/katalog/page.tsx now
+ * passes them straight through (only for canEditProduct roles, so no
+ * payload cost for anyone who'll never see the pencil) and this component
+ * just reads them off the `product` prop it's handed — zero extra fetch,
+ * opens instantly.
  */
 export default function EditProductDrawer({
-  productId,
+  product,
   categories,
   onClose,
 }: {
-  productId: string | null;
+  product: KatalogProduct | null;
   categories: string[];
   onClose: () => void;
 }) {
   const router = useRouter();
-  const [product, setProduct] = useState<RawProduct | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Nothing to fetch while closed — and no need to clear `product` here
-    // either: it stays stale while unrendered (the component returns null
-    // below whenever productId is falsy), and gets reset the moment this
-    // effect re-runs for the next productId anyway.
-    if (!productId) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setProduct(null);
-    fetch(`/api/products/${productId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Gagal memuat data produk");
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) setProduct(data);
-      })
-      .catch(() => {
-        if (!cancelled) setError("Gagal memuat data produk.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [productId]);
-
-  useEffect(() => {
-    if (!productId) return;
+    if (!product) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [productId, onClose]);
+  }, [product, onClose]);
 
-  if (!productId) return null;
+  if (!product) return null;
 
-  const initial: Partial<ProductFormValues> | undefined = product
-    ? {
-        name: product.name,
-        merk: product.merk ?? "",
-        category: product.category,
-        kondisi: product.kondisi,
-        kondisiPercent: product.kondisiPercent ? String(product.kondisiPercent) : "",
-        tipeProduk: product.tipeProduk ?? "non-elektronik",
-        hargaRekomendasi: String(product.hargaRekomendasi),
-        hargaMinimum: String(product.hargaMinimum),
-        komisiPercent: String(product.komisiPercent),
-        stok: String(product.stok),
-        tanggalBarangMasuk: product.tanggalBarangMasuk ? new Date(product.tanggalBarangMasuk).toISOString().slice(0, 10) : "",
-        stokMinimum: String(product.stokMinimum ?? 5),
-        alertHariTidakTerjual: String(product.alertHariTidakTerjual ?? ""),
-        panjangCm: product.dimensi?.panjangCm ? String(product.dimensi.panjangCm) : "",
-        lebarCm: product.dimensi?.lebarCm ? String(product.dimensi.lebarCm) : "",
-        tinggiCm: product.dimensi?.tinggiCm ? String(product.dimensi.tinggiCm) : "",
-        ketebalan: product.ketebalan ?? "",
-        dayaListrik: product.dayaListrik ?? "",
-        fotoUrl: product.fotoUrl ?? "",
-        fotoSampingUrl: product.fotoSampingUrl ?? "",
-        fotoBelakangUrl: product.fotoBelakangUrl ?? "",
-        deskripsi: product.deskripsi ?? "",
-      }
-    : undefined;
+  const initial: Partial<ProductFormValues> = {
+    name: product.name,
+    merk: product.merk ?? "",
+    category: product.category,
+    kondisi: product.kondisi as "baru" | "bekas",
+    kondisiPercent: product.kondisiPercent ? String(product.kondisiPercent) : "",
+    tipeProduk: product.tipeProduk ?? "non-elektronik",
+    hargaRekomendasi: String(product.hargaRekomendasi),
+    hargaMinimum: String(product.hargaMinimum),
+    komisiPercent: String(product.komisiPercent),
+    stok: String(product.stok),
+    tanggalBarangMasuk: product.tanggalBarangMasuk ? product.tanggalBarangMasuk.slice(0, 10) : "",
+    stokMinimum: String(product.stokMinimum ?? 5),
+    alertHariTidakTerjual: String(product.alertHariTidakTerjual ?? ""),
+    panjangCm: product.dimensi?.panjangCm ? String(product.dimensi.panjangCm) : "",
+    lebarCm: product.dimensi?.lebarCm ? String(product.dimensi.lebarCm) : "",
+    tinggiCm: product.dimensi?.tinggiCm ? String(product.dimensi.tinggiCm) : "",
+    ketebalan: product.ketebalan ?? "",
+    dayaListrik: product.dayaListrik ?? "",
+    fotoUrl: product.fotoUrl ?? "",
+    fotoSampingUrl: product.fotoSampingUrl ?? "",
+    fotoBelakangUrl: product.fotoBelakangUrl ?? "",
+    deskripsi: product.deskripsi ?? "",
+  };
 
   function handleSaved() {
     onClose();
@@ -132,7 +84,7 @@ export default function EditProductDrawer({
         <div className="flex items-center justify-between border-b-2 border-ink bg-surface px-5 py-4">
           <div>
             <div className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">Ubah Produk</div>
-            <h2 className="font-sans text-[1rem] font-extrabold text-ink">{product?.name ?? "Memuat..."}</h2>
+            <h2 className="font-sans text-[1rem] font-extrabold text-ink">{product.name}</h2>
           </div>
           <button
             type="button"
@@ -145,18 +97,14 @@ export default function EditProductDrawer({
         </div>
 
         <div className="p-5">
-          {loading && <div className="py-10 text-center font-mono text-[0.8rem] text-muted">Memuat data produk...</div>}
-          {error && <div className="py-10 text-center font-mono text-[0.8rem] text-danger">{error}</div>}
-          {product && (
-            <ProductForm
-              mode="edit"
-              productId={productId}
-              categories={categories}
-              initial={initial}
-              onSuccess={handleSaved}
-              onCancel={onClose}
-            />
-          )}
+          <ProductForm
+            mode="edit"
+            productId={product._id}
+            categories={categories}
+            initial={initial}
+            onSuccess={handleSaved}
+            onCancel={onClose}
+          />
         </div>
       </div>
     </div>

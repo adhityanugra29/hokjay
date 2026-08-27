@@ -41,7 +41,7 @@ export default function KatalogClient({
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
   const [downloading, setDownloading] = useState(false);
-  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<KatalogProduct | null>(null);
   const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
 
@@ -323,7 +323,7 @@ export default function KatalogClient({
             key={p._id}
             product={p}
             canEdit={canEditProduct}
-            onEdit={() => setEditingProductId(p._id)}
+            onEdit={() => setEditingProduct(p)}
           />
         ))}
         {filtered.length === 0 && (
@@ -334,9 +334,9 @@ export default function KatalogClient({
       </div>
 
       <EditProductDrawer
-        productId={editingProductId}
+        product={editingProduct}
         categories={categories}
-        onClose={() => setEditingProductId(null)}
+        onClose={() => setEditingProduct(null)}
       />
     </div>
   );

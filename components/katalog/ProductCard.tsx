@@ -103,6 +103,20 @@ export interface KatalogProduct {
   ketebalan?: string;
   dayaListrik?: string;
   fotoUrl?: string;
+  // Only populated when the viewer can edit products (manager/owner/super
+  // admin) — feeds EditProductDrawer directly, with no separate fetch, so
+  // opening the pencil is instant instead of waiting on a fresh API round
+  // trip (that Product.find() already fetched the full document; this just
+  // passes the rest of its fields through). Per the user's report
+  // 2026-08-27 that the pencil felt slow to open.
+  merk?: string;
+  tipeProduk?: "elektronik" | "non-elektronik";
+  tanggalBarangMasuk?: string;
+  stokMinimum?: number;
+  alertHariTidakTerjual?: number;
+  fotoSampingUrl?: string;
+  fotoBelakangUrl?: string;
+  deskripsi?: string;
   // Booked / Sudah DP / SOLD — see lib/katalog.ts. Still stok > 0 and
   // pickable (a booking doesn't reserve stock); these are informational
   // flags so sales knows someone already has a claim on this unit before

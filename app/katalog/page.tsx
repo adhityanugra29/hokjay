@@ -59,6 +59,19 @@ export default async function KatalogPage() {
           dayaListrik: p.dayaListrik ?? undefined,
           fotoUrl: p.fotoUrl ?? undefined,
           isCustom: p.isCustom ?? false,
+          // Only sent for roles that actually see the edit pencil — feeds
+          // EditProductDrawer directly with zero extra fetch. Per the
+          // user's report 2026-08-27 that opening it felt slow.
+          ...(canEditProduct && {
+            merk: p.merk ?? undefined,
+            tipeProduk: (p.tipeProduk as "elektronik" | "non-elektronik") ?? undefined,
+            tanggalBarangMasuk: p.tanggalBarangMasuk ? new Date(p.tanggalBarangMasuk).toISOString() : undefined,
+            stokMinimum: p.stokMinimum ?? undefined,
+            alertHariTidakTerjual: p.alertHariTidakTerjual ?? undefined,
+            fotoSampingUrl: p.fotoSampingUrl ?? undefined,
+            fotoBelakangUrl: p.fotoBelakangUrl ?? undefined,
+            deskripsi: p.deskripsi ?? undefined,
+          }),
           bookedQty: status?.bookedQty ?? 0,
           bookedBy: status?.bookedBy ?? [],
           dpQty: status?.dpQty ?? 0,
