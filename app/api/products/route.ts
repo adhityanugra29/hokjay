@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
 import { nextProductSku } from "@/lib/counters";
+import { getProductInvoiceStatusMap } from "@/lib/katalog";
 
 export async function GET(req: NextRequest) {
   await dbConnect();
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search")?.trim();
   const category = searchParams.get("category")?.trim();
+  // Opt-in — the Katalog PDF (CatalogPrintDoc.tsx) fetches this same route
+  // and has no use for Booked/Sudah DP/SOLD, so the extra aggregation only
+  // runs when a caller actually asks for it (the Invoice "Tambah Produk"
+  // sidebar, see components/invoice/AddProductSidebar.tsx). Per the user's
+  // request 2026-08-27.
+  const withStatus = searchParams.get("withStatus") === "1";
 
   const filter: Record<string, unknown> = {};
   if (category) filter.category = category;
@@ -19,8 +26,22 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  const products = await Product.find(filter).sort({ name: 1 });
-  return NextResponse.json(products);
+  const products = await Product.find(filter).sort({ name: 1 }).lean();
+  if (!withStatus) return NextResponse.json(products);
+
+  const statusMap = await getProductInvoiceStatusMap();
+  const withStatusFields = products.map((p) => {
+    const status = statusMap.get(String(p._id));
+    return {
+      ...p,
+      bookedQty: status?.bookedQty ?? 0,
+      bookedBy: status?.bookedBy ?? [],
+      dpQty: status?.dpQty ?? 0,
+      dpBy: status?.dpBy ?? [],
+      soldQty: status?.soldQty ?? 0,
+    };
+  });
+  return NextResponse.json(withStatusFields);
 }
 
 export async function POST(req: NextRequest) {

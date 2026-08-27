@@ -9,6 +9,7 @@ import { Button, LinkButton } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
 import ItemRowEditor from "./ItemRowEditor";
 import InlineCustomerForm, { type CreatedCustomer } from "./InlineCustomerForm";
+import AddProductSidebar from "./AddProductSidebar";
 import { computeLineCommission } from "@/lib/commission";
 import { rupiah } from "@/lib/format";
 
@@ -84,6 +85,7 @@ export default function InvoiceForm({
   // here instead. Per the user's request 2026-08-27.
   const [customerList, setCustomerList] = useState<CustomerOption[]>(customers);
   const [addingCustomer, setAddingCustomer] = useState(false);
+  const [addingProduct, setAddingProduct] = useState(false);
   const [shipAddress, setShipAddress] = useState(initial?.shipAddress ?? "");
   const [salesId, setSalesId] = useState(initial?.salesId ?? "");
   const [tanggalInvoice, setTanggalInvoice] = useState(
@@ -408,22 +410,43 @@ export default function InvoiceForm({
           {items.map((item) => (
             <ItemRowEditor key={item.productId} item={item} />
           ))}
-          {items.length === 0 && (
-            <div className="border border-dashed border-line py-6 text-center font-mono text-[0.8rem] text-muted">
-              Belum ada produk. Tambahkan dari{" "}
-              <Link href="/katalog" className="text-moss-deep underline">
-                Katalog
-              </Link>
-              .
-            </div>
-          )}
+          {items.length === 0 &&
+            (mode === "edit" ? (
+              <div className="border border-dashed border-line py-6 text-center font-mono text-[0.8rem] text-muted">
+                Belum ada produk. Klik &quot;+ Tambah Produk&quot; di bawah.
+              </div>
+            ) : (
+              <div className="border border-dashed border-line py-6 text-center font-mono text-[0.8rem] text-muted">
+                Belum ada produk. Tambahkan dari{" "}
+                <Link href="/katalog" className="text-moss-deep underline">
+                  Katalog
+                </Link>
+                .
+              </div>
+            ))}
         </div>
-        <Link
-          href="/katalog"
-          className="mt-1 block w-full rounded border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-moss hover:bg-[#fbfaf5] hover:text-moss-deep"
-        >
-          + Tambah Produk
-        </Link>
+        {/* Edit mode opens the inline sidebar instead of navigating to
+            /katalog — "Lanjut ke Invoice" there always routes to
+            /invoice/baru (a brand new invoice), which silently discarded
+            an in-progress edit's pelanggan/sales/etc. Per the user's
+            report 2026-08-27 ("customernya tereset"). Create mode is
+            unaffected — confirmed with the user 2026-08-27. */}
+        {mode === "edit" ? (
+          <button
+            type="button"
+            onClick={() => setAddingProduct(true)}
+            className="mt-1 block w-full cursor-pointer rounded border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-moss hover:bg-[#fbfaf5] hover:text-moss-deep"
+          >
+            + Tambah Produk
+          </button>
+        ) : (
+          <Link
+            href="/katalog"
+            className="mt-1 block w-full rounded border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-moss hover:bg-[#fbfaf5] hover:text-moss-deep"
+          >
+            + Tambah Produk
+          </Link>
+        )}
       </div>
 
       <div className="mt-5 border border-line bg-[#f7f5ee] p-5">
@@ -462,6 +485,8 @@ export default function InvoiceForm({
           Batal
         </LinkButton>
       </FormActions>
+
+      {mode === "edit" && <AddProductSidebar open={addingProduct} onClose={() => setAddingProduct(false)} />}
     </Panel>
   );
 }
