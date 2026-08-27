@@ -103,8 +103,16 @@ export interface KatalogProduct {
   ketebalan?: string;
   dayaListrik?: string;
   fotoUrl?: string;
-  /** Has sold at least once (any StockMovement with alasan "Penjualan") — still pickable, just flagged. */
-  sudahTerjual?: boolean;
+  // Booked / Sudah DP / SOLD — see lib/katalog.ts. Still stok > 0 and
+  // pickable (a booking doesn't reserve stock); these are informational
+  // flags so sales knows someone already has a claim on this unit before
+  // promising it to another customer. Per the user's request 2026-08-27.
+  bookedQty?: number;
+  bookedBy?: string[];
+  dpQty?: number;
+  dpBy?: string[];
+  /** Total units ever sold (paid), lifetime — replaces the old plain "Sudah Terjual" boolean. */
+  soldQty?: number;
 }
 
 export default function ProductCard({
@@ -308,12 +316,24 @@ export default function ProductCard({
               Pesanan Custom
             </span>
           )}
-          {/* Informational only — still selectable/pickable for the PDF,
-              just flags that this isn't an untouched-new item anymore. Per
-              the user's request 2026-08-25. */}
-          {product.sudahTerjual && (
+          {/* Booked / Sudah DP / SOLD — all shown together when they apply
+              simultaneously (a product can have units in more than one
+              state across different invoices at once), per the user's
+              confirmed choice 2026-08-27. Still selectable/pickable —
+              these are informational, not a reservation. */}
+          {!!product.bookedQty && (
+            <span className="border border-[#B45309] px-2.5 py-1 text-[0.66rem] font-semibold text-[#B45309]">
+              Booked {product.bookedQty} — {(product.bookedBy ?? []).join(", ")}
+            </span>
+          )}
+          {!!product.dpQty && (
+            <span className="border border-[#0369A1] px-2.5 py-1 text-[0.66rem] font-semibold text-[#0369A1]">
+              Sudah DP {product.dpQty} — {(product.dpBy ?? []).join(", ")}
+            </span>
+          )}
+          {!!product.soldQty && (
             <span className="border border-gold px-2.5 py-1 text-[0.66rem] font-semibold text-gold">
-              Sudah Terjual
+              SOLD {product.soldQty}
             </span>
           )}
           {/* Just "Bekas"/"Baru" — the kondisiPercent number is dropped
