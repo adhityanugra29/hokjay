@@ -1,7 +1,5 @@
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
-import { StockMovement } from "@/models/StockMovement";
-import { JournalEntry } from "@/models/JournalEntry";
 
 export interface ProductInvoiceStatus {
   /** Qty across unpaid invoices with no DP recorded — "Booked". */
@@ -29,26 +27,21 @@ export interface ProductInvoiceStatus {
  * for each bucket rather than collapsing to one "most advanced" status, per
  * the user's confirmed choice.
  *
- * Excludes any invoice already finalized under the pre-2026-08-27 rule
- * (detected via its "invoice-finalisasi" journal entry) — that invoice's
- * stock is already physically deducted (same as a paid one), not merely
- * reserved, so it has nothing to do with "Booked"/"Sudah DP" and would
- * double-count against the same units Product.stok already reflects as
- * gone.
+ * Reads status straight off Invoice.status/dp — NOT off StockMovement.
+ * An earlier version derived "SOLD" from StockMovement("Penjualan")
+ * records, which for an invoice finalized under the pre-2026-08-27 rule
+ * (stock decremented at "unpaid" time, not "paid") wrongly showed SOLD for
+ * an invoice that hadn't actually been paid yet. Per the user's bug report
+ * 2026-08-27 ("jika belum dibayar, itu statusnya booked bukan sold").
  */
 export async function getProductInvoiceStatusMap(): Promise<Map<string, ProductInvoiceStatus>> {
   await dbConnect();
 
-  const [unpaidInvoices, legacyFinalizedIds, soldAgg] = await Promise.all([
+  const [unpaidInvoices, paidInvoices] = await Promise.all([
     Invoice.find({ status: "unpaid" }, { items: 1, dp: 1, sales: 1 }).lean(),
-    JournalEntry.distinct("invoice", { sumberTipe: "invoice-finalisasi" }),
-    StockMovement.aggregate([
-      { $match: { alasan: "Penjualan" } },
-      { $group: { _id: "$product", totalQty: { $sum: "$qty" } } },
-    ]),
+    Invoice.find({ status: "paid" }, { items: 1 }).lean(),
   ]);
 
-  const legacySet = new Set(legacyFinalizedIds.map((id) => String(id)));
   const map = new Map<string, ProductInvoiceStatus>();
 
   function ensure(productId: string): ProductInvoiceStatus {
@@ -61,7 +54,6 @@ export async function getProductInvoiceStatusMap(): Promise<Map<string, ProductI
   }
 
   for (const inv of unpaidInvoices) {
-    if (legacySet.has(String(inv._id))) continue; // already physically deducted — not a reservation
     const salesName = inv.sales?.nama?.trim() || "—";
     const hasDp = !!inv.dp?.nominal;
     for (const item of inv.items) {
@@ -77,9 +69,11 @@ export async function getProductInvoiceStatusMap(): Promise<Map<string, ProductI
     }
   }
 
-  for (const row of soldAgg) {
-    if (!row._id) continue;
-    ensure(String(row._id)).soldQty = row.totalQty;
+  for (const inv of paidInvoices) {
+    for (const item of inv.items) {
+      if (!item.product) continue;
+      ensure(String(item.product)).soldQty += item.qty;
+    }
   }
 
   return map;

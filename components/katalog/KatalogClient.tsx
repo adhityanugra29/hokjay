@@ -207,11 +207,12 @@ export default function KatalogClient({
     if (category) list = list.filter((p) => p.category === category);
     if (sort === "price-asc") list = [...list].sort((a, b) => a.hargaRekomendasi - b.hargaRekomendasi);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.hargaRekomendasi - a.hargaRekomendasi);
-    // Booked/Sudah DP products sink to the bottom — fully available stock
-    // shows first. Per the user's request 2026-08-27. Whatever sort/filter
-    // already applied above is preserved within each of the two groups.
-    const available = list.filter((p) => !p.bookedQty && !p.dpQty);
-    const encumbered = list.filter((p) => p.bookedQty || p.dpQty);
+    // Booked/Sudah DP/SOLD products sink to the bottom — fully available
+    // stock shows first, so it's what gets the user's attention. Per the
+    // user's request 2026-08-27. Whatever sort/filter already applied
+    // above is preserved within each of the two groups.
+    const available = list.filter((p) => !p.bookedQty && !p.dpQty && !p.soldQty);
+    const encumbered = list.filter((p) => p.bookedQty || p.dpQty || p.soldQty);
     return [...available, ...encumbered];
   }, [products, search, category, sort]);
 
