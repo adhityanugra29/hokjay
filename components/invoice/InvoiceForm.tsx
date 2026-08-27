@@ -151,13 +151,21 @@ export default function InvoiceForm({
     }
   }, [draftKey, customerId, shipAddress, salesId, tanggalInvoice, tanggalKirim, kurirId, ongkosKirim]);
 
-  // Logged in as sales -> "Sales (Yang Closing)" auto-fills with their own
-  // account, matched by nama against the Sales roster (same nama-matching
-  // convention used elsewhere, e.g. Insentif ranking). Only on a fresh
-  // invoice with nothing picked yet — never overrides an explicit pick or
-  // an existing invoice being edited. Per the user's request 2026-08-25.
+  // Logged in as sales (or manager — manager is treated as a sales rep
+  // with extra authority, same as the Katalog/Leaderboard/Komisi Saya
+  // extension confirmed 2026-08-27) -> "Sales Consultant" auto-fills with
+  // their own account, matched by nama against the Sales roster (same
+  // nama-matching convention used elsewhere, e.g. Insentif ranking). Only
+  // on a fresh invoice with nothing picked yet — never overrides an
+  // explicit pick or an existing invoice being edited. Per the user's
+  // request 2026-08-25, extended to manager 2026-08-27.
   useEffect(() => {
-    if (mode === "create" && !initial?.salesId && !salesId && currentUser?.role === "sales") {
+    if (
+      mode === "create" &&
+      !initial?.salesId &&
+      !salesId &&
+      (currentUser?.role === "sales" || currentUser?.role === "manager")
+    ) {
       const own = salesList.find((s) => s.nama.trim().toLowerCase() === currentUser.nama.trim().toLowerCase());
       if (own) setSalesId(own._id);
     }
@@ -351,7 +359,7 @@ export default function InvoiceForm({
       </FormGrid>
 
       <FormGrid>
-        <Field label="Sales (Yang Closing)">
+        <Field label="Sales Consultant">
           <Select value={salesId} onChange={(e) => setSalesId(e.target.value)}>
             <option value="">— Pilih sales —</option>
             {salesList.map((s) => (
