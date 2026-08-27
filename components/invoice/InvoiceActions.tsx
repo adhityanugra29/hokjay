@@ -76,13 +76,19 @@ export default function InvoiceActions({
       const pageHeightMM = pdf.internal.pageSize.getHeight();
 
       for (let i = 0; i < pageEls.length; i++) {
-        // scale 3 + PNG (lossless), not the Katalog PDF's scale 2 + JPEG —
-        // this document is text/lines on a plain background, not photos,
-        // and JPEG compression visibly softened text edges (blurry per the
-        // user's report 2026-08-27). No photo-heavy pages here to make the
-        // filesize tradeoff costly.
+        // PNG (lossless), not the Katalog PDF's JPEG — this document is
+        // text/lines on a plain background, and JPEG compression visibly
+        // softened text edges (blurry per the user's report 2026-08-27).
+        // Scale is back to 2 (matching Katalog) rather than 3 — that jump
+        // was the actual cause of a SEPARATE report, a single page coming
+        // out at ~20MB (per the user's report 2026-08-28): a scale-3
+        // canvas has over 2x the pixel count of scale-2, and PNG has no
+        // quality/compression knob to claw that back since it's lossless
+        // by definition. The blur problem was JPEG's compression
+        // artifacts, not insufficient resolution — PNG at scale 2 has
+        // neither artifacts nor the scale-3 size blowup.
         const canvas = await html2canvas(pageEls[i], {
-          scale: 3,
+          scale: 2,
           useCORS: true,
           scrollY: -window.scrollY,
           scrollX: 0,
