@@ -106,7 +106,16 @@ export interface KatalogProduct {
   sudahTerjual?: boolean;
 }
 
-export default function ProductCard({ product }: { product: KatalogProduct }) {
+export default function ProductCard({
+  product,
+  canEdit,
+  onEdit,
+}: {
+  product: KatalogProduct;
+  /** Manager/Owner/Super Admin only — shows the pencil that opens the inline edit drawer. Per the user's request 2026-08-27. */
+  canEdit?: boolean;
+  onEdit?: () => void;
+}) {
   const { items, addItem, updateItem, removeItem } = useCart();
   const { isSelected, toggle, pickMode, getPriceMode, setPriceMode, customPrices, setCustomPrice, getEffectivePrice } =
     useCatalogSelection();
@@ -187,6 +196,21 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
             />
             {selected && <span className="text-[13px] leading-none font-bold text-white">✓</span>}
           </label>
+        )}
+        {canEdit && (
+          <button
+            type="button"
+            title="Ubah data produk"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit?.();
+            }}
+            className="absolute top-2.5 right-2.5 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-ink/70 text-white hover:bg-ink"
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13.5 3.5 16.5 6.5M4 16l.7-3.2L12.8 4.7a1.5 1.5 0 0 1 2.1 0l.4.4a1.5 1.5 0 0 1 0 2.1L7.2 15.3 4 16Z" />
+            </svg>
+          </button>
         )}
         {product.fotoUrl ? (
           <>

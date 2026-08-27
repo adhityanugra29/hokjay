@@ -118,11 +118,18 @@ export default function ProductForm({
   productId,
   initial,
   categories,
+  onSuccess,
+  onCancel,
 }: {
   mode: "create" | "edit";
   productId?: string;
   initial?: Partial<ProductFormValues>;
   categories: string[];
+  // Both default to the original navigate-to-/produk behavior — only the
+  // Katalog inline edit drawer (2026-08-27) passes its own, so saving/
+  // cancelling from there stays on the Katalog page instead of leaving it.
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [values, setValues] = useState<ProductFormValues>(() => {
@@ -231,8 +238,12 @@ export default function ProductForm({
         throw new Error(body.error || "Gagal menyimpan produk");
       }
       localStorage.setItem(LAST_KATEGORI_KEY, values.category);
-      router.push("/produk");
-      router.refresh();
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/produk");
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan produk");
     } finally {
@@ -371,9 +382,15 @@ export default function ProductForm({
           <Button type="submit" disabled={saving}>
             {saving ? "Menyimpan..." : "Simpan Produk"}
           </Button>
-          <LinkButton variant="ghost" href="/produk">
-            Batal
-          </LinkButton>
+          {onCancel ? (
+            <Button type="button" variant="ghost" onClick={onCancel}>
+              Batal
+            </Button>
+          ) : (
+            <LinkButton variant="ghost" href="/produk">
+              Batal
+            </LinkButton>
+          )}
         </FormActions>
       </form>
     </Panel>

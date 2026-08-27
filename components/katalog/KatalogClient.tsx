@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
+import EditProductDrawer from "./EditProductDrawer";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
@@ -29,14 +30,18 @@ const KATALOG_PDF_RENDER_SCALE = 2;
 export default function KatalogClient({
   products,
   categories,
+  canEditProduct,
 }: {
   products: KatalogProduct[];
   categories: string[];
+  /** Manager/Owner/Super Admin only. Per the user's request 2026-08-27. */
+  canEditProduct?: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
 
@@ -308,7 +313,12 @@ export default function KatalogClient({
           user's report 2026-08-25. */}
       <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2 lg:grid-cols-4">
         {filtered.map((p) => (
-          <ProductCard key={p._id} product={p} />
+          <ProductCard
+            key={p._id}
+            product={p}
+            canEdit={canEditProduct}
+            onEdit={() => setEditingProductId(p._id)}
+          />
         ))}
         {filtered.length === 0 && (
           <div className="col-span-full py-10 text-center font-mono text-sm text-muted">
@@ -316,6 +326,12 @@ export default function KatalogClient({
           </div>
         )}
       </div>
+
+      <EditProductDrawer
+        productId={editingProductId}
+        categories={categories}
+        onClose={() => setEditingProductId(null)}
+      />
     </div>
   );
 }
