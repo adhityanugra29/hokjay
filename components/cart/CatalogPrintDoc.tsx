@@ -353,32 +353,31 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                     )}
                     <div className="mb-5 flex gap-5 border-t border-line pt-5">
                       {p.fotoUrl ? (
-                        // CSS background-image + background-size:cover
-                        // instead of <img object-cover> — html2canvas
-                        // doesn't reliably honor the object-fit CSS property
-                        // on <img> elements (a known limitation), so a tall/
-                        // portrait photo forced into this landscape 220x165
-                        // box could come out visibly stretched/squashed in
-                        // the exported PDF even though it displays correctly
-                        // crop-to-fill everywhere else in the app. background
-                        // -size:cover doesn't have that gap. Per the user's
-                        // report 2026-08-26 ("beberapa foto ada yang terasa
-                        // seperti gepeng").
-                        //
-                        // The hidden <img> underneath exists purely so
-                        // KatalogClient's "wait for every image to finish
-                        // loading before capturing" check (which walks
-                        // element.querySelectorAll("img")) still covers this
-                        // photo — browsers share the HTTP cache between an
-                        // <img src> request and a CSS background-image url()
-                        // to the same URL, so by the time this loads, the
-                        // background-image paints from cache instantly.
-                        <div
-                          className="h-[165px] w-[220px] shrink-0 bg-surface bg-cover bg-center"
-                          style={{ backgroundImage: `url(${p.fotoUrl})` }}
-                        >
+                        // Manual "cover" crop — NOT object-fit (html2canvas
+                        // doesn't reliably honor that CSS property on <img>,
+                        // could stretch a tall/portrait photo — the user's
+                        // report 2026-08-26 "gepeng"), and NOT a CSS
+                        // background-image either (tried next — html2canvas
+                        // renders background-image through a lower-fidelity
+                        // path than a plain <img>, so that traded the
+                        // stretching for visible blur, the user's next
+                        // report 2026-08-27). This is the pre-object-fit
+                        // "cover" technique instead: absolutely position an
+                        // oversized <img> centered inside an overflow-hidden
+                        // box, min-w/min-h 100% forces it to be at least as
+                        // big as the box in both directions while width/
+                        // height:auto keeps its own aspect ratio, so the
+                        // browser's ordinary replaced-element sizing (not a
+                        // special CSS property) does the crop-to-fill —
+                        // html2canvas renders that the exact same way it
+                        // renders every other plain <img> in this app.
+                        <div className="relative h-[165px] w-[220px] shrink-0 overflow-hidden bg-surface">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.fotoUrl} alt={p.name} className="hidden" aria-hidden />
+                          <img
+                            src={p.fotoUrl}
+                            alt={p.name}
+                            className="absolute top-1/2 left-1/2 h-auto w-auto min-h-full min-w-full max-w-none -translate-x-1/2 -translate-y-1/2"
+                          />
                         </div>
                       ) : (
                         <div className="flex h-[165px] w-[220px] shrink-0 items-center justify-center bg-surface text-[0.75rem] text-muted">
