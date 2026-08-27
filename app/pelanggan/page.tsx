@@ -4,6 +4,7 @@ import { LinkButton } from "@/components/ui/Button";
 import { RowActionLink } from "@/components/ui/RowAction";
 import MobilePelangganList from "@/components/pelanggan/MobilePelangganList";
 import { getPelangganSummary } from "@/lib/pelanggan";
+import { getSession } from "@/lib/auth/session";
 import { rupiah, rupiahCompact } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,10 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
   // 2026-08-25 — the "Mulai jarang pesan" stat card above stays (it's
   // informational, not a filter), only the list filter button is gone.
   const filter = sp.filter === "piutang" ? "piutang" : "semua";
-  const summary = await getPelangganSummary();
+  const session = await getSession();
+  // Per-sales customer privacy (2026-08-27) — see customerVisibilityFilter
+  // in lib/pelanggan.ts for the exact rule.
+  const summary = await getPelangganSummary(session);
 
   const filteredRows = summary.rows.filter((r) => {
     if (filter === "piutang") return r.piutang > 0;

@@ -1,6 +1,25 @@
 import { dbConnect } from "@/lib/db";
 import { Customer } from "@/models/Customer";
 import { Invoice } from "@/models/Invoice";
+import type { SessionPayload } from "@/lib/auth/jwt";
+
+/**
+ * Per-sales customer privacy (2026-08-27) — "Feby punya customer, Syifa
+ * tidak bisa melihat customernya Feby, tapi Manager/Admin/Owner/Super
+ * Admin bisa melihat semua". A plain "sales" role only sees customers
+ * where Customer.assignedSales matches their own nama, OR has no owner at
+ * all (assignedSales unset — customers added by a non-sales account, or
+ * from before this field existed, stay visible to every sales rep since
+ * there's no way to know whose they'd be). Every other role (including
+ * "manager" — "mereka sales juga, tapi diberikan otoritas lebih" doesn't
+ * extend to THIS restriction) sees everyone, unfiltered.
+ */
+export function customerVisibilityFilter(session: SessionPayload | null | undefined): Record<string, unknown> {
+  if (session?.role !== "sales") return {};
+  return {
+    $or: [{ assignedSales: session.nama }, { assignedSales: { $in: [null, ""] } }, { assignedSales: { $exists: false } }],
+  };
+}
 
 /**
  * "Daftar prioritas" for Pelanggan (2026-08-22 redesign, "3b") — who has
@@ -40,10 +59,10 @@ export interface PelangganSummary {
 const AKTIF_HARI = 90;
 const JARANG_PESAN_HARI = 60;
 
-export async function getPelangganSummary(): Promise<PelangganSummary> {
+export async function getPelangganSummary(session?: SessionPayload | null): Promise<PelangganSummary> {
   await dbConnect();
   const [customers, invoices] = await Promise.all([
-    Customer.find().lean(),
+    Customer.find(customerVisibilityFilter(session)).lean(),
     Invoice.find({ "customer.ref": { $ne: null } }).lean(),
   ]);
 

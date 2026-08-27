@@ -22,6 +22,16 @@ const CustomerSchema = new Schema(
     provinsi: { type: String, required: true, trim: true },
     termHari: { type: Number, default: 0, min: 0 },
     catatan: { type: String },
+    // Set once at creation time to whichever Sales rep added this customer
+    // (matched by nama, same convention as Invoice.sales.nama/Sales.nama —
+    // see [[sales-user-name-matching]]) — never set for a non-sales
+    // creator (admin/owner/finance/purchasing), in which case the customer
+    // stays visible to every sales rep. Powers per-sales customer privacy:
+    // a Sales rep only sees customers they personally added; Manager/
+    // Admin/Owner/Super Admin still see everyone regardless. Per the
+    // user's request 2026-08-27 ("Feby punya customer, Syifa tidak bisa
+    // melihat customernya Feby").
+    assignedSales: { type: String, trim: true },
   },
   { timestamps: true }
 );
