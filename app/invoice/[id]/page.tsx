@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import InvoiceActions from "@/components/invoice/InvoiceActions";
+import InvoicePrintDoc, { type InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
 import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
 import { LinkButton } from "@/components/ui/Button";
 import { dbConnect } from "@/lib/db";
@@ -15,11 +16,42 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
   const invoice = await Invoice.findById(id);
   if (!invoice) notFound();
 
+  // Feeds InvoicePrintDoc — the hidden, multi-page layout InvoiceActions'
+  // "Unduh Invoice (PDF)" button actually captures (html2canvas + jsPDF,
+  // same approach as the Katalog PDF). Replaces native window.print() per
+  // the user's report 2026-08-27 that a long invoice's content got cut off
+  // — #invoice-doc below sat inside a CSS grid, a well-known source of
+  // print-pagination bugs across browsers. The visible #invoice-doc stays
+  // as the on-screen preview; it's no longer what actually gets exported.
+  const printData: InvoicePrintData = {
+    nomor: invoice.nomor,
+    tanggal: (invoice.tanggalInvoice ?? invoice.createdAt!).toISOString(),
+    customerNama: invoice.customer!.nama,
+    customerWhatsapp: invoice.customer!.whatsapp ?? undefined,
+    shipAddress: invoice.shipAddress ?? undefined,
+    tanggalKirim: invoice.tanggalKirim ? invoice.tanggalKirim.toISOString() : undefined,
+    kurir: invoice.kurir ?? undefined,
+    salesNama: invoice.sales!.nama,
+    items: invoice.items.map((item) => ({
+      namaSnapshot: item.namaSnapshot,
+      qty: item.qty,
+      hargaJual: item.hargaJual,
+      subtotal: item.subtotal,
+    })),
+    subtotalProduk: invoice.subtotalProduk,
+    ongkosKirim: invoice.ongkosKirim ?? 0,
+    grandTotal: invoice.grandTotal,
+    dpNominal: invoice.dp?.nominal ?? undefined,
+    dpTanggal: invoice.dp?.tanggal ? invoice.dp.tanggal.toISOString() : undefined,
+  };
+
   return (
     <>
+      <InvoicePrintDoc invoice={printData} />
       {/* App chrome (title/subtitle/action buttons) has no place on the
-          actual printed document — #invoice-doc below is what "Cetak
-          Invoice" is meant to produce. Per the user's request 2026-08-26. */}
+          actual printed document — #invoice-doc below is the on-screen
+          preview; InvoicePrintDoc above is the hidden layout that's
+          actually downloaded. Per the user's request 2026-08-26/27. */}
       <div className="no-print">
       <PageHeader
         title={invoice.nomor}
