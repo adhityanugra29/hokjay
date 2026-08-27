@@ -83,6 +83,17 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
     dims && (dims.panjangCm || dims.lebarCm || dims.tinggiCm)
       ? `${dims.panjangCm ?? "—"} x ${dims.lebarCm ?? "—"} x ${dims.tinggiCm ?? "—"} cm (P x L x T)`
       : null;
+  // Small on-photo footnote (not the Katalog PDF — that one was reverted,
+  // was crashing PDF generation entirely: html2canvas can't parse the
+  // oklab color-mix() that Tailwind's bg-ink/NN opacity-modifier classes
+  // compile to, per the user's report 2026-08-27) — a standalone label
+  // meant to read directly on the image, e.g. "120cm x 80cm x 60cm",
+  // separate from the fuller "Dimensi: ..." line already in the text block
+  // below.
+  const photoLabelText =
+    dims?.panjangCm && dims?.lebarCm && dims?.tinggiCm
+      ? `${dims.panjangCm}cm x ${dims.lebarCm}cm x ${dims.tinggiCm}cm`
+      : null;
 
   const stockStatusLabel = product.stok <= 0 ? "Stok Habis" : `Stok ${product.stok} unit`;
   // Just "Bekas" / "Baru" — the kondisiPercent number was dropped from
@@ -128,6 +139,11 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
         {product.fotoUrl ? (
           <>
             <ZoomableImage src={product.fotoUrl} alt={product.name} className="h-full w-full object-cover" />
+            {photoLabelText && (
+              <span className="absolute bottom-2.5 left-2.5 z-10 bg-ink/70 px-1.5 py-0.5 text-[9px] leading-none whitespace-nowrap text-white">
+                {photoLabelText}
+              </span>
+            )}
             <button
               type="button"
               title="Unduh foto"
