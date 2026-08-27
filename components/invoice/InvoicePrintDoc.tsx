@@ -5,6 +5,8 @@ import { rupiah, formatDateShort, formatDateLong } from "@/lib/format";
 
 export interface InvoicePrintItem {
   namaSnapshot: string;
+  /** e.g. "120x80x60 cm" — shown right after the product name. Per the user's request 2026-08-28. */
+  dimensiSnapshot?: string;
   qty: number;
   hargaJual: number;
   subtotal: number;
@@ -262,7 +264,14 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
                   <tbody>
                     {rows.map((item, idx) => (
                       <tr key={idx}>
-                        <td className="border-b border-line py-3 text-[0.88rem]">{item.namaSnapshot}</td>
+                        <td className="border-b border-line py-3 text-[0.88rem]">
+                          {item.namaSnapshot}
+                          {item.dimensiSnapshot && (
+                            <span className="ml-1.5 font-mono text-[0.72rem] text-muted">
+                              ({item.dimensiSnapshot})
+                            </span>
+                          )}
+                        </td>
                         <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
                         <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.hargaJual)}</td>
                         <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>

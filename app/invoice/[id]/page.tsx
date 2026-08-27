@@ -34,6 +34,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     salesNama: invoice.sales!.nama,
     items: invoice.items.map((item) => ({
       namaSnapshot: item.namaSnapshot,
+      dimensiSnapshot: item.dimensiSnapshot ?? undefined,
       qty: item.qty,
       hargaJual: item.hargaJual,
       subtotal: item.subtotal,
@@ -158,7 +159,12 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
               <tbody>
                 {invoice.items.map((item, idx) => (
                   <tr key={idx}>
-                    <td className="border-b border-line py-3 text-[0.88rem]">{item.namaSnapshot}</td>
+                    <td className="border-b border-line py-3 text-[0.88rem]">
+                      {item.namaSnapshot}
+                      {item.dimensiSnapshot && (
+                        <span className="ml-1.5 font-mono text-[0.72rem] text-muted">({item.dimensiSnapshot})</span>
+                      )}
+                    </td>
                     <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
                     <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.hargaJual)}</td>
                     <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>

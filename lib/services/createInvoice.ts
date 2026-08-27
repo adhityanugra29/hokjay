@@ -3,6 +3,7 @@ import { Product } from "@/models/Product";
 import { Invoice } from "@/models/Invoice";
 import { nextInvoiceNumber } from "@/lib/counters";
 import { computeLineCommission } from "@/lib/commission";
+import { formatDimensi } from "@/lib/format";
 
 export interface CreateInvoiceItemInput {
   /** Absent for custom-order line items, which have no backing Product. */
@@ -103,6 +104,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       product: product._id,
       isCustom: false,
       namaSnapshot: product.name,
+      dimensiSnapshot: formatDimensi(product.dimensi),
       qty: i.qty,
       hargaJual: i.hargaJual,
       hargaMinimumSnapshot: product.hargaMinimum,

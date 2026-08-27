@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, CurrencyInput } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
 import { useDialog } from "@/components/ui/Dialog";
+import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
 import ItemRowEditor from "./ItemRowEditor";
 import InlineCustomerForm, { type CreatedCustomer } from "./InlineCustomerForm";
 import AddProductSidebar from "./AddProductSidebar";
@@ -70,6 +71,27 @@ export default function InvoiceForm({
   const router = useRouter();
   const { items, clear } = useCart();
   const { confirm, alert } = useDialog();
+  const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
+  // Keeps "Mohon menunggu" visible for the WHOLE save-then-navigate flow —
+  // the overlay used to hide the instant the save fetch() resolved, but
+  // the router.push() navigation that follows still takes a moment to
+  // actually land, leaving a ~1s gap with nothing showing. Per the user's
+  // report 2026-08-28. useTransition's isPending stays true until the
+  // destination page has actually rendered (the documented way to track
+  // App Router navigation completion) — wasPendingRef only calls
+  // hideLoading() on the falling edge, so it can't spuriously decrement
+  // the overlay's shared show/hide counter on an unrelated render.
+  const [isPending, startTransition] = useTransition();
+  const wasPendingRef = useRef(false);
+  useEffect(() => {
+    if (isPending) {
+      wasPendingRef.current = true;
+    } else if (wasPendingRef.current) {
+      wasPendingRef.current = false;
+      hideLoading();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPending]);
 
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
   // Pelanggan is picked right here, inline — this form shows it read-only
@@ -238,6 +260,7 @@ export default function InvoiceForm({
     if (!sales) return setError("Pilih sales terlebih dahulu.");
 
     setSaving(true);
+    showLoading();
     try {
       const url = mode === "edit" ? `/api/invoices/${invoiceId}` : "/api/invoices";
       const res = await fetch(url, {
@@ -275,10 +298,18 @@ export default function InvoiceForm({
       } catch {
         // ignore — nothing to clean up if storage was never available
       }
-      router.push(status === "draft" ? "/invoice" : `/invoice/${invoice._id}`);
-      router.refresh();
+      // showLoading() called above is deliberately NOT matched with a
+      // hideLoading() here — startTransition's isPending (watched by the
+      // effect above) stays true until the destination page has actually
+      // rendered, so the overlay keeps showing through the navigation
+      // instead of dropping the instant this fetch resolved.
+      startTransition(() => {
+        router.push(status === "draft" ? "/invoice" : `/invoice/${invoice._id}`);
+        router.refresh();
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan invoice");
+      hideLoading(); // no navigation follows an error — nothing else will clear this
     } finally {
       setSaving(false);
     }
@@ -301,6 +332,7 @@ export default function InvoiceForm({
       );
       if (!ok) return;
       setCanceling(true);
+      showLoading();
       try {
         const res = await fetch(`/api/invoices/${invoiceId}`, { method: "DELETE" });
         if (!res.ok) {
@@ -313,10 +345,15 @@ export default function InvoiceForm({
         } catch {
           // ignore — nothing to clean up if storage was never available
         }
-        router.push("/invoice");
-        router.refresh();
+        // Same reasoning as submit() above — hideLoading() is deliberately
+        // left to the isPending effect instead of being called here.
+        startTransition(() => {
+          router.push("/invoice");
+          router.refresh();
+        });
       } catch (err) {
         await alert(err instanceof Error ? err.message : "Gagal menghapus invoice");
+        hideLoading();
         setCanceling(false);
       }
       return;
@@ -332,7 +369,10 @@ export default function InvoiceForm({
     } catch {
       // ignore — nothing to clean up if storage was never available
     }
-    router.push("/invoice");
+    showLoading();
+    startTransition(() => {
+      router.push("/invoice");
+    });
   }
 
   const showCustomerPicker = !customerId || editingCustomer;

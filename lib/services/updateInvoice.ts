@@ -4,6 +4,7 @@ import { Invoice } from "@/models/Invoice";
 import { StockMovement } from "@/models/StockMovement";
 import { JournalEntry } from "@/models/JournalEntry";
 import { computeLineCommission } from "@/lib/commission";
+import { formatDimensi } from "@/lib/format";
 import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
 
 /**
@@ -90,6 +91,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       product: product._id,
       isCustom: false,
       namaSnapshot: product.name,
+      dimensiSnapshot: formatDimensi(product.dimensi),
       qty: i.qty,
       hargaJual: i.hargaJual,
       hargaMinimumSnapshot: product.hargaMinimum,

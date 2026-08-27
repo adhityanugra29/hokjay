@@ -78,3 +78,21 @@ export function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
+
+/**
+ * "120x80x60 cm" from a product's P/L/T — undefined if none of the three
+ * are set. Used for the invoice item's dimensiSnapshot (see
+ * models/Invoice.ts) and anywhere else a compact size string is needed.
+ */
+export function formatDimensi(
+  dimensi?: {
+    panjangCm?: number | null;
+    lebarCm?: number | null;
+    tinggiCm?: number | null;
+  } | null
+): string | undefined {
+  if (!dimensi) return undefined;
+  const { panjangCm, lebarCm, tinggiCm } = dimensi;
+  if (!panjangCm && !lebarCm && !tinggiCm) return undefined;
+  return `${panjangCm ?? "—"}x${lebarCm ?? "—"}x${tinggiCm ?? "—"} cm`;
+}

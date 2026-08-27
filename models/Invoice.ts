@@ -5,6 +5,11 @@ const InvoiceItemSchema = new Schema(
     product: { type: Schema.Types.ObjectId, ref: "Product" },
     isCustom: { type: Boolean, default: false },
     namaSnapshot: { type: String, required: true },
+    // Dimensions at the moment of sale (e.g. "120x80x60 cm"), shown right
+    // after the product name on the printed invoice — per the user's
+    // request 2026-08-28. Undefined for custom items (no dimensi to
+    // snapshot) and for a product with no dimensions recorded.
+    dimensiSnapshot: { type: String },
     qty: { type: Number, required: true },
     hargaJual: { type: Number, required: true },
     hargaMinimumSnapshot: { type: Number, required: true },
