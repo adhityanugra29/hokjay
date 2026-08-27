@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDialog } from "@/components/ui/Dialog";
 
 /**
  * Delete button for a draft/unpaid invoice — only rendered by callers when
@@ -21,16 +22,16 @@ export default function DeleteInvoiceButton({
   className?: string;
 }) {
   const router = useRouter();
+  const { confirm, alert } = useDialog();
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete() {
-    if (
-      !confirm(
-        `Hapus invoice ${nomor}? Stok yang sudah terpotong akan dikembalikan. Tindakan ini tidak bisa dibatalkan.`
-      )
-    ) {
-      return;
-    }
+    // "Stok yang sudah terpotong akan dikembalikan" dropped from this
+    // message — since 2026-08-27 an unpaid invoice never deducts stock in
+    // the first place (only a pre-2026-08-27 legacy-finalized one still
+    // would), so the claim was no longer accurate for most invoices.
+    const ok = await confirm(`Hapus invoice ${nomor}? Tindakan ini tidak bisa dibatalkan.`, { danger: true });
+    if (!ok) return;
     setDeleting(true);
     try {
       const res = await fetch(`/api/invoices/${invoiceId}`, { method: "DELETE" });
@@ -43,7 +44,7 @@ export default function DeleteInvoiceButton({
       }
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Gagal menghapus invoice");
+      await alert(err instanceof Error ? err.message : "Gagal menghapus invoice");
       setDeleting(false);
     }
   }

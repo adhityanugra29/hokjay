@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { rupiah } from "@/lib/format";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
+import { useDialog } from "@/components/ui/Dialog";
 
 export default function InvoiceActions({
   nomor,
@@ -18,6 +19,7 @@ export default function InvoiceActions({
 }) {
   const [downloading, setDownloading] = useState(false);
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
+  const { alert } = useDialog();
 
   function sendWA() {
     const phone = (customerWhatsapp ?? "").replace(/[^0-9]/g, "");
@@ -67,7 +69,7 @@ export default function InvoiceActions({
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
       const pageEls = Array.from(element.querySelectorAll<HTMLElement>("[data-print-page]"));
       if (pageEls.length === 0) {
-        alert("Tidak ada halaman untuk diunduh.");
+        await alert("Tidak ada halaman untuk diunduh.");
         return;
       }
 
@@ -101,7 +103,7 @@ export default function InvoiceActions({
       pdf.save(`${nomor}.pdf`);
     } catch (err) {
       console.error("Gagal membuat PDF invoice:", err);
-      alert(
+      await alert(
         `Gagal membuat PDF invoice: ${err instanceof Error ? err.message : String(err)}\n\nCoba lagi, atau screenshot pesan ini untuk dilaporkan.`
       );
     } finally {

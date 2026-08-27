@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDialog } from "@/components/ui/Dialog";
 
 const cls =
   "inline-block cursor-pointer border border-accent bg-panel px-3 py-1.5 font-sans text-[0.7rem] font-semibold leading-tight text-accent no-underline transition hover:bg-accent hover:text-white disabled:cursor-not-allowed disabled:opacity-50";
@@ -9,10 +10,12 @@ const cls =
 /** Delete button for a row in Inventory's product table — server-rendered list, so this is its own small client component rather than reusing RowActionButton's parent state. */
 export default function DeleteProductButton({ productId, productName }: { productId: string; productName: string }) {
   const router = useRouter();
+  const { confirm, alert } = useDialog();
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete() {
-    if (!confirm(`Hapus produk "${productName}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+    const ok = await confirm(`Hapus produk "${productName}"? Tindakan ini tidak bisa dibatalkan.`, { danger: true });
+    if (!ok) return;
     setDeleting(true);
     try {
       const res = await fetch(`/api/products/${productId}`, { method: "DELETE" });
@@ -22,7 +25,7 @@ export default function DeleteProductButton({ productId, productName }: { produc
       }
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Gagal menghapus produk");
+      await alert(err instanceof Error ? err.message : "Gagal menghapus produk");
       setDeleting(false);
     }
   }

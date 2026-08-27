@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { useDialog } from "@/components/ui/Dialog";
 
 export default function TerimaPOButton({ poId }: { poId: string }) {
   const router = useRouter();
+  const { confirm } = useDialog();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
-    if (!confirm("Tandai PO ini sebagai diterima? Stok akan bertambah dan Material Order otomatis dibuat.")) return;
+    const ok = await confirm("Tandai PO ini sebagai diterima? Stok akan bertambah dan Material Order otomatis dibuat.");
+    if (!ok) return;
     setSaving(true);
     setError(null);
     try {

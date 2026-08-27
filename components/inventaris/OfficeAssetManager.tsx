@@ -6,6 +6,7 @@ import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/compone
 import { Button } from "@/components/ui/Button";
 import { RowActionButton } from "@/components/ui/RowAction";
 import Pill from "@/components/ui/Pill";
+import { useDialog } from "@/components/ui/Dialog";
 import { rupiah, formatDateShort } from "@/lib/format";
 import { nilaiBuku } from "@/lib/depresiasi";
 
@@ -52,6 +53,7 @@ const BLANK = {
  * always matches without an extra round trip.
  */
 export default function OfficeAssetManager({ prefillFromBill }: { prefillFromBill?: { _id: string; nomor: string; namaBarang: string; qty: number; totalTagihan: number } }) {
+  const { confirm } = useDialog();
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(!!prefillFromBill);
@@ -153,7 +155,8 @@ export default function OfficeAssetManager({ prefillFromBill }: { prefillFromBil
   }
 
   async function hapusBuku(a: AssetRow) {
-    if (!confirm(`Hapus buku "${a.nama}"? Nilai bukunya jadi 0 dan aset ini keluar dari daftar Perlu Tindakan.`)) return;
+    const ok = await confirm(`Hapus buku "${a.nama}"? Nilai bukunya jadi 0 dan aset ini keluar dari daftar Perlu Tindakan.`);
+    if (!ok) return;
     setAssets((prev) => prev.map((x) => (x._id === a._id ? { ...x, dihapusBuku: true } : x)));
     await fetch(`/api/office-assets/${a._id}/hapus-buku`, { method: "POST" });
   }

@@ -6,6 +6,7 @@ import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, CurrencyInput } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
+import { useDialog } from "@/components/ui/Dialog";
 import ItemRowEditor from "./ItemRowEditor";
 import InlineCustomerForm, { type CreatedCustomer } from "./InlineCustomerForm";
 import AddProductSidebar from "./AddProductSidebar";
@@ -68,6 +69,7 @@ export default function InvoiceForm({
 }) {
   const router = useRouter();
   const { items, clear } = useCart();
+  const { confirm, alert } = useDialog();
 
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
   // Pelanggan is picked right here, inline — this form shows it read-only
@@ -293,13 +295,11 @@ export default function InvoiceForm({
   // nothing to call the API for — just the cart to clear.
   async function handleCancel() {
     if (mode === "edit") {
-      if (
-        !confirm(
-          `Hapus invoice ${nextNumberHint}? Tindakan ini akan menghapus invoice ini sepenuhnya dan tidak bisa dibatalkan.`
-        )
-      ) {
-        return;
-      }
+      const ok = await confirm(
+        `Hapus invoice ${nextNumberHint}? Tindakan ini akan menghapus invoice ini sepenuhnya dan tidak bisa dibatalkan.`,
+        { danger: true }
+      );
+      if (!ok) return;
       setCanceling(true);
       try {
         const res = await fetch(`/api/invoices/${invoiceId}`, { method: "DELETE" });
@@ -316,14 +316,15 @@ export default function InvoiceForm({
         router.push("/invoice");
         router.refresh();
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Gagal menghapus invoice");
+        await alert(err instanceof Error ? err.message : "Gagal menghapus invoice");
         setCanceling(false);
       }
       return;
     }
 
-    if (items.length > 0 && !confirm("Batalkan? Produk yang sudah dipilih di keranjang akan dikosongkan.")) {
-      return;
+    if (items.length > 0) {
+      const ok = await confirm("Batalkan? Produk yang sudah dipilih di keranjang akan dikosongkan.");
+      if (!ok) return;
     }
     clear();
     try {

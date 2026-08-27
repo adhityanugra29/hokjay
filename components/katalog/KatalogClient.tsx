@@ -11,6 +11,7 @@ import KatalogFilterSidebar, {
 } from "./KatalogFilterSidebar";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
+import { useDialog } from "@/components/ui/Dialog";
 
 // Katalog PDF is the heaviest export in the app (photo-dense, often many
 // pages). RENDER_SCALE was first dropped to 1.35 to shrink file size, but
@@ -47,6 +48,7 @@ export default function KatalogClient({
   const [editingProduct, setEditingProduct] = useState<KatalogProduct | null>(null);
   const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
+  const { alert } = useDialog();
 
   // Staged flow: idle button ("Buat Katalog") -> click reveals checkboxes +
   // "Pilih Semua" (label stays "Buat Katalog", disabled while 0 selected) ->
@@ -90,7 +92,7 @@ export default function KatalogClient({
         element = document.getElementById("catalog-print-doc")!;
       }
       if (element.dataset.ready !== "true") {
-        alert("Data katalog belum siap, coba lagi sebentar.");
+        await alert("Data katalog belum siap, coba lagi sebentar.");
         return;
       }
 
@@ -125,7 +127,7 @@ export default function KatalogClient({
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
       const pageEls = Array.from(element.querySelectorAll<HTMLElement>("[data-print-page]"));
       if (pageEls.length === 0) {
-        alert("Tidak ada halaman untuk diunduh.");
+        await alert("Tidak ada halaman untuk diunduh.");
         return;
       }
 
@@ -176,7 +178,7 @@ export default function KatalogClient({
       // rejection — no visible feedback beyond the button re-enabling —
       // which is exactly what made this bug hard to report/diagnose.
       console.error("Gagal membuat PDF katalog:", err);
-      alert(
+      await alert(
         `Gagal membuat PDF katalog: ${err instanceof Error ? err.message : String(err)}\n\nCoba lagi, atau screenshot pesan ini untuk dilaporkan.`
       );
     } finally {
@@ -216,6 +218,22 @@ export default function KatalogClient({
     if (filters.tipe) list = list.filter((p) => p.tipeProduk === filters.tipe);
     if (filters.hargaMin) list = list.filter((p) => p.hargaRekomendasi >= Number(filters.hargaMin));
     if (filters.hargaMax) list = list.filter((p) => p.hargaRekomendasi <= Number(filters.hargaMax));
+    // Manual Nama Produk / Ukuran fields — separate from the main search
+    // box above (which already does the same matching combined with SKU),
+    // per the user's request 2026-08-28.
+    if (filters.nama) {
+      const namaQ = filters.nama.trim().toLowerCase();
+      list = list.filter((p) => p.name.toLowerCase().includes(namaQ));
+    }
+    if (filters.ukuran) {
+      const ukuranQ = filters.ukuran.trim();
+      const asNumber = /^\d+(\.\d+)?$/.test(ukuranQ) ? Number(ukuranQ) : null;
+      list = list.filter((p) => {
+        const { panjangCm, lebarCm, tinggiCm } = p.dimensi ?? {};
+        if (asNumber !== null) return panjangCm === asNumber || lebarCm === asNumber || tinggiCm === asNumber;
+        return false;
+      });
+    }
     if (sort === "price-asc") list = [...list].sort((a, b) => a.hargaRekomendasi - b.hargaRekomendasi);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.hargaRekomendasi - a.hargaRekomendasi);
     // Booked/Sudah DP/SOLD products sink to the bottom — fully available

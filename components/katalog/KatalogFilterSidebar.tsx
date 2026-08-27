@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
-import { CurrencyInput } from "@/components/ui/Form";
+import { CurrencyInput, Input } from "@/components/ui/Form";
 
 const ALL_CATEGORIES_LABEL = "Semua Kategori";
 
@@ -15,6 +15,10 @@ export interface KatalogFilters {
   tipe: TipeFilter;
   hargaMin: string;
   hargaMax: string;
+  /** Manual free-text name filter — separate from the main search box, per the user's request 2026-08-28. */
+  nama: string;
+  /** Manual free-text/number size filter (matches P, L, or T in cm). */
+  ukuran: string;
 }
 
 export const EMPTY_KATALOG_FILTERS: KatalogFilters = {
@@ -23,6 +27,8 @@ export const EMPTY_KATALOG_FILTERS: KatalogFilters = {
   tipe: "",
   hargaMin: "",
   hargaMax: "",
+  nama: "",
+  ukuran: "",
 };
 
 /** How many of the sidebar's filters are set away from "Semua" — shown as a badge on the Filter button. */
@@ -32,6 +38,8 @@ export function countActiveFilters(f: KatalogFilters): number {
   if (f.kondisi) n++;
   if (f.tipe) n++;
   if (f.hargaMin || f.hargaMax) n++;
+  if (f.nama) n++;
+  if (f.ukuran) n++;
   return n;
 }
 
@@ -116,6 +124,28 @@ export default function KatalogFilterSidebar({
         </div>
 
         <div className="flex flex-col gap-6 p-5">
+          {/* Manual free-text filters — separate from the main search box
+              above the grid, per the user's request 2026-08-28. */}
+          <div>
+            <label className="mb-2 block font-mono text-[0.7rem] uppercase tracking-wide text-muted">
+              Nama Produk
+            </label>
+            <Input
+              value={filters.nama}
+              onChange={(e) => onChange({ ...filters, nama: e.target.value })}
+              placeholder="Ketik nama produk..."
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block font-mono text-[0.7rem] uppercase tracking-wide text-muted">Ukuran</label>
+            <Input
+              value={filters.ukuran}
+              onChange={(e) => onChange({ ...filters, ukuran: e.target.value })}
+              placeholder="Contoh: 80 (cm, P/L/T)"
+            />
+          </div>
+
           <div>
             <label className="mb-2 block font-mono text-[0.7rem] uppercase tracking-wide text-muted">Kategori</label>
             <SearchableSelect
