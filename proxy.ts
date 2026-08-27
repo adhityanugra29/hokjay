@@ -37,19 +37,21 @@ export default async function proxy(request: NextRequest) {
   const role = session.role as UserRole;
 
   if (pathname.startsWith("/api/")) {
-    // "manager" is admin-level everywhere else, but explicitly NOT for
-    // Admin's own domain (Kelola User, Kategori, Kurir, Metode Pembayaran,
-    // Pengaturan) — see MANAGER_BLOCKED_PREFIXES. isAdminLevel(manager)
-    // alone would let a raw API request through even with the page itself
-    // now hidden (isAllowedPage), so this check treats manager the same as
-    // a non-admin role here specifically. Per the user's report 2026-08-27.
-    if (!isAdminLevel(role) || role === "manager") {
+    if (!isAdminLevel(role)) {
       const fullyRestricted = ADMIN_ONLY_ALL_METHODS_PREFIXES.some((p) => pathname.startsWith(p));
       const writeRestricted =
         request.method !== "GET" && ADMIN_ONLY_WRITE_PREFIXES.some((p) => pathname.startsWith(p));
       if (fullyRestricted || writeRestricted) {
         return NextResponse.json({ error: "Tidak punya akses" }, { status: 403 });
       }
+    }
+    // "manager" is admin-level for everything above (Kelola User/Kategori/
+    // Kurir/Metode Pembayaran all open to them, per the user's request
+    // 2026-08-27), but Keuangan settings (PengaturanKeuangan.tsx's
+    // /api/pengaturan writes) stays off-limits — same exclusion as the
+    // /admin/keuangan page itself, see MANAGER_BLOCKED_ADMIN_PREFIXES.
+    if (role === "manager" && request.method !== "GET" && pathname.startsWith("/api/pengaturan")) {
+      return NextResponse.json({ error: "Tidak punya akses" }, { status: 403 });
     }
     return NextResponse.next();
   }

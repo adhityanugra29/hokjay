@@ -66,19 +66,26 @@ export function isAdminLevel(role: UserRole | undefined | null): boolean {
   return role === "admin" || role === "owner" || role === "super_admin" || role === "manager";
 }
 
-// "manager" (2026-08-26): admin-level everywhere EXCEPT these four —
-// Akuntansi, Payroll, Bayar Tagihan, and Admin stay off-limits even though
+// "manager" (2026-08-26): admin-level everywhere EXCEPT these three —
+// Akuntansi, Payroll, and Bayar Tagihan stay off-limits even though
 // isAdminLevel(manager) is true (that flag still covers every other
 // admin-gated action app-wide). Absensi and Karyawan are part of Payroll's
 // own domain (not separately nav-reachable), so they're covered by the
 // "/payroll" prefix too — see isPayrollAdminLevel below, used at those
 // specific API routes instead of isAdminLevel so a raw request can't reach
 // what the page itself already hides.
-// "/admin" added 2026-08-27 per the user's report that Manager could reach
-// Kelola User / Kelola Kategori / Metode Pembayaran — account/role and
-// system-config management wasn't meant to be covered by "boleh lihat
-// semua" the way ordinary business modules were.
-export const MANAGER_BLOCKED_PREFIXES = ["/akuntansi", "/payroll", "/bayar-tagihan", "/admin"];
+export const MANAGER_BLOCKED_PREFIXES = ["/akuntansi", "/payroll", "/bayar-tagihan"];
+
+// Admin (2026-08-27): briefly blocked outright, then the user asked for it
+// back open specifically for Kelola User (Akun Login), Kelola Kategori,
+// Metode Pembayaran, and Pengiriman (Kurir) — i.e. everything under
+// /admin EXCEPT these two tabs: "Sales" (/admin/user — the Sales roster,
+// a different thing from login accounts despite the similar name) and
+// "Keuangan" (/admin/keuangan — finance settings). See app/admin/layout.tsx
+// for the tab list this maps to. Checked as its own list rather than
+// folded into MANAGER_BLOCKED_PREFIXES since "/admin" itself needs to stay
+// ALLOWED while only these two of its sub-tabs are blocked.
+export const MANAGER_BLOCKED_ADMIN_PREFIXES = ["/admin/user", "/admin/keuangan"];
 
 // Insentif/Komisi (Leaderboard Sales) locked down to just these two roles
 // per the user's request 2026-08-26 — nobody else reaches it, not even
@@ -106,6 +113,7 @@ export function isAllowedPage(role: UserRole, pathname: string): boolean {
     return isKomisiSayaAllowed(role);
   }
   if (role === "manager") {
+    if (MANAGER_BLOCKED_ADMIN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return false;
     return !MANAGER_BLOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   }
   if (isAdminLevel(role)) return true;
