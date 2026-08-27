@@ -127,27 +127,40 @@ interface PrintUnit {
 }
 
 /**
- * Crop-to-fill a product photo into a fixed box, anchored bottom-right so
- * the upload watermark (app/api/upload/route.ts stamps it in that corner)
- * never gets cropped away — computed with real pixel numbers from the
- * loaded image's own naturalWidth/naturalHeight, not any CSS auto-sizing
- * trick. Replaces THREE earlier attempts that each failed differently once
- * actually tested against a real exported PDF: plain object-fit:cover
- * (html2canvas doesn't reliably honor it — stretched portrait photos,
- * "gepeng", 2026-08-26), a CSS background-image (html2canvas renders that
- * through a lower-fidelity path — visible blur, 2026-08-27), and the
- * classic "absolute + min-width/min-height:100% + width/height:auto" cover
- * polyfill (works for images close in scale to their container, but these
- * source photos are up to 1600px against a 220px box — width/height:auto
- * on a replaced element resolves to its INTRINSIC size per spec, which
- * already exceeds min-width/min-height, so the min-constraints never
- * actually kicked in; the crop ended up looking through a tiny window into
- * the image's own far corner, which happened to be mostly watermark —
- * "watermarknya menutup gambarnya", 2026-08-27). Explicit computed pixel
- * dimensions have no auto-resolution ambiguity for any of these engines to
- * get wrong.
+ * Fits a product photo whole inside a fixed box — no cropping at all.
+ * Computed with real pixel numbers from the loaded image's own
+ * naturalWidth/naturalHeight (no CSS auto-sizing trick).
+ *
+ * Went through FOUR "cover" (crop-to-fill) attempts before this, each
+ * failing differently once actually tested against a real exported PDF:
+ * plain object-fit:cover (html2canvas doesn't reliably honor it — stretched
+ * portrait photos, "gepeng", 2026-08-26), a CSS background-image
+ * (html2canvas renders that through a lower-fidelity path — visible blur,
+ * 2026-08-27), the classic "absolute + min-width/min-height:100% + width/
+ * height:auto" cover polyfill (width/height:auto on a replaced element
+ * resolves to its own INTRINSIC size per spec before any min-constraint
+ * applies — these source photos are up to 1600px against a 220px box, so
+ * the crop ended up looking through a tiny window into the image's own far
+ * corner, mostly watermark — "watermarknya menutup gambarnya", 2026-08-27),
+ * and finally a JS-computed pixel crop anchored bottom-right specifically
+ * to protect that corner's watermark — which fixed the watermark issue but
+ * exposed the REAL problem underneath: several of these source photos are
+ * portrait-oriented (taken vertically, the actual item filling most of the
+ * frame), so ANY crop that fills a landscape 220x165 box discards a large
+ * vertical slice — bottom-anchoring specifically kept showing the ground/
+ * background near the item's base instead of the item itself. Per the
+ * user's report 2026-08-27 ("ini masih salah" against a full multi-page
+ * PDF where the actual product was barely visible in almost every photo).
+ *
+ * No amount of crop-anchoring can fix that without sometimes cutting off
+ * either the product or the watermark, since both can't be guaranteed to
+ * sit inside whatever slice a "fill the box" crop keeps. Fitting the whole
+ * photo (letterboxed, not cropped) is the only approach that can't ever
+ * cut off part of the actual product or the watermark — the trade-off is a
+ * less visually uniform grid (portrait photos leave empty margin on the
+ * sides), which is a fair trade for never hiding what's actually for sale.
  */
-function CoverCroppedPhoto({
+function ContainedPhoto({
   src,
   alt,
   boxWidth,
@@ -160,7 +173,10 @@ function CoverCroppedPhoto({
 }) {
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   return (
-    <div className="relative shrink-0 overflow-hidden bg-surface" style={{ width: boxWidth, height: boxHeight }}>
+    <div
+      className="relative flex shrink-0 items-center justify-center overflow-hidden bg-surface"
+      style={{ width: boxWidth, height: boxHeight }}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
@@ -168,10 +184,9 @@ function CoverCroppedPhoto({
         onLoad={(e) => {
           const img = e.currentTarget;
           if (!img.naturalWidth || !img.naturalHeight) return;
-          const scale = Math.max(boxWidth / img.naturalWidth, boxHeight / img.naturalHeight);
-          setSize({ width: Math.ceil(img.naturalWidth * scale), height: Math.ceil(img.naturalHeight * scale) });
+          const scale = Math.min(boxWidth / img.naturalWidth, boxHeight / img.naturalHeight);
+          setSize({ width: Math.round(img.naturalWidth * scale), height: Math.round(img.naturalHeight * scale) });
         }}
-        className="absolute right-0 bottom-0"
         style={size ? { width: size.width, height: size.height } : undefined}
       />
     </div>
@@ -405,7 +420,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                     )}
                     <div className="mb-5 flex gap-5 border-t border-line pt-5">
                       {p.fotoUrl ? (
-                        <CoverCroppedPhoto src={p.fotoUrl} alt={p.name} boxWidth={220} boxHeight={165} />
+                        <ContainedPhoto src={p.fotoUrl} alt={p.name} boxWidth={220} boxHeight={165} />
                       ) : (
                         <div className="flex h-[165px] w-[220px] shrink-0 items-center justify-center bg-surface text-[0.75rem] text-muted">
                           Tidak ada foto
