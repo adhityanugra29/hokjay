@@ -327,7 +327,8 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
   );
 
   const today = new Date();
-  const periodLabel = today.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  // Includes the day, not just month/year — per the user's request 2026-08-27.
+  const periodLabel = today.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 
   const cover = (
     // Cover — shrunk down (per the user's request 2026-08-25): dropped the

@@ -1,11 +1,38 @@
 "use client";
 
+import { useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 import ZoomableImage from "./ZoomableImage";
 import { CurrencyInput } from "@/components/ui/Form";
-import { rupiah } from "@/lib/format";
+import { rupiah, slugify } from "@/lib/format";
 import { computeLineCommission } from "@/lib/commission";
+
+/**
+ * Downloads a photo per the user's request 2026-08-27 ("bisa download
+ * gambarnya, tapi buttonya di setiap produk saja") — a plain <a href
+ * download> is silently ignored by browsers for cross-origin URLs (Vercel
+ * Blob is a different origin than this app), so the file has to actually be
+ * fetched as a blob first and downloaded from a same-origin blob: URL,
+ * which always honors `download`.
+ */
+async function downloadPhoto(url: string, filename: string) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Gagal mengambil foto");
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    alert("Gagal mengunduh foto, coba lagi.");
+  }
+}
 
 export interface KatalogProduct {
   _id: string;
@@ -34,6 +61,7 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
   const cartItem = items.find((i) => i.productId === product._id);
   const selected = isSelected(product._id);
   const hasCustomPrice = customPrices[product._id] !== undefined;
+  const [downloadingPhoto, setDownloadingPhoto] = useState(false);
   // Price toggle (Harga Rekomendasi/Minimum, + manual custom typing) shows
   // on every product card at all times — not just while picking products
   // for the PDF — and this is the price actually used for "+ Tambah ke
@@ -98,7 +126,31 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
           </label>
         )}
         {product.fotoUrl ? (
-          <ZoomableImage src={product.fotoUrl} alt={product.name} className="h-full w-full object-cover" />
+          <>
+            <ZoomableImage src={product.fotoUrl} alt={product.name} className="h-full w-full object-cover" />
+            <button
+              type="button"
+              title="Unduh foto"
+              disabled={downloadingPhoto}
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (!product.fotoUrl) return;
+                setDownloadingPhoto(true);
+                const ext = product.fotoUrl.match(/\.(jpe?g|png|webp)(?:$|\?)/i)?.[1] ?? "jpg";
+                await downloadPhoto(product.fotoUrl, `${slugify(product.name) || "produk"}.${ext}`);
+                setDownloadingPhoto(false);
+              }}
+              className="absolute right-2.5 bottom-2.5 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-ink/70 text-white hover:bg-ink disabled:cursor-wait disabled:opacity-60"
+            >
+              {downloadingPhoto ? (
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 3v10M6 9l4 4 4-4M4 16h12" />
+                </svg>
+              )}
+            </button>
+          </>
         ) : (
           "Tidak ada foto"
         )}
