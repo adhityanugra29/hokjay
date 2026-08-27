@@ -53,6 +53,7 @@ export default async function KatalogPage() {
         kondisiPercent: p.kondisiPercent ?? undefined,
         dimensi: p.dimensi ?? undefined,
         ketebalan: p.ketebalan ?? undefined,
+        dayaListrik: p.dayaListrik ?? undefined,
         fotoUrl: p.fotoUrl ?? undefined,
         isCustom: p.isCustom ?? false,
         sudahTerjual: soldSet.has(String(p._id)),

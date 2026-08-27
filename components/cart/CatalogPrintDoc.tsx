@@ -15,6 +15,7 @@ interface CatalogProduct {
   hargaMinimum: number;
   dimensi?: { panjangCm?: number; lebarCm?: number; tinggiCm?: number };
   ketebalan?: string;
+  dayaListrik?: string;
   fotoUrl?: string;
   stok: number;
   isCustom?: boolean;
@@ -116,6 +117,7 @@ function specLine(p: CatalogProduct): string {
     parts.push(`${p.dimensi.panjangCm}×${p.dimensi.lebarCm}×${p.dimensi.tinggiCm} cm`);
   }
   if (p.ketebalan) parts.push(`Tebal ${p.ketebalan}`);
+  if (p.dayaListrik) parts.push(`Daya ${p.dayaListrik}`);
   return parts.join(" · ");
 }
 

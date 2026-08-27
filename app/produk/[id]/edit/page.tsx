@@ -42,6 +42,7 @@ export default async function ProdukEditPage({ params }: PageProps<"/produk/[id]
             lebarCm: product.dimensi?.lebarCm ? String(product.dimensi.lebarCm) : "",
             tinggiCm: product.dimensi?.tinggiCm ? String(product.dimensi.tinggiCm) : "",
             ketebalan: product.ketebalan ?? "",
+            dayaListrik: product.dayaListrik ?? "",
             fotoUrl: product.fotoUrl ?? "",
             fotoSampingUrl: product.fotoSampingUrl ?? "",
             fotoBelakangUrl: product.fotoBelakangUrl ?? "",

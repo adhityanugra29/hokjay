@@ -44,6 +44,11 @@ const ProductSchema = new Schema(
       tinggiCm: Number,
     },
     ketebalan: { type: String },
+    // Only meaningful when tipeProduk is "elektronik" — mirrors ketebalan's
+    // "only for non-elektronik" gating (see ProductForm.tsx). Free-form
+    // string (e.g. "1200 Watt") rather than a bare number, same convention
+    // as ketebalan. Per the user's request 2026-08-27.
+    dayaListrik: { type: String },
 
     // fotoUrl is the "Tampak Depan" (front view) shot — the only one shown
     // in Katalog/kartu produk/PDF katalog. Samping/Belakang are reference-

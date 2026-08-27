@@ -34,6 +34,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/products/[id]"
     "alertHariTidakTerjual",
     "dimensi",
     "ketebalan",
+    "dayaListrik",
     "fotoUrl",
     "fotoSampingUrl",
     "fotoBelakangUrl",

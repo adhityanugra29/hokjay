@@ -27,6 +27,7 @@ export interface ProductFormValues {
   lebarCm: string;
   tinggiCm: string;
   ketebalan: string;
+  dayaListrik: string;
   fotoUrl: string;
   fotoSampingUrl: string;
   fotoBelakangUrl: string;
@@ -66,6 +67,7 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   lebarCm: "",
   tinggiCm: "",
   ketebalan: "1mm",
+  dayaListrik: "",
   fotoUrl: "",
   // No longer form fields (see the user's request 2026-08-25 — just one
   // photo now) — kept here so an existing product's already-uploaded
@@ -221,6 +223,7 @@ export default function ProductForm({
             }
           : undefined,
       ketebalan: values.tipeProduk === "elektronik" ? undefined : values.ketebalan || undefined,
+      dayaListrik: values.tipeProduk === "elektronik" ? values.dayaListrik || undefined : undefined,
       fotoUrl: values.fotoUrl || undefined,
       fotoSampingUrl: values.fotoSampingUrl || undefined,
       fotoBelakangUrl: values.fotoBelakangUrl || undefined,
@@ -359,6 +362,11 @@ export default function ProductForm({
           {values.tipeProduk !== "elektronik" && (
             <Field label="Ketebalan Material">
               <Input value={values.ketebalan} onChange={(e) => set("ketebalan", e.target.value)} placeholder="Contoh: 1.2 mm" />
+            </Field>
+          )}
+          {values.tipeProduk === "elektronik" && (
+            <Field label="Daya Listrik">
+              <Input value={values.dayaListrik} onChange={(e) => set("dayaListrik", e.target.value)} placeholder="Contoh: 1200 Watt" />
             </Field>
           )}
 

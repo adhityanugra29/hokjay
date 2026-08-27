@@ -101,6 +101,7 @@ export interface KatalogProduct {
   isCustom?: boolean;
   dimensi?: { panjangCm?: number | null; lebarCm?: number | null; tinggiCm?: number | null };
   ketebalan?: string;
+  dayaListrik?: string;
   fotoUrl?: string;
   /** Has sold at least once (any StockMovement with alasan "Penjualan") — still pickable, just flagged. */
   sudahTerjual?: boolean;
@@ -165,6 +166,7 @@ export default function ProductCard({
   const specsText = [
     dimText ? `Dimensi: ${dimText}` : null,
     product.ketebalan ? `Ketebalan: ${product.ketebalan}` : null,
+    product.dayaListrik ? `Daya Listrik: ${product.dayaListrik}` : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -336,7 +338,7 @@ export default function ProductCard({
           <span className="font-semibold text-ink">{rupiah(liveKomisi)}</span>
         </div>
 
-        {(dimText || product.ketebalan) && (
+        {(dimText || product.ketebalan || product.dayaListrik) && (
           <div className="mt-2.5 border-t border-dashed border-line pt-2.5 font-mono text-[0.7rem] leading-relaxed text-muted">
             {dimText && (
               <div>
@@ -346,6 +348,11 @@ export default function ProductCard({
             {product.ketebalan && (
               <div>
                 <b className="font-medium text-ink">Ketebalan:</b> {product.ketebalan}
+              </div>
+            )}
+            {product.dayaListrik && (
+              <div>
+                <b className="font-medium text-ink">Daya Listrik:</b> {product.dayaListrik}
               </div>
             )}
           </div>

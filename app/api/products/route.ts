@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
       alertHariTidakTerjual: body.alertHariTidakTerjual ? Number(body.alertHariTidakTerjual) : undefined,
       dimensi: body.dimensi,
       ketebalan: body.ketebalan,
+      dayaListrik: body.dayaListrik,
       fotoUrl: body.fotoUrl,
       fotoSampingUrl: body.fotoSampingUrl,
       fotoBelakangUrl: body.fotoBelakangUrl,

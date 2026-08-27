@@ -20,6 +20,7 @@ interface RawProduct {
   alertHariTidakTerjual?: number;
   dimensi?: { panjangCm?: number | null; lebarCm?: number | null; tinggiCm?: number | null };
   ketebalan?: string;
+  dayaListrik?: string;
   fotoUrl?: string;
   fotoSampingUrl?: string;
   fotoBelakangUrl?: string;
@@ -109,6 +110,7 @@ export default function EditProductDrawer({
         lebarCm: product.dimensi?.lebarCm ? String(product.dimensi.lebarCm) : "",
         tinggiCm: product.dimensi?.tinggiCm ? String(product.dimensi.tinggiCm) : "",
         ketebalan: product.ketebalan ?? "",
+        dayaListrik: product.dayaListrik ?? "",
         fotoUrl: product.fotoUrl ?? "",
         fotoSampingUrl: product.fotoSampingUrl ?? "",
         fotoBelakangUrl: product.fotoBelakangUrl ?? "",
