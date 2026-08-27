@@ -5,6 +5,7 @@ import Link from "next/link";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 const ALL_CATEGORIES_LABEL = "Semua Kategori";
 
@@ -37,6 +38,7 @@ export default function KatalogClient({
   const [sort, setSort] = useState("");
   const [downloading, setDownloading] = useState(false);
   const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
+  const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
 
   // Staged flow: idle button ("Buat Katalog") -> click reveals checkboxes +
   // "Pilih Semua" (label stays "Buat Katalog", disabled while 0 selected) ->
@@ -63,6 +65,13 @@ export default function KatalogClient({
     if (!element) return;
 
     setDownloading(true);
+    // Shown immediately on click, not gated behind the fetch-patch's 2s
+    // auto-threshold (LoadingOverlay.tsx) — the button's own label already
+    // changes to "Menyiapkan PDF...", but for a many-page catalog this can
+    // run long enough that a full-screen "Mohon menunggu" is warranted, not
+    // just quiet text on a button easy to miss. Per the user's request
+    // 2026-08-27.
+    showLoading();
     try {
       // The offscreen catalog doc fetches its own product/category/sales
       // data on mount — wait for that instead of generating a near-empty
@@ -122,15 +131,29 @@ export default function KatalogClient({
         // triggers this sits far down the page (after browsing/picking
         // products), whatever the user had scrolled to leaked into the
         // capture. Per the user's report 2026-08-25.
+        //
+        // logging:false / imageTimeout:0 — per the user's request
+        // 2026-08-27 to speed up the download without touching scale or
+        // JPEG_QUALITY (the two knobs that actually affect visual quality,
+        // already fought over across the fixes above). html2canvas's
+        // default verbose console logging has real per-element overhead
+        // across a many-page catalog; imageTimeout only matters for
+        // images still loading, which none are by this point (already
+        // awaited above).
         const canvas = await html2canvas(pageEls[i], {
           scale: KATALOG_PDF_RENDER_SCALE,
           useCORS: true,
           scrollY: -window.scrollY,
           scrollX: 0,
+          logging: false,
+          imageTimeout: 0,
         });
         const imgData = canvas.toDataURL("image/jpeg", KATALOG_PDF_JPEG_QUALITY);
         if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMM, pageHeightMM);
+        // compression: "FAST" — jsPDF's own PDF-stream compression of the
+        // already-JPEG-encoded bytes, not a second pass over the image
+        // itself; doesn't touch KATALOG_PDF_JPEG_QUALITY.
+        pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMM, pageHeightMM, undefined, "FAST");
       }
 
       const today = new Date();
@@ -150,6 +173,7 @@ export default function KatalogClient({
       );
     } finally {
       setDownloading(false);
+      hideLoading();
     }
   }
 
