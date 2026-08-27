@@ -216,8 +216,14 @@ export default function KatalogClient({
     if (filters.category) list = list.filter((p) => p.category === filters.category);
     if (filters.kondisi) list = list.filter((p) => p.kondisi === filters.kondisi);
     if (filters.tipe) list = list.filter((p) => p.tipeProduk === filters.tipe);
-    if (filters.hargaMin) list = list.filter((p) => p.hargaRekomendasi >= Number(filters.hargaMin));
-    if (filters.hargaMax) list = list.filter((p) => p.hargaRekomendasi <= Number(filters.hargaMax));
+    // Compares against Harga Rekomendasi or Harga Minimum, per the
+    // hargaBasis toggle shown right below the range inputs — per the
+    // user's request 2026-08-28.
+    if (filters.hargaMin || filters.hargaMax) {
+      const hargaField = filters.hargaBasis === "minimum" ? "hargaMinimum" : "hargaRekomendasi";
+      if (filters.hargaMin) list = list.filter((p) => p[hargaField] >= Number(filters.hargaMin));
+      if (filters.hargaMax) list = list.filter((p) => p[hargaField] <= Number(filters.hargaMax));
+    }
     // Manual Nama Produk / Ukuran fields — separate from the main search
     // box above (which already does the same matching combined with SKU),
     // per the user's request 2026-08-28.

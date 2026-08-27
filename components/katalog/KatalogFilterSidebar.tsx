@@ -8,6 +8,7 @@ const ALL_CATEGORIES_LABEL = "Semua Kategori";
 
 export type KondisiFilter = "" | "baru" | "bekas";
 export type TipeFilter = "" | "elektronik" | "non-elektronik";
+export type HargaBasis = "rekomendasi" | "minimum";
 
 export interface KatalogFilters {
   category: string;
@@ -15,6 +16,8 @@ export interface KatalogFilters {
   tipe: TipeFilter;
   hargaMin: string;
   hargaMax: string;
+  /** Which price field Range Harga compares against — per the user's request 2026-08-28. */
+  hargaBasis: HargaBasis;
   /** Manual free-text name filter — separate from the main search box, per the user's request 2026-08-28. */
   nama: string;
   /** Manual free-text/number size filter (matches P, L, or T in cm). */
@@ -27,6 +30,7 @@ export const EMPTY_KATALOG_FILTERS: KatalogFilters = {
   tipe: "",
   hargaMin: "",
   hargaMax: "",
+  hargaBasis: "rekomendasi",
   nama: "",
   ukuran: "",
 };
@@ -197,6 +201,18 @@ export default function KatalogFilterSidebar({
                 value={filters.hargaMax}
                 onChange={(v) => onChange({ ...filters, hargaMax: v })}
                 placeholder="Max"
+              />
+            </div>
+            {/* Which price field the range above compares against — per
+                the user's request 2026-08-28. */}
+            <div className="mt-2">
+              <SegmentedControl
+                value={filters.hargaBasis}
+                onChange={(v) => onChange({ ...filters, hargaBasis: v })}
+                options={[
+                  { value: "rekomendasi", label: "Harga Rekomendasi" },
+                  { value: "minimum", label: "Harga Minimum" },
+                ]}
               />
             </div>
           </div>
