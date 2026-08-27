@@ -66,16 +66,19 @@ export function isAdminLevel(role: UserRole | undefined | null): boolean {
   return role === "admin" || role === "owner" || role === "super_admin" || role === "manager";
 }
 
-// "manager" (2026-08-26): admin-level everywhere EXCEPT these three —
-// Akuntansi, Payroll, and Bayar Tagihan stay off-limits even though
+// "manager" (2026-08-26): admin-level everywhere EXCEPT these four —
+// Akuntansi, Payroll, Bayar Tagihan, and Admin stay off-limits even though
 // isAdminLevel(manager) is true (that flag still covers every other
-// admin-gated action app-wide, e.g. Admin > Kelola User, Category/
-// Courier/Payment Method management). Absensi and Karyawan are part of
-// Payroll's own domain (not separately nav-reachable), so they're covered
-// by the "/payroll" prefix too — see isPayrollAdminLevel below, used at
-// those specific API routes instead of isAdminLevel so a raw request
-// can't reach what the page itself already hides.
-export const MANAGER_BLOCKED_PREFIXES = ["/akuntansi", "/payroll", "/bayar-tagihan"];
+// admin-gated action app-wide). Absensi and Karyawan are part of Payroll's
+// own domain (not separately nav-reachable), so they're covered by the
+// "/payroll" prefix too — see isPayrollAdminLevel below, used at those
+// specific API routes instead of isAdminLevel so a raw request can't reach
+// what the page itself already hides.
+// "/admin" added 2026-08-27 per the user's report that Manager could reach
+// Kelola User / Kelola Kategori / Metode Pembayaran — account/role and
+// system-config management wasn't meant to be covered by "boleh lihat
+// semua" the way ordinary business modules were.
+export const MANAGER_BLOCKED_PREFIXES = ["/akuntansi", "/payroll", "/bayar-tagihan", "/admin"];
 
 // Insentif/Komisi (Leaderboard Sales) locked down to just these two roles
 // per the user's request 2026-08-26 — nobody else reaches it, not even

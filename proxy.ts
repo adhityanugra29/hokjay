@@ -37,7 +37,13 @@ export default async function proxy(request: NextRequest) {
   const role = session.role as UserRole;
 
   if (pathname.startsWith("/api/")) {
-    if (!isAdminLevel(role)) {
+    // "manager" is admin-level everywhere else, but explicitly NOT for
+    // Admin's own domain (Kelola User, Kategori, Kurir, Metode Pembayaran,
+    // Pengaturan) — see MANAGER_BLOCKED_PREFIXES. isAdminLevel(manager)
+    // alone would let a raw API request through even with the page itself
+    // now hidden (isAllowedPage), so this check treats manager the same as
+    // a non-admin role here specifically. Per the user's report 2026-08-27.
+    if (!isAdminLevel(role) || role === "manager") {
       const fullyRestricted = ADMIN_ONLY_ALL_METHODS_PREFIXES.some((p) => pathname.startsWith(p));
       const writeRestricted =
         request.method !== "GET" && ADMIN_ONLY_WRITE_PREFIXES.some((p) => pathname.startsWith(p));
