@@ -33,12 +33,23 @@ export interface ProductInvoiceStatus {
  * (stock decremented at "unpaid" time, not "paid") wrongly showed SOLD for
  * an invoice that hadn't actually been paid yet. Per the user's bug report
  * 2026-08-27 ("jika belum dibayar, itu statusnya booked bukan sold").
+ *
+ * `excludeInvoiceId` — pass the invoice currently being edited (see the
+ * Invoice "Tambah Produk" sidebar) so its own qty doesn't count against
+ * itself. Without this, removing a product from the very invoice that was
+ * the ONLY thing keeping it "Booked" still showed it as Booked/unavailable
+ * until the edit was saved — the qty a sales rep is actively adjusting on
+ * this invoice was never really "someone else's" claim on the product. Per
+ * the user's bug report 2026-08-27.
  */
-export async function getProductInvoiceStatusMap(): Promise<Map<string, ProductInvoiceStatus>> {
+export async function getProductInvoiceStatusMap(excludeInvoiceId?: string): Promise<Map<string, ProductInvoiceStatus>> {
   await dbConnect();
 
+  const unpaidFilter: Record<string, unknown> = { status: "unpaid" };
+  if (excludeInvoiceId) unpaidFilter._id = { $ne: excludeInvoiceId };
+
   const [unpaidInvoices, paidInvoices] = await Promise.all([
-    Invoice.find({ status: "unpaid" }, { items: 1, dp: 1, sales: 1 }).lean(),
+    Invoice.find(unpaidFilter, { items: 1, dp: 1, sales: 1 }).lean(),
     Invoice.find({ status: "paid" }, { items: 1 }).lean(),
   ]);
 

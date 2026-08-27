@@ -27,21 +27,36 @@ const ALL_CATEGORIES_LABEL = "Semua Kategori";
 const STATUS_OPTIONS = ["Semua Status", "Tersedia", "Booked", "Sudah DP"];
 
 /**
- * "+ Tambah Produk" while editing an invoice used to navigate away to
- * /katalog, then rely on "Lanjut ke Invoice" to come back — but that
- * button always routes to /invoice/baru (a brand new invoice), never back
- * to the edit page, silently discarding everything already filled in
- * (pelanggan, sales, tanggal, ongkir...). Per the user's report
+ * "+ Tambah Produk" on the Invoice form used to navigate away to /katalog,
+ * then rely on "Lanjut ke Invoice" to come back — but that button always
+ * routes to /invoice/baru (a brand new invoice), never back to whatever
+ * was actually being edited, silently discarding everything already
+ * filled in (pelanggan, sales, tanggal, ongkir...). Per the user's report
  * 2026-08-27 ("customernya tereset"). This sidebar replaces that trip
- * entirely for edit mode — products are picked without ever leaving the
- * page. Create mode (/invoice/baru) is unaffected — it still uses the
- * Katalog page, confirmed with the user 2026-08-27.
+ * entirely — for both create and edit mode as of 2026-08-28 (edit mode
+ * first, per the user's initial request; create mode extended to match
+ * once the user confirmed they wanted the same fix there too) — products
+ * are picked without ever leaving the page.
  *
  * Deliberately compact (small thumbnail, no price-mode toggle) — pick a
  * product at Harga Rekomendasi, adjust price/discount afterward from the
  * item row already in the invoice (ItemRowEditor already supports that).
  */
-export default function AddProductSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function AddProductSidebar({
+  open,
+  onClose,
+  invoiceId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /**
+   * The invoice being edited — excluded server-side from its own Booked/
+   * Sudah DP qty, see lib/katalog.ts. Omitted in create mode: nothing is
+   * persisted yet at that point, so there's no invoice for the cart's own
+   * contents to self-count against in the first place.
+   */
+  invoiceId?: string;
+}) {
   const { items, addItem, updateItem, removeItem } = useCart();
   const [products, setProducts] = useState<SidebarProduct[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -53,16 +68,16 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    Promise.all([
-      fetch("/api/products?withStatus=1").then((r) => r.json()),
-      fetch("/api/categories").then((r) => r.json()),
-    ])
+    const productsUrl = invoiceId
+      ? `/api/products?withStatus=1&excludeInvoiceId=${invoiceId}`
+      : "/api/products?withStatus=1";
+    Promise.all([fetch(productsUrl).then((r) => r.json()), fetch("/api/categories").then((r) => r.json())])
       .then(([prods, cats]: [SidebarProduct[], { name: string }[]]) => {
         setProducts(prods.filter((p) => !p.isCustom && p.stok > 0));
         setCategories(cats.map((c) => c.name));
       })
       .finally(() => setLoading(false));
-  }, [open]);
+  }, [open, invoiceId]);
 
   useEffect(() => {
     if (!open) return;
@@ -158,15 +173,16 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
             {filtered.map((p) => {
               const cartItem = items.find((i) => i.productId === p._id);
               // Same "Booked/DP units aren't really free" guard as the main
-              // Katalog card — but this invoice's OWN already-added qty is
-              // added back first, since it's counted in p.bookedQty/dpQty
-              // too (this is a real persisted "unpaid" invoice being
-              // edited) and would otherwise wrongly cap against itself.
-              // Per the user's request 2026-08-27.
-              const availableQty = Math.max(
-                0,
-                p.stok - (p.bookedQty ?? 0) - (p.dpQty ?? 0) + (cartItem?.qty ?? 0)
-              );
+              // Katalog card. This invoice's own qty never counts against
+              // itself here — the fetch above already excludes this
+              // invoice from the server-side Booked/Sudah DP aggregation
+              // (lib/katalog.ts's excludeInvoiceId), so p.bookedQty/dpQty
+              // only reflect OTHER invoices. A client-side "add my own qty
+              // back" correction was tried first but went stale the moment
+              // qty was edited mid-session (removing the last unit still
+              // showed it as Booked until the page reloaded) — per the
+              // user's bug report 2026-08-27.
+              const availableQty = Math.max(0, p.stok - (p.bookedQty ?? 0) - (p.dpQty ?? 0));
               // Live insentif — same formula/inputs as the main Katalog
               // card (lib/commission.ts), computed against the default add
               // price (Harga Rekomendasi) this sidebar adds at. Per the

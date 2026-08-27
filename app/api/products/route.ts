@@ -15,6 +15,10 @@ export async function GET(req: NextRequest) {
   // sidebar, see components/invoice/AddProductSidebar.tsx). Per the user's
   // request 2026-08-27.
   const withStatus = searchParams.get("withStatus") === "1";
+  // The invoice currently being edited (see AddProductSidebar.tsx) — its
+  // own qty shouldn't count as a "Booked" claim against itself. See
+  // lib/katalog.ts's getProductInvoiceStatusMap doc comment.
+  const excludeInvoiceId = searchParams.get("excludeInvoiceId")?.trim() || undefined;
 
   const filter: Record<string, unknown> = {};
   if (category) filter.category = category;
@@ -29,7 +33,7 @@ export async function GET(req: NextRequest) {
   const products = await Product.find(filter).sort({ name: 1 }).lean();
   if (!withStatus) return NextResponse.json(products);
 
-  const statusMap = await getProductInvoiceStatusMap();
+  const statusMap = await getProductInvoiceStatusMap(excludeInvoiceId);
   const withStatusFields = products.map((p) => {
     const status = statusMap.get(String(p._id));
     return {

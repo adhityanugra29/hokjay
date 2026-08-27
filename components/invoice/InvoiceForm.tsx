@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, CurrencyInput } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
@@ -463,43 +462,26 @@ export default function InvoiceForm({
           {items.map((item) => (
             <ItemRowEditor key={item.productId} item={item} />
           ))}
-          {items.length === 0 &&
-            (mode === "edit" ? (
-              <div className="border border-dashed border-line py-6 text-center font-mono text-[0.8rem] text-muted">
-                Belum ada produk. Klik &quot;+ Tambah Produk&quot; di bawah.
-              </div>
-            ) : (
-              <div className="border border-dashed border-line py-6 text-center font-mono text-[0.8rem] text-muted">
-                Belum ada produk. Tambahkan dari{" "}
-                <Link href="/katalog" className="text-moss-deep underline">
-                  Katalog
-                </Link>
-                .
-              </div>
-            ))}
+          {items.length === 0 && (
+            <div className="border border-dashed border-line py-6 text-center font-mono text-[0.8rem] text-muted">
+              Belum ada produk. Klik &quot;+ Tambah Produk&quot; di bawah.
+            </div>
+          )}
         </div>
-        {/* Edit mode opens the inline sidebar instead of navigating to
-            /katalog — "Lanjut ke Invoice" there always routes to
-            /invoice/baru (a brand new invoice), which silently discarded
-            an in-progress edit's pelanggan/sales/etc. Per the user's
-            report 2026-08-27 ("customernya tereset"). Create mode is
-            unaffected — confirmed with the user 2026-08-27. */}
-        {mode === "edit" ? (
-          <button
-            type="button"
-            onClick={() => setAddingProduct(true)}
-            className="mt-1 block w-full cursor-pointer rounded border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-moss hover:bg-[#fbfaf5] hover:text-moss-deep"
-          >
-            + Tambah Produk
-          </button>
-        ) : (
-          <Link
-            href="/katalog"
-            className="mt-1 block w-full rounded border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-moss hover:bg-[#fbfaf5] hover:text-moss-deep"
-          >
-            + Tambah Produk
-          </Link>
-        )}
+        {/* Opens the inline sidebar instead of navigating to /katalog —
+            "Lanjut ke Invoice" there always routes to /invoice/baru (a
+            brand new invoice), which silently discarded an in-progress
+            edit's pelanggan/sales/etc. Per the user's report 2026-08-27
+            ("customernya tereset"). Originally edit-mode only per the
+            user's own initial scoping choice; extended to create mode too
+            2026-08-28 once the user asked for the same fix there. */}
+        <button
+          type="button"
+          onClick={() => setAddingProduct(true)}
+          className="mt-1 block w-full cursor-pointer rounded border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-moss hover:bg-[#fbfaf5] hover:text-moss-deep"
+        >
+          + Tambah Produk
+        </button>
       </div>
 
       <div className="mt-5 border border-line bg-[#f7f5ee] p-5">
@@ -539,7 +521,11 @@ export default function InvoiceForm({
         </Button>
       </FormActions>
 
-      {mode === "edit" && <AddProductSidebar open={addingProduct} onClose={() => setAddingProduct(false)} />}
+      <AddProductSidebar
+        open={addingProduct}
+        onClose={() => setAddingProduct(false)}
+        invoiceId={mode === "edit" ? invoiceId : undefined}
+      />
     </Panel>
   );
 }
