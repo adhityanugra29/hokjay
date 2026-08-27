@@ -127,6 +127,58 @@ interface PrintUnit {
 }
 
 /**
+ * Crop-to-fill a product photo into a fixed box, anchored bottom-right so
+ * the upload watermark (app/api/upload/route.ts stamps it in that corner)
+ * never gets cropped away — computed with real pixel numbers from the
+ * loaded image's own naturalWidth/naturalHeight, not any CSS auto-sizing
+ * trick. Replaces THREE earlier attempts that each failed differently once
+ * actually tested against a real exported PDF: plain object-fit:cover
+ * (html2canvas doesn't reliably honor it — stretched portrait photos,
+ * "gepeng", 2026-08-26), a CSS background-image (html2canvas renders that
+ * through a lower-fidelity path — visible blur, 2026-08-27), and the
+ * classic "absolute + min-width/min-height:100% + width/height:auto" cover
+ * polyfill (works for images close in scale to their container, but these
+ * source photos are up to 1600px against a 220px box — width/height:auto
+ * on a replaced element resolves to its INTRINSIC size per spec, which
+ * already exceeds min-width/min-height, so the min-constraints never
+ * actually kicked in; the crop ended up looking through a tiny window into
+ * the image's own far corner, which happened to be mostly watermark —
+ * "watermarknya menutup gambarnya", 2026-08-27). Explicit computed pixel
+ * dimensions have no auto-resolution ambiguity for any of these engines to
+ * get wrong.
+ */
+function CoverCroppedPhoto({
+  src,
+  alt,
+  boxWidth,
+  boxHeight,
+}: {
+  src: string;
+  alt: string;
+  boxWidth: number;
+  boxHeight: number;
+}) {
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  return (
+    <div className="relative shrink-0 overflow-hidden bg-surface" style={{ width: boxWidth, height: boxHeight }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          if (!img.naturalWidth || !img.naturalHeight) return;
+          const scale = Math.max(boxWidth / img.naturalWidth, boxHeight / img.naturalHeight);
+          setSize({ width: Math.ceil(img.naturalWidth * scale), height: Math.ceil(img.naturalHeight * scale) });
+        }}
+        className="absolute right-0 bottom-0"
+        style={size ? { width: size.width, height: size.height } : undefined}
+      />
+    </div>
+  );
+}
+
+/**
  * Page-bottom footer band — logo + a contact line personalized with the
  * logged-in sales' own name/number when available (mirrors the cover's
  * "Pemesanan" section fallback). Repeats on EVERY page, pinned flush to the
@@ -353,43 +405,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                     )}
                     <div className="mb-5 flex gap-5 border-t border-line pt-5">
                       {p.fotoUrl ? (
-                        // Manual "cover" crop — NOT object-fit (html2canvas
-                        // doesn't reliably honor that CSS property on <img>,
-                        // could stretch a tall/portrait photo — the user's
-                        // report 2026-08-26 "gepeng"), and NOT a CSS
-                        // background-image either (tried next — html2canvas
-                        // renders background-image through a lower-fidelity
-                        // path than a plain <img>, so that traded the
-                        // stretching for visible blur, the user's next
-                        // report 2026-08-27). This is the pre-object-fit
-                        // "cover" technique instead: absolutely position an
-                        // oversized <img> inside an overflow-hidden box,
-                        // min-w/min-h 100% forces it to be at least as big as
-                        // the box in both directions while width/height:auto
-                        // keeps its own aspect ratio, so the browser's
-                        // ordinary replaced-element sizing (not a special CSS
-                        // property) does the crop-to-fill.
-                        //
-                        // Anchored bottom-right, NOT centered — the upload
-                        // watermark (app/api/upload/route.ts) is stamped in
-                        // the bottom-right corner of the source photo; a
-                        // centered crop was cutting off that corner on
-                        // portrait-oriented photos, cropping the top/bottom
-                        // symmetrically. Bottom-right anchoring means any
-                        // cropping always comes off the top/left instead,
-                        // which never touches the watermark. Per the user's
-                        // report 2026-08-27 ("kalau website ada, tapi harus
-                        // zoom" — confirming the watermark exists on the
-                        // source photo, it was just the PDF's crop cutting
-                        // it out, not a missing upload).
-                        <div className="relative h-[165px] w-[220px] shrink-0 overflow-hidden bg-surface">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={p.fotoUrl}
-                            alt={p.name}
-                            className="absolute right-0 bottom-0 h-auto w-auto min-h-full min-w-full max-w-none"
-                          />
-                        </div>
+                        <CoverCroppedPhoto src={p.fotoUrl} alt={p.name} boxWidth={220} boxHeight={165} />
                       ) : (
                         <div className="flex h-[165px] w-[220px] shrink-0 items-center justify-center bg-surface text-[0.75rem] text-muted">
                           Tidak ada foto
