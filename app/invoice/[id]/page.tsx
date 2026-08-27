@@ -108,7 +108,11 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
               </div>
             </div>
 
-            <div className="mb-7 flex flex-wrap gap-9">
+            {/* 4 columns — Sales pushed flush to the right edge (ml-auto),
+                Tanggal Pengiriman split out of Alamat Pengiriman's line
+                into its own column, wider gap between columns. Per the
+                user's request 2026-08-27 ("terlalu mepet"). */}
+            <div className="mb-7 flex flex-wrap items-start gap-x-12 gap-y-5">
               <div>
                 <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">
                   Ditagihkan kepada
@@ -117,14 +121,21 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                 <div className="mt-1 font-mono text-[0.78rem] text-muted">{invoice.customer!.whatsapp}</div>
               </div>
               <div>
-                <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Dikirim ke</div>
+                <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">
+                  Alamat Pengiriman
+                </div>
                 <div className="text-[0.9rem] font-medium">{invoice.shipAddress ?? "—"}</div>
-                <div className="mt-1 font-mono text-[0.78rem] text-muted">
-                  {invoice.tanggalKirim ? `Tgl. Kirim: ${formatDateShort(invoice.tanggalKirim)}` : ""}
+              </div>
+              <div>
+                <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">
+                  Tanggal Pengiriman
+                </div>
+                <div className="font-mono text-[0.78rem] text-muted">
+                  {invoice.tanggalKirim ? formatDateShort(invoice.tanggalKirim) : "—"}
                   {invoice.kurir ? ` · ${invoice.kurir}` : ""}
                 </div>
               </div>
-              <div>
+              <div className="ml-auto text-right">
                 <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Sales</div>
                 <div className="font-medium">{invoice.sales!.nama}</div>
               </div>
@@ -196,6 +207,22 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
               <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Payment Details</div>
               <div>No. Rekening: 5771370277 (BCA)</div>
               <div>Atas Nama: Mohammad Andi Abdillah</div>
+            </div>
+
+            {/* Closing logo + thank-you line — per the user's request
+                2026-08-27. */}
+            <div className="mt-9 flex flex-col items-center gap-2 text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo/hojay-2b-positif.png"
+                alt="HOJAY Kitchen Equipment"
+                width={90}
+                height={50}
+                className="h-auto w-[90px] opacity-80"
+              />
+              <div className="font-serif text-[0.82rem] italic text-muted">
+                Thank you for trusting us with your kitchen.
+              </div>
             </div>
           </div>
 

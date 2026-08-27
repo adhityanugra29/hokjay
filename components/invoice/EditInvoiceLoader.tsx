@@ -25,6 +25,16 @@ interface CourierOption {
  * Pre-loads the cart with an existing invoice's items on mount, then renders
  * the invoice form in edit mode — so fixing a mistake doesn't mean re-typing
  * everything from an empty Katalog browse.
+ *
+ * The `loaded` ref used to be the only guard against re-loading — but it's
+ * a fresh `useRef(false)` on every mount, and "+ Tambah Produk" navigates
+ * away to /katalog and remounts this component when the user comes back.
+ * That re-ran loadItems(items) with the ORIGINAL server-fetched invoice
+ * items, silently discarding whatever product was just added on Katalog
+ * (the cart got overwritten back to the pre-edit state). Per the user's
+ * report 2026-08-27. A sessionStorage marker survives the remount, so the
+ * seed only ever happens once per actual edit session — switching to a
+ * different invoice (different invoiceId) still seeds fresh.
  */
 export default function EditInvoiceLoader({
   invoiceId,
@@ -45,10 +55,17 @@ export default function EditInvoiceLoader({
 }) {
   const { loadItems } = useCart();
   const loaded = useRef(false);
+  const seededKey = `invoiceEditSeeded:${invoiceId}`;
 
   useEffect(() => {
     if (loaded.current) return;
     loaded.current = true;
+    try {
+      if (sessionStorage.getItem(seededKey) === "1") return; // already seeded this edit session — don't clobber it
+      sessionStorage.setItem(seededKey, "1");
+    } catch {
+      // storage unavailable — fall through and seed anyway, same as before this fix
+    }
     loadItems(items);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

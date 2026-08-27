@@ -6,17 +6,22 @@ import { Sales } from "@/models/Sales";
 import { Courier } from "@/models/Courier";
 import { peekNextInvoiceNumber } from "@/lib/counters";
 import { getSession } from "@/lib/auth/session";
+import { customerVisibilityFilter } from "@/lib/pelanggan";
 
 export const dynamic = "force-dynamic";
 
 export default async function InvoiceBaruPage() {
   await dbConnect();
-  const [customers, salesList, couriers, nextNumber, session] = await Promise.all([
-    Customer.find().sort({ nama: 1 }).lean(),
+  const session = await getSession();
+  // Same per-sales customer privacy as /pelanggan and the customer-search
+  // API (2026-08-27) — without this, a plain "sales" account could still
+  // pick another rep's customer straight from this dropdown. Fetched
+  // before the Promise.all below since the filter itself depends on it.
+  const [customers, salesList, couriers, nextNumber] = await Promise.all([
+    Customer.find(customerVisibilityFilter(session)).sort({ nama: 1 }).lean(),
     Sales.find({ aktif: true }).sort({ nama: 1 }).lean(),
     Courier.find().sort({ name: 1 }).lean(),
     peekNextInvoiceNumber(),
-    getSession(),
   ]);
 
   return (

@@ -39,7 +39,7 @@ const ITEM_ROW_PX = 55; // safety-padded above the real ~44px single-line row, r
 // transient under-measurement never lets a page overpack before the real
 // number arrives.
 const DEFAULT_HEADER_HEIGHT_PX = 260;
-const DEFAULT_FOOTER_HEIGHT_PX = 220;
+const DEFAULT_FOOTER_HEIGHT_PX = 300; // bumped after adding the closing logo + thank-you line, 2026-08-27
 
 /**
  * Off-screen multi-page invoice layout, captured page-by-page by
@@ -143,6 +143,22 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
         <div>No. Rekening: 5771370277 (BCA)</div>
         <div>Atas Nama: Mohammad Andi Abdillah</div>
       </div>
+      {/* Closing logo + thank-you line — per the user's request 2026-08-27.
+          "Thank you for trusting your kitchen with us" reversed the
+          object of "trust X with Y" (would literally read as trusting the
+          kitchen itself with "us"); corrected to "trusting us with your
+          kitchen" — you trust HOJAY to take care of your kitchen. */}
+      <div className="mt-9 flex flex-col items-center gap-2 text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo/hojay-2b-positif.png"
+          alt="HOJAY Kitchen Equipment"
+          width={90}
+          height={50}
+          className="h-auto w-[90px] opacity-80"
+        />
+        <div className="font-serif text-[0.82rem] italic text-muted">Thank you for trusting us with your kitchen.</div>
+      </div>
     </div>
   );
 
@@ -176,21 +192,28 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
         </div>
       </div>
 
-      <div className="mb-7 flex flex-wrap gap-9">
+      {/* 4 columns — Sales pushed flush to the right edge (ml-auto),
+          Tanggal Pengiriman split out of Alamat Pengiriman's line into its
+          own column, wider gap between columns. Per the user's request
+          2026-08-27 ("terlalu mepet"). */}
+      <div className="mb-7 flex flex-wrap items-start gap-x-12 gap-y-5">
         <div>
           <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Ditagihkan kepada</div>
           <div className="font-medium">{invoice.customerNama}</div>
           <div className="mt-1 font-mono text-[0.78rem] text-muted">{invoice.customerWhatsapp}</div>
         </div>
         <div>
-          <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Dikirim ke</div>
+          <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Alamat Pengiriman</div>
           <div className="text-[0.9rem] font-medium">{invoice.shipAddress ?? "—"}</div>
-          <div className="mt-1 font-mono text-[0.78rem] text-muted">
-            {invoice.tanggalKirim ? `Tgl. Kirim: ${formatDateShort(invoice.tanggalKirim)}` : ""}
+        </div>
+        <div>
+          <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Tanggal Pengiriman</div>
+          <div className="font-mono text-[0.78rem] text-muted">
+            {invoice.tanggalKirim ? formatDateShort(invoice.tanggalKirim) : "—"}
             {invoice.kurir ? ` · ${invoice.kurir}` : ""}
           </div>
         </div>
-        <div>
+        <div className="ml-auto text-right">
           <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Sales</div>
           <div className="font-medium">{invoice.salesNama}</div>
         </div>

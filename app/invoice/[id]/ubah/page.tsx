@@ -8,6 +8,8 @@ import { Customer } from "@/models/Customer";
 import { Sales } from "@/models/Sales";
 import { Courier } from "@/models/Courier";
 import { Product } from "@/models/Product";
+import { getSession } from "@/lib/auth/session";
+import { customerVisibilityFilter } from "@/lib/pelanggan";
 
 export const dynamic = "force-dynamic";
 
@@ -50,8 +52,19 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
     };
   });
 
+  // Same per-sales customer privacy as /pelanggan and /invoice/baru
+  // (2026-08-27) — but this invoice's own customer must always be
+  // included even if it's not normally visible to the editing sales rep
+  // (any role can open any invoice's edit page, not just their own), or
+  // the picker would silently blank out the already-assigned customer.
+  const session = await getSession();
+  const baseFilter = customerVisibilityFilter(session);
+  const customerFilter = invoice.customer?.ref
+    ? { $or: [baseFilter, { _id: invoice.customer.ref }] }
+    : baseFilter;
+
   const [customers, salesList, couriers] = await Promise.all([
-    Customer.find().sort({ nama: 1 }).lean(),
+    Customer.find(customerFilter).sort({ nama: 1 }).lean(),
     Sales.find({ aktif: true }).sort({ nama: 1 }).lean(),
     Courier.find().sort({ name: 1 }).lean(),
   ]);

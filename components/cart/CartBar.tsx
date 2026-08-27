@@ -5,7 +5,7 @@ import { useCart } from "./CartProvider";
 import { rupiah } from "@/lib/format";
 
 export default function CartBar() {
-  const { count, totalEstimate } = useCart();
+  const { count, totalEstimate, clear } = useCart();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -26,6 +26,16 @@ export default function CartBar() {
         <b className="text-white">{count}</b> produk dipilih — total est. <b>{rupiah(totalEstimate)}</b>
       </div>
       <div className="flex gap-2">
+        {/* Clears the whole selection right from the Katalog cart bar,
+            next to "Lanjut ke Invoice" — no separate confirm dialog, per
+            the user's request 2026-08-27. */}
+        <button
+          type="button"
+          onClick={() => clear()}
+          className="border border-white/40 bg-transparent px-4.5 py-2 text-[0.85rem] font-semibold text-white"
+        >
+          Batal
+        </button>
         <button
           type="button"
           onClick={() => router.push("/invoice/baru")}

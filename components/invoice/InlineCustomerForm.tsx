@@ -13,13 +13,17 @@ export interface CreatedCustomer {
   nama: string;
   whatsapp: string;
   alamat: string;
+  provinsi: string;
+  kota: string;
 }
 
 /**
- * "+ Tambah Pelanggan" used to jump to /pelanggan/baru and back — now it
- * expands this inline form right on /penjualan instead, so adding a new
- * customer and picking them doesn't mean switching screens. See
- * confirmation with the user 2026-08-20.
+ * "Tambah pelanggan baru" used to jump to /pelanggan/baru and back — now it
+ * expands this inline form right on the Invoice page instead, so adding a
+ * new customer while making an invoice doesn't mean switching screens and
+ * losing the cart. Per the user's request 2026-08-27 (this component was
+ * originally built for an in-flow /penjualan step that was since dropped —
+ * moved here from components/penjualan/ since that's its real home now).
  */
 export default function InlineCustomerForm({
   onCreated,

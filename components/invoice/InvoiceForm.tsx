@@ -8,6 +8,7 @@ import { Field, FormGrid, FormActions, Input, Select, CurrencyInput } from "@/co
 import { Button, LinkButton } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
 import ItemRowEditor from "./ItemRowEditor";
+import InlineCustomerForm, { type CreatedCustomer } from "./InlineCustomerForm";
 import { computeLineCommission } from "@/lib/commission";
 import { rupiah } from "@/lib/format";
 
@@ -76,6 +77,13 @@ export default function InvoiceForm({
   // before browsing Katalog; that page was dropped and picking moved here
   // (invoice time) per the user's request 2026-08-25.
   const [editingCustomer, setEditingCustomer] = useState(false);
+  // Own copy of the customer list so a brand-new customer (added inline,
+  // below) can be appended and selected immediately without a page
+  // refresh. "Tambah pelanggan baru" used to navigate away to
+  // /pelanggan/baru and back; now it expands InlineCustomerForm right
+  // here instead. Per the user's request 2026-08-27.
+  const [customerList, setCustomerList] = useState<CustomerOption[]>(customers);
+  const [addingCustomer, setAddingCustomer] = useState(false);
   const [shipAddress, setShipAddress] = useState(initial?.shipAddress ?? "");
   const [salesId, setSalesId] = useState(initial?.salesId ?? "");
   const [tanggalInvoice, setTanggalInvoice] = useState(
@@ -88,6 +96,60 @@ export default function InvoiceForm({
   const [ongkosKirim, setOngkosKirim] = useState(initial?.ongkosKirim ?? 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // "+ Tambah Produk" navigates away to /katalog and back — that remounts
+  // this whole form from scratch, so every field above (pelanggan/sales/
+  // tanggal/kurir/ongkir) would otherwise snap back to its initial value
+  // and silently lose whatever the user had already filled in. Per the
+  // user's report 2026-08-27 ("ketika tambah produk, datanya reset dari
+  // awal"). Sessions-scoped (clears on tab close) rather than permanent —
+  // this is a same-session convenience, not a real draft feature.
+  const draftKey = mode === "edit" ? `invoiceHeaderDraft:edit:${invoiceId}` : "invoiceHeaderDraft:baru";
+
+  useEffect(() => {
+    // Only a genuine "back from Katalog" round trip has items already in
+    // the cart on mount — a brand new invoice (create mode) or a freshly
+    // opened edit page both start with an empty cart at this point
+    // (EditInvoiceLoader hasn't loaded the invoice's items yet on the very
+    // first render), so this never clobbers a true first load.
+    if (items.length === 0) return;
+    try {
+      const raw = sessionStorage.getItem(draftKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as Partial<{
+        customerId: string;
+        shipAddress: string;
+        salesId: string;
+        tanggalInvoice: string;
+        tanggalKirim: string;
+        kurirId: string;
+        ongkosKirim: number;
+      }>;
+      if (draft.customerId) setCustomerId(draft.customerId);
+      if (draft.shipAddress) setShipAddress(draft.shipAddress);
+      if (draft.salesId) setSalesId(draft.salesId);
+      if (draft.tanggalInvoice) setTanggalInvoice(draft.tanggalInvoice);
+      if (draft.tanggalKirim) setTanggalKirim(draft.tanggalKirim);
+      if (draft.kurirId) setKurirId(draft.kurirId);
+      if (draft.ongkosKirim) setOngkosKirim(draft.ongkosKirim);
+    } catch {
+      // malformed/unavailable storage — not worth surfacing an error for
+    }
+    // Deliberately only on mount — this restores whatever was saved right
+    // before navigating to Katalog, not on every keystroke afterward.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        draftKey,
+        JSON.stringify({ customerId, shipAddress, salesId, tanggalInvoice, tanggalKirim, kurirId, ongkosKirim })
+      );
+    } catch {
+      // storage full/unavailable — this is a convenience, not critical
+    }
+  }, [draftKey, customerId, shipAddress, salesId, tanggalInvoice, tanggalKirim, kurirId, ongkosKirim]);
 
   // Logged in as sales -> "Sales (Yang Closing)" auto-fills with their own
   // account, matched by nama against the Sales roster (same nama-matching
@@ -127,14 +189,30 @@ export default function InvoiceForm({
 
   function selectCustomer(id: string) {
     setCustomerId(id);
-    const c = customers.find((c) => c._id === id);
+    const c = customerList.find((c) => c._id === id);
     if (c) {
       setShipAddress(c.alamat);
       setEditingCustomer(false); // collapse back to the read-only view once a real pick is made
     }
   }
 
-  const selectedCustomer = customers.find((c) => c._id === customerId);
+  function handleCustomerCreated(c: CreatedCustomer) {
+    const option: CustomerOption = {
+      _id: c._id,
+      nama: c.nama,
+      alamat: c.alamat,
+      whatsapp: c.whatsapp,
+      provinsi: c.provinsi,
+      kota: c.kota,
+    };
+    setCustomerList((prev) => [...prev, option].sort((a, b) => a.nama.localeCompare(b.nama)));
+    setCustomerId(c._id);
+    setShipAddress(c.alamat);
+    setAddingCustomer(false);
+    setEditingCustomer(false);
+  }
+
+  const selectedCustomer = customerList.find((c) => c._id === customerId);
 
   async function submit(status: "draft" | "unpaid") {
     setError(null);
@@ -142,7 +220,7 @@ export default function InvoiceForm({
       setError("Belum ada produk di invoice ini.");
       return;
     }
-    const customer = customers.find((c) => c._id === customerId);
+    const customer = customerList.find((c) => c._id === customerId);
     const sales = salesList.find((s) => s._id === salesId);
     if (!customer) return setError("Pilih pelanggan terlebih dahulu.");
     if (!sales) return setError("Pilih sales terlebih dahulu.");
@@ -180,6 +258,16 @@ export default function InvoiceForm({
       }
       const invoice = await res.json();
       clear();
+      try {
+        sessionStorage.removeItem(draftKey);
+        // Also clears EditInvoiceLoader's "already seeded this session"
+        // marker, so re-entering edit mode on this same invoice later
+        // (same tab) seeds a fresh cart from the server again instead of
+        // reusing this now-stale one.
+        if (mode === "edit" && invoiceId) sessionStorage.removeItem(`invoiceEditSeeded:${invoiceId}`);
+      } catch {
+        // ignore — nothing to clean up if storage was never available
+      }
       router.push(status === "draft" ? "/invoice" : `/invoice/${invoice._id}`);
       router.refresh();
     } catch (err) {
@@ -201,24 +289,38 @@ export default function InvoiceForm({
         <label className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Pelanggan</label>
         {showCustomerPicker ? (
           <div className="mt-1.5">
-            <Select value={customerId} onChange={(e) => selectCustomer(e.target.value)}>
-              <option value="">— Pilih pelanggan —</option>
-              {customers.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.nama}
-                </option>
-              ))}
-            </Select>
-            <div className="mt-1.5 flex flex-wrap items-center gap-3 font-mono text-[0.7rem] text-muted">
-              <Link href="/pelanggan/baru" className="text-moss underline">
-                Tambah pelanggan baru
-              </Link>
-              {customerId && (
-                <button type="button" onClick={() => setEditingCustomer(false)} className="cursor-pointer underline">
-                  Batal
-                </button>
-              )}
-            </div>
+            {addingCustomer ? (
+              <InlineCustomerForm onCreated={handleCustomerCreated} onCancel={() => setAddingCustomer(false)} />
+            ) : (
+              <>
+                <Select value={customerId} onChange={(e) => selectCustomer(e.target.value)}>
+                  <option value="">— Pilih pelanggan —</option>
+                  {customerList.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.nama}
+                    </option>
+                  ))}
+                </Select>
+                <div className="mt-1.5 flex flex-wrap items-center gap-3 font-mono text-[0.7rem] text-muted">
+                  <button
+                    type="button"
+                    onClick={() => setAddingCustomer(true)}
+                    className="cursor-pointer text-moss underline"
+                  >
+                    Tambah pelanggan baru
+                  </button>
+                  {customerId && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingCustomer(false)}
+                      className="cursor-pointer underline"
+                    >
+                      Batal
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="mt-1.5 flex items-center justify-between gap-3">
