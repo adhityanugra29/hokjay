@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { rupiah } from "@/lib/format";
+import { computeLineCommission } from "@/lib/commission";
 
 interface SidebarProduct {
   _id: string;
@@ -163,6 +164,17 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
                 0,
                 p.stok - (p.bookedQty ?? 0) - (p.dpQty ?? 0) + (cartItem?.qty ?? 0)
               );
+              // Live insentif — same formula/inputs as the main Katalog
+              // card (lib/commission.ts), computed against the default add
+              // price (Harga Rekomendasi) this sidebar adds at. Per the
+              // user's request 2026-08-27.
+              const liveKomisi = computeLineCommission({
+                isCustom: p.isCustom,
+                kondisi: p.kondisi,
+                hargaJual: p.hargaRekomendasi,
+                hargaMinimum: p.hargaMinimum,
+              });
+              const kondisiLabel = p.kondisi === "bekas" ? "Bekas" : "Baru";
               return (
                 <div key={p._id} className="flex items-center gap-2.5 border border-line bg-[#fbfaf5] p-2">
                   <div className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden bg-surface text-[0.55rem] text-muted">
@@ -177,6 +189,13 @@ export default function AddProductSidebar({ open, onClose }: { open: boolean; on
                     <div className="line-clamp-1 text-[0.76rem] font-medium text-ink">{p.name}</div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1 font-mono text-[0.64rem] text-muted">
                       <span>{rupiah(p.hargaRekomendasi)}</span>
+                      <span
+                        className="px-1.5 py-[1px] text-[0.58rem] font-semibold text-white"
+                        style={{ background: p.kondisi === "bekas" ? "#D97706" : "#16A34A" }}
+                      >
+                        {kondisiLabel}
+                      </span>
+                      <span className="text-moss-deep">Insentif {rupiah(liveKomisi)}</span>
                       {!!p.bookedQty && <span className="text-[#B45309]">· Booked {p.bookedQty}</span>}
                       {!!p.dpQty && <span className="text-[#0369A1]">· DP {p.dpQty}</span>}
                     </div>
