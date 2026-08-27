@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useCart } from "@/components/cart/CartProvider";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { rupiah } from "@/lib/format";
@@ -205,8 +206,21 @@ export default function AddProductSidebar({
                 <div key={p._id} className="flex items-center gap-2.5 border border-line bg-[#fbfaf5] p-2">
                   <div className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden bg-surface text-[0.55rem] text-muted">
                     {p.fotoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.fotoUrl} alt={p.name} className="h-full w-full object-cover" />
+                      // next/image requests a downsized version from Vercel's
+                      // image optimizer (the source is a 1600px-max upload)
+                      // instead of the browser downloading the full photo for
+                      // a 44px thumbnail — this sidebar can list many
+                      // products at once, so that added up. Per the user's
+                      // request 2026-08-28 ("kecilkan resolusi gambar...
+                      // untuk mempercepat proses loadnya").
+                      <Image
+                        src={p.fotoUrl}
+                        alt={p.name}
+                        width={88}
+                        height={88}
+                        quality={60}
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       "—"
                     )}
