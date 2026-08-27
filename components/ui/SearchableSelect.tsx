@@ -15,6 +15,17 @@ import { inputCls } from "./Form";
  * without picking snaps the visible text back to the last committed
  * value, so the caller's `value` can never end up holding a half-typed
  * search string.
+ *
+ * Opening the dropdown clears the search field instead of leaving the
+ * current value typed in it — per the user's report 2026-08-27 against
+ * Katalog's category filter: its current value can be a synthetic "Semua
+ * Kategori" sentinel that isn't one of `options` at all, so on open the
+ * text filter matched nothing and the dropdown looked empty. Clearing on
+ * open shows every option immediately regardless of what's currently
+ * selected, then narrows as the user types — the more expected combobox
+ * pattern anyway, applied to every usage of this component for
+ * consistency (Katalog's category filter, Pelanggan's Provinsi/Kota,
+ * Produk's Kategori), confirmed with the user.
  */
 export function SearchableSelect({
   value,
@@ -80,7 +91,10 @@ export function SearchableSelect({
           setQuery(e.target.value);
           setOpen(true);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          setQuery("");
+          setOpen(true);
+        }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className={inputCls}
