@@ -7,8 +7,23 @@ import { useEffect, useState } from "react";
  * 2026-08-25. Self-contained: click the thumbnail to open a full-screen
  * preview, click the backdrop / the ✕ / Escape to close. No external
  * lightbox library — just a fixed overlay.
+ *
+ * `label` (the small dimension footnote, e.g. "120cm x 80cm x 60cm") shows
+ * on both the thumbnail AND the zoomed view — per the user's request
+ * 2026-08-27, it was only ever on the thumbnail before (ProductCard
+ * rendered it as its own separate overlay), not visible once zoomed.
  */
-export default function ZoomableImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+export default function ZoomableImage({
+  src,
+  alt,
+  className,
+  label,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  label?: string;
+}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -30,18 +45,32 @@ export default function ZoomableImage({ src, alt, className }: { src: string; al
         title="Klik untuk perbesar"
         className={`cursor-zoom-in ${className ?? ""}`}
       />
+      {/* Relies on the caller's own wrapper already being position:relative
+          (true for every current usage) — same positioning approach the
+          thumbnail label always used before this was moved in here. */}
+      {label && (
+        <span className="absolute bottom-2.5 left-2.5 z-10 bg-ink/70 px-1.5 py-0.5 text-[9px] leading-none whitespace-nowrap text-white">
+          {label}
+        </span>
+      )}
       {open && (
         <div
           className="fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center bg-black/85 p-6"
           onClick={() => setOpen(false)}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={alt}
-            onClick={(e) => e.stopPropagation()}
-            className="max-h-full max-w-full cursor-default object-contain"
-          />
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={alt}
+              className="max-h-[calc(100vh-3rem)] max-w-full cursor-default object-contain"
+            />
+            {label && (
+              <span className="absolute bottom-3 left-3 bg-ink/70 px-2 py-1 text-[11px] leading-none whitespace-nowrap text-white">
+                {label}
+              </span>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => setOpen(false)}

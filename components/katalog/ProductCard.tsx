@@ -15,23 +15,75 @@ import { computeLineCommission } from "@/lib/commission";
  * Blob is a different origin than this app), so the file has to actually be
  * fetched as a blob first and downloaded from a same-origin blob: URL,
  * which always honors `download`.
+ *
+ * When `label` is given (the dimension footnote), it gets baked into the
+ * downloaded file too — per the user's follow-up 2026-08-27 ("waktu di
+ * zoom atau download, itu bisa di applied juga"), the label previously
+ * only showed as an on-screen overlay, invisible once the raw photo was
+ * saved. Composited via <canvas> at the image's own full resolution
+ * (crossOrigin:"anonymous" — Vercel Blob serves permissive CORS, already
+ * relied on for the Katalog PDF's own captures) rather than screenshotting
+ * anything, so the output stays exactly as sharp as the source photo.
  */
-async function downloadPhoto(url: string, filename: string) {
+async function downloadPhoto(url: string, filename: string, label?: string) {
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Gagal mengambil foto");
-    const blob = await res.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(objectUrl);
+    if (!label) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Gagal mengambil foto");
+      const blob = await res.blob();
+      triggerDownload(blob, filename);
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Gagal memuat foto"));
+      img.src = url;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas tidak didukung");
+    ctx.drawImage(img, 0, 0);
+
+    // Badge scaled proportionally to the photo's own resolution so it
+    // reads the same relative size on a small or a huge source photo.
+    const fontSize = Math.max(16, Math.round(img.naturalWidth * 0.022));
+    ctx.font = `${fontSize}px sans-serif`;
+    const padX = fontSize * 0.6;
+    const padY = fontSize * 0.45;
+    const margin = fontSize * 0.5;
+    const textWidth = ctx.measureText(label).width;
+    const boxWidth = textWidth + padX * 2;
+    const boxHeight = fontSize + padY * 2;
+    const boxY = img.naturalHeight - boxHeight - margin;
+    ctx.fillStyle = "rgba(32, 30, 29, 0.7)";
+    ctx.fillRect(margin, boxY, boxWidth, boxHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, margin + padX, boxY + boxHeight / 2);
+
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    if (!blob) throw new Error("Gagal membuat file");
+    triggerDownload(blob, filename);
   } catch {
     alert("Gagal mengunduh foto, coba lagi.");
   }
+}
+
+function triggerDownload(blob: Blob, filename: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 export interface KatalogProduct {
@@ -138,12 +190,12 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
         )}
         {product.fotoUrl ? (
           <>
-            <ZoomableImage src={product.fotoUrl} alt={product.name} className="h-full w-full object-cover" />
-            {photoLabelText && (
-              <span className="absolute bottom-2.5 left-2.5 z-10 bg-ink/70 px-1.5 py-0.5 text-[9px] leading-none whitespace-nowrap text-white">
-                {photoLabelText}
-              </span>
-            )}
+            <ZoomableImage
+              src={product.fotoUrl}
+              alt={product.name}
+              className="h-full w-full object-cover"
+              label={photoLabelText ?? undefined}
+            />
             <button
               type="button"
               title="Unduh foto"
@@ -153,7 +205,11 @@ export default function ProductCard({ product }: { product: KatalogProduct }) {
                 if (!product.fotoUrl) return;
                 setDownloadingPhoto(true);
                 const ext = product.fotoUrl.match(/\.(jpe?g|png|webp)(?:$|\?)/i)?.[1] ?? "jpg";
-                await downloadPhoto(product.fotoUrl, `${slugify(product.name) || "produk"}.${ext}`);
+                await downloadPhoto(
+                  product.fotoUrl,
+                  `${slugify(product.name) || "produk"}.${ext}`,
+                  photoLabelText ?? undefined
+                );
                 setDownloadingPhoto(false);
               }}
               className="absolute right-2.5 bottom-2.5 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-ink/70 text-white hover:bg-ink disabled:cursor-wait disabled:opacity-60"
