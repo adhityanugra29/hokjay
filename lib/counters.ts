@@ -96,11 +96,9 @@ export async function nextAssetCode(): Promise<string> {
  * request 2026-08-25 — was previously derived from the product name's
  * initials). Multi-word categories use each word's initial (e.g. "Working
  * Table" -> "WT"); a single-word category uses its first 3 letters instead
- * (e.g. "Kompor" -> "KOM") since a lone initial would be too ambiguous. The
- * sequence is per-prefix so every category gets its own 001, 002, ...
- * numbering, e.g. "WT_001".
+ * (e.g. "Kompor" -> "KOM") since a lone initial would be too ambiguous.
  */
-export async function nextProductSku(category: string): Promise<string> {
+function skuPrefix(category: string): string {
   const words = category.trim().split(/\s+/).filter(Boolean);
   let letters: string;
   if (words.length > 1) {
@@ -111,7 +109,23 @@ export async function nextProductSku(category: string): Promise<string> {
   } else {
     letters = (words[0] ?? "").replace(/[^A-Za-z]/g, "").toUpperCase();
   }
-  const prefix = words.length > 1 ? (letters || "PRD").slice(0, 4) : (letters || "PRD").slice(0, 3).padEnd(2, "X");
-  const seq = await nextSeq(`sku:${prefix}`);
-  return `${prefix}_${String(seq).padStart(3, "0")}`;
+  return words.length > 1 ? (letters || "PRD").slice(0, 4) : (letters || "PRD").slice(0, 3).padEnd(2, "X");
+}
+
+/**
+ * Format: {kategori-prefix}{YY}{MM}{4-digit seq} — e.g. "CAB26080001" for a
+ * Cabinet created August 2026, per the user's request 2026-08-27 (was
+ * "{prefix}_{3-digit seq}", e.g. "CAB_008", never resetting). The sequence
+ * now resets per prefix per month, same per-bucket-reset convention as
+ * nextInvoiceNumber/nextCustomerCode. Existing products' SKUs were
+ * backfilled to this format in the same change (see git history around
+ * 2026-08-27) — this function only governs NEW products going forward.
+ */
+export async function nextProductSku(category: string): Promise<string> {
+  const prefix = skuPrefix(category);
+  const { year, month } = currentJakartaMonthYear();
+  const yy = String(year).slice(-2);
+  const mm = String(month).padStart(2, "0");
+  const seq = await nextSeq(`sku:${prefix}:${year}${mm}`);
+  return `${prefix}${yy}${mm}${String(seq).padStart(4, "0")}`;
 }
