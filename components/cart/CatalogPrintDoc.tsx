@@ -119,6 +119,16 @@ function specLine(p: CatalogProduct): string {
   return parts.join(" · ");
 }
 
+/** Small on-photo dimension footnote, e.g. "120cm x 80cm x 60cm" — per the
+ * user's request 2026-08-27. Deliberately a different format than
+ * specLine's "120×80×60 cm" (used in the text block) — this one's meant to
+ * read standalone, stamped directly on the photo. */
+function dimensionLabel(p: CatalogProduct): string | undefined {
+  const { panjangCm, lebarCm, tinggiCm } = p.dimensi ?? {};
+  if (!panjangCm || !lebarCm || !tinggiCm) return undefined;
+  return `${panjangCm}cm x ${lebarCm}cm x ${tinggiCm}cm`;
+}
+
 /** One print unit in the flattened, chunked product sequence — see chunking below. */
 interface PrintUnit {
   product: CatalogProduct;
@@ -165,11 +175,17 @@ function ContainedPhoto({
   alt,
   boxWidth,
   boxHeight,
+  label,
 }: {
   src: string;
   alt: string;
   boxWidth: number;
   boxHeight: number;
+  /** Small dimension footnote stamped on the photo, e.g. "120cm x 80cm x
+   * 60cm" — per the user's request 2026-08-27, sized like the upload
+   * watermark. Top-left corner, deliberately opposite the watermark (which
+   * sits bottom-right on the source photo) so the two never overlap. */
+  label?: string;
 }) {
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   return (
@@ -189,6 +205,11 @@ function ContainedPhoto({
         }}
         style={size ? { width: size.width, height: size.height } : undefined}
       />
+      {label && (
+        <span className="absolute top-1.5 left-1.5 bg-ink/75 px-1.5 py-0.5 text-[9px] leading-none whitespace-nowrap text-white">
+          {label}
+        </span>
+      )}
     </div>
   );
 }
@@ -423,7 +444,13 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                     )}
                     <div className="mb-5 flex gap-5 border-t border-line pt-5">
                       {p.fotoUrl ? (
-                        <ContainedPhoto src={p.fotoUrl} alt={p.name} boxWidth={220} boxHeight={165} />
+                        <ContainedPhoto
+                          src={p.fotoUrl}
+                          alt={p.name}
+                          boxWidth={220}
+                          boxHeight={165}
+                          label={dimensionLabel(p)}
+                        />
                       ) : (
                         <div className="flex h-[165px] w-[220px] shrink-0 items-center justify-center bg-surface text-[0.75rem] text-muted">
                           Tidak ada foto
