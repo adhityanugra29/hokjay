@@ -79,7 +79,15 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
           Hapus
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-6">
+      {/* Diskon /unit hidden for now — per the user's request 2026-08-28
+          ("sales bisa memainkan harganya tanpa perlu set discount"): Harga
+          Jual is already freely typed per line, so a separate discount
+          field was redundant and just another lever to move the price
+          without it reading as a price change. Not removed from the data
+          model — diskonPerUnit still exists on CartItem/InvoiceItemSchema
+          and factors into subtotal/komisi below, it just always stays 0
+          since nothing in the UI sets it anymore. */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[0.62rem] uppercase text-muted">Stok</span>
           <span className="py-2 font-mono text-[0.82rem] text-muted">
@@ -103,13 +111,6 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
           {!item.isCustom && (
             <span className="font-mono text-[0.64rem] text-clay">Harga Minimum: {rupiah(item.hargaMinimum)}</span>
           )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <span className="font-mono text-[0.62rem] uppercase text-muted">Diskon /unit</span>
-          <CurrencyInput
-            value={String(item.diskonPerUnit)}
-            onChange={(v) => updateItem(item.productId, { diskonPerUnit: v ? Number(v) : 0 })}
-          />
         </div>
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[0.62rem] uppercase text-muted">Harga Final</span>
