@@ -4,7 +4,6 @@ import { Invoice } from "@/models/Invoice";
 import { StockMovement } from "@/models/StockMovement";
 import { JournalEntry } from "@/models/JournalEntry";
 import { computeLineCommission } from "@/lib/commission";
-import { postInvoiceFinalized } from "@/lib/services/journal";
 import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
 
 /**
@@ -14,10 +13,16 @@ import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
  * money and commission have actually changed hands, this app treats that as
  * final (see /invoice/[id] for the read-only view).
  *
- * If the invoice being edited had already been finalized (status "unpaid"),
- * its stock decrement and journal entries are reversed first, then
- * re-applied against the new data — so editing an unpaid invoice several
- * times never double-counts stock or accounting.
+ * Editing an unpaid invoice has no stock/accounting side effect to redo
+ * anymore — since 2026-08-27, Booked/Sudah DP invoices never touch stock or
+ * post any journal until actual payment (see payInvoice.ts). The one
+ * exception: an invoice that was already finalized under the OLD rule
+ * (stock deducted + journal posted at "unpaid" time, before that date) —
+ * for those, this reverses that old side effect first, so continuing to
+ * edit it doesn't leave stock short or the books stale. After that reversal
+ * it behaves exactly like any other new-style unpaid invoice going forward
+ * — no re-application, since new-style unpaid invoices don't touch stock at
+ * all.
  */
 export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput) {
   await dbConnect();
@@ -26,8 +31,12 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   if (!existing) throw new Error("Invoice tidak ditemukan");
   if (existing.status === "paid") throw new Error("Invoice yang sudah lunas tidak bisa diubah");
 
-  // Reverse the previous finalization's side effects, if any.
-  if (existing.status === "unpaid") {
+  // Reverse a pre-2026-08-27 legacy finalization's side effects, if any —
+  // detected by the presence of the old "invoice-finalisasi" journal entry
+  // rather than by status alone, since a new-style unpaid invoice never had
+  // one to begin with.
+  const legacyFinalized = await JournalEntry.exists({ invoice: existing._id, sumberTipe: "invoice-finalisasi" });
+  if (legacyFinalized) {
     for (const item of existing.items) {
       if (!item.product) continue;
       await Product.updateOne({ _id: item.product }, { $inc: { stok: item.qty } });
@@ -68,6 +77,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
 
     const product = productMap.get(i.productId);
     if (!product) throw new Error(`Produk ${i.productId} tidak ditemukan`);
+    // Soft check only — see createInvoice.ts's matching comment.
     if (finalize && product.stok < i.qty) {
       throw new Error(`Stok ${product.name} tidak cukup (sisa ${product.stok})`);
     }
@@ -83,18 +93,13 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       qty: i.qty,
       hargaJual: i.hargaJual,
       hargaMinimumSnapshot: product.hargaMinimum,
+      hargaBeliSnapshot: product.hargaBeli,
       diskonPerUnit: diskon,
       subtotal,
       komisiPerItemSnapshot: komisiPerItem,
       komisiSubtotal: komisiPerItem * i.qty,
     };
   });
-
-  const hppTotal = input.items.reduce((sum, i) => {
-    if (!i.productId) return sum;
-    const product = productMap.get(i.productId);
-    return sum + (product ? product.hargaBeli * i.qty : 0);
-  }, 0);
 
   const subtotalProduk = items.reduce((sum, i) => sum + i.subtotal, 0);
   const ongkosKirim = input.ongkosKirim ?? 0;
@@ -123,26 +128,6 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   });
 
   await existing.save();
-
-  if (finalize) {
-    for (const item of items) {
-      if (!item.product) continue;
-      await Product.updateOne({ _id: item.product }, { $inc: { stok: -item.qty } });
-      await StockMovement.create({
-        product: item.product,
-        productNameSnapshot: item.namaSnapshot,
-        tipe: "keluar",
-        qty: item.qty,
-        alasan: "Penjualan",
-        invoice: existing._id,
-        invoiceNomorSnapshot: existing.nomor,
-        salesSnapshot: existing.sales!.nama,
-        tanggalKirim: existing.tanggalKirim,
-        kurir: existing.kurir,
-      });
-    }
-    await postInvoiceFinalized(existing, hppTotal);
-  }
 
   return existing;
 }

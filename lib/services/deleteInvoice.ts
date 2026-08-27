@@ -10,11 +10,12 @@ import { JournalEntry } from "@/models/JournalEntry";
  * can never be deleted (money and commission have already changed hands —
  * same "final" rule as updateInvoice's edit guard).
  *
- * An unpaid invoice already decremented stock and posted a finalization
- * journal entry (see createInvoice/updateInvoice) — both are reversed here,
- * mirroring updateInvoice's own reversal block, so deleting never leaves
- * stock short or the books double-counted. A draft never had those side
- * effects, so it's just removed directly.
+ * Since 2026-08-27, a new-style unpaid invoice (Booked/Sudah DP) never
+ * touched stock or posted a journal to begin with, so deleting one is just
+ * a plain removal. The one exception: an invoice already finalized under
+ * the pre-2026-08-27 rule (detected via its "invoice-finalisasi" journal
+ * entry) DID decrement stock and post a journal at "unpaid" time — both
+ * are reversed here first, same as updateInvoice's own legacy reversal.
  *
  * An invoice that already received a DP has real cash tied to it (a
  * CashflowEntry + JournalEntry posted immediately on receipt, per
@@ -31,7 +32,8 @@ export async function deleteInvoice(invoiceId: string) {
     throw new Error("Invoice ini sudah menerima DP — tidak bisa dihapus karena uangnya sudah tercatat masuk");
   }
 
-  if (invoice.status === "unpaid") {
+  const legacyFinalized = await JournalEntry.exists({ invoice: invoice._id, sumberTipe: "invoice-finalisasi" });
+  if (legacyFinalized) {
     for (const item of invoice.items) {
       if (!item.product) continue;
       await Product.updateOne({ _id: item.product }, { $inc: { stok: item.qty } });

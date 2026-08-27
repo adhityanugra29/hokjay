@@ -8,6 +8,13 @@ const InvoiceItemSchema = new Schema(
     qty: { type: Number, required: true },
     hargaJual: { type: Number, required: true },
     hargaMinimumSnapshot: { type: Number, required: true },
+    // Cost basis at the moment of sale, snapshotted here (same convention as
+    // hargaMinimumSnapshot) so HPP posted at payment time (see payInvoice.ts)
+    // reflects the product's harga beli when the invoice was made, not
+    // whatever it might have drifted to by the time payment settles. 0 for
+    // custom items (no tracked COGS). Added 2026-08-27 when accounting
+    // recognition moved from invoice-finalize time to invoice-paid time.
+    hargaBeliSnapshot: { type: Number, default: 0 },
     diskonPerUnit: { type: Number, default: 0 },
     subtotal: { type: Number, required: true },
     komisiPerItemSnapshot: { type: Number, required: true },

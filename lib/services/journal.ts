@@ -16,17 +16,30 @@ function line(akunKode: string, opts: { debit?: number; credit?: number }) {
 }
 
 /**
- * Posts the journal for an invoice being finalized (status draft -> unpaid),
- * the moment this app recognizes revenue, cost of goods sold, and the sales
- * commission liability — matching when this app actually decrements stock
- * and snapshots commission (at creation, not at "Lunas" as the original
- * accounting doc assumed before this app's business rules were finalized).
+ * Posts the FULL journal for an invoice reaching "Lunas" — revenue, cost of
+ * goods sold, sales commission liability, AND the cash settlement, all in
+ * one go. This is now the single point where this app recognizes a sale at
+ * all: stock, revenue, HPP and komisi all move together at payment
+ * confirmation (see payInvoice.ts) — not at invoice-finalize time as this
+ * app's business rules originally had it (see the git history of this file
+ * for that earlier rule, changed 2026-08-27 per the user's request so
+ * "Booked"/"Sudah DP" invoices genuinely don't touch stock/accounting until
+ * the sale is real).
  *
- * `hppTotal` (sum of qty x harga beli for non-custom items) is passed in
- * because the invoice document itself doesn't retain each product's harga
- * beli — the caller (createInvoice) already has it from its product lookup.
+ * If a DP was already received, its amount is sitting in "Uang Muka
+ * Pelanggan" (2-2000) — a liability, not revenue, per postInvoiceDp below —
+ * and gets cleared into this sale here instead of being double-counted.
+ * There's no Piutang (accounts-receivable) leg at all: revenue is only ever
+ * recognized at the exact moment cash (DP + final settlement) is fully in
+ * hand, so nothing is ever actually "owed" under this app's rules.
+ *
+ * `hppTotal` (sum of qty x harga beli SNAPSHOT for non-custom items) is
+ * passed in — the caller (payInvoice) sums each item's hargaBeliSnapshot,
+ * captured at invoice-creation time so a supplier price change between
+ * booking and payment doesn't retroactively misstate this specific sale's
+ * cost basis.
  */
-export async function postInvoiceFinalized(invoice: InvoiceLike, hppTotal: number) {
+export async function postInvoiceLunas(invoice: InvoiceLike, hppTotal: number) {
   await dbConnect();
 
   let gross = 0;
@@ -38,15 +51,19 @@ export async function postInvoiceFinalized(invoice: InvoiceLike, hppTotal: numbe
     komisiTotal += item.komisiSubtotal;
   }
   const ongkosKirim = invoice.ongkosKirim ?? 0;
+  const dpNominal = invoice.dp?.nominal ?? 0;
+  const kasAkun = invoice.payment?.metode === "Tunai" ? "1-1100" : "1-1200";
+  const kasBaruDiterima = invoice.grandTotal - dpNominal; // the remaining balance actually changing hands right now
 
   await JournalEntry.create({
-    tanggal: invoice.tanggalInvoice ?? new Date(),
-    deskripsi: `Invoice ${invoice.nomor} difinalisasi — ${invoice.customer?.nama ?? "-"}`,
-    sumberTipe: "invoice-finalisasi",
+    tanggal: invoice.payment?.tanggalBayar ?? new Date(),
+    deskripsi: `Invoice ${invoice.nomor} lunas — ${invoice.customer?.nama ?? "-"}`,
+    sumberTipe: "invoice-lunas",
     sumberLabel: invoice.nomor,
     invoice: invoice._id,
     lines: [
-      line("1-2000", { debit: invoice.grandTotal }),
+      ...(dpNominal > 0 ? [line("2-2000", { debit: dpNominal })] : []), // clear the DP liability into this sale
+      line(kasAkun, { debit: kasBaruDiterima }),
       line("4-1900", { debit: diskonTotal }),
       line("4-1000", { credit: gross }),
       ...(ongkosKirim > 0 ? [line("4-1100", { credit: ongkosKirim })] : []),
@@ -55,7 +72,7 @@ export async function postInvoiceFinalized(invoice: InvoiceLike, hppTotal: numbe
 
   if (hppTotal > 0) {
     await JournalEntry.create({
-      tanggal: invoice.tanggalInvoice ?? new Date(),
+      tanggal: invoice.payment?.tanggalBayar ?? new Date(),
       deskripsi: `HPP invoice ${invoice.nomor}`,
       sumberTipe: "invoice-hpp",
       sumberLabel: invoice.nomor,
@@ -66,7 +83,7 @@ export async function postInvoiceFinalized(invoice: InvoiceLike, hppTotal: numbe
 
   if (komisiTotal > 0) {
     await JournalEntry.create({
-      tanggal: invoice.tanggalInvoice ?? new Date(),
+      tanggal: invoice.payment?.tanggalBayar ?? new Date(),
       deskripsi: `Komisi sales invoice ${invoice.nomor}`,
       sumberTipe: "invoice-komisi",
       sumberLabel: invoice.nomor,
@@ -77,13 +94,14 @@ export async function postInvoiceFinalized(invoice: InvoiceLike, hppTotal: numbe
 }
 
 /**
- * Posts the journal for an invoice payment confirmation (status -> paid).
- * `nominal` defaults to the full grandTotal, but the caller (payInvoice)
- * passes the remaining balance instead when a DP was already received —
- * the DP's share of the Piutang was already credited by postInvoiceDp, so
- * crediting the full grandTotal again here would double-count it.
+ * Posts the journal for the (now-retired) old finalize-time cash
+ * settlement rule — kept only so an invoice that was already finalized
+ * under the OLD rule (has an "invoice-finalisasi" entry — see
+ * payInvoice.ts's backward-compat check) still gets its final cash-in
+ * leg posted correctly against Piutang, the account that old rule
+ * actually used. Never called for any invoice created after 2026-08-27.
  */
-export async function postInvoicePaid(invoice: InvoiceLike, nominal?: number) {
+export async function postInvoicePaidLegacy(invoice: InvoiceLike, nominal?: number) {
   await dbConnect();
   const kasAkun = invoice.payment?.metode === "Tunai" ? "1-1100" : "1-1200";
   const amount = nominal ?? invoice.grandTotal;
@@ -98,8 +116,36 @@ export async function postInvoicePaid(invoice: InvoiceLike, nominal?: number) {
   });
 }
 
-/** Posts the journal for a DP (down payment) received on an invoice — reduces Piutang by the DP amount without touching status. */
+/**
+ * Posts the journal for a DP (down payment) received on an invoice — real
+ * cash in hand, but revenue isn't recognized until "Lunas" (see
+ * postInvoiceLunas above), so this books it as a liability ("Uang Muka
+ * Pelanggan") rather than crediting Piutang — there's no receivable to
+ * reduce yet, nothing has been recognized as owed. Changed 2026-08-27; see
+ * postInvoiceDpLegacy below for the old rule.
+ */
 export async function postInvoiceDp(invoice: InvoiceLike, nominal: number, metode: string) {
+  await dbConnect();
+  const kasAkun = metode === "Tunai" ? "1-1100" : "1-1200";
+
+  await JournalEntry.create({
+    tanggal: invoice.dp?.tanggal ?? new Date(),
+    deskripsi: `DP invoice ${invoice.nomor} — ${invoice.customer?.nama ?? "-"}`,
+    sumberTipe: "invoice-dp",
+    sumberLabel: invoice.nomor,
+    invoice: invoice._id,
+    lines: [line(kasAkun, { debit: nominal }), line("2-2000", { credit: nominal })],
+  });
+}
+
+/**
+ * The old DP posting rule (credits Piutang, 1-2000) — kept only for
+ * invoices already finalized under the pre-2026-08-27 rule (see
+ * payInvoice.ts's backward-compat check), where Piutang for the full
+ * grandTotal was already debited at finalize time and a DP genuinely does
+ * reduce it. Never called for any invoice created after that date.
+ */
+export async function postInvoiceDpLegacy(invoice: InvoiceLike, nominal: number, metode: string) {
   await dbConnect();
   const kasAkun = metode === "Tunai" ? "1-1100" : "1-1200";
 

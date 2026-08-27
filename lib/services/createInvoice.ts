@@ -1,10 +1,8 @@
 import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
 import { Invoice } from "@/models/Invoice";
-import { StockMovement } from "@/models/StockMovement";
 import { nextInvoiceNumber } from "@/lib/counters";
 import { computeLineCommission } from "@/lib/commission";
-import { postInvoiceFinalized } from "@/lib/services/journal";
 
 export interface CreateInvoiceItemInput {
   /** Absent for custom-order line items, which have no backing Product. */
@@ -32,13 +30,21 @@ export interface CreateInvoiceInput {
 }
 
 /**
- * Creates an invoice. When status is "unpaid" (i.e. "Simpan & Kirim
- * Invoice", not a draft), stock is decremented immediately and the
- * per-line commission is snapshotted using the current product's
- * kondisi/harga bottom (see lib/commission.ts) — drafts have no side
- * effects until they're later finalized. Custom-order items (no
- * productId) never touch stock but do earn the flat 6% "barang baru"
- * commission rate.
+ * Creates an invoice. Sending it ("unpaid", not draft) does NOT touch stock
+ * or accounting anymore — per the user's request 2026-08-27, an unpaid
+ * invoice is just a "Booked" reservation (or "Sudah DP" once a down
+ * payment lands, see receiveDp.ts), visible in Katalog but not yet
+ * physically deducted. Stock, revenue, HPP, and commission are all only
+ * ever recognized together at actual payment confirmation (see
+ * payInvoice.ts's postInvoiceLunas). This function still validates
+ * available stock isn't obviously oversold at booking time (a soft check —
+ * the authoritative one runs at payInvoice time, since stock isn't
+ * reserved between booking and payment) and still snapshots each item's
+ * commission rate and cost basis (hargaBeliSnapshot) using the product's
+ * CURRENT kondisi/harga at booking time, so a later price change never
+ * retroactively changes what was already agreed with this customer.
+ * Custom-order items (no productId) never touch stock but do earn the flat
+ * 6% "barang baru" commission rate.
  */
 export async function createInvoice(input: CreateInvoiceInput) {
   await dbConnect();
@@ -77,6 +83,11 @@ export async function createInvoice(input: CreateInvoiceInput) {
 
     const product = productMap.get(i.productId);
     if (!product) throw new Error(`Produk ${i.productId} tidak ditemukan`);
+    // Soft check only — stock isn't actually reserved by a Booked/DP'd
+    // invoice anymore (see the function doc comment above), so this just
+    // catches an obviously-impossible booking. The authoritative check
+    // that actually blocks overselling runs at payInvoice time, since
+    // several bookings can now compete for the same physical stock.
     if (finalize && product.stok < i.qty) {
       throw new Error(`Stok ${product.name} tidak cukup (sisa ${product.stok})`);
     }
@@ -95,20 +106,16 @@ export async function createInvoice(input: CreateInvoiceInput) {
       qty: i.qty,
       hargaJual: i.hargaJual,
       hargaMinimumSnapshot: product.hargaMinimum,
+      // Cost basis at booking time — payInvoice.ts sums these for the HPP
+      // journal entry at actual payment time, rather than re-reading
+      // whatever the product's harga beli has drifted to by then.
+      hargaBeliSnapshot: product.hargaBeli,
       diskonPerUnit: diskon,
       subtotal,
       komisiPerItemSnapshot: komisiPerItem,
       komisiSubtotal: komisiPerItem * i.qty,
     };
   });
-
-  // Cost of goods sold for the journal — the invoice line itself doesn't
-  // retain harga beli, so this is computed here while productMap is at hand.
-  const hppTotal = input.items.reduce((sum, i) => {
-    if (!i.productId) return sum; // custom items have no tracked COGS
-    const product = productMap.get(i.productId);
-    return sum + (product ? product.hargaBeli * i.qty : 0);
-  }, 0);
 
   const subtotalProduk = items.reduce((sum, i) => sum + i.subtotal, 0);
   const ongkosKirim = input.ongkosKirim ?? 0;
@@ -142,26 +149,6 @@ export async function createInvoice(input: CreateInvoiceInput) {
       },
     ],
   });
-
-  if (finalize) {
-    for (const item of items) {
-      if (!item.product) continue; // custom items don't move stock
-      await Product.updateOne({ _id: item.product }, { $inc: { stok: -item.qty } });
-      await StockMovement.create({
-        product: item.product,
-        productNameSnapshot: item.namaSnapshot,
-        tipe: "keluar",
-        qty: item.qty,
-        alasan: "Penjualan",
-        invoice: invoice._id,
-        invoiceNomorSnapshot: invoice.nomor,
-        salesSnapshot: invoice.sales!.nama,
-        tanggalKirim: invoice.tanggalKirim,
-        kurir: invoice.kurir,
-      });
-    }
-    await postInvoiceFinalized(invoice, hppTotal);
-  }
 
   return invoice;
 }

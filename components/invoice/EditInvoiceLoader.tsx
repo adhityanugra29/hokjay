@@ -32,9 +32,23 @@ interface CourierOption {
  * That re-ran loadItems(items) with the ORIGINAL server-fetched invoice
  * items, silently discarding whatever product was just added on Katalog
  * (the cart got overwritten back to the pre-edit state). Per the user's
- * report 2026-08-27. A sessionStorage marker survives the remount, so the
- * seed only ever happens once per actual edit session — switching to a
- * different invoice (different invoiceId) still seeds fresh.
+ * report 2026-08-27.
+ *
+ * A sessionStorage "already seeded" marker was tried next, but that had its
+ * own bug: the marker survives for the whole tab session regardless of
+ * whether the user ever actually comes back to THIS invoice — click Edit
+ * once, leave without submitting (e.g. make an unrelated new invoice,
+ * which clears the cart on submit), then click Edit on this same invoice
+ * again later in the same tab, and the stale marker skipped reseeding an
+ * now-empty cart, showing the edit form with zero items ("data ke-reset").
+ * Per the user's report 2026-08-27.
+ *
+ * Fixed by dropping the marker entirely: only seed when the cart is
+ * currently EMPTY. A genuine Katalog round-trip leaves the cart non-empty
+ * (this invoice's original items, plus whatever was just added) — skipped,
+ * preserving the addition. Anything else that leaves the cart empty by the
+ * time this mounts (a fresh visit, or a stale marker's exact failure mode
+ * above) correctly reseeds instead of showing a blank form.
  */
 export default function EditInvoiceLoader({
   invoiceId,
@@ -53,20 +67,13 @@ export default function EditInvoiceLoader({
   salesList: SalesOption[];
   couriers: CourierOption[];
 }) {
-  const { loadItems } = useCart();
+  const { items: cartItems, loadItems } = useCart();
   const loaded = useRef(false);
-  const seededKey = `invoiceEditSeeded:${invoiceId}`;
 
   useEffect(() => {
     if (loaded.current) return;
     loaded.current = true;
-    try {
-      if (sessionStorage.getItem(seededKey) === "1") return; // already seeded this edit session — don't clobber it
-      sessionStorage.setItem(seededKey, "1");
-    } catch {
-      // storage unavailable — fall through and seed anyway, same as before this fix
-    }
-    loadItems(items);
+    if (cartItems.length === 0) loadItems(items);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -268,11 +268,6 @@ export default function InvoiceForm({
       clear();
       try {
         sessionStorage.removeItem(draftKey);
-        // Also clears EditInvoiceLoader's "already seeded this session"
-        // marker, so re-entering edit mode on this same invoice later
-        // (same tab) seeds a fresh cart from the server again instead of
-        // reusing this now-stale one.
-        if (mode === "edit" && invoiceId) sessionStorage.removeItem(`invoiceEditSeeded:${invoiceId}`);
       } catch {
         // ignore — nothing to clean up if storage was never available
       }

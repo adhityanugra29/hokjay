@@ -41,6 +41,13 @@ export const ACCOUNTS: Account[] = [
   { code: "1-3000", name: "Persediaan Barang Dagang", kelompok: "Aset", normal: "debit" },
   // 2 — Liabilitas / Kewajiban
   { code: "2-1000", name: "Utang Komisi Sales", kelompok: "Kewajiban", normal: "credit" },
+  // Real cash received (DP) before revenue is recognized — a liability
+  // until the invoice reaches "lunas", at which point it's cleared against
+  // the sale (see postInvoiceLunas in lib/services/journal.ts). Added
+  // 2026-08-27 when revenue/HPP/komisi recognition moved from
+  // invoice-finalize time to invoice-paid time, so DP could no longer
+  // correctly credit Piutang (which by then hasn't been debited yet).
+  { code: "2-2000", name: "Uang Muka Pelanggan", kelompok: "Kewajiban", normal: "credit" },
   // 3 — Ekuitas / Modal
   { code: "3-1000", name: "Modal Pemilik", kelompok: "Ekuitas", normal: "credit" },
   { code: "3-1500", name: "Prive / Penarikan Pemilik", kelompok: "Ekuitas", normal: "credit" },

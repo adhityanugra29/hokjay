@@ -8,6 +8,7 @@ import { Customer } from "@/models/Customer";
 import { Sales } from "@/models/Sales";
 import { Courier } from "@/models/Courier";
 import { Product } from "@/models/Product";
+import { JournalEntry } from "@/models/JournalEntry";
 import { getSession } from "@/lib/auth/session";
 import { customerVisibilityFilter } from "@/lib/pelanggan";
 
@@ -25,11 +26,16 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
   const products = await Product.find({ _id: { $in: productIds } }).lean();
   const productMap = new Map(products.map((p) => [String(p._id), p]));
 
-  // If this invoice was already finalized, its qty is still deducted from
-  // stock right now — add it back for display so the field shows what will
-  // actually be available once the edit is saved (updateInvoice reverses
-  // the old deduction before re-applying the edited one).
-  const wasFinalized = invoice.status === "unpaid";
+  // Since 2026-08-27, a new-style unpaid invoice never deducted stock, so
+  // there's nothing to add back here. The one exception is an invoice
+  // finalized under the pre-2026-08-27 rule (stock deducted at "unpaid"
+  // time) — detected via its "invoice-finalisasi" journal entry — whose
+  // qty is still deducted from stock right now; add it back for display so
+  // the field shows what will actually be available once the edit is
+  // saved (updateInvoice reverses that old deduction on save).
+  const wasFinalized =
+    invoice.status === "unpaid" &&
+    (await JournalEntry.exists({ invoice: invoice._id, sumberTipe: "invoice-finalisasi" }));
 
   const cartItems: CartItem[] = invoice.items.map((item) => {
     const product = item.product ? productMap.get(String(item.product)) : undefined;

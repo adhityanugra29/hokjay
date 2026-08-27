@@ -1,7 +1,8 @@
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
+import { JournalEntry } from "@/models/JournalEntry";
 import { CashflowEntry } from "@/models/CashflowEntry";
-import { postInvoiceDp } from "@/lib/services/journal";
+import { postInvoiceDp, postInvoiceDpLegacy } from "@/lib/services/journal";
 
 export interface ReceiveDpInput {
   nominal: number;
@@ -11,11 +12,18 @@ export interface ReceiveDpInput {
 }
 
 /**
- * Records a one-time down payment on an already-finalized ("unpaid")
- * invoice — reduces what's still owed without moving status to "paid".
- * Real cash received, so it posts a normal "uang masuk" cashflow entry and
- * journal immediately, same as a full payment (see lib/services/journal.ts's
- * postInvoiceDp). Confirmed with the user 2026-08-25.
+ * Records a one-time down payment on a sent ("unpaid") invoice — reduces
+ * what's still owed without moving status to "paid". Real cash received,
+ * so it posts a normal "uang masuk" cashflow entry immediately, same as a
+ * full payment. Confirmed with the user 2026-08-25.
+ *
+ * The journal side books this as a liability ("Uang Muka Pelanggan") since
+ * 2026-08-27 — revenue isn't recognized until "Lunas" (see
+ * lib/services/journal.ts's postInvoiceLunas), so there's no Piutang to
+ * reduce yet. The one exception: a pre-2026-08-27 legacy-finalized invoice
+ * (detected via its "invoice-finalisasi" journal entry) already has the
+ * full grandTotal debited to Piutang at finalize time, so a DP on one of
+ * those genuinely does reduce it — postInvoiceDpLegacy handles that case.
  */
 export async function receiveDp(invoiceId: string, input: ReceiveDpInput) {
   await dbConnect();
@@ -58,7 +66,12 @@ export async function receiveDp(invoiceId: string, input: ReceiveDpInput) {
     buktiUrl: input.buktiUrl,
   });
 
-  await postInvoiceDp(invoice, input.nominal, input.metode);
+  const legacyFinalized = await JournalEntry.exists({ invoice: invoice._id, sumberTipe: "invoice-finalisasi" });
+  if (legacyFinalized) {
+    await postInvoiceDpLegacy(invoice, input.nominal, input.metode);
+  } else {
+    await postInvoiceDp(invoice, input.nominal, input.metode);
+  }
 
   return invoice;
 }
