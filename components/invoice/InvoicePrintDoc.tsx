@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { rupiah, formatDateShort } from "@/lib/format";
+import { rupiah, formatDateShort, formatDateLong } from "@/lib/format";
 
 export interface InvoicePrintItem {
   namaSnapshot: string;
@@ -172,7 +172,7 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
         <div className="text-right font-mono text-[0.75rem] leading-relaxed text-muted">
           No. {invoice.nomor}
           <br />
-          Tanggal: {formatDateShort(invoice.tanggal)}
+          Tanggal: {formatDateLong(invoice.tanggal)}
         </div>
       </div>
 

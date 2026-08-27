@@ -104,7 +104,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
               <div className="text-right font-mono text-[0.75rem] leading-relaxed text-muted">
                 No. {invoice.nomor}
                 <br />
-                Tanggal: {formatDateShort(invoice.tanggalInvoice ?? invoice.createdAt!)}
+                Tanggal: {formatDateLong(invoice.tanggalInvoice ?? invoice.createdAt!)}
               </div>
             </div>
 

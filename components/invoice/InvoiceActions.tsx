@@ -76,17 +76,22 @@ export default function InvoiceActions({
       const pageHeightMM = pdf.internal.pageSize.getHeight();
 
       for (let i = 0; i < pageEls.length; i++) {
+        // scale 3 + PNG (lossless), not the Katalog PDF's scale 2 + JPEG —
+        // this document is text/lines on a plain background, not photos,
+        // and JPEG compression visibly softened text edges (blurry per the
+        // user's report 2026-08-27). No photo-heavy pages here to make the
+        // filesize tradeoff costly.
         const canvas = await html2canvas(pageEls[i], {
-          scale: 2,
+          scale: 3,
           useCORS: true,
           scrollY: -window.scrollY,
           scrollX: 0,
           logging: false,
           imageTimeout: 0,
         });
-        const imgData = canvas.toDataURL("image/jpeg", 0.94);
+        const imgData = canvas.toDataURL("image/png");
         if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMM, pageHeightMM, undefined, "FAST");
+        pdf.addImage(imgData, "PNG", 0, 0, pageWidthMM, pageHeightMM);
       }
 
       pdf.save(`${nomor}.pdf`);
