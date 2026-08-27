@@ -1,24 +1,26 @@
 import Link from "next/link";
-import { LinkButton } from "@/components/ui/Button";
 import MobilePurchasing from "@/components/purchasing/MobilePurchasing";
 import { rupiah, formatDateShort } from "@/lib/format";
-import { getPurchasingSummary, getPOsMenunggu, getPOsDiterimaRecent, getLowStockSuggestions } from "@/lib/purchasing";
+import { getPurchasingSummary, getPOsMenunggu, getPOsDiterimaRecent } from "@/lib/purchasing";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Purchasing dashboard — design "6a": stok minimum -> PO -> barang diterima
- * -> tagihan -> kas keluar, confirmed with the user 2026-08-24. Left column
- * is POs already in flight (waiting, sorted worst-late-first) plus what
- * just came in; right column is auto-suggested restocks from products
- * under their own stokMinimum.
+ * -> tagihan -> kas keluar, confirmed with the user 2026-08-24. POs already
+ * in flight (waiting, sorted worst-late-first) plus what just came in.
+ * The "Usulan dari stok minimum" sidebar (auto-suggested restocks with a
+ * "Buat PO" shortcut) was dropped 2026-08-27 per the user's request — the
+ * "Perlu dibeli" stat card above still surfaces the same underlying
+ * low-stock count, this just removes the per-item suggestion cards.
+ * getLowStockSuggestions() itself is untouched — Beranda's mobile "stok
+ * tipis" alert still uses it.
  */
 export default async function PurchasingDashboardPage() {
-  const [summary, menunggu, diterimaRecent, suggestions] = await Promise.all([
+  const [summary, menunggu, diterimaRecent] = await Promise.all([
     getPurchasingSummary(),
     getPOsMenunggu(),
     getPOsDiterimaRecent(),
-    getLowStockSuggestions(),
   ]);
 
   return (
@@ -58,8 +60,7 @@ export default async function PurchasingDashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px]">
-        <div>
+      <div>
           <div className="flex items-center justify-between border-b-2 border-ink pb-2.5">
             <span className="font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
               Menunggu barang datang
@@ -134,49 +135,6 @@ export default async function PurchasingDashboardPage() {
             </Link>{" "}
             — tidak ada input dua kali.
           </div>
-        </div>
-
-        <div className="flex flex-col gap-3.5 border-l-2 border-ink pl-6">
-          <div className="border-b-2 border-ink pb-2.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
-            Usulan dari stok minimum
-          </div>
-          {suggestions.map((s) => (
-            <div key={s.productId} className="border border-line bg-panel p-4">
-              <div className="font-sans text-[0.95rem] font-extrabold">{s.nama}</div>
-              <div className="mt-2 flex justify-between font-mono text-[0.72rem] text-muted">
-                <span>
-                  Stok sekarang <b className="text-accent">{s.stok} unit</b>
-                </span>
-                <span>min {s.stokMinimum} unit</span>
-              </div>
-              {s.supplierNama && (
-                <div className="mt-2.5 border-t border-line pt-2.5 font-mono text-[0.72rem] text-muted">
-                  Supplier terakhir
-                  <div className="mt-0.5 font-sans text-[0.82rem] font-bold text-ink">{s.supplierNama}</div>
-                </div>
-              )}
-              <div className="mt-3 flex items-center justify-between gap-2.5">
-                <div className="font-mono text-[0.72rem] text-muted">
-                  Usul {s.usulQty} unit
-                  <div className="font-sans text-[0.85rem] font-extrabold text-ink">{rupiah(s.usulTotal)}</div>
-                </div>
-                <LinkButton
-                  variant="ghost"
-                  href={`/purchasing/po/baru?productId=${s.productId}&qty=${s.usulQty}${
-                    s.supplierId ? `&supplierId=${s.supplierId}` : ""
-                  }`}
-                >
-                  Buat PO
-                </LinkButton>
-              </div>
-            </div>
-          ))}
-          {suggestions.length === 0 && (
-            <div className="border border-dashed border-line py-8 text-center font-mono text-[0.78rem] text-muted">
-              Semua produk masih di atas stok minimum. 🎉
-            </div>
-          )}
-        </div>
       </div>
       </div>
     </>
