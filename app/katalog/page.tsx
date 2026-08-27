@@ -59,12 +59,15 @@ export default async function KatalogPage() {
           dayaListrik: p.dayaListrik ?? undefined,
           fotoUrl: p.fotoUrl ?? undefined,
           isCustom: p.isCustom ?? false,
+          // Sent to everyone (not gated to canEditProduct) — powers the
+          // Electric/Non-Electric filter in KatalogFilterSidebar. Per the
+          // user's request 2026-08-27.
+          tipeProduk: (p.tipeProduk as "elektronik" | "non-elektronik") ?? undefined,
           // Only sent for roles that actually see the edit pencil — feeds
           // EditProductDrawer directly with zero extra fetch. Per the
           // user's report 2026-08-27 that opening it felt slow.
           ...(canEditProduct && {
             merk: p.merk ?? undefined,
-            tipeProduk: (p.tipeProduk as "elektronik" | "non-elektronik") ?? undefined,
             tanggalBarangMasuk: p.tanggalBarangMasuk ? new Date(p.tanggalBarangMasuk).toISOString() : undefined,
             stokMinimum: p.stokMinimum ?? undefined,
             alertHariTidakTerjual: p.alertHariTidakTerjual ?? undefined,

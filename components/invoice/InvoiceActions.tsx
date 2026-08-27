@@ -76,17 +76,15 @@ export default function InvoiceActions({
       const pageHeightMM = pdf.internal.pageSize.getHeight();
 
       for (let i = 0; i < pageEls.length; i++) {
-        // PNG (lossless), not the Katalog PDF's JPEG — this document is
-        // text/lines on a plain background, and JPEG compression visibly
-        // softened text edges (blurry per the user's report 2026-08-27).
-        // Scale is back to 2 (matching Katalog) rather than 3 — that jump
-        // was the actual cause of a SEPARATE report, a single page coming
-        // out at ~20MB (per the user's report 2026-08-28): a scale-3
-        // canvas has over 2x the pixel count of scale-2, and PNG has no
-        // quality/compression knob to claw that back since it's lossless
-        // by definition. The blur problem was JPEG's compression
-        // artifacts, not insufficient resolution — PNG at scale 2 has
-        // neither artifacts nor the scale-3 size blowup.
+        // Matches the Katalog PDF's own settings exactly (JPEG 0.94, scale
+        // 2, FAST compression) — per the user's explicit request
+        // 2026-08-28 ("contoh cara pengerjaan di pdf katalog"). PNG (tried
+        // first, to fix an earlier blur report) turned out both still not
+        // fully satisfying and heavy (~20MB/page at scale 3, still notably
+        // larger than JPEG even after dropping to scale 2) — Katalog's own
+        // JPEG 0.94 is the value already proven crisp+light after that
+        // PDF's own multi-round tuning earlier this session, so this
+        // stops re-deriving the same tradeoff from scratch for Invoice.
         const canvas = await html2canvas(pageEls[i], {
           scale: 2,
           useCORS: true,
@@ -95,9 +93,9 @@ export default function InvoiceActions({
           logging: false,
           imageTimeout: 0,
         });
-        const imgData = canvas.toDataURL("image/png");
+        const imgData = canvas.toDataURL("image/jpeg", 0.94);
         if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, 0, pageWidthMM, pageHeightMM);
+        pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMM, pageHeightMM, undefined, "FAST");
       }
 
       pdf.save(`${nomor}.pdf`);

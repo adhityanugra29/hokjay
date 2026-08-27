@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
 import EditProductDrawer from "./EditProductDrawer";
+import KatalogFilterSidebar, {
+  EMPTY_KATALOG_FILTERS,
+  countActiveFilters,
+  type KatalogFilters,
+} from "./KatalogFilterSidebar";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
-import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
-
-const ALL_CATEGORIES_LABEL = "Semua Kategori";
 
 // Katalog PDF is the heaviest export in the app (photo-dense, often many
 // pages). RENDER_SCALE was first dropped to 1.35 to shrink file size, but
@@ -38,7 +40,8 @@ export default function KatalogClient({
   canEditProduct?: boolean;
 }) {
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
+  const [filters, setFilters] = useState<KatalogFilters>(EMPTY_KATALOG_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [sort, setSort] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<KatalogProduct | null>(null);
@@ -204,7 +207,15 @@ export default function KatalogClient({
         return false;
       });
     }
-    if (category) list = list.filter((p) => p.category === category);
+    // Kategori/Kondisi/Tipe/Range Harga — from the Filter sidebar
+    // (KatalogFilterSidebar.tsx), replacing the old plain "Semua Kategori"
+    // dropdown. All default to "Semua" (no restriction). Per the user's
+    // request 2026-08-27.
+    if (filters.category) list = list.filter((p) => p.category === filters.category);
+    if (filters.kondisi) list = list.filter((p) => p.kondisi === filters.kondisi);
+    if (filters.tipe) list = list.filter((p) => p.tipeProduk === filters.tipe);
+    if (filters.hargaMin) list = list.filter((p) => p.hargaRekomendasi >= Number(filters.hargaMin));
+    if (filters.hargaMax) list = list.filter((p) => p.hargaRekomendasi <= Number(filters.hargaMax));
     if (sort === "price-asc") list = [...list].sort((a, b) => a.hargaRekomendasi - b.hargaRekomendasi);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.hargaRekomendasi - a.hargaRekomendasi);
     // Booked/Sudah DP/SOLD products sink to the bottom — fully available
@@ -214,7 +225,7 @@ export default function KatalogClient({
     const available = list.filter((p) => !p.bookedQty && !p.dpQty && !p.soldQty);
     const encumbered = list.filter((p) => p.bookedQty || p.dpQty || p.soldQty);
     return [...available, ...encumbered];
-  }, [products, search, category, sort]);
+  }, [products, search, filters, sort]);
 
   return (
     // Extra bottom padding on mobile (dropped again at md, where the fixed
@@ -287,21 +298,21 @@ export default function KatalogClient({
           placeholder="Cari nama produk atau kode SKU..."
           className="min-w-[180px] flex-1 rounded border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.85rem]"
         />
-        {/* Dropdown + search (SearchableSelect, already used elsewhere in
-            the app) instead of a plain <select> — per the user's request
-            2026-08-26, easier to find one category among many by typing
-            than scrolling a long native dropdown. "" (no filter) is
-            represented to the component as the literal ALL_CATEGORIES_LABEL
-            option since SearchableSelect's value must be one of its own
-            options; translated back to "" on select. */}
-        <div className="w-[220px]">
-          <SearchableSelect
-            value={category || ALL_CATEGORIES_LABEL}
-            onChange={(v) => setCategory(v === ALL_CATEGORIES_LABEL ? "" : v)}
-            options={[ALL_CATEGORIES_LABEL, ...categories]}
-            placeholder={ALL_CATEGORIES_LABEL}
-          />
-        </div>
+        {/* Replaces the old plain "Semua Kategori" dropdown — opens a
+            sidebar with Kategori, Kondisi, Tipe, and Range Harga, all
+            defaulting to "Semua". Per the user's request 2026-08-27. */}
+        <button
+          type="button"
+          onClick={() => setFilterOpen(true)}
+          className="flex cursor-pointer items-center gap-1.5 rounded border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.78rem] font-semibold text-ink hover:border-accent hover:text-accent"
+        >
+          Filter
+          {countActiveFilters(filters) > 0 && (
+            <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-accent px-1 text-[0.62rem] font-bold text-white">
+              {countActiveFilters(filters)}
+            </span>
+          )}
+        </button>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
@@ -337,6 +348,14 @@ export default function KatalogClient({
         product={editingProduct}
         categories={categories}
         onClose={() => setEditingProduct(null)}
+      />
+
+      <KatalogFilterSidebar
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        categories={categories}
+        filters={filters}
+        onChange={setFilters}
       />
     </div>
   );
