@@ -363,20 +363,31 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                         // stretching for visible blur, the user's next
                         // report 2026-08-27). This is the pre-object-fit
                         // "cover" technique instead: absolutely position an
-                        // oversized <img> centered inside an overflow-hidden
-                        // box, min-w/min-h 100% forces it to be at least as
-                        // big as the box in both directions while width/
-                        // height:auto keeps its own aspect ratio, so the
-                        // browser's ordinary replaced-element sizing (not a
-                        // special CSS property) does the crop-to-fill —
-                        // html2canvas renders that the exact same way it
-                        // renders every other plain <img> in this app.
+                        // oversized <img> inside an overflow-hidden box,
+                        // min-w/min-h 100% forces it to be at least as big as
+                        // the box in both directions while width/height:auto
+                        // keeps its own aspect ratio, so the browser's
+                        // ordinary replaced-element sizing (not a special CSS
+                        // property) does the crop-to-fill.
+                        //
+                        // Anchored bottom-right, NOT centered — the upload
+                        // watermark (app/api/upload/route.ts) is stamped in
+                        // the bottom-right corner of the source photo; a
+                        // centered crop was cutting off that corner on
+                        // portrait-oriented photos, cropping the top/bottom
+                        // symmetrically. Bottom-right anchoring means any
+                        // cropping always comes off the top/left instead,
+                        // which never touches the watermark. Per the user's
+                        // report 2026-08-27 ("kalau website ada, tapi harus
+                        // zoom" — confirming the watermark exists on the
+                        // source photo, it was just the PDF's crop cutting
+                        // it out, not a missing upload).
                         <div className="relative h-[165px] w-[220px] shrink-0 overflow-hidden bg-surface">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={p.fotoUrl}
                             alt={p.name}
-                            className="absolute top-1/2 left-1/2 h-auto w-auto min-h-full min-w-full max-w-none -translate-x-1/2 -translate-y-1/2"
+                            className="absolute right-0 bottom-0 h-auto w-auto min-h-full min-w-full max-w-none"
                           />
                         </div>
                       ) : (
