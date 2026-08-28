@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { rupiah } from "@/lib/format";
 import type { HotProduct } from "@/lib/dashboard";
 
@@ -20,10 +21,13 @@ export default function HotProductsCarousel({ products }: { products: HotProduct
           data-card
           className="flex w-[240px] flex-none flex-col snap-start border border-line bg-panel"
         >
-          <div className="flex aspect-4/3 items-center justify-center overflow-hidden bg-surface text-[0.68rem] text-muted">
+          {/* next/image (downsized via Vercel's optimizer instead of the
+              browser fetching the full ~1600px source) — per the user's
+              request 2026-08-28 to speed up page loads. relative added so
+              `fill` has a positioned box to fill. */}
+          <div className="relative flex aspect-4/3 items-center justify-center overflow-hidden bg-surface text-[0.68rem] text-muted">
             {p.fotoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={p.fotoUrl} alt={p.name} className="h-full w-full object-cover" />
+              <Image src={p.fotoUrl} alt={p.name} fill sizes="240px" className="object-cover" />
             ) : (
               "Tidak ada foto"
             )}

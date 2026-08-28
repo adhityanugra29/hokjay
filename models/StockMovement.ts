@@ -20,6 +20,13 @@ const StockMovementSchema = new Schema(
   { timestamps: true }
 );
 
+// Additive performance indexes (no behavior change) — per the user's
+// request 2026-08-28. product+tanggal covers per-product Riwayat Stok
+// listings; alasan covers the "Penjualan" distinct() lookups
+// (getProdukBaruIds in lib/katalog.ts).
+StockMovementSchema.index({ product: 1, tanggal: -1 });
+StockMovementSchema.index({ alasan: 1 });
+
 export type StockMovementDoc = InferSchemaType<typeof StockMovementSchema>;
 
 export const StockMovement: Model<StockMovementDoc> =

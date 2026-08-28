@@ -99,6 +99,14 @@ const InvoiceSchema = new Schema(
   { timestamps: true }
 );
 
+// Additive performance indexes (no behavior change) — per the user's
+// request 2026-08-28 to speed up page loads. status alone is by far the
+// most common filter across this app (Insentif, Dasbor, Katalog's
+// Booked/Sudah DP/SOLD map, Menu/Inventory badges, Follow-up, Purchasing);
+// the compound covers the common "status X, sorted by tanggal" shape.
+InvoiceSchema.index({ status: 1 });
+InvoiceSchema.index({ status: 1, tanggalInvoice: 1 });
+
 export type InvoiceDoc = InferSchemaType<typeof InvoiceSchema> & { _id: Types.ObjectId };
 
 export const Invoice: Model<InvoiceDoc> =

@@ -91,6 +91,16 @@ ProductSchema.virtual("stockStatus").get(function () {
 ProductSchema.set("toJSON", { virtuals: true });
 ProductSchema.set("toObject", { virtuals: true });
 
+// Additive performance indexes (no behavior change) — per the user's
+// request 2026-08-28 to speed up page loads. category alone covers
+// Purchasing/API category filters; the compound one matches Katalog's own
+// query shape (Product.find({isCustom, stok:{$gt:0}}).sort({name:1})) —
+// equality + range + sort in one index, MongoDB's recommended ESR order.
+ProductSchema.index({ category: 1 });
+ProductSchema.index({ isCustom: 1, stok: 1, name: 1 });
+// Matches getProdukBaruIds()'s query shape (lib/katalog.ts).
+ProductSchema.index({ isCustom: 1, createdAt: -1 });
+
 export type ProductDoc = InferSchemaType<typeof ProductSchema>;
 
 export const Product: Model<ProductDoc> =

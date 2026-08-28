@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 /**
  * Click-to-zoom for Katalog product photos — per the user's request
@@ -12,6 +13,15 @@ import { useEffect, useState } from "react";
  * on both the thumbnail AND the zoomed view — per the user's request
  * 2026-08-27, it was only ever on the thumbnail before (ProductCard
  * rendered it as its own separate overlay), not visible once zoomed.
+ *
+ * The thumbnail uses next/image (Vercel's optimizer serves a downsized
+ * version of the 1600px-max source instead of the browser fetching the
+ * full photo just to fill this card) — per the user's request 2026-08-28
+ * to speed up page loads; this is the main product grid, so it's the
+ * single biggest image-weight page in the app. The zoomed view stays a
+ * plain <img> deliberately: zooming in is the one place a visitor
+ * actually wants the full original resolution, downsizing it would work
+ * against the feature's own purpose.
  */
 export default function ZoomableImage({
   src,
@@ -37,13 +47,14 @@ export default function ZoomableImage({
 
   return (
     <>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={src}
         alt={alt}
+        fill
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
         onClick={() => setOpen(true)}
         title="Klik untuk perbesar"
-        className={`cursor-zoom-in ${className ?? ""}`}
+        className={`cursor-zoom-in object-cover ${className ?? ""}`}
       />
       {/* Relies on the caller's own wrapper already being position:relative
           (true for every current usage) — same positioning approach the

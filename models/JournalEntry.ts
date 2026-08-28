@@ -46,6 +46,14 @@ JournalEntrySchema.pre("save", function () {
   }
 });
 
+// Additive performance indexes (no behavior change) — per the user's
+// request 2026-08-28. invoice+sumberTipe matches the "is this invoice a
+// pre-2026-08-27 legacy-finalized one" check run on every payInvoice/
+// updateInvoice/deleteInvoice/ubah-page-load (lib/services/payInvoice.ts
+// etc); tanggal covers Akuntansi's date-range reports.
+JournalEntrySchema.index({ invoice: 1, sumberTipe: 1 });
+JournalEntrySchema.index({ tanggal: 1 });
+
 export type JournalEntryDoc = InferSchemaType<typeof JournalEntrySchema>;
 
 export const JournalEntry: Model<JournalEntryDoc> =
