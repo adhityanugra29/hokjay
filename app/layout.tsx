@@ -29,23 +29,36 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const user = session ? { nama: session.nama, role: session.role } : null;
 
   // Sidebar badge counts (Invoice's "N", Inventory's "N Produk Baru") —
-  // cheap counts, only fetched once per request when there's someone to
-  // show them to. See components/layout/AppShell.tsx / lib/nav.ts.
-  // Inventory's badge switched from "stok tipis" to "produk baru" (products
-  // added recently) per the user's request 2026-08-25. Once a "new"
-  // product has sold at least once (any StockMovement with alasan
-  // "Penjualan"), it no longer counts — per the user's follow-up request
-  // 2026-08-25 ("jika produk baru sudah laku, badge akan berkurang").
-  // Shared definition (see lib/katalog.ts's getProdukBaruIds) with the
-  // Katalog Filter sidebar's own "Produk Baru" filter, added 2026-08-28.
-  let badgeCounts: { invoiceCount: number; produkBaru: number } | undefined;
+  // See components/layout/AppShell.tsx / components/layout/NavBadge.tsx /
+  // lib/nav.ts. Inventory's badge switched from "stok tipis" to "produk
+  // baru" (products added recently) per the user's request 2026-08-25.
+  // Once a "new" product has sold at least once (any StockMovement with
+  // alasan "Penjualan"), it no longer counts — per the user's follow-up
+  // request 2026-08-25 ("jika produk baru sudah laku, badge akan
+  // berkurang"). Shared definition (see lib/katalog.ts's getProdukBaruIds)
+  // with the Katalog Filter sidebar's own "Produk Baru" filter, added
+  // 2026-08-28.
+  //
+  // Deliberately NOT awaited here — this ran on every single navigation,
+  // in front of the page's own content, for 3-4 extra MongoDB round trips
+  // (session cookie is a cheap in-process JWT decrypt, this DB work is
+  // the actual cost). Passed down as a bare Promise instead; AppShell's
+  // NavBadge (a small Suspense-wrapped child, see that file) unwraps it
+  // with React's use() so only the badge numbers themselves wait on
+  // it — the nav structure and the page's own content render immediately.
+  // Per the user's request 2026-08-28 ("optimalisasi... jangan rusak
+  // apapun") — a targeted, low-risk streaming boundary was chosen over
+  // touching any page's own rendering/caching behavior.
+  let badgeCountsPromise: Promise<{ invoiceCount: number; produkBaru: number }> | undefined;
   if (user) {
-    await dbConnect();
-    const [invoiceCount, produkBaruIds] = await Promise.all([
-      Invoice.countDocuments({ status: { $in: ["draft", "unpaid"] } }),
-      getProdukBaruIds(),
-    ]);
-    badgeCounts = { invoiceCount, produkBaru: produkBaruIds.size };
+    badgeCountsPromise = (async () => {
+      await dbConnect();
+      const [invoiceCount, produkBaruIds] = await Promise.all([
+        Invoice.countDocuments({ status: { $in: ["draft", "unpaid"] } }),
+        getProdukBaruIds(),
+      ]);
+      return { invoiceCount, produkBaru: produkBaruIds.size };
+    })();
   }
 
   return (
@@ -55,7 +68,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <LoadingOverlayProvider>
             <CartProvider>
               <CatalogSelectionProvider>
-                <AppShell user={user} badgeCounts={badgeCounts}>
+                <AppShell user={user} badgeCounts={badgeCountsPromise}>
                   {children}
                 </AppShell>
                 {user && <CartBar />}
