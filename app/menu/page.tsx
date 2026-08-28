@@ -4,8 +4,7 @@ import { isAllowedPage } from "@/lib/auth/access";
 import { NAV_GROUPS } from "@/lib/nav";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
-import { Product } from "@/models/Product";
-import { StockMovement } from "@/models/StockMovement";
+import { getProdukBaruIds } from "@/lib/katalog";
 import { PurchaseBill } from "@/models/PurchaseBill";
 import { OfficeExpenseRequest } from "@/models/OfficeExpenseRequest";
 import MenuBackButton from "@/components/layout/MenuBackButton";
@@ -48,19 +47,13 @@ export default async function MenuPage() {
   if (!session) return null;
 
   await dbConnect();
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const [invoiceCount, soldProductIds, materialOrderUnpaid, jobOrderPending] = await Promise.all([
+  const [invoiceCount, produkBaruIds, materialOrderUnpaid, jobOrderPending] = await Promise.all([
     Invoice.countDocuments({ status: { $in: ["draft", "unpaid"] } }),
-    StockMovement.distinct("product", { alasan: "Penjualan" }),
+    getProdukBaruIds(),
     PurchaseBill.countDocuments({ status: "belum_dibayar" }),
     OfficeExpenseRequest.countDocuments({ status: "diajukan" }),
   ]);
-  const produkBaru = await Product.countDocuments({
-    createdAt: { $gte: sevenDaysAgo },
-    isCustom: { $ne: true },
-    _id: { $nin: soldProductIds },
-  });
-  const counts = { invoiceCount, produkBaru };
+  const counts = { invoiceCount, produkBaru: produkBaruIds.size };
 
   const visibleGroups = NAV_GROUPS.map((g) => ({
     label: g.label,

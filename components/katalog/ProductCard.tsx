@@ -105,6 +105,8 @@ export interface KatalogProduct {
   ketebalan?: string;
   dayaListrik?: string;
   fotoUrl?: string;
+  /** Added recently and never sold — see lib/katalog.ts's getProdukBaruIds. Powers the Filter sidebar's "Hanya Produk Baru" checkbox. */
+  isBaru?: boolean;
   // Only populated when the viewer can edit products (manager/owner/super
   // admin) — feeds EditProductDrawer directly, with no separate fetch, so
   // opening the pencil is instant instead of waiting on a fresh API round

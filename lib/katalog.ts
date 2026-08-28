@@ -1,5 +1,8 @@
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
+import { Product } from "@/models/Product";
+import { StockMovement } from "@/models/StockMovement";
+import { PRODUK_BARU_DAYS } from "@/lib/constants";
 
 export interface ProductInvoiceStatus {
   /** Qty across unpaid invoices with no DP recorded — "Booked". */
@@ -88,4 +91,23 @@ export async function getProductInvoiceStatusMap(excludeInvoiceId?: string): Pro
   }
 
   return map;
+}
+
+/**
+ * IDs of "Produk Baru" — added within the last PRODUK_BARU_DAYS days and
+ * never sold (any StockMovement with alasan "Penjualan"). Same rule the
+ * Inventory nav badge already uses (app/layout.tsx, app/menu/page.tsx),
+ * shared here so the Katalog Filter sidebar's "Produk Baru" filter can't
+ * drift from it. Per the user's request 2026-08-28 (window changed from
+ * 7 days to PRODUK_BARU_DAYS/3 at the same time, applied everywhere).
+ */
+export async function getProdukBaruIds(): Promise<Set<string>> {
+  await dbConnect();
+  const since = new Date(Date.now() - PRODUK_BARU_DAYS * 24 * 60 * 60 * 1000);
+  const [products, soldProductIds] = await Promise.all([
+    Product.find({ createdAt: { $gte: since }, isCustom: { $ne: true } }, { _id: 1 }).lean(),
+    StockMovement.distinct("product", { alasan: "Penjualan" }),
+  ]);
+  const soldSet = new Set(soldProductIds.map((id) => String(id)));
+  return new Set(products.map((p) => String(p._id)).filter((id) => !soldSet.has(id)));
 }

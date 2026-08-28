@@ -240,6 +240,7 @@ export default function KatalogClient({
         return false;
       });
     }
+    if (filters.produkBaru) list = list.filter((p) => p.isBaru);
     if (sort === "price-asc") list = [...list].sort((a, b) => a.hargaRekomendasi - b.hargaRekomendasi);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.hargaRekomendasi - a.hargaRekomendasi);
     // Booked/Sudah DP/SOLD products sink to the bottom — fully available

@@ -3,7 +3,7 @@ import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
 import { Category } from "@/models/Category";
 import { getSession } from "@/lib/auth/session";
-import { getProductInvoiceStatusMap } from "@/lib/katalog";
+import { getProductInvoiceStatusMap, getProdukBaruIds } from "@/lib/katalog";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export default async function KatalogPage() {
   await dbConnect();
   const session = await getSession();
   const canEditProduct = !!session && CAN_EDIT_PRODUCT_ROLES.includes(session.role);
-  const [products, categories, statusMap] = await Promise.all([
+  const [products, categories, statusMap, produkBaruIds] = await Promise.all([
     // Custom-order products live on their own page (/katalog/custom) so
     // they don't clutter the regular stocked catalog — see confirmation
     // with the user 2026-08-19. Sold-out (stok 0) products are hidden too
@@ -34,6 +34,10 @@ export default async function KatalogPage() {
     // Replaces the old plain "Sudah Terjual" boolean (now SOLD xx, an
     // actual historical count) per the user's request 2026-08-27.
     getProductInvoiceStatusMap(),
+    // "Produk Baru" — powers the Filter sidebar's "Hanya Produk Baru"
+    // checkbox, same definition as the Inventory nav badge. Per the
+    // user's request 2026-08-28.
+    getProdukBaruIds(),
   ]);
 
   return (
@@ -80,6 +84,7 @@ export default async function KatalogPage() {
           dpQty: status?.dpQty ?? 0,
           dpBy: status?.dpBy ?? [],
           soldQty: status?.soldQty ?? 0,
+          isBaru: produkBaruIds.has(String(p._id)),
         };
       })}
     />

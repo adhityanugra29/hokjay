@@ -22,6 +22,8 @@ export interface KatalogFilters {
   nama: string;
   /** Manual free-text/number size filter (matches P, L, or T in cm). */
   ukuran: string;
+  /** Only products added within lib/constants.ts's PRODUK_BARU_DAYS that haven't sold yet. Per the user's request 2026-08-28. */
+  produkBaru: boolean;
 }
 
 export const EMPTY_KATALOG_FILTERS: KatalogFilters = {
@@ -33,6 +35,7 @@ export const EMPTY_KATALOG_FILTERS: KatalogFilters = {
   hargaBasis: "rekomendasi",
   nama: "",
   ukuran: "",
+  produkBaru: false,
 };
 
 /** How many of the sidebar's filters are set away from "Semua" — shown as a badge on the Filter button. */
@@ -44,6 +47,7 @@ export function countActiveFilters(f: KatalogFilters): number {
   if (f.hargaMin || f.hargaMax) n++;
   if (f.nama) n++;
   if (f.ukuran) n++;
+  if (f.produkBaru) n++;
   return n;
 }
 
@@ -128,6 +132,19 @@ export default function KatalogFilterSidebar({
         </div>
 
         <div className="flex flex-col gap-6 p-5">
+          {/* Products added within lib/constants.ts's PRODUK_BARU_DAYS
+              that haven't sold yet — same rule as the Inventory nav
+              badge. Per the user's request 2026-08-28. */}
+          <label className="flex cursor-pointer items-center gap-2 text-[0.85rem] text-ink select-none">
+            <input
+              type="checkbox"
+              checked={filters.produkBaru}
+              onChange={(e) => onChange({ ...filters, produkBaru: e.target.checked })}
+              className="h-4 w-4 accent-accent"
+            />
+            Hanya Produk Baru
+          </label>
+
           {/* Manual free-text filters — separate from the main search box
               above the grid, per the user's request 2026-08-28. */}
           <div>

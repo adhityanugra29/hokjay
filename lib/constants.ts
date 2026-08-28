@@ -4,6 +4,13 @@
 
 export const LOW_STOCK_THRESHOLD = 5;
 
+// "Produk Baru" — a product added within this many days that hasn't sold
+// yet (see Product.find({createdAt: {$gte: ...}, _id: {$nin: soldIds}})
+// call sites: app/layout.tsx's Inventory nav badge, app/menu/page.tsx's
+// mirror of it, and the Katalog Filter sidebar). Was 7 days, changed to 3
+// per the user's request 2026-08-28.
+export const PRODUK_BARU_DAYS = 3;
+
 export const STOCK_REASONS = [
   "Penjualan",
   "Restock",

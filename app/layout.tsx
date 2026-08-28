@@ -10,8 +10,7 @@ import { DialogProvider } from "@/components/ui/Dialog";
 import { getSession } from "@/lib/auth/session";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
-import { Product } from "@/models/Product";
-import { StockMovement } from "@/models/StockMovement";
+import { getProdukBaruIds } from "@/lib/katalog";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -33,24 +32,20 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // cheap counts, only fetched once per request when there's someone to
   // show them to. See components/layout/AppShell.tsx / lib/nav.ts.
   // Inventory's badge switched from "stok tipis" to "produk baru" (products
-  // added in the last 7 days) per the user's request 2026-08-25. Once a
-  // "new" product has sold at least once (any StockMovement with alasan
+  // added recently) per the user's request 2026-08-25. Once a "new"
+  // product has sold at least once (any StockMovement with alasan
   // "Penjualan"), it no longer counts — per the user's follow-up request
   // 2026-08-25 ("jika produk baru sudah laku, badge akan berkurang").
+  // Shared definition (see lib/katalog.ts's getProdukBaruIds) with the
+  // Katalog Filter sidebar's own "Produk Baru" filter, added 2026-08-28.
   let badgeCounts: { invoiceCount: number; produkBaru: number } | undefined;
   if (user) {
     await dbConnect();
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const [invoiceCount, soldProductIds] = await Promise.all([
+    const [invoiceCount, produkBaruIds] = await Promise.all([
       Invoice.countDocuments({ status: { $in: ["draft", "unpaid"] } }),
-      StockMovement.distinct("product", { alasan: "Penjualan" }),
+      getProdukBaruIds(),
     ]);
-    const produkBaru = await Product.countDocuments({
-      createdAt: { $gte: sevenDaysAgo },
-      isCustom: { $ne: true },
-      _id: { $nin: soldProductIds },
-    });
-    badgeCounts = { invoiceCount, produkBaru };
+    badgeCounts = { invoiceCount, produkBaru: produkBaruIds.size };
   }
 
   return (
