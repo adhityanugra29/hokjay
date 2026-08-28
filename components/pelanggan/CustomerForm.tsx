@@ -9,21 +9,45 @@ import { Button, LinkButton } from "@/components/ui/Button";
 import { JENIS_USAHA_OPTIONS } from "@/lib/constants";
 import { INDONESIA_REGIONS, guessRegionFromAddress } from "@/lib/wilayah";
 
-export default function CustomerForm() {
+export interface CustomerFormValues {
+  nama: string;
+  namaToko: string;
+  jenisUsaha: string;
+  jenisUsahaLainnya: string;
+  whatsapp: string;
+  email: string;
+  alamat: string;
+  provinsi: string;
+  kota: string;
+  termHari: string;
+  catatan: string;
+}
+
+const EMPTY_VALUES: CustomerFormValues = {
+  nama: "",
+  namaToko: "",
+  jenisUsaha: "",
+  jenisUsahaLainnya: "",
+  whatsapp: "",
+  email: "",
+  alamat: "",
+  provinsi: "",
+  kota: "",
+  termHari: "0",
+  catatan: "",
+};
+
+export default function CustomerForm({
+  mode = "create",
+  customerId,
+  initial,
+}: {
+  mode?: "create" | "edit";
+  customerId?: string;
+  initial?: Partial<CustomerFormValues>;
+} = {}) {
   const router = useRouter();
-  const [values, setValues] = useState({
-    nama: "",
-    namaToko: "",
-    jenisUsaha: "",
-    jenisUsahaLainnya: "",
-    whatsapp: "",
-    email: "",
-    alamat: "",
-    provinsi: "",
-    kota: "",
-    termHari: "0",
-    catatan: "",
-  });
+  const [values, setValues] = useState<CustomerFormValues>({ ...EMPTY_VALUES, ...initial });
   // Kota/Kabupaten options narrow to whichever provinsi is picked — per the
   // user's request 2026-08-25. Picking a different provinsi clears
   // whatever kota was already chosen since it likely doesn't belong there.
@@ -52,16 +76,17 @@ export default function CustomerForm() {
             ? values.jenisUsahaLainnya.trim()
             : values.jenisUsaha,
       };
-      const res = await fetch("/api/customers", {
-        method: "POST",
+      const url = mode === "edit" ? `/api/customers/${customerId}` : "/api/customers";
+      const res = await fetch(url, {
+        method: mode === "edit" ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Gagal menyimpan pelanggan");
+        throw new Error(body.error || (mode === "edit" ? "Gagal memperbarui pelanggan" : "Gagal menyimpan pelanggan"));
       }
-      router.push("/pelanggan");
+      router.push(mode === "edit" ? `/pelanggan/${customerId}` : "/pelanggan");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan pelanggan");
@@ -176,9 +201,9 @@ export default function CustomerForm() {
 
         <FormActions>
           <Button type="submit" disabled={saving}>
-            {saving ? "Menyimpan..." : "Simpan Pelanggan"}
+            {saving ? "Menyimpan..." : mode === "edit" ? "Simpan Perubahan" : "Simpan Pelanggan"}
           </Button>
-          <LinkButton variant="ghost" href="/pelanggan">
+          <LinkButton variant="ghost" href={mode === "edit" ? `/pelanggan/${customerId}` : "/pelanggan"}>
             Batal
           </LinkButton>
         </FormActions>

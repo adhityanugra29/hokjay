@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { RowActionLink } from "@/components/ui/RowAction";
+import { LinkButton } from "@/components/ui/Button";
 import Pill, { type PillVariant } from "@/components/ui/Pill";
 import SortableHeader from "@/components/ui/SortableHeader";
+import DeleteCustomerButton from "@/components/pelanggan/DeleteCustomerButton";
 import { dbConnect } from "@/lib/db";
 import { Customer } from "@/models/Customer";
 import { Invoice } from "@/models/Invoice";
@@ -49,6 +51,14 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
       <PageHeader
         title={customer.nama}
         subtitle={`${customer.kode}${customer.namaToko ? ` · ${customer.namaToko}` : ""}${customer.jenisUsaha ? ` · ${customer.jenisUsaha.toUpperCase()}` : ""} · TOTAL BELANJA ${rupiah(totalBelanja)}`}
+        actions={
+          <>
+            <LinkButton variant="ghost" href={`/pelanggan/${id}/edit`}>
+              Ubah
+            </LinkButton>
+            <DeleteCustomerButton customerId={id} customerName={customer.nama} />
+          </>
+        }
       />
       <div className="p-6 md:p-9">
         <Panel>
