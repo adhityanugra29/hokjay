@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
+import opentype from "opentype.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { dbConnect } from "@/lib/db";
@@ -10,79 +11,92 @@ export const runtime = "nodejs";
 
 /**
  * Streams a product's main photo back as a download, baking the P×L×T
- * dimension footnote onto it server-side via sharp when the product has
- * all three measurements — moved here from a client-side <canvas>
- * composite (components/katalog/ProductCard.tsx, 2026-08-27) per the
- * user's report 2026-08-28 that the footnote sometimes came out missing
- * across different accounts with no clear pattern. A browser-side canvas
- * draw of a cross-origin image depends on that browser's own CORS/image
- * caching behavior to avoid "tainting" the canvas — invisible and
- * inconsistent across devices. Doing it server-side with sharp removes
- * that dependency entirely; sharp already does exactly this kind of
- * image compositing for the upload-time watermark (see
- * app/api/upload/route.ts's watermarkImage), just with an SVG text badge
- * instead of a logo PNG.
+ * dimension footnote onto it server-side when the product has all three
+ * measurements.
  *
- * Round 2 (2026-08-28, same day): the first version used
- * font-family="sans-serif" and rendered as unreadable tofu boxes in
- * production ("liat ini, malah tidak muncul angkanya") — Vercel's
- * serverless container has no system fonts installed at all, so
- * librsvg (sharp's SVG rasterizer) had nothing to fall back to for a
- * generic family name. Fixed by embedding the actual font file as a
- * base64 @font-face data URI directly inside the SVG document (see
- * public/fonts/Archivo-SemiBold.ttf, the same family already used for
- * the app's own UI) — the font bytes travel with the SVG, so it no
- * longer depends on anything being installed on the machine that
- * rasterizes it. Lives under public/ specifically (not some other repo
- * folder) so Vercel's serverless bundler is guaranteed to include it —
- * the same reason app/api/upload/route.ts's watermark PNG lives under
- * public/logo/ instead of somewhere else.
+ * History (all same day, 2026-08-28):
+ * 1. Originally a client-side <canvas> composite in ProductCard.tsx —
+ *    the user reported the footnote sometimes came out missing across
+ *    different accounts. A browser-side canvas draw of a cross-origin
+ *    photo depends on that browser's own CORS/image-cache behavior to
+ *    avoid "tainting" the canvas, which isn't reliably consistent
+ *    across devices. Moved here to remove that dependency.
+ * 2. First server version used an SVG <text> element with
+ *    font-family="sans-serif" — rendered as unreadable tofu boxes in
+ *    production, because Vercel's serverless container has no system
+ *    fonts installed for sharp's SVG rasterizer to fall back to.
+ * 3. Tried embedding the font file as a base64 @font-face data URI in
+ *    the SVG — still tofu boxes. <text> rendering goes through a
+ *    font-shaping engine (Pango, via librsvg) that apparently isn't
+ *    functional in this container at all, regardless of which font is
+ *    referenced or how it's supplied.
+ * 4. This version: no <text> element at all. opentype.js reads the
+ *    font file directly and computes each character's glyph OUTLINE as
+ *    raw SVG path data — pure vector geometry, composed manually one
+ *    character at a time. sharp/librsvg can always rasterize a <path>;
+ *    it's just shapes, nothing font-engine-dependent about it, so this
+ *    can't hit the same class of failure again regardless of server
+ *    environment.
+ *
+ * Per-character glyph lookup (font.charToGlyph), not
+ * font.getPath(fullString, ...) — the latter runs the font's full GSUB
+ * contextual-substitution pipeline (ligatures etc.), which threw
+ * ("substFormat: 2 is not yet supported") on this exact font file. A
+ * single character can't ligature with nothing, so charToGlyph
+ * sidesteps that pipeline entirely.
  */
 
-let fontBase64Cache: string | null = null;
-async function getFontBase64(): Promise<string> {
-  if (!fontBase64Cache) {
+let fontCache: opentype.Font | null = null;
+async function getFont(): Promise<opentype.Font> {
+  if (!fontCache) {
+    // Lives under public/ specifically (not some other repo folder) so
+    // Vercel's serverless bundler is guaranteed to include it — the same
+    // reason app/api/upload/route.ts's watermark PNG lives under
+    // public/logo/ instead of somewhere else.
     const buf = await fs.readFile(path.join(process.cwd(), "public/fonts/Archivo-SemiBold.ttf"));
-    fontBase64Cache = buf.toString("base64");
+    const arrayBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+    fontCache = opentype.parse(arrayBuffer);
   }
-  return fontBase64Cache;
+  return fontCache;
 }
 
-function escapeXml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[c]!);
-}
-
-/** Same visual sizing/positioning as the old canvas version, ported to SVG. */
+/** Lays out `label` as raw glyph-outline paths — see the route doc comment for why. */
 async function buildLabelSvg(label: string, imgWidth: number): Promise<{ svg: Buffer; boxWidth: number; boxHeight: number; margin: number }> {
-  const fontBase64 = await getFontBase64();
+  const font = await getFont();
   const fontSize = Math.max(16, Math.round(imgWidth * 0.022));
   const padX = fontSize * 0.6;
   const padY = fontSize * 0.45;
-  // sharp's composite() requires integer left/top offsets — margin feeds
-  // into both the SVG box math and the caller's left/top, so it has to be
-  // a whole number too (fontSize * 0.5 is a .5 fraction on any odd
-  // fontSize). Confirmed via a real test run against a real product photo
-  // before this fix: sharp threw "Expected integer for left but received
-  // 10.5" on the very first try.
+  // sharp's composite() requires integer left/top offsets.
   const margin = Math.round(fontSize * 0.5);
-  // No real text-measuring API on the server side — approximate glyph
-  // width for a generic sans-serif, then pad generously so the box is
-  // never too tight (a little extra breathing room reads fine; a
-  // clipped label doesn't).
-  const textWidth = label.length * fontSize * 0.58;
-  const boxWidth = Math.round(textWidth + padX * 2);
+  const scale = fontSize / font.unitsPerEm;
+
+  let x = 0;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  const glyphPaths: string[] = [];
+  for (const ch of label) {
+    const glyph = font.charToGlyph(ch);
+    const glyphPath = glyph.getPath(x, 0, fontSize);
+    const bbox = glyphPath.getBoundingBox();
+    if (bbox.y1 < minY) minY = bbox.y1;
+    if (bbox.y2 > maxY) maxY = bbox.y2;
+    glyphPaths.push(glyphPath.toPathData(1));
+    x += (glyph.advanceWidth ?? font.unitsPerEm * 0.5) * scale;
+  }
+
+  const boxWidth = Math.round(x + padX * 2);
   const boxHeight = Math.round(fontSize + padY * 2);
+  // A space-only label (shouldn't happen — dimensions are always
+  // numeric) would leave minY/maxY at their Infinity sentinels; fall
+  // back to vertical-centering on 0 rather than propagate NaN.
+  const textCenterY = Number.isFinite(minY) && Number.isFinite(maxY) ? (minY + maxY) / 2 : 0;
+  const yOffset = boxHeight / 2 - textCenterY;
+
   const svg = `<svg width="${boxWidth}" height="${boxHeight}" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <style>
-        @font-face {
-          font-family: 'LabelFont';
-          src: url(data:font/ttf;base64,${fontBase64}) format('truetype');
-        }
-      </style>
-    </defs>
     <rect width="${boxWidth}" height="${boxHeight}" fill="rgba(32,30,29,0.7)" />
-    <text x="${padX}" y="50%" dominant-baseline="middle" font-family="LabelFont" font-size="${fontSize}" fill="#ffffff">${escapeXml(label)}</text>
+    <g transform="translate(${padX} ${yOffset})">
+      ${glyphPaths.map((d) => `<path d="${d}" fill="#ffffff" />`).join("")}
+    </g>
   </svg>`;
   return { svg: Buffer.from(svg), boxWidth, boxHeight, margin };
 }
