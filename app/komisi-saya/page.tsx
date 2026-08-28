@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import { getSession } from "@/lib/auth/session";
+import { isKomisiSayaAllowed } from "@/lib/auth/access";
 import { currentPeriod, getMyCommissionSummary, getSalesRanking } from "@/lib/insentif";
 import { rupiah } from "@/lib/format";
 import { MONTH_NAMES } from "@/lib/constants";
@@ -12,15 +13,19 @@ export const dynamic = "force-dynamic";
  * "Komisi Saya" — a Sales rep's own commission for the running period
  * ("9b" in the mobile mockup doc the user supplied 2026-08-26). Separate
  * page from /insentif (the full multi-sales leaderboard, Owner+Super Admin
- * only) — gated to role "sales" specifically, see isKomisiSayaAllowed in
- * lib/auth/access.ts. "Sudah aman" / "Tertahan" is split by whether the
- * *customer* has paid the invoice yet (status), not by komisiCair (whether
- * the company has disbursed to the sales rep — that's Payroll's own domain,
- * see getMyCommissionSummary's doc comment in lib/insentif.ts).
+ * only) — gated via isKomisiSayaAllowed (lib/auth/access.ts), which is also
+ * what the nav uses to decide whether to show this link at all, so the two
+ * always agree on who's let in (fixed 2026-08-28: this used to hard-check
+ * role === "sales" only, so a "manager" — allowed by isKomisiSayaAllowed
+ * and shown the nav link — hit a 404 here instead). "Sudah aman" /
+ * "Tertahan" is split by whether the *customer* has paid the invoice yet
+ * (status), not by komisiCair (whether the company has disbursed to the
+ * sales rep — that's Payroll's own domain, see getMyCommissionSummary's doc
+ * comment in lib/insentif.ts).
  */
 export default async function KomisiSayaPage() {
   const session = await getSession();
-  if (!session || session.role !== "sales") notFound();
+  if (!session || !isKomisiSayaAllowed(session.role)) notFound();
 
   const period = currentPeriod();
   const [summary, ranking] = await Promise.all([
