@@ -17,63 +17,28 @@ import { computeLineCommission } from "@/lib/commission";
  * fetched as a blob first and downloaded from a same-origin blob: URL,
  * which always honors `download`.
  *
- * When `label` is given (the dimension footnote), it gets baked into the
- * downloaded file too — per the user's follow-up 2026-08-27 ("waktu di
- * zoom atau download, itu bisa di applied juga"), the label previously
- * only showed as an on-screen overlay, invisible once the raw photo was
- * saved. Composited via <canvas> at the image's own full resolution
- * (crossOrigin:"anonymous" — Vercel Blob serves permissive CORS, already
- * relied on for the Katalog PDF's own captures) rather than screenshotting
- * anything, so the output stays exactly as sharp as the source photo.
+ * The dimension footnote gets baked into the downloaded file too — per the
+ * user's follow-up 2026-08-27 ("waktu di zoom atau download, itu bisa di
+ * applied juga"). This used to composite it client-side via <canvas>
+ * (drawing the cross-origin Vercel Blob photo onto a canvas, which depends
+ * on that browser's own CORS/image-cache behavior to avoid "tainting" the
+ * canvas — invisible and inconsistent across devices), which the user
+ * reported 2026-08-28 sometimes silently came out without the footnote on
+ * some accounts with no clear pattern. Moved server-side instead (see
+ * app/api/products/[id]/download-photo/route.ts, using sharp — the same
+ * library already doing this exact kind of compositing for the upload-time
+ * watermark) so the result no longer depends on the downloading browser at
+ * all.
  *
  * A module-level function, not a hook — it can't call useDialog() itself,
  * so failures are left to propagate and the caller (inside the component,
  * where the hook is available) shows the error dialog. Per the user's
  * request 2026-08-28 to replace every native alert()/confirm() in the app.
  */
-async function downloadPhoto(url: string, filename: string, label?: string) {
-  if (!label) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Gagal mengambil foto");
-    const blob = await res.blob();
-    triggerDownload(blob, filename);
-    return;
-  }
-
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Gagal memuat foto"));
-    img.src = url;
-  });
-
-  const canvas = document.createElement("canvas");
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas tidak didukung");
-  ctx.drawImage(img, 0, 0);
-
-  // Badge scaled proportionally to the photo's own resolution so it
-  // reads the same relative size on a small or a huge source photo.
-  const fontSize = Math.max(16, Math.round(img.naturalWidth * 0.022));
-  ctx.font = `${fontSize}px sans-serif`;
-  const padX = fontSize * 0.6;
-  const padY = fontSize * 0.45;
-  const margin = fontSize * 0.5;
-  const textWidth = ctx.measureText(label).width;
-  const boxWidth = textWidth + padX * 2;
-  const boxHeight = fontSize + padY * 2;
-  const boxY = img.naturalHeight - boxHeight - margin;
-  ctx.fillStyle = "rgba(32, 30, 29, 0.7)";
-  ctx.fillRect(margin, boxY, boxWidth, boxHeight);
-  ctx.fillStyle = "#ffffff";
-  ctx.textBaseline = "middle";
-  ctx.fillText(label, margin + padX, boxY + boxHeight / 2);
-
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
-  if (!blob) throw new Error("Gagal membuat file");
+async function downloadPhoto(productId: string, filename: string) {
+  const res = await fetch(`/api/products/${productId}/download-photo`);
+  if (!res.ok) throw new Error("Gagal mengambil foto");
+  const blob = await res.blob();
   triggerDownload(blob, filename);
 }
 
@@ -267,13 +232,15 @@ export default function ProductCard({
                 e.stopPropagation();
                 if (!product.fotoUrl) return;
                 setDownloadingPhoto(true);
-                const ext = product.fotoUrl.match(/\.(jpe?g|png|webp)(?:$|\?)/i)?.[1] ?? "jpg";
+                // Matches the server's own extension choice (see
+                // app/api/products/[id]/download-photo/route.ts): a
+                // labeled photo is always re-encoded to .jpg, an
+                // unlabeled one passes through in its original format.
+                const ext = photoLabelText
+                  ? "jpg"
+                  : (product.fotoUrl.match(/\.(jpe?g|png|webp)(?:$|\?)/i)?.[1] ?? "jpg");
                 try {
-                  await downloadPhoto(
-                    product.fotoUrl,
-                    `${slugify(product.name) || "produk"}.${ext}`,
-                    photoLabelText ?? undefined
-                  );
+                  await downloadPhoto(product._id, `${slugify(product.name) || "produk"}.${ext}`);
                 } catch {
                   await alert("Gagal mengunduh foto, coba lagi.");
                 }
