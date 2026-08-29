@@ -101,6 +101,13 @@ export async function createInvoice(input: CreateInvoiceInput) {
     if (finalize && product.stok < i.qty) {
       throw new Error(`Stok ${product.name} tidak cukup (sisa ${product.stok})`);
     }
+    // While Flash Sale is active on this product, that locked price IS
+    // the new Harga Minimum for commission purposes — per the user's
+    // request 2026-08-29 ("harga flash sale, adalah harga minimum yang
+    // baru"). Re-read live from the product (not trusted from the
+    // client), same as hargaMinimum itself below.
+    const effectiveHargaMinimum =
+      product.flashSale?.active && product.flashSale?.harga ? product.flashSale.harga : product.hargaMinimum;
     // Diskon can't exceed maxDiskonBekas for barang bekas — server-side
     // enforcement of the same cap the client already clamps to on blur
     // (ProductCard.tsx/ItemRowEditor.tsx), so a raw API request can't
@@ -109,7 +116,9 @@ export async function createInvoice(input: CreateInvoiceInput) {
     // clamped (not rejected), matching how the below-minimum price guard
     // behaves elsewhere in this app.
     const diskon =
-      product.kondisi === "bekas" ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, product.hargaMinimum)) : rawDiskon;
+      product.kondisi === "bekas"
+        ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, effectiveHargaMinimum))
+        : rawDiskon;
     const subtotal = (i.hargaJual - diskon) * i.qty;
     // Commission is computed from the product's *current* kondisi/harga
     // minimum (never trusting client-supplied values for this) — see
@@ -119,7 +128,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
     const komisiPerItem = computeLineCommission({
       kondisi: product.kondisi as "baru" | "bekas",
       hargaJual: i.hargaJual,
-      hargaMinimum: product.hargaMinimum,
+      hargaMinimum: effectiveHargaMinimum,
       diskon,
     });
     return {
@@ -129,7 +138,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       dimensiSnapshot: formatDimensi(product.dimensi),
       qty: i.qty,
       hargaJual: i.hargaJual,
-      hargaMinimumSnapshot: product.hargaMinimum,
+      hargaMinimumSnapshot: effectiveHargaMinimum,
       // Cost basis at booking time — payInvoice.ts sums these for the HPP
       // journal entry at actual payment time, rather than re-reading
       // whatever the product's harga beli has drifted to by then.

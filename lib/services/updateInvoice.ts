@@ -86,16 +86,22 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     if (finalize && product.stok < i.qty) {
       throw new Error(`Stok ${product.name} tidak cukup (sisa ${product.stok})`);
     }
+    // While Flash Sale is active — see createInvoice.ts's matching
+    // comment.
+    const effectiveHargaMinimum =
+      product.flashSale?.active && product.flashSale?.harga ? product.flashSale.harga : product.hargaMinimum;
     // Diskon cap for barang bekas — server-side enforcement, see
     // createInvoice.ts's matching comment.
     const diskon =
-      product.kondisi === "bekas" ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, product.hargaMinimum)) : rawDiskon;
+      product.kondisi === "bekas"
+        ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, effectiveHargaMinimum))
+        : rawDiskon;
     const subtotal = (i.hargaJual - diskon) * i.qty;
     // See createInvoice.ts's matching comment.
     const komisiPerItem = computeLineCommission({
       kondisi: product.kondisi as "baru" | "bekas",
       hargaJual: i.hargaJual,
-      hargaMinimum: product.hargaMinimum,
+      hargaMinimum: effectiveHargaMinimum,
       diskon,
     });
     return {
@@ -105,7 +111,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       dimensiSnapshot: formatDimensi(product.dimensi),
       qty: i.qty,
       hargaJual: i.hargaJual,
-      hargaMinimumSnapshot: product.hargaMinimum,
+      hargaMinimumSnapshot: effectiveHargaMinimum,
       hargaBeliSnapshot: product.hargaBeli,
       diskonPerUnit: diskon,
       isFlashSale: i.isFlashSale ?? false,

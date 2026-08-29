@@ -186,6 +186,14 @@ export default function ProductCard({
   // during a Flash Sale — the locked price already is the final price.
   const discount = flashSaleActive ? 0 : getDiscount(product._id);
   const finalPrice = Math.max(0, effectivePrice - discount);
+  // While Flash Sale is active, that locked price IS the new Harga
+  // Minimum for commission purposes — per the user's request 2026-08-29
+  // ("harga flash sale, adalah harga minimum yang baru"), so a flash-sale
+  // price set below the product's normal floor still earns the sales rep
+  // a sensible base commission instead of being treated as "way under
+  // minimum" against the old floor.
+  const effectiveHargaMinimum =
+    flashSaleActive && product.flashSale?.harga ? product.flashSale.harga : product.hargaMinimum;
   // Live insentif — matches the exact formula used at real invoice time
   // (lib/commission.ts), computed against whatever price is currently
   // showing minus diskon, same as the authoritative save-time calculation
@@ -196,7 +204,7 @@ export default function ProductCard({
     kondisi: product.kondisi as "baru" | "bekas",
     hargaJual: effectivePrice,
     diskon: discount,
-    hargaMinimum: product.hargaMinimum,
+    hargaMinimum: effectiveHargaMinimum,
   });
 
   const dims = product.dimensi;
@@ -619,7 +627,7 @@ export default function ProductCard({
                 productId: product._id,
                 name: product.name,
                 hargaJual: effectivePrice,
-                hargaMinimum: product.hargaMinimum,
+                hargaMinimum: effectiveHargaMinimum,
                 hargaRekomendasi: product.hargaRekomendasi,
                 komisiNominal: liveKomisi,
                 kondisi: product.kondisi as "baru" | "bekas",
