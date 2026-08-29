@@ -69,7 +69,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
   // always 0 (Diskon is locked out while one is active) — its implied
   // discount is Harga Rekomendasi − hargaJual instead, per the same
   // day's follow-up request.
-  function displayDiskon(item: (typeof invoice.items)[number]): number {
+  function displayDiskon(item: NonNullable<typeof invoice>["items"][number]): number {
     if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
       return Math.max(0, item.hargaRekomendasiSnapshot - item.hargaJual);
     }
