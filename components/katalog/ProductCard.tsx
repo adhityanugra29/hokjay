@@ -472,26 +472,32 @@ export default function ProductCard({
                   user's request 2026-08-29. */}
               {canFlashSale &&
                 (flashSaleFormOpen ? (
-                  <div className="flex items-center gap-1.5 border border-line p-2">
+                  // Stacked, not side-by-side with the two buttons — per
+                  // the user's report 2026-08-29 that the number field was
+                  // too cramped to read next to them (this card column is
+                  // narrow to begin with).
+                  <div className="flex flex-col gap-1.5 border border-line p-2">
                     <CurrencyInput value={flashSaleInput} onChange={setFlashSaleInput} showPrefix />
-                    <button
-                      type="button"
-                      disabled={flashSaleSaving || !flashSaleInput}
-                      onClick={() => submitFlashSale(true, Number(flashSaleInput))}
-                      className="shrink-0 cursor-pointer border border-accent bg-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {flashSaleSaving ? "..." : "Aktifkan"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFlashSaleFormOpen(false);
-                        setFlashSaleInput("");
-                      }}
-                      className="shrink-0 cursor-pointer border border-line px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-ink hover:bg-[#f3f2ec]"
-                    >
-                      Batal
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        disabled={flashSaleSaving || !flashSaleInput}
+                        onClick={() => submitFlashSale(true, Number(flashSaleInput))}
+                        className="flex-1 cursor-pointer border border-accent bg-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {flashSaleSaving ? "..." : "Aktifkan"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFlashSaleFormOpen(false);
+                          setFlashSaleInput("");
+                        }}
+                        className="flex-1 cursor-pointer border border-line px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-ink hover:bg-[#f3f2ec]"
+                      >
+                        Batal
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <button
