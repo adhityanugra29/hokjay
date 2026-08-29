@@ -126,12 +126,22 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
 
   const totalPages = rowPages.length + (footerJoinsLastPage ? 0 : 1);
 
+  // Per the user's request 2026-08-29 ("tambahkan total diskon di
+  // invoice pdf maupun preview"). Summed straight from the items array —
+  // no new field needed on InvoicePrintData, each item already carries
+  // its own diskonPerUnit.
+  const totalDiskon = invoice.items.reduce((s, i) => s + i.diskonPerUnit * i.qty, 0);
+
   const totalsBlock = (
     <div ref={footerRef}>
       <div className="ml-auto mt-5 w-full max-w-[260px] font-mono">
         <div className="flex justify-between py-1.5 text-[0.88rem]">
           <span>Subtotal Produk</span>
           <span>{rupiah(invoice.subtotalProduk)}</span>
+        </div>
+        <div className="flex justify-between py-1.5 text-[0.88rem]">
+          <span>Total Diskon</span>
+          <span>− {rupiah(totalDiskon)}</span>
         </div>
         <div className="flex justify-between py-1.5 text-[0.88rem]">
           <span>Ongkos Kirim</span>
@@ -249,9 +259,13 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
           <div className="font-medium">{invoice.customerNama}</div>
           <div className="mt-1 font-mono text-[0.78rem] text-muted">{invoice.customerWhatsapp}</div>
         </div>
-        <div>
+        <div className="max-w-[260px]">
           <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Alamat Pengiriman</div>
-          <div className="text-[0.9rem] font-medium">{invoice.shipAddress ?? "—"}</div>
+          {/* Capped width + wrap — per the user's request 2026-08-29, a
+              long address otherwise had nothing constraining it in this
+              flex-wrap row and could stretch very wide instead of
+              wrapping onto its own lines. */}
+          <div className="text-[0.9rem] font-medium break-words">{invoice.shipAddress ?? "—"}</div>
         </div>
         <div>
           <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Tanggal Pengiriman</div>

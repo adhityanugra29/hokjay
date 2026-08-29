@@ -63,6 +63,10 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     dpTanggal: invoice.dp?.tanggal ? invoice.dp.tanggal.toISOString() : undefined,
   };
 
+  // Per the user's request 2026-08-29 ("tambahkan total diskon di
+  // invoice pdf maupun preview").
+  const totalDiskon = invoice.items.reduce((s, i) => s + i.diskonPerUnit * i.qty, 0);
+
   return (
     <>
       <InvoicePrintDoc invoice={printData} />
@@ -149,11 +153,14 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                 <div className="font-medium">{invoice.customer!.nama}</div>
                 <div className="mt-1 font-mono text-[0.78rem] text-muted">{invoice.customer!.whatsapp}</div>
               </div>
-              <div>
+              <div className="max-w-[260px]">
                 <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">
                   Alamat Pengiriman
                 </div>
-                <div className="text-[0.9rem] font-medium">{invoice.shipAddress ?? "—"}</div>
+                {/* Capped width + wrap — per the user's request
+                    2026-08-29, same as InvoicePrintDoc.tsx's matching
+                    fix. */}
+                <div className="text-[0.9rem] font-medium break-words">{invoice.shipAddress ?? "—"}</div>
               </div>
               <div>
                 <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">
@@ -208,6 +215,10 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
               <div className="flex justify-between py-1.5 text-[0.88rem]">
                 <span>Subtotal Produk</span>
                 <span>{rupiah(invoice.subtotalProduk)}</span>
+              </div>
+              <div className="flex justify-between py-1.5 text-[0.88rem]">
+                <span>Total Diskon</span>
+                <span>− {rupiah(totalDiskon)}</span>
               </div>
               <div className="flex justify-between py-1.5 text-[0.88rem]">
                 <span>Ongkos Kirim</span>
