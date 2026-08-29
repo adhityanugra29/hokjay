@@ -2,7 +2,7 @@ import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
 import { Invoice } from "@/models/Invoice";
 import { nextInvoiceNumber } from "@/lib/counters";
-import { computeLineCommission } from "@/lib/commission";
+import { computeLineCommission, maxDiskonBekas } from "@/lib/commission";
 import { formatDimensi } from "@/lib/format";
 
 export interface CreateInvoiceItemInput {
@@ -63,15 +63,18 @@ export async function createInvoice(input: CreateInvoiceInput) {
   const finalize = input.status !== "draft";
 
   const items = input.items.map((i) => {
-    const diskon = i.diskonPerUnit ?? 0;
-    const subtotal = (i.hargaJual - diskon) * i.qty;
+    const rawDiskon = i.diskonPerUnit ?? 0;
 
     if (!i.productId) {
       // Custom-order item: no product reference/stock, but still earns the
       // flat 6% "barang baru/custom" commission rate on its sale price —
       // after diskon, per the user's request 2026-08-29 (a discount now
       // proportionally reduces commission instead of the sales rep
-      // keeping full commission on a discounted sale).
+      // keeping full commission on a discounted sale). No diskon cap here
+      // — that only applies to barang bekas (see below), and a custom
+      // item has no kondisi/Harga Minimum to anchor one against.
+      const diskon = rawDiskon;
+      const subtotal = (i.hargaJual - diskon) * i.qty;
       const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual - diskon, hargaMinimum: 0 });
       return {
         product: undefined,
@@ -98,6 +101,16 @@ export async function createInvoice(input: CreateInvoiceInput) {
     if (finalize && product.stok < i.qty) {
       throw new Error(`Stok ${product.name} tidak cukup (sisa ${product.stok})`);
     }
+    // Diskon can't exceed the base komisi for barang bekas (10% of Harga
+    // Minimum) — server-side enforcement of the same cap the client
+    // already clamps to on blur (ProductCard.tsx/ItemRowEditor.tsx), so a
+    // raw API request can't bypass it. Per the user's request 2026-08-29
+    // ("besaran diskon ... tidak boleh lebih dari total insentif yang
+    // diberikan"). Silently clamped (not rejected), matching how the
+    // below-minimum price guard behaves elsewhere in this app.
+    const diskon =
+      product.kondisi === "bekas" ? Math.min(rawDiskon, maxDiskonBekas(product.hargaMinimum)) : rawDiskon;
+    const subtotal = (i.hargaJual - diskon) * i.qty;
     // Commission is computed from the product's *current* kondisi/harga
     // minimum (never trusting client-supplied values for this) — see
     // lib/commission.ts for the baru/custom vs bekas formula. Uses the

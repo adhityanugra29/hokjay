@@ -31,3 +31,18 @@ export function computeLineCommission({
   const selisih = hargaJual - hargaMinimum;
   return Math.max(base, selisih);
 }
+
+/**
+ * Diskon /unit cap for barang bekas, per the user's request 2026-08-29: a
+ * discount can't be larger than the base komisi (10% of Harga Minimum) —
+ * the same `base` computed inside computeLineCommission above, exposed
+ * here so callers can clamp diskon down to it *before* it ever reaches
+ * that function. A fixed per-product ceiling (not dependent on whatever
+ * harga jual happens to be typed at the moment), so it doesn't shift
+ * around as the price field changes. Not defined for barang baru/custom —
+ * only bekas has a Harga Minimum-anchored commission floor to compare
+ * against.
+ */
+export function maxDiskonBekas(hargaMinimum: number): number {
+  return Math.round(hargaMinimum * 0.1);
+}

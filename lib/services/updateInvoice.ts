@@ -3,7 +3,7 @@ import { Product } from "@/models/Product";
 import { Invoice } from "@/models/Invoice";
 import { StockMovement } from "@/models/StockMovement";
 import { JournalEntry } from "@/models/JournalEntry";
-import { computeLineCommission } from "@/lib/commission";
+import { computeLineCommission, maxDiskonBekas } from "@/lib/commission";
 import { formatDimensi } from "@/lib/format";
 import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
 
@@ -57,10 +57,13 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   const finalize = input.status !== "draft";
 
   const items = input.items.map((i) => {
-    const diskon = i.diskonPerUnit ?? 0;
-    const subtotal = (i.hargaJual - diskon) * i.qty;
+    const rawDiskon = i.diskonPerUnit ?? 0;
 
     if (!i.productId) {
+      // No diskon cap for custom items — see createInvoice.ts's matching
+      // comment.
+      const diskon = rawDiskon;
+      const subtotal = (i.hargaJual - diskon) * i.qty;
       // Post-diskon price, not the raw hargaJual — a discount
       // proportionally reduces commission too, per the user's request
       // 2026-08-29. See createInvoice.ts's matching comment.
@@ -86,6 +89,11 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     if (finalize && product.stok < i.qty) {
       throw new Error(`Stok ${product.name} tidak cukup (sisa ${product.stok})`);
     }
+    // Diskon cap for barang bekas — server-side enforcement, see
+    // createInvoice.ts's matching comment.
+    const diskon =
+      product.kondisi === "bekas" ? Math.min(rawDiskon, maxDiskonBekas(product.hargaMinimum)) : rawDiskon;
+    const subtotal = (i.hargaJual - diskon) * i.qty;
     // Post-diskon price, not the raw hargaJual — see createInvoice.ts's
     // matching comment.
     const komisiPerItem = computeLineCommission({

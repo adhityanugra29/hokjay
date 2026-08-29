@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { CartItem } from "@/components/cart/CartProvider";
 import { useCart } from "@/components/cart/CartProvider";
 import { CurrencyInput } from "@/components/ui/Form";
-import { computeLineCommission } from "@/lib/commission";
+import { computeLineCommission, maxDiskonBekas } from "@/lib/commission";
 import { rupiah } from "@/lib/format";
 
 /**
@@ -58,6 +58,9 @@ function NumberField({
 
 export default function ItemRowEditor({ item }: { item: CartItem }) {
   const { updateItem, removeItem } = useCart();
+  // Diskon-exceeds-insentif warning for barang bekas — see maxDiskonBekas
+  // usage below. Per the user's request 2026-08-29.
+  const [discountWarning, setDiscountWarning] = useState(false);
 
   const subtotal = (item.hargaJual - item.diskonPerUnit) * item.qty;
   // Post-diskon price, not the raw hargaJual — a discount proportionally
@@ -125,10 +128,30 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
         </div>
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[0.62rem] uppercase text-muted">Diskon /unit</span>
+          {/* Capped at 10% of Harga Minimum for barang bekas on blur — same
+              rule/reasoning as ProductCard.tsx's Diskon field on Katalog.
+              Per the user's request 2026-08-29. */}
           <CurrencyInput
             value={String(item.diskonPerUnit)}
-            onChange={(v) => updateItem(item.productId, { diskonPerUnit: v ? Number(v) : 0 })}
+            onChange={(v) => {
+              updateItem(item.productId, { diskonPerUnit: v ? Number(v) : 0 });
+              setDiscountWarning(false);
+            }}
+            onBlur={(v) => {
+              if (item.kondisi !== "bekas") return;
+              const num = v ? Number(v) : 0;
+              const max = maxDiskonBekas(item.hargaMinimum);
+              if (num > max) {
+                updateItem(item.productId, { diskonPerUnit: max });
+                setDiscountWarning(true);
+              }
+            }}
           />
+          {discountWarning && (
+            <span className="font-mono text-[0.62rem] font-medium text-accent-700">
+              Melebihi batas insentif, disesuaikan ke maks. {rupiah(maxDiskonBekas(item.hargaMinimum))}.
+            </span>
+          )}
         </div>
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[0.62rem] uppercase text-muted">Harga Final</span>

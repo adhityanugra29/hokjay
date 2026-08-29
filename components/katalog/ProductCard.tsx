@@ -8,7 +8,7 @@ import ZoomableImage from "./ZoomableImage";
 import { CurrencyInput } from "@/components/ui/Form";
 import { useDialog } from "@/components/ui/Dialog";
 import { rupiah, slugify } from "@/lib/format";
-import { computeLineCommission } from "@/lib/commission";
+import { computeLineCommission, maxDiskonBekas } from "@/lib/commission";
 
 /**
  * Downloads a photo per the user's request 2026-08-27 ("bisa download
@@ -140,6 +140,9 @@ export default function ProductCard({
   // larger number is still being typed (e.g. typing "150000" reads as
   // 1, 15, 150... along the way).
   const [priceWarning, setPriceWarning] = useState(false);
+  // Diskon-exceeds-insentif warning for barang bekas — see maxDiskonBekas
+  // usage below. Per the user's request 2026-08-29.
+  const [discountWarning, setDiscountWarning] = useState(false);
   // Flash Sale — top-down price lock set by an owner/super_admin (server
   // enforced, see app/api/products/[id]/flash-sale/route.ts). While
   // active, this card can't offer any other price: no preset buttons, no
@@ -421,17 +424,41 @@ export default function ProductCard({
                   user's request 2026-08-29 ("field diskon terpisah dari
                   harga"). Harga Final (below) and the live Komisi figure
                   both already factor this in — see finalPrice/liveKomisi
-                  above. */}
+                  above. Capped at 10% of Harga Minimum for barang bekas
+                  (maxDiskonBekas, same base used inside
+                  computeLineCommission) on blur, not every keystroke —
+                  same "don't fight mid-typing" reasoning as the
+                  below-minimum price guard above. Per the user's request
+                  2026-08-29 ("besaran diskon ... tidak boleh lebih dari
+                  total insentif yang diberikan"). Barang baru/custom have
+                  no such cap — confirmed scope. */}
               <div className="flex items-center gap-2">
                 <span className="shrink-0 font-mono text-[0.64rem] uppercase tracking-[0.06em] text-muted">
                   Diskon
                 </span>
                 <CurrencyInput
                   value={String(discount)}
-                  onChange={(v) => setDiscount(product._id, v ? Number(v) : 0)}
+                  onChange={(v) => {
+                    setDiscount(product._id, v ? Number(v) : 0);
+                    setDiscountWarning(false);
+                  }}
+                  onBlur={(v) => {
+                    if (product.kondisi !== "bekas") return;
+                    const num = v ? Number(v) : 0;
+                    const max = maxDiskonBekas(product.hargaMinimum);
+                    if (num > max) {
+                      setDiscount(product._id, max);
+                      setDiscountWarning(true);
+                    }
+                  }}
                   showPrefix
                 />
               </div>
+              {discountWarning && (
+                <div className="text-[0.68rem] font-medium text-accent-700">
+                  Diskon melebihi batas insentif, disesuaikan otomatis ke maksimal {rupiah(maxDiskonBekas(product.hargaMinimum))}.
+                </div>
+              )}
               {discount > 0 && (
                 <div className="flex items-center justify-between font-mono text-[0.72rem]">
                   <span className="text-muted">Harga Final</span>
