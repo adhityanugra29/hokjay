@@ -204,10 +204,14 @@ export default function InvoiceForm({
       items.reduce(
         (s, i) =>
           s +
+          // diskon wasn't factored into this summary total before —
+          // found and fixed alongside the 2026-08-29 diskon/komisi work
+          // (ItemRowEditor's own per-line figure already did).
           computeLineCommission({
             isCustom: i.isCustom,
             kondisi: i.kondisi,
             hargaJual: i.hargaJual,
+            diskon: i.diskonPerUnit,
             hargaMinimum: i.hargaMinimum,
           }) *
             i.qty,

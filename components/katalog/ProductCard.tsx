@@ -194,7 +194,8 @@ export default function ProductCard({
   const liveKomisi = computeLineCommission({
     isCustom: product.isCustom,
     kondisi: product.kondisi as "baru" | "bekas",
-    hargaJual: finalPrice,
+    hargaJual: effectivePrice,
+    diskon: discount,
     hargaMinimum: product.hargaMinimum,
   });
 

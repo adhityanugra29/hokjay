@@ -64,10 +64,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       // comment.
       const diskon = rawDiskon;
       const subtotal = (i.hargaJual - diskon) * i.qty;
-      // Post-diskon price, not the raw hargaJual — a discount
-      // proportionally reduces commission too, per the user's request
-      // 2026-08-29. See createInvoice.ts's matching comment.
-      const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual - diskon, hargaMinimum: 0 });
+      const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual, hargaMinimum: 0, diskon });
       return {
         product: undefined,
         isCustom: true,
@@ -94,12 +91,12 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     const diskon =
       product.kondisi === "bekas" ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, product.hargaMinimum)) : rawDiskon;
     const subtotal = (i.hargaJual - diskon) * i.qty;
-    // Post-diskon price, not the raw hargaJual — see createInvoice.ts's
-    // matching comment.
+    // See createInvoice.ts's matching comment.
     const komisiPerItem = computeLineCommission({
       kondisi: product.kondisi as "baru" | "bekas",
-      hargaJual: i.hargaJual - diskon,
+      hargaJual: i.hargaJual,
       hargaMinimum: product.hargaMinimum,
+      diskon,
     });
     return {
       product: product._id,

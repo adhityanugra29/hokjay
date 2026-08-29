@@ -16,20 +16,37 @@ export function computeLineCommission({
   kondisi,
   hargaJual,
   hargaMinimum,
+  diskon = 0,
 }: {
   isCustom?: boolean;
   kondisi?: "baru" | "bekas";
+  /** The listed/raw sale price — NOT pre-reduced by diskon. Pass diskon separately below. */
   hargaJual: number;
   hargaMinimum: number;
+  /**
+   * Diskon /unit — per the user's request 2026-08-29, refined the same
+   * day: for barang bekas, this is subtracted directly (Rupiah-for-
+   * Rupiah) from the commission that would otherwise apply at the full
+   * (undiscounted) price, all the way down to 0 if the diskon is large
+   * enough — "komisi ... harus dikurangi bahkan hingga menjadi 0". This
+   * used to be done by callers pre-subtracting diskon from hargaJual
+   * before calling this function, which fed the DISCOUNTED price into
+   * the bekas floor logic below and let commission get stuck at `base`
+   * no matter how much further the diskon cut into it — moved in here so
+   * every caller gets the correct floor-free behavior automatically. For
+   * barang baru/custom, still folded into hargaJual before the flat 6%
+   * (proportional, naturally reaches 0 as price does — no floor to fix
+   * there in the first place).
+   */
+  diskon?: number;
 }): number {
   if (isCustom || kondisi !== "bekas") {
-    return Math.round(hargaJual * 0.06);
+    return Math.round((hargaJual - diskon) * 0.06);
   }
 
   const base = Math.round(hargaMinimum * 0.1);
-  if (hargaJual <= hargaMinimum) return base;
-  const selisih = hargaJual - hargaMinimum;
-  return Math.max(base, selisih);
+  const komisiPenuh = hargaJual <= hargaMinimum ? base : Math.max(base, hargaJual - hargaMinimum);
+  return Math.max(0, komisiPenuh - diskon);
 }
 
 /**

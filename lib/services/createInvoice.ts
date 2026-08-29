@@ -75,7 +75,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       // item has no kondisi/Harga Minimum to anchor one against.
       const diskon = rawDiskon;
       const subtotal = (i.hargaJual - diskon) * i.qty;
-      const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual - diskon, hargaMinimum: 0 });
+      const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual, hargaMinimum: 0, diskon });
       return {
         product: undefined,
         isCustom: true,
@@ -113,14 +113,14 @@ export async function createInvoice(input: CreateInvoiceInput) {
     const subtotal = (i.hargaJual - diskon) * i.qty;
     // Commission is computed from the product's *current* kondisi/harga
     // minimum (never trusting client-supplied values for this) — see
-    // lib/commission.ts for the baru/custom vs bekas formula. Uses the
-    // post-diskon price, not the raw hargaJual, so a discount
-    // proportionally reduces commission too — per the user's request
-    // 2026-08-29.
+    // lib/commission.ts for the baru/custom vs bekas formula, which now
+    // handles the diskon subtraction internally (including flooring at 0
+    // for barang bekas) — per the user's request 2026-08-29.
     const komisiPerItem = computeLineCommission({
       kondisi: product.kondisi as "baru" | "bekas",
-      hargaJual: i.hargaJual - diskon,
+      hargaJual: i.hargaJual,
       hargaMinimum: product.hargaMinimum,
+      diskon,
     });
     return {
       product: product._id,

@@ -63,14 +63,15 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
   const [discountWarning, setDiscountWarning] = useState(false);
 
   const subtotal = (item.hargaJual - item.diskonPerUnit) * item.qty;
-  // Post-diskon price, not the raw hargaJual — a discount proportionally
-  // reduces commission too, matching lib/services/createInvoice.ts's/
-  // updateInvoice.ts's authoritative save-time calculation. Per the
-  // user's request 2026-08-29.
+  // Matches lib/services/createInvoice.ts's/updateInvoice.ts's
+  // authoritative save-time calculation — computeLineCommission takes
+  // hargaJual/diskon separately now (floors at 0 for barang bekas). Per
+  // the user's request 2026-08-29.
   const komisiPerUnit = computeLineCommission({
     isCustom: item.isCustom,
     kondisi: item.kondisi,
-    hargaJual: item.hargaJual - item.diskonPerUnit,
+    hargaJual: item.hargaJual,
+    diskon: item.diskonPerUnit,
     hargaMinimum: item.hargaMinimum,
   });
   return (
