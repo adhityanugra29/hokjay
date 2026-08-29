@@ -446,10 +446,31 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
             <div className="flex flex-1 flex-col">
               <h4 className="text-[18px] font-bold">{p.name}</h4>
               <p className="mt-1.5 text-[13px] leading-snug text-muted">{specLine(p)}</p>
-              <div className="mt-auto flex items-baseline justify-between gap-3 border-t border-line pt-2.5">
-                <span className="text-[11px] text-muted">{p.sku}</span>
-                <span className="text-[19px] font-extrabold">{rupiah(p.flashSale?.harga ?? 0)}</span>
-              </div>
+              {/* Same treatment as the regular Diskon block below (coret
+                  harga normal, harga akhir berwarna, baris Hemat) — per
+                  the user's request 2026-08-29 ("samakan treatmentnya
+                  dengan diskon"). The only real difference is the labels
+                  ("Harga Special" instead of a bare final price) and that
+                  the savings here tend to be larger. */}
+              {(() => {
+                const hargaNormal = p.hargaRekomendasi;
+                const hargaSpecial = p.flashSale?.harga ?? 0;
+                const hemat = Math.max(0, hargaNormal - hargaSpecial);
+                return (
+                  <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-2.5">
+                    <span className="text-[11px] text-muted">{p.sku}</span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[12px] text-muted line-through">Harga Normal: {rupiah(hargaNormal)}</span>
+                      <span className="text-[19px] font-extrabold" style={{ color: "#ec3013" }}>
+                        Harga Special: {rupiah(hargaSpecial)}
+                      </span>
+                      <span className="text-[11px] font-bold" style={{ color: "#B45309" }}>
+                        Hemat: {rupiah(hemat)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         ))}
