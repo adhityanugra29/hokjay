@@ -163,13 +163,21 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
   // line's implied discount (Harga Rekomendasi − hargaJual) counts too,
   // not just diskonPerUnit (always 0 for those).
   const totalDiskon = invoice.items.reduce((s, i) => s + displayDiskon(i) * i.qty, 0);
+  // "Subtotal Produk" renamed to "Total Belanja" and its logic changed to
+  // sum the Harga column (displayHarga) instead of invoice.subtotalProduk
+  // — per the user's request 2026-08-29. Total Belanja − Total Diskon
+  // always equals invoice.subtotalProduk exactly (Diskon is defined as
+  // Harga − actual price charged for every line, flash-sale or not), so
+  // this doesn't change grandTotal's own math at all, only what this one
+  // row displays.
+  const totalBelanja = invoice.items.reduce((s, i) => s + displayHarga(i) * i.qty, 0);
 
   const totalsBlock = (
     <div ref={footerRef}>
       <div className="ml-auto mt-5 w-full max-w-[260px] font-mono">
         <div className="flex justify-between py-1.5 text-[0.88rem]">
-          <span>Subtotal Produk</span>
-          <span>{rupiah(invoice.subtotalProduk)}</span>
+          <span>Total Belanja</span>
+          <span>{rupiah(totalBelanja)}</span>
         </div>
         <div className="flex justify-between py-1.5 text-[0.88rem]">
           <span>Total Diskon</span>

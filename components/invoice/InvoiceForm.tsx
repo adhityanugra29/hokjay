@@ -216,6 +216,20 @@ export default function InvoiceForm({
       }, 0),
     [items]
   );
+  // "Subtotal Produk" renamed to "Total Belanja", logic changed to sum
+  // Harga (Harga Rekomendasi for a Flash Sale line, hargaJual otherwise)
+  // instead of the actual charged subtotalProduk — per the user's request
+  // 2026-08-29. subtotalProduk itself is untouched and still drives
+  // grandTotal — see InvoicePrintDoc.tsx's matching comment for why Total
+  // Belanja − Total Diskon always equals it exactly anyway.
+  const totalBelanja = useMemo(
+    () =>
+      items.reduce((s, i) => {
+        const harga = i.isFlashSale && i.hargaRekomendasi != null ? i.hargaRekomendasi : i.hargaJual;
+        return s + harga * i.qty;
+      }, 0),
+    [items]
+  );
   const komisiTotal = useMemo(
     () =>
       items.reduce(
@@ -546,8 +560,8 @@ export default function InvoiceForm({
 
       <div className="ml-auto mt-5 w-full max-w-[280px] font-mono text-[0.88rem]">
         <div className="flex justify-between py-1.5">
-          <span>Subtotal Produk</span>
-          <span>{rupiah(subtotalProduk)}</span>
+          <span>Total Belanja</span>
+          <span>{rupiah(totalBelanja)}</span>
         </div>
         <div className="flex justify-between py-1.5">
           <span>Total Diskon</span>

@@ -85,6 +85,11 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     return item.hargaJual;
   }
   const totalDiskon = invoice.items.reduce((s, i) => s + displayDiskon(i) * i.qty, 0);
+  // "Subtotal Produk" renamed to "Total Belanja", logic changed to sum
+  // the Harga column instead — per the user's request 2026-08-29. See
+  // InvoicePrintDoc.tsx's matching comment for why this doesn't affect
+  // grandTotal's own math.
+  const totalBelanja = invoice.items.reduce((s, i) => s + displayHarga(i) * i.qty, 0);
 
   return (
     <>
@@ -232,8 +237,8 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
 
             <div className="ml-auto mt-5 w-full max-w-[260px] font-mono">
               <div className="flex justify-between py-1.5 text-[0.88rem]">
-                <span>Subtotal Produk</span>
-                <span>{rupiah(invoice.subtotalProduk)}</span>
+                <span>Total Belanja</span>
+                <span>{rupiah(totalBelanja)}</span>
               </div>
               <div className="flex justify-between py-1.5 text-[0.88rem]">
                 <span>Total Diskon</span>
