@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/components/cart/CartProvider";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 import ZoomableImage from "./ZoomableImage";
@@ -96,18 +97,24 @@ export interface KatalogProduct {
   dpBy?: string[];
   /** Total units ever sold (paid), lifetime — replaces the old plain "Sudah Terjual" boolean. */
   soldQty?: number;
+  /** Owner-set top-down price lock — see models/Product.ts. Per the user's request 2026-08-29. */
+  flashSale?: { active: true; harga: number };
 }
 
 export default function ProductCard({
   product,
   canEdit,
+  canFlashSale,
   onEdit,
 }: {
   product: KatalogProduct;
   /** Manager/Owner/Super Admin only — shows the pencil that opens the inline edit drawer. Per the user's request 2026-08-27. */
   canEdit?: boolean;
+  /** Owner/Super Admin only — shows the Flash Sale button. Per the user's request 2026-08-29. */
+  canFlashSale?: boolean;
   onEdit?: () => void;
 }) {
+  const router = useRouter();
   const { items, addItem, updateItem, removeItem } = useCart();
   const {
     isSelected,
@@ -133,15 +140,48 @@ export default function ProductCard({
   // larger number is still being typed (e.g. typing "150000" reads as
   // 1, 15, 150... along the way).
   const [priceWarning, setPriceWarning] = useState(false);
+  // Flash Sale — top-down price lock set by an owner/super_admin (server
+  // enforced, see app/api/products/[id]/flash-sale/route.ts). While
+  // active, this card can't offer any other price: no preset buttons, no
+  // custom price, no Diskon. Per the user's request 2026-08-29.
+  const flashSaleActive = !!product.flashSale?.active;
+  const [flashSaleFormOpen, setFlashSaleFormOpen] = useState(false);
+  const [flashSaleInput, setFlashSaleInput] = useState("");
+  const [flashSaleSaving, setFlashSaleSaving] = useState(false);
+
+  async function submitFlashSale(active: boolean, harga?: number) {
+    setFlashSaleSaving(true);
+    try {
+      const res = await fetch(`/api/products/${product._id}/flash-sale`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active, harga }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Gagal memperbarui Flash Sale");
+      }
+      setFlashSaleFormOpen(false);
+      setFlashSaleInput("");
+      router.refresh(); // product list is server-fetched — refresh so the lock/banner show immediately, same as EditProductDrawer's own save.
+    } catch (err) {
+      await alert(err instanceof Error ? err.message : "Gagal memperbarui Flash Sale");
+    }
+    setFlashSaleSaving(false);
+  }
+
   // Price toggle (Harga Rekomendasi/Minimum, + manual custom typing) shows
   // on every product card at all times — not just while picking products
   // for the PDF — and this is the price actually used for "+ Tambah ke
-  // Invoice" below. Per the user's request 2026-08-25.
-  const effectivePrice = getEffectivePrice(product);
+  // Invoice" below. Per the user's request 2026-08-25. Overridden entirely
+  // by the Flash Sale price when active — that's the whole point of a
+  // top-down lock, no other price can apply.
+  const effectivePrice = flashSaleActive ? (product.flashSale?.harga ?? 0) : getEffectivePrice(product);
   // Diskon — separate from the price above (which is what the customer
   // pays); this is how much of that price was given away, tracked so it
-  // can also reduce komisi. Per the user's request 2026-08-29.
-  const discount = getDiscount(product._id);
+  // can also reduce komisi. Per the user's request 2026-08-29. Forced to 0
+  // during a Flash Sale — the locked price already is the final price.
+  const discount = flashSaleActive ? 0 : getDiscount(product._id);
   const finalPrice = Math.max(0, effectivePrice - discount);
   // Live insentif — matches the exact formula used at real invoice time
   // (lib/commission.ts), computed against whatever price is currently
@@ -209,9 +249,18 @@ export default function ProductCard({
   return (
     <div className={`flex flex-col overflow-hidden border bg-panel ${pickMode && selected ? "border-accent" : "border-line"}`}>
       <div className="relative flex aspect-4/3 items-center justify-center overflow-hidden bg-surface text-[0.68rem] text-muted">
+        {/* Flash Sale banner — per the user's request 2026-08-29 ("harus
+            ada ... banner khusus"). Pinned to the photo's very top edge, so
+            the pickMode checkbox / edit pencil below get nudged down a
+            notch to stay clear of it. */}
+        {flashSaleActive && (
+          <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center gap-1.5 bg-accent py-1.5 font-mono text-[0.7rem] font-extrabold tracking-[0.08em] text-white">
+            🔥 FLASH SALE
+          </div>
+        )}
         {pickMode && (
           <label
-            className="absolute top-2.5 left-2.5 z-10 flex h-6 w-6 cursor-pointer items-center justify-center border-2 border-line bg-panel"
+            className={`absolute ${flashSaleActive ? "top-8" : "top-2.5"} left-2.5 z-10 flex h-6 w-6 cursor-pointer items-center justify-center border-2 border-line bg-panel`}
             style={selected ? { background: "var(--color-accent)", borderColor: "var(--color-accent)" } : undefined}
             title="Pilih untuk katalog PDF"
           >
@@ -232,7 +281,7 @@ export default function ProductCard({
               e.stopPropagation();
               onEdit?.();
             }}
-            className="absolute top-2.5 right-2.5 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-ink/70 text-white hover:bg-ink"
+            className={`absolute ${flashSaleActive ? "top-8" : "top-2.5"} right-2.5 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/30 bg-ink/70 text-white hover:bg-ink`}
           >
             <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
               <path d="M13.5 3.5 16.5 6.5M4 16l.7-3.2L12.8 4.7a1.5 1.5 0 0 1 2.1 0l.4.4a1.5 1.5 0 0 1 0 2.1L7.2 15.3 4 16Z" />
@@ -289,79 +338,142 @@ export default function ProductCard({
             the Hot Products carousel cards (see confirmation 2026-08-20). */}
         <div className="line-clamp-2 min-h-[2.75rem] text-[0.92rem] leading-snug font-medium">{product.name}</div>
         <div className="mt-1.5 flex flex-col gap-1.5">
-          <CurrencyInput
-            value={String(effectivePrice)}
-            onChange={(v) => {
-              setCustomPrice(product._id, v ? Number(v) : 0);
-              setPriceWarning(false);
-            }}
-            onBlur={(v) => {
-              const num = v ? Number(v) : 0;
-              if (num > 0 && num < product.hargaMinimum) {
-                setCustomPrice(product._id, product.hargaMinimum);
-                setPriceWarning(true);
-              }
-            }}
-            showPrefix
-          />
-          {priceWarning && (
-            <div className="text-[0.68rem] font-medium text-accent-700">
-              Harga di bawah minimum, disesuaikan otomatis ke {rupiah(product.hargaMinimum)}.
+          {flashSaleActive ? (
+            // Top-down locked price — no editable price/preset/Diskon
+            // controls at all while Flash Sale is active, per the user's
+            // request 2026-08-29 ("harganya tidak bisa untuk di naikan
+            // atau di turunkan"). Only an owner/super_admin can end it.
+            <div className="border border-accent bg-accent/5 px-3 py-2.5">
+              <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-accent">
+                Harga Flash Sale (terkunci)
+              </div>
+              <div className="mt-1 font-sans text-[1.1rem] font-extrabold text-accent-700">{rupiah(effectivePrice)}</div>
+              {canFlashSale && (
+                <button
+                  type="button"
+                  disabled={flashSaleSaving}
+                  onClick={() => submitFlashSale(false)}
+                  className="mt-2 cursor-pointer border border-line px-2.5 py-1 font-mono text-[0.64rem] font-semibold text-ink hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+                >
+                  {flashSaleSaving ? "Memproses..." : "Akhiri Flash Sale"}
+                </button>
+              )}
             </div>
-          )}
-          {/* Two separate preset buttons (per the user's request 2026-08-25,
-              replacing the earlier single flip-label toggle) — each picks
-              its price directly and discards any manually-typed custom
-              price above. Shows on every card at all times (not gated to
-              PDF pick mode) since this is also the price used when adding
-              to invoice. */}
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                setPriceMode(product._id, "rekomendasi");
-                setPriceWarning(false);
-              }}
-              className={`cursor-pointer border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
-                getPriceMode(product._id) === "rekomendasi" && !hasCustomPrice
-                  ? "border-accent bg-accent text-white"
-                  : "border-line text-ink hover:bg-[#f3f2ec]"
-              }`}
-            >
-              Harga Rekomendasi
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPriceMode(product._id, "minimum");
-                setPriceWarning(false);
-              }}
-              className={`cursor-pointer border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
-                getPriceMode(product._id) === "minimum" && !hasCustomPrice
-                  ? "border-accent bg-accent text-white"
-                  : "border-line text-ink hover:bg-[#f3f2ec]"
-              }`}
-            >
-              Harga Minimum
-            </button>
-          </div>
-          {/* Diskon — separate field from the price above, per the user's
-              request 2026-08-29 ("field diskon terpisah dari harga").
-              Harga Final (below) and the live Komisi figure both already
-              factor this in — see finalPrice/liveKomisi above. */}
-          <div className="flex items-center gap-2">
-            <span className="shrink-0 font-mono text-[0.64rem] uppercase tracking-[0.06em] text-muted">Diskon</span>
-            <CurrencyInput
-              value={String(discount)}
-              onChange={(v) => setDiscount(product._id, v ? Number(v) : 0)}
-              showPrefix
-            />
-          </div>
-          {discount > 0 && (
-            <div className="flex items-center justify-between font-mono text-[0.72rem]">
-              <span className="text-muted">Harga Final</span>
-              <span className="font-semibold text-ink">{rupiah(finalPrice)}</span>
-            </div>
+          ) : (
+            <>
+              <CurrencyInput
+                value={String(effectivePrice)}
+                onChange={(v) => {
+                  setCustomPrice(product._id, v ? Number(v) : 0);
+                  setPriceWarning(false);
+                }}
+                onBlur={(v) => {
+                  const num = v ? Number(v) : 0;
+                  if (num > 0 && num < product.hargaMinimum) {
+                    setCustomPrice(product._id, product.hargaMinimum);
+                    setPriceWarning(true);
+                  }
+                }}
+                showPrefix
+              />
+              {priceWarning && (
+                <div className="text-[0.68rem] font-medium text-accent-700">
+                  Harga di bawah minimum, disesuaikan otomatis ke {rupiah(product.hargaMinimum)}.
+                </div>
+              )}
+              {/* Two separate preset buttons (per the user's request
+                  2026-08-25, replacing the earlier single flip-label
+                  toggle) — each picks its price directly and discards any
+                  manually-typed custom price above. Shows on every card
+                  at all times (not gated to PDF pick mode) since this is
+                  also the price used when adding to invoice. */}
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPriceMode(product._id, "rekomendasi");
+                    setPriceWarning(false);
+                  }}
+                  className={`cursor-pointer border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
+                    getPriceMode(product._id) === "rekomendasi" && !hasCustomPrice
+                      ? "border-accent bg-accent text-white"
+                      : "border-line text-ink hover:bg-[#f3f2ec]"
+                  }`}
+                >
+                  Harga Rekomendasi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPriceMode(product._id, "minimum");
+                    setPriceWarning(false);
+                  }}
+                  className={`cursor-pointer border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
+                    getPriceMode(product._id) === "minimum" && !hasCustomPrice
+                      ? "border-accent bg-accent text-white"
+                      : "border-line text-ink hover:bg-[#f3f2ec]"
+                  }`}
+                >
+                  Harga Minimum
+                </button>
+              </div>
+              {/* Diskon — separate field from the price above, per the
+                  user's request 2026-08-29 ("field diskon terpisah dari
+                  harga"). Harga Final (below) and the live Komisi figure
+                  both already factor this in — see finalPrice/liveKomisi
+                  above. */}
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 font-mono text-[0.64rem] uppercase tracking-[0.06em] text-muted">
+                  Diskon
+                </span>
+                <CurrencyInput
+                  value={String(discount)}
+                  onChange={(v) => setDiscount(product._id, v ? Number(v) : 0)}
+                  showPrefix
+                />
+              </div>
+              {discount > 0 && (
+                <div className="flex items-center justify-between font-mono text-[0.72rem]">
+                  <span className="text-muted">Harga Final</span>
+                  <span className="font-semibold text-ink">{rupiah(finalPrice)}</span>
+                </div>
+              )}
+              {/* Flash Sale activation — owner/super_admin only, see
+                  app/api/products/[id]/flash-sale/route.ts. Per the
+                  user's request 2026-08-29. */}
+              {canFlashSale &&
+                (flashSaleFormOpen ? (
+                  <div className="flex items-center gap-1.5 border border-line p-2">
+                    <CurrencyInput value={flashSaleInput} onChange={setFlashSaleInput} showPrefix />
+                    <button
+                      type="button"
+                      disabled={flashSaleSaving || !flashSaleInput}
+                      onClick={() => submitFlashSale(true, Number(flashSaleInput))}
+                      className="shrink-0 cursor-pointer border border-accent bg-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {flashSaleSaving ? "..." : "Aktifkan"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFlashSaleFormOpen(false);
+                        setFlashSaleInput("");
+                      }}
+                      className="shrink-0 cursor-pointer border border-line px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-ink hover:bg-[#f3f2ec]"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setFlashSaleFormOpen(true)}
+                    className="cursor-pointer border border-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-accent hover:bg-accent hover:text-white"
+                  >
+                    🔥 Flash Sale
+                  </button>
+                ))}
+            </>
           )}
         </div>
         <div className="mt-2.5 text-[0.72rem] text-muted">

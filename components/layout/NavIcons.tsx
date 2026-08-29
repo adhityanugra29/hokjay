@@ -21,7 +21,8 @@ export type NavIconName =
   | "gear"
   | "menu"
   | "close"
-  | "chevron-right";
+  | "chevron-right"
+  | "flame";
 
 function Icon({ children, size = 15 }: { children: React.ReactNode; size?: number }) {
   return (
@@ -116,6 +117,14 @@ const ICONS: Record<NavIconName, React.ReactNode> = {
   menu: <path d="M3 6h14M3 10h14M3 14h14" />,
   close: <path d="M5 5l10 10M15 5 5 15" />,
   "chevron-right": <path d="M7 4.5 12.5 10 7 15.5" />,
+  // Flash Sale — Activity feed entry + the Katalog banner/button. Original
+  // stroke (not from the design doc), same visual language as the rest of
+  // this file.
+  flame: (
+    <>
+      <path d="M10 2.5c-3 4-5 6-5 9.5a5 5 0 0 0 10 0c0-2.5-1.2-4.3-2.6-5.7.4 2-.6 3-.6 3-1-1-.8-3 .2-5-1.2 1.6-2 2.9-2 4.2z" />
+    </>
+  ),
 };
 
 export default function NavIcon({ name, size }: { name: NavIconName; size?: number }) {

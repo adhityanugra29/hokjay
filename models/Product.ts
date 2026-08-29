@@ -70,6 +70,19 @@ const ProductSchema = new Schema(
     // the team can pull up the original document later. Every item created
     // from the same submission shares this same URL.
     rabUrl: { type: String },
+
+    // Owner-set top-down price lock — per the user's request 2026-08-29.
+    // While active, Katalog can't offer any OTHER price for this product
+    // (no Harga Rekomendasi/Minimum toggle, no custom price, no Diskon):
+    // `harga` is the only price shown/sold at. Manually turned on/off by
+    // an owner/super_admin (see app/api/products/[id]/flash-sale/route.ts)
+    // — no automatic expiry.
+    flashSale: {
+      active: { type: Boolean, default: false },
+      harga: { type: Number },
+      setBy: { type: String },
+      setAt: { type: Date },
+    },
   },
   { timestamps: true }
 );

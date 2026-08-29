@@ -13,7 +13,7 @@ import { Product } from "@/models/Product";
  * timestamp sitting on an existing document, so a write-side logging pass
  * touching every mutation site in the app isn't needed to get this right.
  */
-export type ActivityType = "invoice-lunas" | "produk-baru" | "komisi-cair";
+export type ActivityType = "invoice-lunas" | "produk-baru" | "komisi-cair" | "flash-sale";
 
 export interface ActivityEntry {
   id: string;
@@ -27,7 +27,7 @@ export interface ActivityEntry {
 export async function getActivityLog(limit = 50): Promise<ActivityEntry[]> {
   await dbConnect();
 
-  const [paidInvoices, cairInvoices, newProducts] = await Promise.all([
+  const [paidInvoices, cairInvoices, newProducts, flashSaleProducts] = await Promise.all([
     Invoice.find({ status: "paid" })
       .sort({ "payment.tanggalBayar": -1 })
       .limit(limit)
@@ -37,6 +37,14 @@ export async function getActivityLog(limit = 50): Promise<ActivityEntry[]> {
       .limit(limit)
       .lean(),
     Product.find({ isCustom: { $ne: true } }).sort({ createdAt: -1 }).limit(limit).lean(),
+    // Flash Sale activations — per the user's request 2026-08-29. Reads
+    // straight off Product.flashSale.setAt (already a real timestamp),
+    // same "synthesize from an existing field" approach as the other
+    // entries here rather than a separate write-side log.
+    Product.find({ "flashSale.active": true, "flashSale.setAt": { $exists: true } })
+      .sort({ "flashSale.setAt": -1 })
+      .limit(limit)
+      .lean(),
   ]);
 
   const entries: ActivityEntry[] = [];
@@ -76,6 +84,18 @@ export async function getActivityLog(limit = 50): Promise<ActivityEntry[]> {
       title: `Produk baru ditambahkan`,
       detail: p.name,
       href: `/produk/${p._id}/edit`,
+    });
+  }
+
+  for (const p of flashSaleProducts) {
+    if (!p.flashSale?.setAt) continue;
+    entries.push({
+      id: `flash-sale-${p._id}`,
+      type: "flash-sale",
+      tanggal: new Date(p.flashSale.setAt),
+      title: `Flash Sale diaktifkan`,
+      detail: `${p.name} · ${new Intl.NumberFormat("id-ID").format(p.flashSale.harga ?? 0)} · oleh ${p.flashSale.setBy ?? "—"}`,
+      href: `/katalog`,
     });
   }
 

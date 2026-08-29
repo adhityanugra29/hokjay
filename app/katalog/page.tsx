@@ -11,11 +11,17 @@ export const dynamic = "force-dynamic";
 // card — per the user's request 2026-08-27, to fix data mistakes spotted
 // while browsing without leaving for Inventory.
 const CAN_EDIT_PRODUCT_ROLES = ["manager", "owner", "super_admin"];
+// Flash Sale is Owner-only ("top down dari owner") — super_admin included
+// too, matching the server-side check in
+// app/api/products/[id]/flash-sale/route.ts. Per the user's request
+// 2026-08-29.
+const CAN_FLASH_SALE_ROLES = ["owner", "super_admin"];
 
 export default async function KatalogPage() {
   await dbConnect();
   const session = await getSession();
   const canEditProduct = !!session && CAN_EDIT_PRODUCT_ROLES.includes(session.role);
+  const canFlashSale = !!session && CAN_FLASH_SALE_ROLES.includes(session.role);
   const [products, categories, statusMap, produkBaruIds] = await Promise.all([
     // Custom-order products live on their own page (/katalog/custom) so
     // they don't clutter the regular stocked catalog — see confirmation
@@ -43,6 +49,7 @@ export default async function KatalogPage() {
   return (
     <KatalogClient
       canEditProduct={canEditProduct}
+      canFlashSale={canFlashSale}
       categories={categories.map((c) => c.name)}
       products={products.map((p) => {
         const status = statusMap.get(String(p._id));
@@ -85,6 +92,12 @@ export default async function KatalogPage() {
           dpBy: status?.dpBy ?? [],
           soldQty: status?.soldQty ?? 0,
           isBaru: produkBaruIds.has(String(p._id)),
+          // Sent to everyone (not gated to canFlashSale) — every viewer
+          // needs to see the locked price/banner, only the button to
+          // change it is owner-only. Per the user's request 2026-08-29.
+          flashSale: p.flashSale?.active
+            ? { active: true as const, harga: p.flashSale.harga ?? 0 }
+            : undefined,
         };
       })}
     />

@@ -34,11 +34,14 @@ export default function KatalogClient({
   products,
   categories,
   canEditProduct,
+  canFlashSale,
 }: {
   products: KatalogProduct[];
   categories: string[];
   /** Manager/Owner/Super Admin only. Per the user's request 2026-08-27. */
   canEditProduct?: boolean;
+  /** Owner/Super Admin only. Per the user's request 2026-08-29. */
+  canFlashSale?: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<KatalogFilters>(EMPTY_KATALOG_FILTERS);
@@ -243,13 +246,17 @@ export default function KatalogClient({
     if (filters.produkBaru) list = list.filter((p) => p.isBaru);
     if (sort === "price-asc") list = [...list].sort((a, b) => a.hargaRekomendasi - b.hargaRekomendasi);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.hargaRekomendasi - a.hargaRekomendasi);
+    // Flash Sale products always lead the grid, ahead of every other
+    // grouping below — per the user's request 2026-08-29.
+    const flashSale = list.filter((p) => p.flashSale?.active);
+    const rest = list.filter((p) => !p.flashSale?.active);
     // Booked/Sudah DP/SOLD products sink to the bottom — fully available
     // stock shows first, so it's what gets the user's attention. Per the
     // user's request 2026-08-27. Whatever sort/filter already applied
     // above is preserved within each of the two groups.
-    const available = list.filter((p) => !p.bookedQty && !p.dpQty && !p.soldQty);
-    const encumbered = list.filter((p) => p.bookedQty || p.dpQty || p.soldQty);
-    return [...available, ...encumbered];
+    const available = rest.filter((p) => !p.bookedQty && !p.dpQty && !p.soldQty);
+    const encumbered = rest.filter((p) => p.bookedQty || p.dpQty || p.soldQty);
+    return [...flashSale, ...available, ...encumbered];
   }, [products, search, filters, sort]);
 
   return (
@@ -359,6 +366,7 @@ export default function KatalogClient({
             key={p._id}
             product={p}
             canEdit={canEditProduct}
+            canFlashSale={canFlashSale}
             onEdit={() => setEditingProduct(p)}
           />
         ))}
