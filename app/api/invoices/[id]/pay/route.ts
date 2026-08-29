@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
+import { dbConnect } from "@/lib/db";
+import { Invoice } from "@/models/Invoice";
 import { payInvoice } from "@/lib/services/payInvoice";
+import { getSession } from "@/lib/auth/session";
+import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
 
 export async function POST(req: Request, ctx: RouteContext<"/api/invoices/[id]/pay">) {
+  await dbConnect();
   const { id } = await ctx.params;
+  const session = await getSession();
+  const existing = await Invoice.findById(id);
+  if (!existing) return NextResponse.json({ error: "Invoice tidak ditemukan" }, { status: 404 });
+  // Per-sales invoice privacy — per the user's request 2026-08-29.
+  if (isInvoiceBlockedForSession(session, existing.sales?.nama)) {
+    return NextResponse.json({ error: "Invoice tidak ditemukan" }, { status: 404 });
+  }
   const body = await req.json();
   try {
     const invoice = await payInvoice(id, body);

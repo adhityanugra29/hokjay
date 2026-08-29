@@ -177,13 +177,15 @@ export default function InvoiceForm({
   // nama-matching convention used elsewhere, e.g. Insentif ranking). Only
   // on a fresh invoice with nothing picked yet — never overrides an
   // explicit pick or an existing invoice being edited. Per the user's
-  // request 2026-08-25, extended to manager 2026-08-27.
+  // request 2026-08-25, extended to manager 2026-08-27, and to owner
+  // 2026-08-29 ("untuk owner, bisa berjualan ya") — requires a matching
+  // Sales roster entry to exist for that name, same as manager.
   useEffect(() => {
     if (
       mode === "create" &&
       !initial?.salesId &&
       !salesId &&
-      (currentUser?.role === "sales" || currentUser?.role === "manager")
+      (currentUser?.role === "sales" || currentUser?.role === "manager" || currentUser?.role === "owner")
     ) {
       const own = salesList.find((s) => s.nama.trim().toLowerCase() === currentUser.nama.trim().toLowerCase());
       if (own) setSalesId(own._id);

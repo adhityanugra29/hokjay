@@ -8,6 +8,8 @@ import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
 import { rupiah, formatDateLong, formatDateShort } from "@/lib/format";
+import { getSession } from "@/lib/auth/session";
+import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,10 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
   await dbConnect();
   const invoice = await Invoice.findById(id);
   if (!invoice) notFound();
+  // Per-sales invoice privacy — per the user's request 2026-08-29. Same
+  // pattern as Pelanggan's own per-sales guard.
+  const session = await getSession();
+  if (isInvoiceBlockedForSession(session, invoice.sales?.nama)) notFound();
 
   // Live lookup rather than a snapshot on the invoice itself — a phone
   // number changing should show up on invoices printed afterward, unlike

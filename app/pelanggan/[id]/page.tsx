@@ -12,6 +12,7 @@ import { Invoice } from "@/models/Invoice";
 import { rupiah, formatDateShort } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
 import { getSession } from "@/lib/auth/session";
+import { invoiceVisibilityFilter } from "@/lib/invoice-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,13 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
     notFound();
   }
 
-  const invoices = await Invoice.find({ "customer.ref": id }).sort(hasSort ? mongoSort(field, dir) : { createdAt: -1 });
+  // Per-sales invoice privacy extends here too (2026-08-29): a shared
+  // customer (no assignedSales) is reachable by every sales rep, but each
+  // one should only see invoices they themselves made for that customer,
+  // not a rep's they happen to share the customer with.
+  const invoices = await Invoice.find({ "customer.ref": id, ...invoiceVisibilityFilter(session) }).sort(
+    hasSort ? mongoSort(field, dir) : { createdAt: -1 }
+  );
   const totalBelanja = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.grandTotal, 0);
 
   return (

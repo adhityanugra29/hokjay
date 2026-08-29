@@ -8,6 +8,8 @@ import { Invoice } from "@/models/Invoice";
 import { rupiah, formatDateShort } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
 import { MONTH_NAMES } from "@/lib/constants";
+import { getSession } from "@/lib/auth/session";
+import { invoiceVisibilityFilter } from "@/lib/invoice-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,10 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   const { search } = sp;
   await dbConnect();
 
-  const filter: Record<string, unknown> = {};
+  const session = await getSession();
+  // Per-sales invoice privacy — per the user's request 2026-08-29. Same
+  // pattern as Pelanggan's own customerVisibilityFilter.
+  const filter: Record<string, unknown> = { ...invoiceVisibilityFilter(session) };
   if (search) {
     filter.$or = [
       { nomor: { $regex: search, $options: "i" } },

@@ -6,6 +6,8 @@ import { Invoice } from "@/models/Invoice";
 import { Courier } from "@/models/Courier";
 import { PaymentMethod } from "@/models/PaymentMethod";
 import { rupiah } from "@/lib/format";
+import { getSession } from "@/lib/auth/session";
+import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,9 @@ export default async function InvoiceBayarPage({ params }: PageProps<"/invoice/[
     PaymentMethod.find().sort({ name: 1 }).lean(),
   ]);
   if (!invoice) notFound();
+  // Per-sales invoice privacy — per the user's request 2026-08-29.
+  const session = await getSession();
+  if (isInvoiceBlockedForSession(session, invoice.sales?.nama)) notFound();
 
   return (
     <>

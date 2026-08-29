@@ -5,6 +5,8 @@ import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { PaymentMethod } from "@/models/PaymentMethod";
 import { rupiah } from "@/lib/format";
+import { getSession } from "@/lib/auth/session";
+import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,9 @@ export default async function InvoiceDpPage({ params }: PageProps<"/invoice/[id]
   ]);
   if (!invoice) notFound();
   if (invoice.status !== "unpaid" || invoice.dp?.nominal) notFound();
+  // Per-sales invoice privacy — per the user's request 2026-08-29.
+  const session = await getSession();
+  if (isInvoiceBlockedForSession(session, invoice.sales?.nama)) notFound();
 
   return (
     <>

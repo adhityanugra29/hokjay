@@ -11,6 +11,7 @@ import { Product } from "@/models/Product";
 import { JournalEntry } from "@/models/JournalEntry";
 import { getSession } from "@/lib/auth/session";
 import { customerVisibilityFilter } from "@/lib/pelanggan";
+import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,12 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
   const invoice = await Invoice.findById(id);
   if (!invoice) notFound();
   if (invoice.status === "paid") notFound(); // paid invoices aren't editable — see lib/services/updateInvoice.ts
+
+  // Per-sales invoice privacy — per the user's request 2026-08-29. Checked
+  // as early as possible, before any further work on an invoice this
+  // session isn't allowed to touch.
+  const session = await getSession();
+  if (isInvoiceBlockedForSession(session, invoice.sales?.nama)) notFound();
 
   const productIds = invoice.items.filter((i) => i.product).map((i) => i.product);
   const products = await Product.find({ _id: { $in: productIds } }).lean();
@@ -61,10 +68,10 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
 
   // Same per-sales customer privacy as /pelanggan and /invoice/baru
   // (2026-08-27) — but this invoice's own customer must always be
-  // included even if it's not normally visible to the editing sales rep
-  // (any role can open any invoice's edit page, not just their own), or
-  // the picker would silently blank out the already-assigned customer.
-  const session = await getSession();
+  // included even if it's not normally visible to the editing sales rep,
+  // or the picker would silently blank out the already-assigned customer.
+  // (The invoice itself is already guarded above — this is only about the
+  // customer *picker's* own options list.)
   const baseFilter = customerVisibilityFilter(session);
   const customerFilter = invoice.customer?.ref
     ? { $or: [baseFilter, { _id: invoice.customer.ref }] }
