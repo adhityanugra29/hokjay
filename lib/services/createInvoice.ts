@@ -138,6 +138,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       qty: i.qty,
       hargaJual: i.hargaJual,
       hargaMinimumSnapshot: product.hargaMinimum,
+      hargaRekomendasiSnapshot: product.hargaRekomendasi,
       // Cost basis at booking time — payInvoice.ts sums these for the HPP
       // journal entry at actual payment time, rather than re-reading
       // whatever the product's harga beli has drifted to by then.

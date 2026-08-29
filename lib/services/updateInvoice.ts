@@ -110,6 +110,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       qty: i.qty,
       hargaJual: i.hargaJual,
       hargaMinimumSnapshot: product.hargaMinimum,
+      hargaRekomendasiSnapshot: product.hargaRekomendasi,
       hargaBeliSnapshot: product.hargaBeli,
       diskonPerUnit: diskon,
       isFlashSale: i.isFlashSale ?? false,

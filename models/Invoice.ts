@@ -29,6 +29,13 @@ const InvoiceItemSchema = new Schema(
     // request 2026-08-29. Defaults false, so every pre-existing invoice
     // item is unaffected.
     isFlashSale: { type: Boolean, default: false },
+    // Product's Harga Rekomendasi at the moment of sale — only meaningfully
+    // populated for a Flash Sale line (isCustom items have no product to
+    // read it from). Lets the invoice/PDF show a "discount" figure for a
+    // Flash Sale item (Harga Rekomendasi − hargaJual) even though
+    // diskonPerUnit itself is always 0 there (Diskon is locked out during
+    // a Flash Sale). Per the user's request 2026-08-29.
+    hargaRekomendasiSnapshot: { type: Number },
     subtotal: { type: Number, required: true },
     komisiPerItemSnapshot: { type: Number, required: true },
     komisiSubtotal: { type: Number, required: true },

@@ -201,8 +201,21 @@ export default function InvoiceForm({
   const grandTotal = subtotalProduk + ongkosKirim;
   // Per the user's request 2026-08-29 ("total diskon belum ada di
   // sebelum preview") — same figure now shown on the invoice detail
-  // page/PDF, added here too so it's visible at every stage.
-  const totalDiskon = useMemo(() => items.reduce((s, i) => s + i.diskonPerUnit * i.qty, 0), [items]);
+  // page/PDF, added here too so it's visible at every stage. A Flash
+  // Sale line's diskonPerUnit is always 0 (Diskon is locked out while
+  // one is active) — its implied discount is Harga Rekomendasi −
+  // hargaJual instead, per the same day's follow-up request.
+  const totalDiskon = useMemo(
+    () =>
+      items.reduce((s, i) => {
+        const diskon =
+          i.isFlashSale && i.hargaRekomendasi != null
+            ? Math.max(0, i.hargaRekomendasi - i.hargaJual)
+            : i.diskonPerUnit;
+        return s + diskon * i.qty;
+      }, 0),
+    [items]
+  );
   const komisiTotal = useMemo(
     () =>
       items.reduce(

@@ -14,6 +14,23 @@ export interface InvoicePrintItem {
   subtotal: number;
   /** Snapshotted at add-to-cart time (see models/Invoice.ts). Per the user's request 2026-08-29. */
   isFlashSale?: boolean;
+  /** Only meaningfully populated for a Flash Sale line — see displayDiskon below. Per the user's request 2026-08-29. */
+  hargaRekomendasiSnapshot?: number;
+}
+
+/**
+ * The Diskon figure to actually show for a line — diskonPerUnit itself is
+ * always 0 for a Flash Sale item (Diskon is locked out while one is
+ * active), so for those this shows Harga Rekomendasi − hargaJual instead:
+ * the discount the Flash Sale price itself represents. Per the user's
+ * request 2026-08-29 ("tampilkan diskonnya dari selisih harga rekomendasi
+ * dengan harga flash sale").
+ */
+function displayDiskon(item: InvoicePrintItem): number {
+  if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
+    return Math.max(0, item.hargaRekomendasiSnapshot - item.hargaJual);
+  }
+  return item.diskonPerUnit;
 }
 
 export interface InvoicePrintData {
@@ -127,10 +144,10 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
   const totalPages = rowPages.length + (footerJoinsLastPage ? 0 : 1);
 
   // Per the user's request 2026-08-29 ("tambahkan total diskon di
-  // invoice pdf maupun preview"). Summed straight from the items array —
-  // no new field needed on InvoicePrintData, each item already carries
-  // its own diskonPerUnit.
-  const totalDiskon = invoice.items.reduce((s, i) => s + i.diskonPerUnit * i.qty, 0);
+  // invoice pdf maupun preview"). Uses displayDiskon so a Flash Sale
+  // line's implied discount (Harga Rekomendasi − hargaJual) counts too,
+  // not just diskonPerUnit (always 0 for those).
+  const totalDiskon = invoice.items.reduce((s, i) => s + displayDiskon(i) * i.qty, 0);
 
   const totalsBlock = (
     <div ref={footerRef}>
@@ -329,7 +346,7 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
                         </td>
                         <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
                         <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.hargaJual)}</td>
-                        <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.diskonPerUnit)}</td>
+                        <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
                         <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
                       </tr>
                     ))}

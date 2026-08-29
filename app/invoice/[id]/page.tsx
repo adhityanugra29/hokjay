@@ -55,6 +55,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
       diskonPerUnit: item.diskonPerUnit ?? 0,
       subtotal: item.subtotal,
       isFlashSale: item.isFlashSale ?? false,
+      hargaRekomendasiSnapshot: item.hargaRekomendasiSnapshot ?? undefined,
     })),
     subtotalProduk: invoice.subtotalProduk,
     ongkosKirim: invoice.ongkosKirim ?? 0,
@@ -64,8 +65,17 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
   };
 
   // Per the user's request 2026-08-29 ("tambahkan total diskon di
-  // invoice pdf maupun preview").
-  const totalDiskon = invoice.items.reduce((s, i) => s + i.diskonPerUnit * i.qty, 0);
+  // invoice pdf maupun preview"). A Flash Sale line's diskonPerUnit is
+  // always 0 (Diskon is locked out while one is active) — its implied
+  // discount is Harga Rekomendasi − hargaJual instead, per the same
+  // day's follow-up request.
+  function displayDiskon(item: (typeof invoice.items)[number]): number {
+    if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
+      return Math.max(0, item.hargaRekomendasiSnapshot - item.hargaJual);
+    }
+    return item.diskonPerUnit ?? 0;
+  }
+  const totalDiskon = invoice.items.reduce((s, i) => s + displayDiskon(i) * i.qty, 0);
 
   return (
     <>
@@ -204,7 +214,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                     </td>
                     <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
                     <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.hargaJual)}</td>
-                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.diskonPerUnit)}</td>
+                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
                     <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
                   </tr>
                 ))}

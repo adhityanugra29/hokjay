@@ -52,10 +52,11 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
       name: item.namaSnapshot,
       hargaJual: item.hargaJual,
       hargaMinimum: item.hargaMinimumSnapshot,
-      // No snapshot for this one (unlike hargaMinimumSnapshot) — falls back
-      // to the live product's current hargaRekomendasi; custom items (no
-      // product) just don't get the "Pakai Rekomendasi" shortcut.
-      hargaRekomendasi: product?.hargaRekomendasi,
+      // Prefers the snapshot (added 2026-08-29, so older invoices won't
+      // have one yet) over the live product's current hargaRekomendasi;
+      // custom items (no product) just don't get the "Pakai Rekomendasi"
+      // shortcut / Flash Sale discount display either way.
+      hargaRekomendasi: item.hargaRekomendasiSnapshot ?? product?.hargaRekomendasi,
       komisiNominal: item.komisiPerItemSnapshot,
       stok: liveStok,
       qty: item.qty,
