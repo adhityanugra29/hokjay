@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
-import opentype from "opentype.js";
+// opentype.js has no default export (confirmed against the Vercel build
+// failure 2026-08-28: "Export default doesn't exist in target module" —
+// its real ESM build only exports these names) — a default import
+// type-checked locally anyway because @types/opentype.js declares itself
+// as a UMD "export as namespace" module, which TypeScript's interop
+// shimming tolerates for type-checking even though Turbopack's actual
+// runtime resolution correctly rejects it.
+import { Font, parse as parseFont } from "opentype.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { dbConnect } from "@/lib/db";
@@ -46,8 +53,8 @@ export const runtime = "nodejs";
  * sidesteps that pipeline entirely.
  */
 
-let fontCache: opentype.Font | null = null;
-async function getFont(): Promise<opentype.Font> {
+let fontCache: Font | null = null;
+async function getFont(): Promise<Font> {
   if (!fontCache) {
     // Lives under public/ specifically (not some other repo folder) so
     // Vercel's serverless bundler is guaranteed to include it — the same
@@ -55,7 +62,7 @@ async function getFont(): Promise<opentype.Font> {
     // public/logo/ instead of somewhere else.
     const buf = await fs.readFile(path.join(process.cwd(), "public/fonts/Archivo-SemiBold.ttf"));
     const arrayBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
-    fontCache = opentype.parse(arrayBuffer);
+    fontCache = parseFont(arrayBuffer);
   }
   return fontCache;
 }
