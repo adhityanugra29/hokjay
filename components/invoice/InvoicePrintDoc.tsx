@@ -9,6 +9,8 @@ export interface InvoicePrintItem {
   dimensiSnapshot?: string;
   qty: number;
   hargaJual: number;
+  /** Shown in its own table column — per the user's request 2026-08-29 (brought back after being hidden 2026-08-28). */
+  diskonPerUnit: number;
   subtotal: number;
   /** Snapshotted at add-to-cart time (see models/Invoice.ts). Per the user's request 2026-08-29. */
   isFlashSale?: boolean;
@@ -280,7 +282,7 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      {["Produk", "Qty", "Harga", "Subtotal"].map((h, idx) => (
+                      {["Produk", "Qty", "Harga", "Diskon", "Subtotal"].map((h, idx) => (
                         <th
                           key={h}
                           className={`border-b border-ink py-2 font-mono text-[0.68rem] uppercase text-muted ${
@@ -313,6 +315,7 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
                         </td>
                         <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
                         <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.hargaJual)}</td>
+                        <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.diskonPerUnit)}</td>
                         <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
                       </tr>
                     ))}

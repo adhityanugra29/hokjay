@@ -46,6 +46,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
       dimensiSnapshot: item.dimensiSnapshot ?? undefined,
       qty: item.qty,
       hargaJual: item.hargaJual,
+      diskonPerUnit: item.diskonPerUnit ?? 0,
       subtotal: item.subtotal,
       isFlashSale: item.isFlashSale ?? false,
     })),

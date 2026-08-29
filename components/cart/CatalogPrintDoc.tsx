@@ -526,7 +526,18 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                                 {diskon > 0 && (
                                   <span className="text-[12px] text-muted line-through">{rupiah(hargaAsli)}</span>
                                 )}
-                                <span className="text-[19px] font-extrabold">{rupiah(hargaFinal)}</span>
+                                {/* Red when discounted — per the user's
+                                    request 2026-08-29. Literal hex (this
+                                    app's own accent red), not a Tailwind
+                                    color class, for the same html2canvas/
+                                    color-mix reason as everywhere else in
+                                    this file. */}
+                                <span
+                                  className="text-[19px] font-extrabold"
+                                  style={diskon > 0 ? { color: "#ec3013" } : undefined}
+                                >
+                                  {rupiah(hargaFinal)}
+                                </span>
                                 {diskon > 0 && (
                                   <span className="text-[11px] font-bold" style={{ color: "#B45309" }}>
                                     Hemat {rupiah(diskon)}
