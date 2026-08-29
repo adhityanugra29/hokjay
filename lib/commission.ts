@@ -24,19 +24,11 @@ export function computeLineCommission({
   hargaJual: number;
   hargaMinimum: number;
   /**
-   * Diskon /unit — per the user's request 2026-08-29, refined the same
-   * day: for barang bekas, this is subtracted directly (Rupiah-for-
-   * Rupiah) from the commission that would otherwise apply at the full
-   * (undiscounted) price, all the way down to 0 if the diskon is large
-   * enough — "komisi ... harus dikurangi bahkan hingga menjadi 0". This
-   * used to be done by callers pre-subtracting diskon from hargaJual
-   * before calling this function, which fed the DISCOUNTED price into
-   * the bekas floor logic below and let commission get stuck at `base`
-   * no matter how much further the diskon cut into it — moved in here so
-   * every caller gets the correct floor-free behavior automatically. For
-   * barang baru/custom, still folded into hargaJual before the flat 6%
-   * (proportional, naturally reaches 0 as price does — no floor to fix
-   * there in the first place).
+   * Diskon /unit — per the user's request 2026-08-29, worked through
+   * three examples the same day to land on the formula below (see the
+   * bekas branch). For barang baru/custom, still folded into hargaJual
+   * before the flat 6% (proportional, naturally reaches 0 as price does —
+   * no floor to worry about there).
    */
   diskon?: number;
 }): number {
@@ -44,9 +36,28 @@ export function computeLineCommission({
     return Math.round((hargaJual - diskon) * 0.06);
   }
 
+  // Barang bekas, verified against three worked examples 2026-08-29
+  // (100rb/150rb/60rb diskon -> 0; 100rb/200rb/60rb diskon -> 40rb;
+  // 5.000.000rb/6.000.000rb/700.000 diskon -> 500rb):
+  //
+  // The 10%-of-Harga-Minimum `base` is a guarantee that only makes sense
+  // while the sale is still actually happening above Harga Minimum — so
+  // it's re-applied as a floor to whatever the (already-discounted)
+  // selisih comes out to, AFTER diskon has been subtracted, not before.
+  // Once diskon pushes the sale price at or below Harga Minimum, that
+  // same guarantee erodes dollar-for-dollar by how far below the floor
+  // it's fallen, down to (and no lower than) 0. This replaces an earlier
+  // same-day version that subtracted diskon from the *already-floored*
+  // full-price commission — which let a large selisih "absorb" diskon
+  // that should have been protected by the base guarantee instead (see
+  // the 6jt/5jt/700rb example: that version gave 300rb, not the correct
+  // 500rb).
   const base = Math.round(hargaMinimum * 0.1);
-  const komisiPenuh = hargaJual <= hargaMinimum ? base : Math.max(base, hargaJual - hargaMinimum);
-  return Math.max(0, komisiPenuh - diskon);
+  const effective = hargaJual - diskon;
+  if (effective > hargaMinimum) {
+    return Math.max(base, effective - hargaMinimum);
+  }
+  return Math.max(0, base - (hargaMinimum - effective));
 }
 
 /**
