@@ -163,7 +163,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  {["Produk", "Qty", "Harga", "Subtotal"].map((h, idx) => (
+                  {["Produk", "Qty", "Harga", "Diskon", "Subtotal"].map((h, idx) => (
                     <th
                       key={h}
                       className={`border-b border-ink py-2 font-mono text-[0.68rem] uppercase text-muted ${
@@ -191,6 +191,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                     </td>
                     <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
                     <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.hargaJual)}</td>
+                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.diskonPerUnit)}</td>
                     <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
                   </tr>
                 ))}
