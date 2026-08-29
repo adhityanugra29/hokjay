@@ -195,19 +195,16 @@ export default function AddProductSidebar({
               // active — same lock as the main Katalog card. Per the
               // user's request 2026-08-29.
               const hargaJual = p.flashSale?.active ? p.flashSale.harga : p.hargaRekomendasi;
-              // Flash Sale price also becomes the effective Harga Minimum
-              // for commission purposes while active — see ProductCard.tsx's
-              // matching comment. Per the user's request 2026-08-29.
-              const effectiveHargaMinimum =
-                p.flashSale?.active && p.flashSale?.harga ? p.flashSale.harga : p.hargaMinimum;
               // Live insentif — same formula/inputs as the main Katalog
               // card (lib/commission.ts), computed against the add price
-              // above. Per the user's request 2026-08-27.
+              // above. Per the user's request 2026-08-27. Flash Sale gets
+              // its own flat 7% — see ProductCard.tsx's matching comment.
               const liveKomisi = computeLineCommission({
                 isCustom: p.isCustom,
                 kondisi: p.kondisi,
                 hargaJual,
-                hargaMinimum: effectiveHargaMinimum,
+                hargaMinimum: p.hargaMinimum,
+                isFlashSale: p.flashSale?.active,
               });
               const kondisiLabel = p.kondisi === "bekas" ? "Bekas" : "Baru";
               // Per the user's request 2026-08-27 ("ukuranya itu krusial")
@@ -292,7 +289,7 @@ export default function AddProductSidebar({
                           productId: p._id,
                           name: p.name,
                           hargaJual,
-                          hargaMinimum: effectiveHargaMinimum,
+                          hargaMinimum: p.hargaMinimum,
                           hargaRekomendasi: p.hargaRekomendasi,
                           komisiNominal: p.komisiNominal,
                           kondisi: p.kondisi,

@@ -86,23 +86,21 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     if (finalize && product.stok < i.qty) {
       throw new Error(`Stok ${product.name} tidak cukup (sisa ${product.stok})`);
     }
-    // While Flash Sale is active — see createInvoice.ts's matching
-    // comment.
-    const effectiveHargaMinimum =
-      product.flashSale?.active && product.flashSale?.harga ? product.flashSale.harga : product.hargaMinimum;
     // Diskon cap for barang bekas — server-side enforcement, see
-    // createInvoice.ts's matching comment.
+    // createInvoice.ts's matching comment. N/A for a Flash Sale line.
     const diskon =
-      product.kondisi === "bekas"
-        ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, effectiveHargaMinimum))
+      product.kondisi === "bekas" && !i.isFlashSale
+        ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, product.hargaMinimum))
         : rawDiskon;
     const subtotal = (i.hargaJual - diskon) * i.qty;
-    // See createInvoice.ts's matching comment.
+    // See createInvoice.ts's matching comment — Flash Sale items get
+    // their own flat 7% instead.
     const komisiPerItem = computeLineCommission({
       kondisi: product.kondisi as "baru" | "bekas",
       hargaJual: i.hargaJual,
-      hargaMinimum: effectiveHargaMinimum,
+      hargaMinimum: product.hargaMinimum,
       diskon,
+      isFlashSale: i.isFlashSale,
     });
     return {
       product: product._id,
@@ -111,7 +109,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       dimensiSnapshot: formatDimensi(product.dimensi),
       qty: i.qty,
       hargaJual: i.hargaJual,
-      hargaMinimumSnapshot: effectiveHargaMinimum,
+      hargaMinimumSnapshot: product.hargaMinimum,
       hargaBeliSnapshot: product.hargaBeli,
       diskonPerUnit: diskon,
       isFlashSale: i.isFlashSale ?? false,

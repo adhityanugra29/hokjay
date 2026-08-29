@@ -101,35 +101,34 @@ export async function createInvoice(input: CreateInvoiceInput) {
     if (finalize && product.stok < i.qty) {
       throw new Error(`Stok ${product.name} tidak cukup (sisa ${product.stok})`);
     }
-    // While Flash Sale is active on this product, that locked price IS
-    // the new Harga Minimum for commission purposes — per the user's
-    // request 2026-08-29 ("harga flash sale, adalah harga minimum yang
-    // baru"). Re-read live from the product (not trusted from the
-    // client), same as hargaMinimum itself below.
-    const effectiveHargaMinimum =
-      product.flashSale?.active && product.flashSale?.harga ? product.flashSale.harga : product.hargaMinimum;
     // Diskon can't exceed maxDiskonBekas for barang bekas — server-side
     // enforcement of the same cap the client already clamps to on blur
     // (ProductCard.tsx/ItemRowEditor.tsx), so a raw API request can't
     // bypass it. Per the user's request 2026-08-29 ("besaran diskon ...
     // tidak boleh lebih dari total insentif yang diberikan"). Silently
     // clamped (not rejected), matching how the below-minimum price guard
-    // behaves elsewhere in this app.
+    // behaves elsewhere in this app. N/A when this line is a Flash Sale
+    // item — Diskon is locked at 0 for those regardless.
     const diskon =
-      product.kondisi === "bekas"
-        ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, effectiveHargaMinimum))
+      product.kondisi === "bekas" && !i.isFlashSale
+        ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, product.hargaMinimum))
         : rawDiskon;
     const subtotal = (i.hargaJual - diskon) * i.qty;
     // Commission is computed from the product's *current* kondisi/harga
     // minimum (never trusting client-supplied values for this) — see
     // lib/commission.ts for the baru/custom vs bekas formula, which now
     // handles the diskon subtraction internally (including flooring at 0
-    // for barang bekas) — per the user's request 2026-08-29.
+    // for barang bekas) — per the user's request 2026-08-29. Flash Sale
+    // items get their own flat 7% instead, bypassing kondisi/hargaMinimum
+    // entirely — reverted the same day from an earlier attempt at
+    // treating the Flash Sale price as a "new Harga Minimum" fed into
+    // this same formula.
     const komisiPerItem = computeLineCommission({
       kondisi: product.kondisi as "baru" | "bekas",
       hargaJual: i.hargaJual,
-      hargaMinimum: effectiveHargaMinimum,
+      hargaMinimum: product.hargaMinimum,
       diskon,
+      isFlashSale: i.isFlashSale,
     });
     return {
       product: product._id,
@@ -138,7 +137,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       dimensiSnapshot: formatDimensi(product.dimensi),
       qty: i.qty,
       hargaJual: i.hargaJual,
-      hargaMinimumSnapshot: effectiveHargaMinimum,
+      hargaMinimumSnapshot: product.hargaMinimum,
       // Cost basis at booking time — payInvoice.ts sums these for the HPP
       // journal entry at actual payment time, rather than re-reading
       // whatever the product's harga beli has drifted to by then.

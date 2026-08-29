@@ -73,6 +73,7 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
     hargaJual: item.hargaJual,
     diskon: item.diskonPerUnit,
     hargaMinimum: item.hargaMinimum,
+    isFlashSale: item.isFlashSale,
   });
   return (
     <div className="mb-2.5 border border-line p-4">

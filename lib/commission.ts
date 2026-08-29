@@ -17,6 +17,7 @@ export function computeLineCommission({
   hargaJual,
   hargaMinimum,
   diskon = 0,
+  isFlashSale = false,
 }: {
   isCustom?: boolean;
   kondisi?: "baru" | "bekas";
@@ -28,10 +29,25 @@ export function computeLineCommission({
    * three examples the same day to land on the formula below (see the
    * bekas branch). For barang baru/custom, still folded into hargaJual
    * before the flat 6% (proportional, naturally reaches 0 as price does —
-   * no floor to worry about there).
+   * no floor to worry about there). Not consulted at all when isFlashSale
+   * is true — Diskon is locked at 0 during a Flash Sale anyway.
    */
   diskon?: number;
+  /**
+   * Flat 7% of the (locked, top-down) Flash Sale price — per the user's
+   * request 2026-08-29, reverting an earlier same-day attempt at feeding
+   * the Flash Sale price into the normal barang-bekas floor logic as a
+   * "new Harga Minimum". Back to the original idea: Flash Sale pricing is
+   * its own thing, not a variant of the bekas formula — so it fully
+   * bypasses kondisi/hargaMinimum/diskon here, the same way isCustom's
+   * flat 6% doesn't consult hargaMinimum either.
+   */
+  isFlashSale?: boolean;
 }): number {
+  if (isFlashSale) {
+    return Math.round(hargaJual * 0.07);
+  }
+
   if (isCustom || kondisi !== "bekas") {
     return Math.round((hargaJual - diskon) * 0.06);
   }

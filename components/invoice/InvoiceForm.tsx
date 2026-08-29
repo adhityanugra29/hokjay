@@ -217,6 +217,7 @@ export default function InvoiceForm({
             hargaJual: i.hargaJual,
             diskon: i.diskonPerUnit,
             hargaMinimum: i.hargaMinimum,
+            isFlashSale: i.isFlashSale,
           }) *
             i.qty,
         0
