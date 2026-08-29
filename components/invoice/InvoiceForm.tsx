@@ -537,7 +537,7 @@ export default function InvoiceForm({
         </div>
         <div className="flex justify-between py-1.5">
           <span>Total Diskon</span>
-          <span>− {rupiah(totalDiskon)}</span>
+          <span>{totalDiskon > 0 ? `− ${rupiah(totalDiskon)}` : rupiah(totalDiskon)}</span>
         </div>
         <div className="flex justify-between py-1.5">
           <span>Ongkos Kirim</span>

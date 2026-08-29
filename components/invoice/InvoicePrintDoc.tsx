@@ -141,7 +141,7 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
         </div>
         <div className="flex justify-between py-1.5 text-[0.88rem]">
           <span>Total Diskon</span>
-          <span>− {rupiah(totalDiskon)}</span>
+          <span>{totalDiskon > 0 ? `− ${rupiah(totalDiskon)}` : rupiah(totalDiskon)}</span>
         </div>
         <div className="flex justify-between py-1.5 text-[0.88rem]">
           <span>Ongkos Kirim</span>
