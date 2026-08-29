@@ -199,6 +199,10 @@ export default function InvoiceForm({
     [items]
   );
   const grandTotal = subtotalProduk + ongkosKirim;
+  // Per the user's request 2026-08-29 ("total diskon belum ada di
+  // sebelum preview") — same figure now shown on the invoice detail
+  // page/PDF, added here too so it's visible at every stage.
+  const totalDiskon = useMemo(() => items.reduce((s, i) => s + i.diskonPerUnit * i.qty, 0), [items]);
   const komisiTotal = useMemo(
     () =>
       items.reduce(
@@ -530,6 +534,10 @@ export default function InvoiceForm({
         <div className="flex justify-between py-1.5">
           <span>Subtotal Produk</span>
           <span>{rupiah(subtotalProduk)}</span>
+        </div>
+        <div className="flex justify-between py-1.5">
+          <span>Total Diskon</span>
+          <span>− {rupiah(totalDiskon)}</span>
         </div>
         <div className="flex justify-between py-1.5">
           <span>Ongkos Kirim</span>
