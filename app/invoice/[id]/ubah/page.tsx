@@ -55,6 +55,7 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
       diskonPerUnit: item.diskonPerUnit,
       isCustom: item.isCustom,
       kondisi: (product?.kondisi as "baru" | "bekas") ?? "baru",
+      isFlashSale: item.isFlashSale,
     };
   });
 

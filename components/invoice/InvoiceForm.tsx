@@ -277,6 +277,7 @@ export default function InvoiceForm({
             qty: i.qty,
             hargaJual: i.hargaJual,
             diskonPerUnit: i.diskonPerUnit,
+            isFlashSale: i.isFlashSale,
           })),
         }),
       });

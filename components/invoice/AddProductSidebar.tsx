@@ -22,6 +22,13 @@ interface SidebarProduct {
   fotoUrl?: string;
   bookedQty?: number;
   dpQty?: number;
+  /** Owner-set top-down price lock — see models/Product.ts. This sidebar
+   * is a second "add to cart" entry point alongside the main Katalog
+   * card, so it has to respect the same lock (found and fixed alongside
+   * the Flash Sale feature itself, 2026-08-29 — otherwise a sales rep
+   * could just add the product from here instead and bypass it
+   * entirely). */
+  flashSale?: { active: true; harga: number };
 }
 
 const ALL_CATEGORIES_LABEL = "Semua Kategori";
@@ -184,14 +191,17 @@ export default function AddProductSidebar({
               // showed it as Booked until the page reloaded) — per the
               // user's bug report 2026-08-27.
               const availableQty = Math.max(0, p.stok - (p.bookedQty ?? 0) - (p.dpQty ?? 0));
+              // Flash Sale overrides Harga Rekomendasi entirely when
+              // active — same lock as the main Katalog card. Per the
+              // user's request 2026-08-29.
+              const hargaJual = p.flashSale?.active ? p.flashSale.harga : p.hargaRekomendasi;
               // Live insentif — same formula/inputs as the main Katalog
-              // card (lib/commission.ts), computed against the default add
-              // price (Harga Rekomendasi) this sidebar adds at. Per the
-              // user's request 2026-08-27.
+              // card (lib/commission.ts), computed against the add price
+              // above. Per the user's request 2026-08-27.
               const liveKomisi = computeLineCommission({
                 isCustom: p.isCustom,
                 kondisi: p.kondisi,
-                hargaJual: p.hargaRekomendasi,
+                hargaJual,
                 hargaMinimum: p.hargaMinimum,
               });
               const kondisiLabel = p.kondisi === "bekas" ? "Bekas" : "Baru";
@@ -229,7 +239,10 @@ export default function AddProductSidebar({
                     <div className="line-clamp-1 text-[0.76rem] font-medium text-ink">{p.name}</div>
                     {dimText && <div className="mt-0.5 font-mono text-[0.62rem] text-muted">{dimText}</div>}
                     <div className="mt-0.5 flex flex-wrap items-center gap-1 font-mono text-[0.64rem] text-muted">
-                      <span>{rupiah(p.hargaRekomendasi)}</span>
+                      <span>{rupiah(hargaJual)}</span>
+                      {p.flashSale?.active && (
+                        <span className="text-accent-700">· Harga Special</span>
+                      )}
                       <span
                         className="px-1.5 py-[1px] text-[0.58rem] font-semibold text-white"
                         style={{ background: p.kondisi === "bekas" ? "#D97706" : "#16A34A" }}
@@ -273,13 +286,14 @@ export default function AddProductSidebar({
                         addItem({
                           productId: p._id,
                           name: p.name,
-                          hargaJual: p.hargaRekomendasi,
+                          hargaJual,
                           hargaMinimum: p.hargaMinimum,
                           hargaRekomendasi: p.hargaRekomendasi,
                           komisiNominal: p.komisiNominal,
                           kondisi: p.kondisi,
                           stok: availableQty,
                           fotoUrl: p.fotoUrl,
+                          isFlashSale: p.flashSale?.active ?? false,
                         })
                       }
                       className="flex-none cursor-pointer border border-accent bg-accent px-2.5 py-1.5 font-mono text-[0.7rem] font-semibold text-white hover:bg-accent-deep"

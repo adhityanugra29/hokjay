@@ -17,6 +17,8 @@ export interface CartItem {
   isCustom?: boolean;
   /** Product condition, used for the live commission preview (see lib/commission.ts). */
   kondisi?: "baru" | "bekas";
+  /** Was this line added while the product's Flash Sale was active — see ProductCard.tsx. Per the user's request 2026-08-29. */
+  isFlashSale?: boolean;
   /** Snapshot fields captured at add-to-cart time, used for the printable catalog PDF. */
   kondisiLabel?: string;
   stockStatusLabel?: string;

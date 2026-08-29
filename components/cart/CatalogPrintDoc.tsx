@@ -19,6 +19,8 @@ interface CatalogProduct {
   fotoUrl?: string;
   stok: number;
   isCustom?: boolean;
+  /** Owner-set top-down price lock — see models/Product.ts. Per the user's request 2026-08-29. */
+  flashSale?: { active: boolean; harga: number };
 }
 
 interface CatalogSales {
@@ -256,8 +258,17 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
   // they used to live) specifically so the coverHeight effect right below
   // can depend on byCategory.length — see that effect's comment.
   const selectedProducts = products.filter((p) => selected.has(p._id));
+  // Flash Sale products get their own dedicated section at the very top of
+  // page 1 (see flashSaleSection below) instead of sitting in their normal
+  // category group — per the user's request 2026-08-29 ("saya mau ini di
+  // taro paling atas"). Pulled out here so byCategory doesn't also list
+  // them a second time.
+  const flashSaleProducts = selectedProducts.filter((p) => p.flashSale?.active);
   const byCategory = categories
-    .map((cat) => ({ cat, items: selectedProducts.filter((p) => p.category === cat) }))
+    .map((cat) => ({
+      cat,
+      items: selectedProducts.filter((p) => p.category === cat && !p.flashSale?.active),
+    }))
     .filter((g) => g.items.length > 0);
 
   // Measures the cover+stats block's real rendered height so packIntoPages
@@ -280,6 +291,19 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
   useEffect(() => {
     if (coverRef.current) setCoverHeight(coverRef.current.offsetHeight);
   }, [loaded, byCategory.length]);
+
+  // Same real-height-measurement approach as coverHeight above, for the
+  // "Harga Special" section (see flashSaleSection below) — it only ever
+  // sits on page 1, right after the cover, so its height also has to be
+  // budgeted out of page 1's product allowance. Depends on
+  // flashSaleProducts.length for the same reason coverHeight depends on
+  // byCategory.length: the section's real height changes as the selection
+  // changes, not just once at initial load.
+  const flashSaleRef = useRef<HTMLDivElement>(null);
+  const [flashSaleHeight, setFlashSaleHeight] = useState(0);
+  useEffect(() => {
+    setFlashSaleHeight(flashSaleRef.current?.offsetHeight ?? 0);
+  }, [loaded, flashSaleProducts.length]);
 
   // When a sales rep (or a manager — "mereka sales juga, tapi diberikan
   // otoritas lebih", 2026-08-27) is logged in and generates their own
@@ -326,7 +350,12 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
   // category that spans several pages (e.g. "Working Table" across pages
   // 2-4) still shows its name at the top of every one of those pages, not
   // only the first.
-  const chunks: PrintUnit[][] = packIntoPages(flat, coverHeight ?? DEFAULT_COVER_HEIGHT_PX).map((page) =>
+  // Page 1's preamble is cover + Harga Special section combined — both
+  // measured via ref (see coverHeight/flashSaleHeight above), so
+  // packIntoPages doesn't need to know there are now two blocks instead
+  // of one, just their combined height.
+  const page1PreambleHeight = (coverHeight ?? DEFAULT_COVER_HEIGHT_PX) + flashSaleHeight;
+  const chunks: PrintUnit[][] = packIntoPages(flat, page1PreambleHeight).map((page) =>
     page.map((unit, i) => (i === 0 && !unit.categoryLabel ? { ...unit, categoryLabel: unit.product.category } : unit))
   );
 
@@ -381,11 +410,51 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                 {group.cat}: {group.items.length} produk
               </div>
             ))}
+            {flashSaleProducts.length > 0 && <div>Harga Special: {flashSaleProducts.length} produk</div>}
           </div>
         </div>
       </div>
     </div>
   );
+
+  // "Harga Special" — dedicated top-of-document section for Flash Sale
+  // products, per the user's request 2026-08-29 ("saya mau ini di taro
+  // paling atas") and their explicit wording choice ("teks saja tulisan
+  // 'Harga Special'", not a colored banner). Same row layout as a normal
+  // product (photo/name/specLine/price) for visual consistency and code
+  // reuse, just under this heading instead of a category name, and with
+  // no coret/diskon treatment — a locked Flash Sale price has no separate
+  // discount layered on it (see ProductCard.tsx). Only rendered on page 1,
+  // right after the cover — its real height is measured via
+  // flashSaleRef/flashSaleHeight above so packIntoPages budgets page 1's
+  // remaining room correctly.
+  const flashSaleSection =
+    flashSaleProducts.length > 0 ? (
+      <div ref={flashSaleRef} className="px-12 pt-6">
+        <div className="mb-4 flex items-baseline justify-between gap-4 border-b-2 border-line pb-3">
+          <h2 className="text-[22px] font-extrabold">Harga Special</h2>
+        </div>
+        {flashSaleProducts.map((p) => (
+          <div key={p._id} className="mb-5 flex gap-5 border-t border-line pt-5">
+            {p.fotoUrl ? (
+              <ContainedPhoto src={p.fotoUrl} alt={p.name} boxWidth={220} boxHeight={165} />
+            ) : (
+              <div className="flex h-[165px] w-[220px] shrink-0 items-center justify-center bg-surface text-[0.75rem] text-muted">
+                Tidak ada foto
+              </div>
+            )}
+            <div className="flex flex-1 flex-col">
+              <h4 className="text-[18px] font-bold">{p.name}</h4>
+              <p className="mt-1.5 text-[13px] leading-snug text-muted">{specLine(p)}</p>
+              <div className="mt-auto flex items-baseline justify-between gap-3 border-t border-line pt-2.5">
+                <span className="text-[11px] text-muted">{p.sku}</span>
+                <span className="text-[19px] font-extrabold">{rupiah(p.flashSale?.harga ?? 0)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : null;
 
   return (
     // Clips a normal (static, full-opacity) block down to zero visible
@@ -396,14 +465,17 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
     <div className="h-0 overflow-hidden print:hidden">
       <div id="catalog-print-doc" data-ready={loaded ? "true" : "false"} className="font-sans text-ink">
         {chunks.length === 0 ? (
-          // Nothing selected — still emit a single page (cover + footer) so
-          // the download flow has at least one page to capture.
+          // Nothing selected outside Flash Sale (chunks only tracks the
+          // category-grouped flat list) — still emit a single page
+          // (cover + Harga Special, if any + footer) so the download flow
+          // has at least one page to capture.
           <div
             data-print-page={0}
             className="flex flex-col bg-paper"
             style={{ width: PAGE_WIDTH_PX, height: PAGE_HEIGHT_PX, overflow: "hidden" }}
           >
             {cover}
+            {flashSaleSection}
             <ClosingFooter ownSales={ownSales} />
           </div>
         ) : (
@@ -415,6 +487,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
               style={{ width: PAGE_WIDTH_PX, height: PAGE_HEIGHT_PX, overflow: "hidden" }}
             >
               {ci === 0 && cover}
+              {ci === 0 && flashSaleSection}
               <div className="px-12 py-8">
                 {chunk.map(({ product: p, categoryLabel }) => (
                   <Fragment key={p._id}>

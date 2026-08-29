@@ -75,6 +75,13 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
       <div className="mb-2.5 flex items-center gap-2.5">
         <span className="flex-1 rounded bg-[#efece3] px-2.5 py-2 font-sans text-[0.88rem] font-medium">
           {item.name}
+          {/* Snapshotted when this line was added (see ProductCard.tsx/
+              AddProductSidebar.tsx) — stays showing even if the product's
+              own Flash Sale is later ended. Per the user's request
+              2026-08-29. */}
+          {item.isFlashSale && (
+            <span className="ml-2 font-mono text-[0.66rem] font-semibold text-accent-700">· Harga Special</span>
+          )}
         </span>
         <span
           onClick={() => removeItem(item.productId)}

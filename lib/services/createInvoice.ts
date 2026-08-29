@@ -13,6 +13,8 @@ export interface CreateInvoiceItemInput {
   qty: number;
   hargaJual: number;
   diskonPerUnit?: number;
+  /** Snapshotted client-side at add-to-cart time — see ProductCard.tsx/AddProductSidebar.tsx. Per the user's request 2026-08-29. */
+  isFlashSale?: boolean;
 }
 
 export interface CreateInvoiceInput {
@@ -79,6 +81,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
         hargaJual: i.hargaJual,
         hargaMinimumSnapshot: 0,
         diskonPerUnit: diskon,
+        isFlashSale: i.isFlashSale ?? false,
         subtotal,
         komisiPerItemSnapshot: komisiPerItem,
         komisiSubtotal: komisiPerItem * i.qty,
@@ -119,6 +122,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       // whatever the product's harga beli has drifted to by then.
       hargaBeliSnapshot: product.hargaBeli,
       diskonPerUnit: diskon,
+      isFlashSale: i.isFlashSale ?? false,
       subtotal,
       komisiPerItemSnapshot: komisiPerItem,
       komisiSubtotal: komisiPerItem * i.qty,

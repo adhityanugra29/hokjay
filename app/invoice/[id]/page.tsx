@@ -47,6 +47,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
       qty: item.qty,
       hargaJual: item.hargaJual,
       subtotal: item.subtotal,
+      isFlashSale: item.isFlashSale ?? false,
     })),
     subtotalProduk: invoice.subtotalProduk,
     ongkosKirim: invoice.ongkosKirim ?? 0,
@@ -180,6 +181,11 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                       {item.namaSnapshot}
                       {item.dimensiSnapshot && (
                         <span className="ml-1.5 font-mono text-[0.72rem] text-muted">({item.dimensiSnapshot})</span>
+                      )}
+                      {item.isFlashSale && (
+                        <span className="ml-1.5 font-mono text-[0.72rem] font-semibold text-accent-700">
+                          · Harga Special
+                        </span>
                       )}
                     </td>
                     <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>

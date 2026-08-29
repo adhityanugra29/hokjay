@@ -10,6 +10,8 @@ export interface InvoicePrintItem {
   qty: number;
   hargaJual: number;
   subtotal: number;
+  /** Snapshotted at add-to-cart time (see models/Invoice.ts). Per the user's request 2026-08-29. */
+  isFlashSale?: boolean;
 }
 
 export interface InvoicePrintData {
@@ -83,19 +85,28 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
   const header = headerHeight ?? DEFAULT_HEADER_HEIGHT_PX;
   const footer = footerHeight ?? DEFAULT_FOOTER_HEIGHT_PX;
 
+  // Flash Sale items lead the item list — per the user's request
+  // 2026-08-29, same "always first" treatment as the Katalog grid/PDF.
+  // A stable partition (not a comparator-based sort) so the relative
+  // order within each group is left exactly as the invoice stored it.
+  const sortedItems = [
+    ...invoice.items.filter((it) => it.isFlashSale),
+    ...invoice.items.filter((it) => !it.isFlashSale),
+  ];
+
   // Pass 1: pack item rows into pages by remaining height.
   const rowPages: InvoicePrintItem[][] = [];
   {
     let i = 0;
-    while (i < invoice.items.length) {
+    while (i < sortedItems.length) {
       const isFirstPage = rowPages.length === 0;
       const budget = PAGE_HEIGHT_PX - PAGE_VPAD_PX - TABLE_HEADER_PX - (isFirstPage ? header : 0);
       const page: InvoicePrintItem[] = [];
       let used = 0;
-      while (i < invoice.items.length) {
+      while (i < sortedItems.length) {
         if (page.length > 0 && used + ITEM_ROW_PX > budget) break;
         used += ITEM_ROW_PX;
-        page.push(invoice.items[i]);
+        page.push(sortedItems[i]);
         i++;
       }
       rowPages.push(page);
@@ -289,6 +300,14 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
                           {item.dimensiSnapshot && (
                             <span className="ml-1.5 font-mono text-[0.72rem] text-muted">
                               ({item.dimensiSnapshot})
+                            </span>
+                          )}
+                          {/* Per the user's request 2026-08-29 — plain
+                              text, not a colored banner (see the same
+                              wording on Katalog PDF's dedicated section). */}
+                          {item.isFlashSale && (
+                            <span className="ml-1.5 font-mono text-[0.72rem] font-semibold text-accent-700">
+                              · Harga Special
                             </span>
                           )}
                         </td>

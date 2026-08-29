@@ -593,6 +593,7 @@ export default function ProductCard({
                 kondisiLabel,
                 stockStatusLabel,
                 specsText,
+                isFlashSale: flashSaleActive,
               });
               // addItem always starts a fresh cart line at diskonPerUnit: 0
               // (see CartProvider.tsx) — carry over whatever diskon was set

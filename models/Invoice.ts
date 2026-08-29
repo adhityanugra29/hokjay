@@ -21,6 +21,14 @@ const InvoiceItemSchema = new Schema(
     // recognition moved from invoice-finalize time to invoice-paid time.
     hargaBeliSnapshot: { type: Number, default: 0 },
     diskonPerUnit: { type: Number, default: 0 },
+    // Snapshotted at the moment this line was added to the cart (see
+    // components/katalog/ProductCard.tsx) — same convention as
+    // hargaMinimumSnapshot/dimensiSnapshot: whether the product's Flash
+    // Sale lock was active still shows on this invoice/its PDF even after
+    // the Flash Sale itself is later ended on the product. Per the user's
+    // request 2026-08-29. Defaults false, so every pre-existing invoice
+    // item is unaffected.
+    isFlashSale: { type: Boolean, default: false },
     subtotal: { type: Number, required: true },
     komisiPerItemSnapshot: { type: Number, required: true },
     komisiSubtotal: { type: Number, required: true },
