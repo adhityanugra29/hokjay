@@ -523,8 +523,12 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                             <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-2.5">
                               <span className="text-[11px] text-muted">{p.sku}</span>
                               <div className="flex flex-col items-end">
+                                {/* "Harga Normal: " label — per the
+                                    user's request 2026-08-29. */}
                                 {diskon > 0 && (
-                                  <span className="text-[12px] text-muted line-through">{rupiah(hargaAsli)}</span>
+                                  <span className="text-[12px] text-muted line-through">
+                                    Harga Normal: {rupiah(hargaAsli)}
+                                  </span>
                                 )}
                                 {/* Red when discounted — per the user's
                                     request 2026-08-29. Literal hex (this
