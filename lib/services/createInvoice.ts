@@ -66,8 +66,11 @@ export async function createInvoice(input: CreateInvoiceInput) {
 
     if (!i.productId) {
       // Custom-order item: no product reference/stock, but still earns the
-      // flat 6% "barang baru/custom" commission rate on its sale price.
-      const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual, hargaMinimum: 0 });
+      // flat 6% "barang baru/custom" commission rate on its sale price —
+      // after diskon, per the user's request 2026-08-29 (a discount now
+      // proportionally reduces commission instead of the sales rep
+      // keeping full commission on a discounted sale).
+      const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual - diskon, hargaMinimum: 0 });
       return {
         product: undefined,
         isCustom: true,
@@ -94,10 +97,13 @@ export async function createInvoice(input: CreateInvoiceInput) {
     }
     // Commission is computed from the product's *current* kondisi/harga
     // minimum (never trusting client-supplied values for this) — see
-    // lib/commission.ts for the baru/custom vs bekas formula.
+    // lib/commission.ts for the baru/custom vs bekas formula. Uses the
+    // post-diskon price, not the raw hargaJual, so a discount
+    // proportionally reduces commission too — per the user's request
+    // 2026-08-29.
     const komisiPerItem = computeLineCommission({
       kondisi: product.kondisi as "baru" | "bekas",
-      hargaJual: i.hargaJual,
+      hargaJual: i.hargaJual - diskon,
       hargaMinimum: product.hargaMinimum,
     });
     return {

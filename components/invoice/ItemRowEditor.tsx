@@ -60,10 +60,14 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
   const { updateItem, removeItem } = useCart();
 
   const subtotal = (item.hargaJual - item.diskonPerUnit) * item.qty;
+  // Post-diskon price, not the raw hargaJual — a discount proportionally
+  // reduces commission too, matching lib/services/createInvoice.ts's/
+  // updateInvoice.ts's authoritative save-time calculation. Per the
+  // user's request 2026-08-29.
   const komisiPerUnit = computeLineCommission({
     isCustom: item.isCustom,
     kondisi: item.kondisi,
-    hargaJual: item.hargaJual,
+    hargaJual: item.hargaJual - item.diskonPerUnit,
     hargaMinimum: item.hargaMinimum,
   });
   return (
@@ -79,15 +83,15 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
           Hapus
         </span>
       </div>
-      {/* Diskon /unit hidden for now — per the user's request 2026-08-28
-          ("sales bisa memainkan harganya tanpa perlu set discount"): Harga
-          Jual is already freely typed per line, so a separate discount
-          field was redundant and just another lever to move the price
-          without it reading as a price change. Not removed from the data
-          model — diskonPerUnit still exists on CartItem/InvoiceItemSchema
-          and factors into subtotal/komisi below, it just always stays 0
-          since nothing in the UI sets it anymore. */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+      {/* Diskon /unit brought back 2026-08-29 — hidden 2026-08-28 because
+          Harga Jual was already freely typed per line, making a separate
+          discount field feel redundant. Restored per the user's explicit
+          request to track discount separately and have it reduce komisi
+          (see the hargaJual - item.diskonPerUnit above) — a price *and* a
+          tracked discount now serve different purposes: Harga Jual is
+          what the customer pays, Diskon is how much of that was given
+          away and read out of the sales rep's commission for it. */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-6">
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[0.62rem] uppercase text-muted">Stok</span>
           <span className="py-2 font-mono text-[0.82rem] text-muted">
@@ -111,6 +115,13 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
           {!item.isCustom && (
             <span className="font-mono text-[0.64rem] text-clay">Harga Minimum: {rupiah(item.hargaMinimum)}</span>
           )}
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="font-mono text-[0.62rem] uppercase text-muted">Diskon /unit</span>
+          <CurrencyInput
+            value={String(item.diskonPerUnit)}
+            onChange={(v) => updateItem(item.productId, { diskonPerUnit: v ? Number(v) : 0 })}
+          />
         </div>
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[0.62rem] uppercase text-muted">Harga Final</span>

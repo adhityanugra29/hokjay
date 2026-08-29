@@ -35,12 +35,21 @@ interface CatalogSelectionContextValue {
   customPrices: Record<string, number>;
   setCustomPrice: (id: string, price: number | undefined) => void;
   getEffectivePrice: (product: { _id: string; hargaRekomendasi: number; hargaMinimum: number }) => number;
+  // Diskon per unit — separate from customPrices (which overrides the
+  // listed price outright): this tracks how much of that price was given
+  // away, shown as its own field on the card and carried onto the
+  // invoice item (where it also reduces komisi). Per the user's request
+  // 2026-08-29.
+  discounts: Record<string, number>;
+  getDiscount: (id: string) => number;
+  setDiscount: (id: string, discount: number) => void;
 }
 
 const CatalogSelectionContext = createContext<CatalogSelectionContextValue | null>(null);
 const STORAGE_KEY = "horeca-catalog-selection";
 const PRICE_MODES_KEY = "horeca-catalog-price-modes";
 const CUSTOM_PRICES_KEY = "horeca-catalog-custom-prices";
+const DISCOUNTS_KEY = "horeca-catalog-discounts";
 
 export function CatalogSelectionProvider({ children }: { children: React.ReactNode }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -48,6 +57,7 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
   const [pickMode, setPickMode] = useState(false);
   const [priceModes, setPriceModes] = useState<Record<string, CatalogPriceMode>>({});
   const [customPrices, setCustomPrices] = useState<Record<string, number>>({});
+  const [discounts, setDiscounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     try {
@@ -57,6 +67,8 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
       if (rawModes) setPriceModes(JSON.parse(rawModes));
       const rawCustom = localStorage.getItem(CUSTOM_PRICES_KEY);
       if (rawCustom) setCustomPrices(JSON.parse(rawCustom));
+      const rawDiscounts = localStorage.getItem(DISCOUNTS_KEY);
+      if (rawDiscounts) setDiscounts(JSON.parse(rawDiscounts));
     } catch {
       // ignore corrupt storage
     }
@@ -74,6 +86,10 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
   useEffect(() => {
     if (hydrated) localStorage.setItem(CUSTOM_PRICES_KEY, JSON.stringify(customPrices));
   }, [customPrices, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) localStorage.setItem(DISCOUNTS_KEY, JSON.stringify(discounts));
+  }, [discounts, hydrated]);
 
   function isSelected(id: string) {
     return selected.has(id);
@@ -110,6 +126,7 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
     clearAll();
     setCustomPrices({});
     setPriceModes({});
+    setDiscounts({});
   }
 
   function getPriceMode(id: string): CatalogPriceMode {
@@ -137,6 +154,19 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
     return getPriceMode(product._id) === "minimum" ? product.hargaMinimum : product.hargaRekomendasi;
   }
 
+  function getDiscount(id: string): number {
+    return discounts[id] ?? 0;
+  }
+
+  function setDiscount(id: string, discount: number) {
+    setDiscounts((prev) => {
+      const next = { ...prev };
+      if (discount <= 0) delete next[id];
+      else next[id] = discount;
+      return next;
+    });
+  }
+
   return (
     <CatalogSelectionContext.Provider
       value={{
@@ -153,6 +183,9 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
         customPrices,
         setCustomPrice,
         getEffectivePrice,
+        discounts,
+        getDiscount,
+        setDiscount,
       }}
     >
       {children}

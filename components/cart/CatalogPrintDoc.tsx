@@ -250,7 +250,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
   const [categories, setCategories] = useState<string[]>([]);
   const [sales, setSales] = useState<CatalogSales[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const { selected, getEffectivePrice } = useCatalogSelection();
+  const { selected, getEffectivePrice, getDiscount } = useCatalogSelection();
 
   // selectedProducts/byCategory computed up here (not further down where
   // they used to live) specifically so the coverHeight effect right below
@@ -434,10 +434,35 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                       <div className="flex flex-1 flex-col">
                         <h4 className="text-[18px] font-bold">{p.name}</h4>
                         <p className="mt-1.5 text-[13px] leading-snug text-muted">{specLine(p)}</p>
-                        <div className="mt-auto flex items-baseline justify-between gap-3 border-t border-line pt-2.5">
-                          <span className="text-[11px] text-muted">{p.sku}</span>
-                          <span className="text-[19px] font-extrabold">{rupiah(getEffectivePrice(p))}</span>
-                        </div>
+                        {/* Harga coret + nilai diskon — per the user's
+                            request 2026-08-29. Plain `line-through` text
+                            decoration and a literal hex color, not a
+                            Tailwind opacity-modifier class — this doc gets
+                            captured by html2canvas, which has crashed
+                            before on the oklab color-mix() those compile
+                            to (see the ContainedPhoto doc comment above
+                            for the same lesson learned the hard way). */}
+                        {(() => {
+                          const hargaAsli = getEffectivePrice(p);
+                          const diskon = getDiscount(p._id);
+                          const hargaFinal = Math.max(0, hargaAsli - diskon);
+                          return (
+                            <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-2.5">
+                              <span className="text-[11px] text-muted">{p.sku}</span>
+                              <div className="flex flex-col items-end">
+                                {diskon > 0 && (
+                                  <span className="text-[12px] text-muted line-through">{rupiah(hargaAsli)}</span>
+                                )}
+                                <span className="text-[19px] font-extrabold">{rupiah(hargaFinal)}</span>
+                                {diskon > 0 && (
+                                  <span className="text-[11px] font-bold" style={{ color: "#B45309" }}>
+                                    Hemat {rupiah(diskon)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </Fragment>

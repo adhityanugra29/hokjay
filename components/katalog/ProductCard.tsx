@@ -109,8 +109,18 @@ export default function ProductCard({
   onEdit?: () => void;
 }) {
   const { items, addItem, updateItem, removeItem } = useCart();
-  const { isSelected, toggle, pickMode, getPriceMode, setPriceMode, customPrices, setCustomPrice, getEffectivePrice } =
-    useCatalogSelection();
+  const {
+    isSelected,
+    toggle,
+    pickMode,
+    getPriceMode,
+    setPriceMode,
+    customPrices,
+    setCustomPrice,
+    getEffectivePrice,
+    getDiscount,
+    setDiscount,
+  } = useCatalogSelection();
   const { alert } = useDialog();
   const cartItem = items.find((i) => i.productId === product._id);
   const selected = isSelected(product._id);
@@ -128,14 +138,20 @@ export default function ProductCard({
   // for the PDF — and this is the price actually used for "+ Tambah ke
   // Invoice" below. Per the user's request 2026-08-25.
   const effectivePrice = getEffectivePrice(product);
+  // Diskon — separate from the price above (which is what the customer
+  // pays); this is how much of that price was given away, tracked so it
+  // can also reduce komisi. Per the user's request 2026-08-29.
+  const discount = getDiscount(product._id);
+  const finalPrice = Math.max(0, effectivePrice - discount);
   // Live insentif — matches the exact formula used at real invoice time
   // (lib/commission.ts), computed against whatever price is currently
-  // showing instead of the static komisiNominal snapshotted at
-  // product-save time. Per the user's request 2026-08-25.
+  // showing minus diskon, same as the authoritative save-time calculation
+  // in lib/services/createInvoice.ts/updateInvoice.ts. Per the user's
+  // request 2026-08-25 (live preview) and 2026-08-29 (diskon factored in).
   const liveKomisi = computeLineCommission({
     isCustom: product.isCustom,
     kondisi: product.kondisi as "baru" | "bekas",
-    hargaJual: effectivePrice,
+    hargaJual: finalPrice,
     hargaMinimum: product.hargaMinimum,
   });
 
@@ -329,6 +345,24 @@ export default function ProductCard({
               Harga Minimum
             </button>
           </div>
+          {/* Diskon — separate field from the price above, per the user's
+              request 2026-08-29 ("field diskon terpisah dari harga").
+              Harga Final (below) and the live Komisi figure both already
+              factor this in — see finalPrice/liveKomisi above. */}
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 font-mono text-[0.64rem] uppercase tracking-[0.06em] text-muted">Diskon</span>
+            <CurrencyInput
+              value={String(discount)}
+              onChange={(v) => setDiscount(product._id, v ? Number(v) : 0)}
+              showPrefix
+            />
+          </div>
+          {discount > 0 && (
+            <div className="flex items-center justify-between font-mono text-[0.72rem]">
+              <span className="text-muted">Harga Final</span>
+              <span className="font-semibold text-ink">{rupiah(finalPrice)}</span>
+            </div>
+          )}
         </div>
         <div className="mt-2.5 text-[0.72rem] text-muted">
           {availableQty <= 0 ? (
@@ -433,7 +467,7 @@ export default function ProductCard({
           <button
             type="button"
             disabled={availableQty <= 0}
-            onClick={() =>
+            onClick={() => {
               addItem({
                 productId: product._id,
                 name: product.name,
@@ -447,8 +481,13 @@ export default function ProductCard({
                 kondisiLabel,
                 stockStatusLabel,
                 specsText,
-              })
-            }
+              });
+              // addItem always starts a fresh cart line at diskonPerUnit: 0
+              // (see CartProvider.tsx) — carry over whatever diskon was set
+              // on this card, per the user's request 2026-08-29, via the
+              // same updateItem path ItemRowEditor's own Diskon field uses.
+              if (discount > 0) updateItem(product._id, { diskonPerUnit: discount });
+            }}
             className="mt-auto w-full cursor-pointer border border-accent bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-white transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-40"
           >
             {availableQty <= 0 ? "Tidak Tersedia" : "+ Tambah ke Invoice"}
