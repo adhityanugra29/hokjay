@@ -75,6 +75,15 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     }
     return item.diskonPerUnit ?? 0;
   }
+  // "Harga" for a Flash Sale line shows Harga Rekomendasi, not the Flash
+  // Sale price itself — that shows in Subtotal instead. Per the user's
+  // request 2026-08-29.
+  function displayHarga(item: NonNullable<typeof invoice>["items"][number]): number {
+    if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
+      return item.hargaRekomendasiSnapshot;
+    }
+    return item.hargaJual;
+  }
   const totalDiskon = invoice.items.reduce((s, i) => s + displayDiskon(i) * i.qty, 0);
 
   return (
@@ -213,7 +222,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                       )}
                     </td>
                     <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
-                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.hargaJual)}</td>
+                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayHarga(item))}</td>
                     <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
                     <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
                   </tr>

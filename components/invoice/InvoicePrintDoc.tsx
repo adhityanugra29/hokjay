@@ -33,6 +33,21 @@ function displayDiskon(item: InvoicePrintItem): number {
   return item.diskonPerUnit;
 }
 
+/**
+ * The "Harga" column for a Flash Sale line shows Harga Rekomendasi, not
+ * the Flash Sale price itself — the Flash Sale price shows in Subtotal
+ * instead (Diskon in between makes the arithmetic read correctly: Harga −
+ * Diskon = the Flash Sale price actually charged). Per the user's request
+ * 2026-08-29 ("Harga (Harga rekomendasi) | Diskon | Subtotal (harga
+ * flashsalenya di subtotal)").
+ */
+function displayHarga(item: InvoicePrintItem): number {
+  if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
+    return item.hargaRekomendasiSnapshot;
+  }
+  return item.hargaJual;
+}
+
 export interface InvoicePrintData {
   nomor: string;
   tanggal: string;
@@ -345,7 +360,7 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
                           )}
                         </td>
                         <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
-                        <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.hargaJual)}</td>
+                        <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayHarga(item))}</td>
                         <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
                         <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
                       </tr>
