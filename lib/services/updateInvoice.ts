@@ -92,7 +92,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     // Diskon cap for barang bekas — server-side enforcement, see
     // createInvoice.ts's matching comment.
     const diskon =
-      product.kondisi === "bekas" ? Math.min(rawDiskon, maxDiskonBekas(product.hargaMinimum)) : rawDiskon;
+      product.kondisi === "bekas" ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, product.hargaMinimum)) : rawDiskon;
     const subtotal = (i.hargaJual - diskon) * i.qty;
     // Post-diskon price, not the raw hargaJual — see createInvoice.ts's
     // matching comment.

@@ -445,7 +445,7 @@ export default function ProductCard({
                   onBlur={(v) => {
                     if (product.kondisi !== "bekas") return;
                     const num = v ? Number(v) : 0;
-                    const max = maxDiskonBekas(product.hargaMinimum);
+                    const max = maxDiskonBekas(effectivePrice, product.hargaMinimum);
                     if (num > max) {
                       setDiscount(product._id, max);
                       setDiscountWarning(true);
@@ -456,7 +456,8 @@ export default function ProductCard({
               </div>
               {discountWarning && (
                 <div className="text-[0.68rem] font-medium text-accent-700">
-                  Diskon melebihi batas insentif, disesuaikan otomatis ke maksimal {rupiah(maxDiskonBekas(product.hargaMinimum))}.
+                  Diskon melebihi batas insentif, disesuaikan otomatis ke maksimal{" "}
+                  {rupiah(maxDiskonBekas(effectivePrice, product.hargaMinimum))}.
                 </div>
               )}
               {discount > 0 && (

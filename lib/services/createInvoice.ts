@@ -101,15 +101,15 @@ export async function createInvoice(input: CreateInvoiceInput) {
     if (finalize && product.stok < i.qty) {
       throw new Error(`Stok ${product.name} tidak cukup (sisa ${product.stok})`);
     }
-    // Diskon can't exceed the base komisi for barang bekas (10% of Harga
-    // Minimum) — server-side enforcement of the same cap the client
-    // already clamps to on blur (ProductCard.tsx/ItemRowEditor.tsx), so a
-    // raw API request can't bypass it. Per the user's request 2026-08-29
-    // ("besaran diskon ... tidak boleh lebih dari total insentif yang
-    // diberikan"). Silently clamped (not rejected), matching how the
-    // below-minimum price guard behaves elsewhere in this app.
+    // Diskon can't exceed maxDiskonBekas for barang bekas — server-side
+    // enforcement of the same cap the client already clamps to on blur
+    // (ProductCard.tsx/ItemRowEditor.tsx), so a raw API request can't
+    // bypass it. Per the user's request 2026-08-29 ("besaran diskon ...
+    // tidak boleh lebih dari total insentif yang diberikan"). Silently
+    // clamped (not rejected), matching how the below-minimum price guard
+    // behaves elsewhere in this app.
     const diskon =
-      product.kondisi === "bekas" ? Math.min(rawDiskon, maxDiskonBekas(product.hargaMinimum)) : rawDiskon;
+      product.kondisi === "bekas" ? Math.min(rawDiskon, maxDiskonBekas(i.hargaJual, product.hargaMinimum)) : rawDiskon;
     const subtotal = (i.hargaJual - diskon) * i.qty;
     // Commission is computed from the product's *current* kondisi/harga
     // minimum (never trusting client-supplied values for this) — see

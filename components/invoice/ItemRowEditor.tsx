@@ -128,9 +128,9 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
         </div>
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[0.62rem] uppercase text-muted">Diskon /unit</span>
-          {/* Capped at 10% of Harga Minimum for barang bekas on blur — same
-              rule/reasoning as ProductCard.tsx's Diskon field on Katalog.
-              Per the user's request 2026-08-29. */}
+          {/* Capped for barang bekas on blur — same rule/reasoning as
+              ProductCard.tsx's Diskon field on Katalog. Per the user's
+              request 2026-08-29. */}
           <CurrencyInput
             value={String(item.diskonPerUnit)}
             onChange={(v) => {
@@ -140,7 +140,7 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
             onBlur={(v) => {
               if (item.kondisi !== "bekas") return;
               const num = v ? Number(v) : 0;
-              const max = maxDiskonBekas(item.hargaMinimum);
+              const max = maxDiskonBekas(item.hargaJual, item.hargaMinimum);
               if (num > max) {
                 updateItem(item.productId, { diskonPerUnit: max });
                 setDiscountWarning(true);
@@ -149,7 +149,7 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
           />
           {discountWarning && (
             <span className="font-mono text-[0.62rem] font-medium text-accent-700">
-              Melebihi batas insentif, disesuaikan ke maks. {rupiah(maxDiskonBekas(item.hargaMinimum))}.
+              Melebihi batas insentif, disesuaikan ke maks. {rupiah(maxDiskonBekas(item.hargaJual, item.hargaMinimum))}.
             </span>
           )}
         </div>
