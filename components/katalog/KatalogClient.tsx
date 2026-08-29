@@ -213,7 +213,7 @@ export default function KatalogClient({
     // (KatalogFilterSidebar.tsx), replacing the old plain "Semua Kategori"
     // dropdown. All default to "Semua" (no restriction). Per the user's
     // request 2026-08-27.
-    if (filters.category) list = list.filter((p) => p.category === filters.category);
+    if (filters.categories.length > 0) list = list.filter((p) => filters.categories.includes(p.category));
     if (filters.kondisi) list = list.filter((p) => p.kondisi === filters.kondisi);
     if (filters.tipe) list = list.filter((p) => p.tipeProduk === filters.tipe);
     // Compares against Harga Rekomendasi or Harga Minimum, per the

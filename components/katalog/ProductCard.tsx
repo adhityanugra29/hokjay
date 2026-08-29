@@ -116,6 +116,13 @@ export default function ProductCard({
   const selected = isSelected(product._id);
   const hasCustomPrice = customPrices[product._id] !== undefined;
   const [downloadingPhoto, setDownloadingPhoto] = useState(false);
+  // Below-minimum price warning — per the user's request 2026-08-29:
+  // typing a custom price under hargaMinimum snaps it back up to the
+  // minimum and shows why. Checked on blur, not on every keystroke,
+  // since intermediate typed digits are naturally "too low" while a
+  // larger number is still being typed (e.g. typing "150000" reads as
+  // 1, 15, 150... along the way).
+  const [priceWarning, setPriceWarning] = useState(false);
   // Price toggle (Harga Rekomendasi/Minimum, + manual custom typing) shows
   // on every product card at all times — not just while picking products
   // for the PDF — and this is the price actually used for "+ Tambah ke
@@ -268,9 +275,24 @@ export default function ProductCard({
         <div className="mt-1.5 flex flex-col gap-1.5">
           <CurrencyInput
             value={String(effectivePrice)}
-            onChange={(v) => setCustomPrice(product._id, v ? Number(v) : 0)}
+            onChange={(v) => {
+              setCustomPrice(product._id, v ? Number(v) : 0);
+              setPriceWarning(false);
+            }}
+            onBlur={(v) => {
+              const num = v ? Number(v) : 0;
+              if (num > 0 && num < product.hargaMinimum) {
+                setCustomPrice(product._id, product.hargaMinimum);
+                setPriceWarning(true);
+              }
+            }}
             showPrefix
           />
+          {priceWarning && (
+            <div className="text-[0.68rem] font-medium text-accent-700">
+              Harga di bawah minimum, disesuaikan otomatis ke {rupiah(product.hargaMinimum)}.
+            </div>
+          )}
           {/* Two separate preset buttons (per the user's request 2026-08-25,
               replacing the earlier single flip-label toggle) — each picks
               its price directly and discards any manually-typed custom
@@ -280,7 +302,10 @@ export default function ProductCard({
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
-              onClick={() => setPriceMode(product._id, "rekomendasi")}
+              onClick={() => {
+                setPriceMode(product._id, "rekomendasi");
+                setPriceWarning(false);
+              }}
               className={`cursor-pointer border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
                 getPriceMode(product._id) === "rekomendasi" && !hasCustomPrice
                   ? "border-accent bg-accent text-white"
@@ -291,7 +316,10 @@ export default function ProductCard({
             </button>
             <button
               type="button"
-              onClick={() => setPriceMode(product._id, "minimum")}
+              onClick={() => {
+                setPriceMode(product._id, "minimum");
+                setPriceWarning(false);
+              }}
               className={`cursor-pointer border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
                 getPriceMode(product._id) === "minimum" && !hasCustomPrice
                   ? "border-accent bg-accent text-white"

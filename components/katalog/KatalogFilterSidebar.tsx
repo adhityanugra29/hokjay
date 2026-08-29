@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
-import { SearchableSelect } from "@/components/ui/SearchableSelect";
-import { CurrencyInput, Input } from "@/components/ui/Form";
-
-const ALL_CATEGORIES_LABEL = "Semua Kategori";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CurrencyInput, Input, inputCls } from "@/components/ui/Form";
 
 export type KondisiFilter = "" | "baru" | "bekas";
 export type TipeFilter = "" | "elektronik" | "non-elektronik";
 export type HargaBasis = "rekomendasi" | "minimum";
 
 export interface KatalogFilters {
-  category: string;
+  /** Empty = "Semua Kategori". More than one category can be checked at once — per the user's request 2026-08-29. */
+  categories: string[];
   kondisi: KondisiFilter;
   tipe: TipeFilter;
   hargaMin: string;
@@ -27,7 +25,7 @@ export interface KatalogFilters {
 }
 
 export const EMPTY_KATALOG_FILTERS: KatalogFilters = {
-  category: "",
+  categories: [],
   kondisi: "",
   tipe: "",
   hargaMin: "",
@@ -41,7 +39,7 @@ export const EMPTY_KATALOG_FILTERS: KatalogFilters = {
 /** How many of the sidebar's filters are set away from "Semua" — shown as a badge on the Filter button. */
 export function countActiveFilters(f: KatalogFilters): number {
   let n = 0;
-  if (f.category) n++;
+  if (f.categories.length > 0) n++;
   if (f.kondisi) n++;
   if (f.tipe) n++;
   if (f.hargaMin || f.hargaMax) n++;
@@ -49,6 +47,114 @@ export function countActiveFilters(f: KatalogFilters): number {
   if (f.ukuran) n++;
   if (f.produkBaru) n++;
   return n;
+}
+
+/**
+ * Dropdown, not a permanently-visible checkbox list — per the user's
+ * correction 2026-08-29 ("jangan menjadi check box, ini akan menjadi
+ * kotor filternya, buat saja multiple tapi tetap dropdown"). Same visual
+ * language as SearchableSelect (trigger styled like a normal input, panel
+ * below it), but the trigger shows a summary ("Semua Kategori" / one name
+ * / "N kategori dipilih") instead of the raw value, and each row is a
+ * checkbox so more than one can stay picked without the panel closing.
+ */
+function CategoryMultiSelect({
+  categories,
+  selected,
+  onChange,
+}: {
+  categories: string[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickAway(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickAway);
+    return () => document.removeEventListener("mousedown", handleClickAway);
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return categories;
+    return categories.filter((c) => c.toLowerCase().includes(q));
+  }, [query, categories]);
+
+  function toggle(cat: string) {
+    onChange(selected.includes(cat) ? selected.filter((c) => c !== cat) : [...selected, cat]);
+  }
+
+  const summary =
+    selected.length === 0
+      ? "Semua Kategori"
+      : selected.length === 1
+        ? selected[0]
+        : `${selected.length} kategori dipilih`;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`${inputCls} flex cursor-pointer items-center justify-between text-left`}
+      >
+        <span className={`truncate ${selected.length === 0 ? "text-muted" : ""}`}>{summary}</span>
+        <span className="ml-2 shrink-0 text-muted">▾</span>
+      </button>
+      {open && (
+        <div className="absolute z-20 mt-1 w-full border border-line bg-panel shadow-[0_6px_16px_-4px_rgba(0,0,0,0.18)]">
+          <div className="border-b border-line p-2">
+            <input
+              type="text"
+              autoComplete="off"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari kategori..."
+              className={inputCls}
+            />
+          </div>
+          <div className="max-h-56 overflow-y-auto">
+            {filtered.length > 0 ? (
+              filtered.map((cat) => (
+                <label
+                  key={cat}
+                  className="flex cursor-pointer items-center gap-2 px-3.5 py-2 font-sans text-[0.85rem] select-none hover:bg-[#f3f2ec]"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(cat)}
+                    onChange={() => toggle(cat)}
+                    className="h-4 w-4 accent-accent"
+                  />
+                  {cat}
+                </label>
+              ))
+            ) : (
+              <div className="px-3.5 py-2 font-mono text-[0.75rem] text-muted">Tidak ada yang cocok.</div>
+            )}
+          </div>
+          {selected.length > 0 && (
+            <div className="border-t border-line p-2">
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="w-full cursor-pointer py-1 text-center font-mono text-[0.72rem] font-semibold text-accent hover:underline"
+              >
+                Kosongkan pilihan
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SegmentedControl<T extends string>({
@@ -169,11 +275,15 @@ export default function KatalogFilterSidebar({
 
           <div>
             <label className="mb-2 block font-mono text-[0.7rem] uppercase tracking-wide text-muted">Kategori</label>
-            <SearchableSelect
-              value={filters.category || ALL_CATEGORIES_LABEL}
-              onChange={(v) => onChange({ ...filters, category: v === ALL_CATEGORIES_LABEL ? "" : v })}
-              options={[ALL_CATEGORIES_LABEL, ...categories]}
-              placeholder={ALL_CATEGORIES_LABEL}
+            {/* Dropdown that allows more than one category checked at once
+                — per the user's request 2026-08-29 ("bisa multiple
+                produk"), then corrected the same day to stay a dropdown
+                rather than a permanently-visible checkbox list. Empty
+                selection still means "Semua Kategori", same as before. */}
+            <CategoryMultiSelect
+              categories={categories}
+              selected={filters.categories}
+              onChange={(next) => onChange({ ...filters, categories: next })}
             />
           </div>
 

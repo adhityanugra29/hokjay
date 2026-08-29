@@ -63,6 +63,7 @@ function formatRibuan(digits: string): string {
 export function CurrencyInput({
   value,
   onChange,
+  onBlur,
   placeholder,
   required,
   className = "",
@@ -70,6 +71,12 @@ export function CurrencyInput({
 }: {
   value: string;
   onChange: (raw: string) => void;
+  /** Fires on blur with the raw digits, after the field's own internal
+   * "keep showing what was typed while focused" state is done with it —
+   * for validation that shouldn't run mid-keystroke (e.g. Katalog's
+   * below-minimum-price check, which needs the user's final number, not
+   * every partially-typed digit). Per the user's request 2026-08-29. */
+  onBlur?: (raw: string) => void;
   placeholder?: string;
   required?: boolean;
   className?: string;
@@ -103,7 +110,10 @@ export function CurrencyInput({
         // report 2026-08-25.
         e.target.select();
       }}
-      onBlur={() => setFocused(false)}
+      onBlur={() => {
+        setFocused(false);
+        onBlur?.(raw);
+      }}
       onChange={(e) => {
         const digits = e.target.value.replace(/\D/g, "");
         setRaw(digits);
