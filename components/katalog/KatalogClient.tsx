@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
 import EditProductDrawer from "./EditProductDrawer";
 import KatalogFilterSidebar, {
@@ -12,6 +11,8 @@ import KatalogFilterSidebar, {
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { useDialog } from "@/components/ui/Dialog";
+import PageHeader from "@/components/layout/PageHeader";
+import { Button, LinkButton } from "@/components/ui/Button";
 
 // Katalog PDF is the heaviest export in the app (photo-dense, often many
 // pages). RENDER_SCALE was first dropped to 1.35 to shrink file size, but
@@ -260,54 +261,49 @@ export default function KatalogClient({
   }, [products, search, filters, sort]);
 
   return (
-    // Extra bottom padding on mobile (dropped again at md, where the fixed
-    // bottom cart bar/tab bar don't exist) so the last row of product cards
-    // isn't hidden behind CartBar + the mobile tab bar stacked at the
-    // bottom of the screen. Per the user's report 2026-08-25.
-    <div className="p-6 pb-32 md:p-9">
-      <div className="relative -mx-6 -mt-6 mb-7 overflow-hidden border-b-2 border-line bg-paper px-6 py-10 pl-16 md:-mx-9 md:-mt-9 md:px-10 md:pl-14">
-        <div className="mb-2 font-sans text-xs uppercase tracking-[0.12em] text-accent">
-          Penjualan
-        </div>
-        <h1 className="relative max-w-xl font-sans text-[2.3rem] leading-tight font-extrabold">
-          Katalog CV HORECA JAYA
-        </h1>
-        <p className="mt-3 font-sans text-[0.78rem] text-muted">
-          STOK TER-UPDATE OTOMATIS · {products.length} PRODUK TERSEDIA
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2.5">
-          <Link
-            href="/katalog/custom-order"
-            className="inline-block rounded border border-accent bg-accent px-4.5 py-2.5 font-sans text-[0.85rem] font-semibold text-white"
-          >
-            Pesan Produk Custom
-          </Link>
-          <Link
-            href="/katalog/custom"
-            className="inline-block rounded border border-accent bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-semibold text-accent"
-          >
-            Lihat Produk Custom
-          </Link>
-          <button
-            type="button"
-            onClick={handleMainButtonClick}
-            disabled={downloading || (pickMode && selected.size === 0)}
-            className="inline-block rounded border border-ink bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-semibold text-ink disabled:opacity-60"
-          >
-            {mainButtonLabel}
-          </button>
-          {pickMode && (
-            <button
+    <>
+      {/* Was a bespoke hero block (own header, own font sizes) — the only
+          large page in the app not using the shared PageHeader, and its 3
+          buttons all carried equal visual weight with no clear primary
+          action. Switched to PageHeader + a real solid/ghost hierarchy per
+          the user's request 2026-08-30 ("upgrade UI... konsisten"):
+          "Pesan Produk Custom" is the one action that isn't already
+          reachable from the product cards below, so it stays solid;
+          "Lihat Produk Custom" and the PDF export are secondary (ghost). */}
+      <PageHeader
+        title="Katalog CV HORECA JAYA"
+        subtitle={`STOK TER-UPDATE OTOMATIS · ${products.length} PRODUK TERSEDIA`}
+        actions={
+          <>
+            <LinkButton href="/katalog/custom-order">Pesan Produk Custom</LinkButton>
+            <LinkButton variant="ghost" href="/katalog/custom">
+              Lihat Produk Custom
+            </LinkButton>
+            <Button
               type="button"
-              onClick={cancelPicking}
-              className="inline-block px-2 py-2.5 font-sans text-[0.8rem] font-medium text-muted underline underline-offset-2"
+              variant="ghost"
+              onClick={handleMainButtonClick}
+              disabled={downloading || (pickMode && selected.size === 0)}
             >
-              Batal
-            </button>
-          )}
-        </div>
-      </div>
-
+              {mainButtonLabel}
+            </Button>
+            {pickMode && (
+              <button
+                type="button"
+                onClick={cancelPicking}
+                className="inline-block px-2 py-2.5 font-sans text-[0.8rem] font-medium text-muted underline underline-offset-2"
+              >
+                Batal
+              </button>
+            )}
+          </>
+        }
+      />
+    {/* Extra bottom padding on mobile (dropped again at md, where the fixed
+        bottom cart bar/tab bar don't exist) so the last row of product cards
+        isn't hidden behind CartBar + the mobile tab bar stacked at the
+        bottom of the screen. Per the user's report 2026-08-25. */}
+    <div className="p-6 pb-32 md:p-9">
       {pickMode && (
         <div className="mb-5 flex flex-wrap items-center gap-4">
           <label className="flex w-fit cursor-pointer items-center gap-2 text-[0.8rem] text-muted select-none">
@@ -391,5 +387,6 @@ export default function KatalogClient({
         onChange={setFilters}
       />
     </div>
+    </>
   );
 }
