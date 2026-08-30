@@ -4,21 +4,24 @@ import { Invoice } from "@/models/Invoice";
 import type { SessionPayload } from "@/lib/auth/jwt";
 
 /**
- * Per-sales customer privacy (2026-08-27) — "Feby punya customer, Syifa
- * tidak bisa melihat customernya Feby, tapi Manager/Admin/Owner/Super
- * Admin bisa melihat semua". A plain "sales" role only sees customers
- * where Customer.assignedSales matches their own nama, OR has no owner at
- * all (assignedSales unset — customers added by a non-sales account, or
- * from before this field existed, stay visible to every sales rep since
- * there's no way to know whose they'd be). Every other role (including
- * "manager" — "mereka sales juga, tapi diberikan otoritas lebih" doesn't
- * extend to THIS restriction) sees everyone, unfiltered.
+ * Per-sales customer privacy (2026-08-27, tightened 2026-08-30) — "Feby
+ * punya customer, Syifa tidak bisa melihat customernya Feby, tapi
+ * Manager/Admin/Owner/Super Admin bisa melihat semua". A plain "sales"
+ * role only sees customers where Customer.assignedSales matches their own
+ * nama — full stop. Originally an unowned customer (assignedSales unset)
+ * stayed visible to every sales rep as a fallback; dropped per the user's
+ * explicit correction 2026-08-30 ("they own their customer and invoice",
+ * no sharing at all) after that carve-out turned out to leave most real
+ * customers cross-visible in practice (no assignedSales is common —
+ * customers added by a non-sales account, or predating this field). An
+ * unowned customer is now only reachable by Admin/Owner/Manager, until
+ * assigned. Every other role (including "manager" — "mereka sales juga,
+ * tapi diberikan otoritas lebih" doesn't extend to THIS restriction) sees
+ * everyone, unfiltered.
  */
 export function customerVisibilityFilter(session: SessionPayload | null | undefined): Record<string, unknown> {
   if (session?.role !== "sales") return {};
-  return {
-    $or: [{ assignedSales: session.nama }, { assignedSales: { $in: [null, ""] } }, { assignedSales: { $exists: false } }],
-  };
+  return { assignedSales: session.nama };
 }
 
 /**

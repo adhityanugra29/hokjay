@@ -6,13 +6,13 @@ import { getSession } from "@/lib/auth/session";
 /**
  * Per-sales customer privacy (see lib/pelanggan.ts's customerVisibilityFilter)
  * applies here too, not just to the list/GET-many endpoint — a plain "sales"
- * account can't edit or delete another rep's customer directly by ID either.
- * Manager/Admin/Owner/Super Admin are unrestricted. A customer with no
- * owner (assignedSales unset) stays editable/deletable by every sales rep,
- * same as the visibility rule.
+ * account can't view, edit, or delete another rep's customer directly by ID
+ * either. Manager/Admin/Owner/Super Admin are unrestricted. A customer with
+ * no owner (assignedSales unset) is now blocked for every sales rep too —
+ * tightened 2026-08-30, matching customerVisibilityFilter's own change.
  */
 function isBlockedForSession(session: Awaited<ReturnType<typeof getSession>>, assignedSales?: string | null) {
-  return session?.role === "sales" && !!assignedSales && assignedSales !== session.nama;
+  return session?.role === "sales" && assignedSales !== session.nama;
 }
 
 export async function GET(_req: NextRequest, ctx: RouteContext<"/api/customers/[id]">) {

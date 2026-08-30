@@ -15,7 +15,7 @@ export default async function PelangganEditPage({ params }: PageProps<"/pelangga
 
   // Same per-sales privacy guard as the detail page (app/pelanggan/[id]/page.tsx).
   const session = await getSession();
-  if (session?.role === "sales" && customer.assignedSales && customer.assignedSales !== session.nama) {
+  if (session?.role === "sales" && customer.assignedSales !== session.nama) {
     notFound();
   }
 

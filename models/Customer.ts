@@ -38,8 +38,8 @@ const CustomerSchema = new Schema(
 
 // Additive performance index (no behavior change) — per the user's
 // request 2026-08-28. Matches customerVisibilityFilter's (lib/pelanggan.ts)
-// $or on this field, run on every /pelanggan and Invoice customer-picker
-// load.
+// equality filter on this field, run on every /pelanggan and Invoice
+// customer-picker load.
 CustomerSchema.index({ assignedSales: 1 });
 
 export type CustomerDoc = InferSchemaType<typeof CustomerSchema>;

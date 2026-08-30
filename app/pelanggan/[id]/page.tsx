@@ -34,20 +34,20 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
   const customer = await Customer.findById(id).lean();
   if (!customer) notFound();
 
-  // Per-sales customer privacy (2026-08-27) — a plain "sales" role can't
-  // open another sales rep's customer directly by URL either, not just
-  // filtered off the list. A customer with no owner (assignedSales unset)
-  // stays reachable by every sales rep. Manager/Admin/Owner/Super Admin
-  // are unrestricted, same as the list page.
+  // Per-sales customer privacy (2026-08-27, tightened 2026-08-30) — a plain
+  // "sales" role can't open another sales rep's customer directly by URL
+  // either, not just filtered off the list. A customer with no owner
+  // (assignedSales unset) is now blocked too, matching lib/pelanggan.ts's
+  // customerVisibilityFilter. Manager/Admin/Owner/Super Admin are
+  // unrestricted, same as the list page.
   const session = await getSession();
-  if (session?.role === "sales" && customer.assignedSales && customer.assignedSales !== session.nama) {
+  if (session?.role === "sales" && customer.assignedSales !== session.nama) {
     notFound();
   }
 
-  // Per-sales invoice privacy extends here too (2026-08-29): a shared
-  // customer (no assignedSales) is reachable by every sales rep, but each
-  // one should only see invoices they themselves made for that customer,
-  // not a rep's they happen to share the customer with.
+  // Per-sales invoice privacy (2026-08-29) — belt-and-suspenders now that
+  // a sales rep can only reach their own customer anyway: still only shows
+  // invoices this rep themselves made for that customer.
   const invoices = await Invoice.find({ "customer.ref": id, ...invoiceVisibilityFilter(session) }).sort(
     hasSort ? mongoSort(field, dir) : { createdAt: -1 }
   );
