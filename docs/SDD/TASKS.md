@@ -59,3 +59,19 @@
 **Acceptance criteria:** `computeLineCommission`/`maxDiskonBekas` untouched (new pure functions only); server-side clamp added for Baru/Custom diskon (currently unclamped — see BUGS.md BUG-004); manual per-line diskon entries are never overwritten by the bulk allocator.
 
 **Files affected (planned):** `lib/commission.ts`, `components/invoice/InvoiceForm.tsx`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
+
+---
+
+## TASK-004 — Billing plan for Owner Hojay
+
+**Type:** DOCUMENTATION / NON-CODE
+**Priority:** P3
+**Status:** BACKLOG (explicitly scheduled for AFTER TASK-002 and open bugs are done — "setelah bug selesai dan layar sudah diperbaharui")
+**Dependency:** TASK-002 (must reach DONE first), BUGS.md (no open B0-B2 bugs)
+**Created:** 2026-08-30 · **Last updated:** 2026-08-30
+
+**Description:** Prepare a plan/document the user (developer) can use to bill/invoice CV Horeca Jaya's Owner for the work completed — likely a scope-of-work summary covering the Foundry UI rework + bug fixes done this session (and possibly earlier). Not yet scoped in detail (format, whether it's a rate/hours breakdown or a flat description of deliverables) — needs a short requirements check with the user once TASK-002 wraps up, before drafting.
+
+**Acceptance criteria:** TBD once scoped.
+
+**Files affected:** None (not application code) — likely a standalone document/artifact, not a repo file.
