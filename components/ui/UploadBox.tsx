@@ -6,11 +6,20 @@ export default function UploadBox({
   folder,
   value,
   onChange,
+  onFileSelected,
   hint = "JPG/PNG/PDF, maks 5MB",
 }: {
   folder: "products" | "payments" | "kwitansi" | "komisi" | "rab" | "purchasing" | "payroll";
   value?: string;
   onChange: (url: string) => void;
+  /** Fires immediately when a file is picked/dropped, before the upload
+   * itself finishes — the raw filename, not the eventual blob URL. Lets a
+   * caller react to what was picked without waiting on the network round
+   * trip. Optional, purely additive — every existing caller that doesn't
+   * pass this is unaffected. Added for ProductForm.tsx's filename-based
+   * autofill (Nama Produk / Ukuran), per the user's request 2026-08-30
+   * ("mereka kerja per photo"). */
+  onFileSelected?: (file: File) => void;
   hint?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -19,6 +28,7 @@ export default function UploadBox({
   const [fileName, setFileName] = useState<string | null>(null);
 
   async function handleFile(file: File) {
+    onFileSelected?.(file);
     setError(null);
     setUploading(true);
     setFileName(file.name);
@@ -50,7 +60,7 @@ export default function UploadBox({
           const file = e.dataTransfer.files?.[0];
           if (file) handleFile(file);
         }}
-        className="flex cursor-pointer flex-col items-center gap-1.5 rounded border-2 border-dashed border-line bg-paper px-4 py-8 text-center transition hover:border-moss"
+        className="flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed border-line bg-paper px-4 py-8 text-center transition hover:border-moss"
       >
         <div className="text-2xl">⇧</div>
         <div className="font-sans text-[0.85rem]">

@@ -280,7 +280,7 @@ export default function ProductCard({
             the pickMode checkbox / edit pencil below get nudged down a
             notch to stay clear of it. */}
         {flashSaleActive && (
-          <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center gap-1.5 bg-accent py-1.5 font-mono text-[0.7rem] font-extrabold tracking-[0.08em] text-white">
+          <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center gap-1.5 bg-accent py-1.5 font-mono text-[0.7rem] font-extrabold tracking-[0.08em] text-ink">
             🔥 FLASH SALE
           </div>
         )}
@@ -370,7 +370,7 @@ export default function ProductCard({
             // request 2026-08-29 ("harganya tidak bisa untuk di naikan
             // atau di turunkan"). Only an owner/super_admin can end it.
             <div className="rounded-lg bg-accent-100 px-3 py-2.5">
-              <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-accent">
+              <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-accent-700">
                 Harga Flash Sale (terkunci)
               </div>
               <div className="mt-1 font-sans text-[1.1rem] font-extrabold text-accent-700">{rupiah(effectivePrice)}</div>
@@ -379,7 +379,7 @@ export default function ProductCard({
                   type="button"
                   disabled={flashSaleSaving}
                   onClick={() => submitFlashSale(false)}
-                  className="mt-2 cursor-pointer rounded-full border border-line px-2.5 py-1 font-mono text-[0.64rem] font-semibold text-ink hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+                  className="mt-2 cursor-pointer rounded-full border border-line px-2.5 py-1 font-mono text-[0.64rem] font-semibold text-ink hover:border-accent hover:text-accent-700 disabled:cursor-wait disabled:opacity-60"
                 >
                   {flashSaleSaving ? "Memproses..." : "Akhiri Flash Sale"}
                 </button>
@@ -422,7 +422,7 @@ export default function ProductCard({
                   }}
                   className={`cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
                     getPriceMode(product._id) === "rekomendasi" && !hasCustomPrice
-                      ? "border-accent bg-accent text-white"
+                      ? "border-accent bg-accent text-ink"
                       : "border-line text-ink hover:bg-[#f3f2ec]"
                   }`}
                 >
@@ -436,7 +436,7 @@ export default function ProductCard({
                   }}
                   className={`cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
                     getPriceMode(product._id) === "minimum" && !hasCustomPrice
-                      ? "border-accent bg-accent text-white"
+                      ? "border-accent bg-accent text-ink"
                       : "border-line text-ink hover:bg-[#f3f2ec]"
                   }`}
                 >
@@ -505,7 +505,7 @@ export default function ProductCard({
                         type="button"
                         disabled={flashSaleSaving || !flashSaleInput}
                         onClick={() => submitFlashSale(true, Number(flashSaleInput))}
-                        className="flex-1 cursor-pointer rounded-full border border-accent bg-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex-1 cursor-pointer rounded-full border border-accent bg-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-ink hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {flashSaleSaving ? "..." : "Aktifkan"}
                       </button>
@@ -525,7 +525,7 @@ export default function ProductCard({
                   <button
                     type="button"
                     onClick={() => setFlashSaleFormOpen(true)}
-                    className="cursor-pointer rounded-full border border-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-accent hover:bg-accent hover:text-white"
+                    className="cursor-pointer rounded-full border border-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-accent-700 hover:bg-accent hover:text-ink"
                   >
                     🔥 Flash Sale
                   </button>
@@ -547,7 +547,7 @@ export default function ProductCard({
             tint+text. */}
         <div className="mt-2 flex flex-wrap gap-1.5">
           {product.isCustom && (
-            <span className="rounded-full bg-accent-100 px-2.5 py-1 text-[0.66rem] font-semibold text-accent">
+            <span className="rounded-full bg-accent-100 px-2.5 py-1 text-[0.66rem] font-semibold text-accent-700">
               Pesanan Custom
             </span>
           )}
@@ -618,7 +618,7 @@ export default function ProductCard({
             <button
               type="button"
               onClick={() => handleQtyChange(-1)}
-              className="h-9 w-[38px] cursor-pointer bg-accent text-base font-semibold text-white hover:bg-accent-deep"
+              className="h-9 w-[38px] cursor-pointer bg-accent text-base font-semibold text-ink hover:bg-accent-deep hover:text-white"
               aria-label="Kurangi jumlah"
             >
               −
@@ -630,7 +630,7 @@ export default function ProductCard({
               type="button"
               onClick={() => handleQtyChange(1)}
               disabled={cartItem.qty >= availableQty}
-              className="h-9 w-[38px] cursor-pointer bg-accent text-base font-semibold text-white hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-9 w-[38px] cursor-pointer bg-accent text-base font-semibold text-ink hover:bg-accent-deep hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Tambah jumlah"
             >
               +
@@ -662,7 +662,7 @@ export default function ProductCard({
               // same updateItem path ItemRowEditor's own Diskon field uses.
               if (discount > 0) updateItem(product._id, { diskonPerUnit: discount });
             }}
-            className="mt-auto w-full cursor-pointer rounded-lg bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-white shadow-sm transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-auto w-full cursor-pointer rounded-lg bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-ink shadow-sm transition hover:bg-accent-deep hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             {availableQty <= 0 ? "Tidak Tersedia" : "+ Tambah ke Invoice"}
           </button>

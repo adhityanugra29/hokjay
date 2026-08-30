@@ -63,7 +63,7 @@ export default function MobileSalesBoard({
 
       <div className="flex-1">
         {top ? (
-          <div className="bg-accent px-4 py-[18px] text-white">
+          <div className="bg-accent px-4 py-[18px] text-ink">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3.5">
                 <div className="font-sans text-[2.4rem] font-extrabold leading-[0.8] tracking-tight">1</div>
@@ -133,7 +133,7 @@ export default function MobileSalesBoard({
               </span>
             </span>
             {me.target > 0 ? (
-              <b className="font-sans text-[0.95rem] tracking-tight text-accent">{me.percent}%</b>
+              <b className="font-sans text-[0.95rem] tracking-tight text-accent-700">{me.percent}%</b>
             ) : (
               <NavIcon name="chevron-right" size={16} />
             )}

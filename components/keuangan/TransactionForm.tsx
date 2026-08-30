@@ -81,7 +81,7 @@ export default function TransactionForm({ defaultTipe = "keluar" }: { defaultTip
           type="button"
           onClick={() => switchTipe("masuk")}
           className={`flex-1 py-2.5 text-[0.85rem] font-semibold ${
-            tipe === "masuk" ? "bg-accent text-white" : "bg-panel text-muted hover:text-ink"
+            tipe === "masuk" ? "bg-accent text-ink" : "bg-panel text-muted hover:text-ink"
           }`}
         >
           Pemasukan
@@ -90,7 +90,7 @@ export default function TransactionForm({ defaultTipe = "keluar" }: { defaultTip
           type="button"
           onClick={() => switchTipe("keluar")}
           className={`flex-1 border-l-2 border-line py-2.5 text-[0.85rem] font-semibold ${
-            tipe === "keluar" ? "bg-accent text-white" : "bg-panel text-muted hover:text-ink"
+            tipe === "keluar" ? "bg-accent text-ink" : "bg-panel text-muted hover:text-ink"
           }`}
         >
           Pengeluaran

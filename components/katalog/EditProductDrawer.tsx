@@ -90,7 +90,7 @@ export default function EditProductDrawer({
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="flex h-9 w-9 cursor-pointer items-center justify-center border border-line text-lg text-ink hover:border-accent hover:text-accent"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center border border-line text-lg text-ink hover:border-accent hover:text-accent-700"
           >
             ✕
           </button>

@@ -92,7 +92,7 @@ export default function MobileBayarTagihanSheet({
         </div>
         <div className="px-4 py-3.5">
           <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">Jatuh tempo ≤7 hari</div>
-          <div className="mt-1 font-sans text-[1.1rem] font-extrabold tracking-tight text-accent">{rupiahCompact(jatuhTempo7HariNilai)}</div>
+          <div className="mt-1 font-sans text-[1.1rem] font-extrabold tracking-tight text-accent-700">{rupiahCompact(jatuhTempo7HariNilai)}</div>
         </div>
       </div>
 
@@ -121,7 +121,7 @@ export default function MobileBayarTagihanSheet({
                 <input type="checkbox" checked={checked} onChange={() => toggle(r.id)} className="sr-only" />
                 <span className="min-w-0">
                   <b className="block truncate font-sans text-[0.85rem]">{r.supplier}</b>
-                  <span className={`mt-0.5 block font-sans text-[0.72rem] ${urgent ? "font-bold text-accent" : "text-muted"}`}>
+                  <span className={`mt-0.5 block font-sans text-[0.72rem] ${urgent ? "font-bold text-accent-700" : "text-muted"}`}>
                     {urgent
                       ? `Telat ${r.hariTerlambat} hari · ${r.nomor}`
                       : r.jatuhTempo
@@ -154,12 +154,12 @@ export default function MobileBayarTagihanSheet({
               <span className="block font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-muted">Kas sebelum</span>
               <b className="mt-0.5 block font-sans text-[0.85rem] tracking-tight">{rupiahCompact(kasTersedia)}</b>
             </span>
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-accent">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-accent-700">
               <path d="M4 10h11M10.5 5.5 15 10l-4.5 4.5" />
             </svg>
             <span className="text-right">
               <span className="block font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-muted">Kas sesudah</span>
-              <b className={`mt-0.5 block font-sans text-[0.85rem] tracking-tight ${kasSetelahBayar < 0 ? "text-accent" : ""}`}>
+              <b className={`mt-0.5 block font-sans text-[0.85rem] tracking-tight ${kasSetelahBayar < 0 ? "text-accent-700" : ""}`}>
                 {rupiahCompact(kasSetelahBayar)}
               </b>
             </span>
@@ -169,7 +169,7 @@ export default function MobileBayarTagihanSheet({
             type="button"
             onClick={handlePay}
             disabled={saving || selectedRows.length === 0}
-            className="mt-2.5 flex min-h-[44px] w-full items-center justify-center gap-2 bg-accent px-4 py-3.5 font-sans text-[0.9rem] font-extrabold text-white disabled:opacity-50"
+            className="mt-2.5 flex min-h-[44px] w-full items-center justify-center gap-2 bg-accent px-4 py-3.5 font-sans text-[0.9rem] font-extrabold text-ink disabled:opacity-50"
           >
             {saving ? "Memproses..." : `Bayar ${selectedRows.length} tagihan`}
           </button>

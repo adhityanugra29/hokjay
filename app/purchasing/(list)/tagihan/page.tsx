@@ -72,7 +72,7 @@ export default async function PurchasingTagihanPage() {
               <tr>
                 <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
                   Belum ada Material Order.{" "}
-                  <Link href="/purchasing/tagihan/baru" className="text-accent underline underline-offset-2">
+                  <Link href="/purchasing/tagihan/baru" className="text-accent-700 underline underline-offset-2">
                     Buat yang pertama
                   </Link>
                   .

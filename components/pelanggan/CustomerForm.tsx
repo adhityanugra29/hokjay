@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Panel } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/Form";
+import { FormCard, FormSection, FormCardActions } from "@/components/ui/FormSection";
+import { Field, FormGrid, Input, Textarea } from "@/components/ui/Form";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { JENIS_USAHA_OPTIONS } from "@/lib/constants";
@@ -96,118 +96,139 @@ export default function CustomerForm({
   }
 
   return (
-    <Panel className="max-w-2xl p-7">
+    <FormCard
+      className="max-w-2xl"
+      title="Data Pelanggan"
+      description="Isi selengkap mungkin — Provinsi & Kota wajib untuk perhitungan ongkos kirim."
+    >
       <form onSubmit={handleSubmit}>
-        <FormGrid>
-          <Field label="Nama Pelanggan (PIC)" span2>
-            <Input
-              required
-              value={values.nama}
-              onChange={(e) => setValues((v) => ({ ...v, nama: e.target.value }))}
-              placeholder="Contoh: Ibu Sari"
-            />
-          </Field>
-          <Field label="Nama Toko / Usaha">
-            <Input
-              required
-              value={values.namaToko}
-              onChange={(e) => setValues((v) => ({ ...v, namaToko: e.target.value }))}
-              placeholder="Contoh: Toko Kelontong Sari"
-            />
-          </Field>
-          <Field label="Jenis Usaha">
-            <SearchableSelect
-              value={values.jenisUsaha}
-              onChange={(v) => setValues((prev) => ({ ...prev, jenisUsaha: v }))}
-              options={[...JENIS_USAHA_OPTIONS]}
-              placeholder="Ketik untuk cari jenis usaha..."
-            />
-          </Field>
-          {values.jenisUsaha === "Lainnya" && (
-            <Field label="Sebutkan Jenis Usaha">
+        <FormSection label="Identitas">
+          <FormGrid>
+            <Field label="Nama Pelanggan (PIC)" span2>
               <Input
                 required
-                value={values.jenisUsahaLainnya}
-                onChange={(e) => setValues((v) => ({ ...v, jenisUsahaLainnya: e.target.value }))}
-                placeholder="Contoh: Katering Rumahan"
+                value={values.nama}
+                onChange={(e) => setValues((v) => ({ ...v, nama: e.target.value }))}
+                placeholder="Contoh: Ibu Sari"
               />
             </Field>
-          )}
-          <Field label="No. WhatsApp">
-            <Input
-              required
-              value={values.whatsapp}
-              onChange={(e) => setValues((v) => ({ ...v, whatsapp: e.target.value }))}
-              placeholder="Contoh: 0812-3456-7890"
-            />
-          </Field>
-          <Field label="Email (opsional)">
-            <Input
-              type="email"
-              value={values.email}
-              onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
-              placeholder="Contoh: sari@email.com"
-            />
-          </Field>
+            <Field label="Nama Toko / Usaha">
+              <Input
+                required
+                value={values.namaToko}
+                onChange={(e) => setValues((v) => ({ ...v, namaToko: e.target.value }))}
+                placeholder="Contoh: Toko Kelontong Sari"
+              />
+            </Field>
+            <Field label="Jenis Usaha">
+              <SearchableSelect
+                value={values.jenisUsaha}
+                onChange={(v) => setValues((prev) => ({ ...prev, jenisUsaha: v }))}
+                options={[...JENIS_USAHA_OPTIONS]}
+                placeholder="Ketik untuk cari jenis usaha..."
+              />
+            </Field>
+            {values.jenisUsaha === "Lainnya" && (
+              <Field label="Sebutkan Jenis Usaha" span2>
+                <Input
+                  required
+                  value={values.jenisUsahaLainnya}
+                  onChange={(e) => setValues((v) => ({ ...v, jenisUsahaLainnya: e.target.value }))}
+                  placeholder="Contoh: Katering Rumahan"
+                />
+              </Field>
+            )}
+          </FormGrid>
+        </FormSection>
+
+        <FormSection label="Kontak">
+          <FormGrid>
+            <Field label="No. WhatsApp">
+              <Input
+                required
+                value={values.whatsapp}
+                onChange={(e) => setValues((v) => ({ ...v, whatsapp: e.target.value }))}
+                placeholder="Contoh: 0812-3456-7890"
+              />
+            </Field>
+            <Field label="Email (opsional)">
+              <Input
+                type="email"
+                value={values.email}
+                onChange={(e) => setValues((v) => ({ ...v, email: e.target.value }))}
+                placeholder="Contoh: sari@email.com"
+              />
+            </Field>
+          </FormGrid>
+        </FormSection>
+
+        <FormSection label="Alamat">
           {/* Provinsi -> Kota -> Alamat, in that order — per the user's
               request 2026-08-25. */}
-          <Field label="Provinsi">
-            <SearchableSelect
-              value={values.provinsi}
-              onChange={(v) => setValues((prev) => ({ ...prev, provinsi: v, kota: "" }))}
-              options={INDONESIA_REGIONS.map((r) => r.provinsi)}
-              placeholder="Ketik untuk cari provinsi..."
-            />
-          </Field>
-          <Field label="Kota / Kabupaten">
-            <SearchableSelect
-              value={values.kota}
-              onChange={(v) => setValues((prev) => ({ ...prev, kota: v }))}
-              options={kotaOptions}
-              placeholder={values.provinsi ? "Ketik untuk cari kota/kabupaten..." : "Pilih provinsi dulu"}
-            />
-          </Field>
-          <Field label="Alamat" span2>
-            <Input
-              required
-              value={values.alamat}
-              onChange={(e) => setValues((v) => ({ ...v, alamat: e.target.value }))}
-              // Auto-fills Provinsi/Kota by scanning the pasted alamat for a
-              // kota/kabupaten name — only when neither is already set, so
-              // it never clobbers a manual pick. Per the user's request
-              // 2026-08-25 (sales usually pastes a full WhatsApp address).
-              onBlur={(e) => {
-                if (values.provinsi || values.kota) return;
-                const guess = guessRegionFromAddress(e.target.value);
-                if (guess) setValues((v) => ({ ...v, provinsi: guess.provinsi, kota: guess.kota }));
-              }}
-              placeholder="Alamat lengkap untuk pengiriman & penagihan"
-            />
-          </Field>
-          {/* Termin Pembayaran hidden from the form per the user's request
-              2026-08-25 — termHari stays in state/payload (always "0" =
-              tunai) since Pelanggan's "kebiasaan bayar" calc still reads it. */}
-          <Field label="Catatan (opsional)" span2>
-            <Textarea
-              rows={3}
-              value={values.catatan}
-              onChange={(e) => setValues((v) => ({ ...v, catatan: e.target.value }))}
-              placeholder="Catatan khusus untuk pelanggan ini..."
-            />
-          </Field>
-        </FormGrid>
+          <FormGrid>
+            <Field label="Provinsi">
+              <SearchableSelect
+                value={values.provinsi}
+                onChange={(v) => setValues((prev) => ({ ...prev, provinsi: v, kota: "" }))}
+                options={INDONESIA_REGIONS.map((r) => r.provinsi)}
+                placeholder="Ketik untuk cari provinsi..."
+              />
+            </Field>
+            <Field label="Kota / Kabupaten">
+              <SearchableSelect
+                value={values.kota}
+                onChange={(v) => setValues((prev) => ({ ...prev, kota: v }))}
+                options={kotaOptions}
+                placeholder={values.provinsi ? "Ketik untuk cari kota/kabupaten..." : "Pilih provinsi dulu"}
+              />
+            </Field>
+            <Field label="Alamat" span2>
+              <Input
+                required
+                value={values.alamat}
+                onChange={(e) => setValues((v) => ({ ...v, alamat: e.target.value }))}
+                // Auto-fills Provinsi/Kota by scanning the pasted alamat for a
+                // kota/kabupaten name — only when neither is already set, so
+                // it never clobbers a manual pick. Per the user's request
+                // 2026-08-25 (sales usually pastes a full WhatsApp address).
+                onBlur={(e) => {
+                  if (values.provinsi || values.kota) return;
+                  const guess = guessRegionFromAddress(e.target.value);
+                  if (guess) setValues((v) => ({ ...v, provinsi: guess.provinsi, kota: guess.kota }));
+                }}
+                placeholder="Alamat lengkap untuk pengiriman & penagihan"
+              />
+            </Field>
+          </FormGrid>
+        </FormSection>
 
-        {error && <div className="mt-3 font-mono text-[0.75rem] text-danger">{error}</div>}
+        {/* Termin Pembayaran hidden from the form per the user's request
+            2026-08-25 — termHari stays in state/payload (always "0" =
+            tunai) since Pelanggan's "kebiasaan bayar" calc still reads it. */}
+        <FormSection label="Catatan" last>
+          <FormGrid>
+            <Field label="Catatan (opsional)" span2>
+              <Textarea
+                rows={3}
+                value={values.catatan}
+                onChange={(e) => setValues((v) => ({ ...v, catatan: e.target.value }))}
+                placeholder="Catatan khusus untuk pelanggan ini..."
+              />
+            </Field>
+          </FormGrid>
+        </FormSection>
 
-        <FormActions>
+        {error && <div className="px-6 font-mono text-[0.75rem] text-danger">{error}</div>}
+
+        <FormCardActions>
           <Button type="submit" disabled={saving}>
             {saving ? "Menyimpan..." : mode === "edit" ? "Simpan Perubahan" : "Simpan Pelanggan"}
           </Button>
           <LinkButton variant="ghost" href={mode === "edit" ? `/pelanggan/${customerId}` : "/pelanggan"}>
             Batal
           </LinkButton>
-        </FormActions>
+        </FormCardActions>
       </form>
-    </Panel>
+    </FormCard>
   );
 }

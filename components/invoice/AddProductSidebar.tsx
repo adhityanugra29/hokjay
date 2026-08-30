@@ -132,7 +132,7 @@ export default function AddProductSidebar({
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="flex h-8 w-8 cursor-pointer items-center justify-center border border-line text-ink hover:border-accent hover:text-accent"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center border border-line text-ink hover:border-accent hover:text-accent-700"
           >
             ✕
           </button>
@@ -263,7 +263,7 @@ export default function AddProductSidebar({
                         onClick={() =>
                           cartItem.qty <= 1 ? removeItem(p._id) : updateItem(p._id, { qty: cartItem.qty - 1 })
                         }
-                        className="h-7 w-7 cursor-pointer bg-accent text-[0.85rem] font-semibold text-white hover:bg-accent-deep"
+                        className="h-7 w-7 cursor-pointer bg-accent text-[0.85rem] font-semibold text-ink hover:bg-accent-deep hover:text-white"
                       >
                         −
                       </button>
@@ -274,7 +274,7 @@ export default function AddProductSidebar({
                         type="button"
                         disabled={cartItem.qty >= availableQty}
                         onClick={() => updateItem(p._id, { qty: cartItem.qty + 1 })}
-                        className="h-7 w-7 cursor-pointer bg-accent text-[0.85rem] font-semibold text-white hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-50"
+                        className="h-7 w-7 cursor-pointer bg-accent text-[0.85rem] font-semibold text-ink hover:bg-accent-deep hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         +
                       </button>
@@ -298,7 +298,7 @@ export default function AddProductSidebar({
                           isFlashSale: p.flashSale?.active ?? false,
                         })
                       }
-                      className="flex-none cursor-pointer border border-accent bg-accent px-2.5 py-1.5 font-mono text-[0.7rem] font-semibold text-white hover:bg-accent-deep"
+                      className="flex-none cursor-pointer border border-accent bg-accent px-2.5 py-1.5 font-mono text-[0.7rem] font-semibold text-ink hover:bg-accent-deep hover:text-white"
                     >
                       + Tambah
                     </button>

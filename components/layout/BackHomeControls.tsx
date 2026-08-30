@@ -23,14 +23,14 @@ export default function BackHomeControls() {
         type="button"
         onClick={() => router.back()}
         title="Kembali"
-        className="flex h-8 w-8 cursor-pointer items-center justify-center border border-line font-mono text-muted hover:border-accent hover:text-accent"
+        className="flex h-8 w-8 cursor-pointer items-center justify-center border border-line font-mono text-muted hover:border-accent hover:text-accent-700"
       >
         ←
       </button>
       <Link
         href="/"
         title="Kembali ke Dasbor"
-        className="flex h-8 w-8 items-center justify-center border border-line font-mono text-muted no-underline hover:border-accent hover:text-accent"
+        className="flex h-8 w-8 items-center justify-center border border-line font-mono text-muted no-underline hover:border-accent hover:text-accent-700"
       >
         ⌂
       </Link>

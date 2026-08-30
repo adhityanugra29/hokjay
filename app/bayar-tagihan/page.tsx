@@ -58,7 +58,7 @@ export default async function BayarTagihanPage() {
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Sudah terlambat
             </div>
-            <div className="mt-1.5 font-sans text-[1.1rem] font-extrabold text-accent sm:whitespace-nowrap sm:text-[1.4rem]">
+            <div className="mt-1.5 font-sans text-[1.1rem] font-extrabold text-accent-700 sm:whitespace-nowrap sm:text-[1.4rem]">
               {rupiah(summary.terlambatNilai)}
             </div>
             <div className="mt-1 font-mono text-[0.7rem] text-muted">{summary.terlambatCount} tagihan</div>

@@ -102,7 +102,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Uang keluar
             </div>
-            <div className="mt-1.5 font-sans text-[1.05rem] font-extrabold text-accent sm:whitespace-nowrap sm:text-[1.3rem]">
+            <div className="mt-1.5 font-sans text-[1.05rem] font-extrabold text-accent-700 sm:whitespace-nowrap sm:text-[1.3rem]">
               − {rupiah(cashBook.totalKeluar)}
             </div>
           </div>
@@ -167,7 +167,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
                   </div>
                   <div className="mt-1.5 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[0.75rem]">
                     {r.masuk !== undefined && <span>Masuk {rupiah(r.masuk)}</span>}
-                    {r.keluar !== undefined && <span className="text-accent">Keluar {rupiah(r.keluar)}</span>}
+                    {r.keluar !== undefined && <span className="text-accent-700">Keluar {rupiah(r.keluar)}</span>}
                     <span className="font-semibold">Sisa {rupiah(r.saldoBerjalan)}</span>
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
                     {r.sub && <span className="ml-1 font-mono text-[0.7rem] text-muted">· {r.sub}</span>}
                   </span>
                   <span className="text-right font-mono">{r.masuk ? rupiah(r.masuk) : ""}</span>
-                  <span className="text-right font-mono text-accent">{r.keluar ? rupiah(r.keluar) : ""}</span>
+                  <span className="text-right font-mono text-accent-700">{r.keluar ? rupiah(r.keluar) : ""}</span>
                   <span className="text-right font-mono font-semibold">{rupiah(r.saldoBerjalan)}</span>
                 </div>
               </div>
@@ -193,13 +193,13 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1.5 sm:hidden">
                 <span>Total</span>
                 <span className="font-mono">Masuk {rupiah(cashBook.totalMasuk)}</span>
-                <span className="font-mono text-accent">Keluar {rupiah(cashBook.totalKeluar)}</span>
+                <span className="font-mono text-accent-700">Keluar {rupiah(cashBook.totalKeluar)}</span>
                 <span className="font-mono">Sisa {rupiah(cashBook.saldoAkhir)}</span>
               </div>
               <div className="hidden sm:grid sm:grid-cols-[58px_1fr_120px_120px_130px] sm:gap-3.5">
                 <span className="sm:col-span-2">Total</span>
                 <span className="text-right">{rupiah(cashBook.totalMasuk)}</span>
-                <span className="text-right text-accent">{rupiah(cashBook.totalKeluar)}</span>
+                <span className="text-right text-accent-700">{rupiah(cashBook.totalKeluar)}</span>
                 <span className="text-right">{rupiah(cashBook.saldoAkhir)}</span>
               </div>
             </div>
@@ -212,7 +212,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
             {summary.nodes.map((n) => (
               <div key={n.label} className="flex items-center justify-between gap-2.5 border-b border-line py-2.5 font-sans text-[0.82rem]">
                 <span>{n.label}</span>
-                <b className={n.tipe === "keluar" ? "text-accent" : ""}>
+                <b className={n.tipe === "keluar" ? "text-accent-700" : ""}>
                   {n.tipe === "masuk" ? "+" : "−"} {rupiahCompact(n.value)}
                 </b>
               </div>
@@ -231,11 +231,11 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
             <div className="border-b border-line py-3">
               <div className="flex items-baseline justify-between gap-2.5">
                 <span className="font-sans text-[0.82rem]">Piutang pelanggan</span>
-                <b className="font-sans text-[1rem] text-accent">{rupiahCompact(totalPiutang)}</b>
+                <b className="font-sans text-[1rem] text-accent-700">{rupiahCompact(totalPiutang)}</b>
               </div>
               <div className="mt-1 font-mono text-[0.68rem] text-muted">
                 {piutang.length} invoice{piutang.length > 0 ? ` · tertua ${tertuaHari} hari` : ""} ·{" "}
-                <Link href="/invoice" className="text-accent no-underline hover:underline">
+                <Link href="/invoice" className="text-accent-700 no-underline hover:underline">
                   tagih sekarang →
                 </Link>
               </div>
@@ -247,7 +247,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
               </div>
               <div className="mt-1 font-mono text-[0.68rem] text-muted">
                 {summary.productCount} produk ·{" "}
-                <Link href="/produk" className="text-accent no-underline hover:underline">
+                <Link href="/produk" className="text-accent-700 no-underline hover:underline">
                   lihat inventory →
                 </Link>
               </div>

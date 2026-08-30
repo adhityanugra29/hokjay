@@ -145,7 +145,7 @@ function CategoryMultiSelect({
               <button
                 type="button"
                 onClick={() => onChange([])}
-                className="w-full cursor-pointer py-1 text-center font-mono text-[0.72rem] font-semibold text-accent hover:underline"
+                className="w-full cursor-pointer py-1 text-center font-mono text-[0.72rem] font-semibold text-accent-700 hover:underline"
               >
                 Kosongkan pilihan
               </button>
@@ -174,7 +174,7 @@ function SegmentedControl<T extends string>({
           type="button"
           onClick={() => onChange(opt.value)}
           className={`cursor-pointer border px-3 py-1.5 font-mono text-[0.72rem] font-semibold ${
-            value === opt.value ? "border-accent bg-accent text-white" : "border-line text-ink hover:bg-[#f3f2ec]"
+            value === opt.value ? "border-accent bg-accent text-ink" : "border-line text-ink hover:bg-[#f3f2ec]"
           }`}
         >
           {opt.label}
@@ -231,7 +231,7 @@ export default function KatalogFilterSidebar({
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="flex h-9 w-9 cursor-pointer items-center justify-center border border-line text-lg text-ink hover:border-accent hover:text-accent"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center border border-line text-lg text-ink hover:border-accent hover:text-accent-700"
           >
             ✕
           </button>
@@ -348,7 +348,7 @@ export default function KatalogFilterSidebar({
             <button
               type="button"
               onClick={() => onChange(EMPTY_KATALOG_FILTERS)}
-              className="cursor-pointer border border-line py-2.5 text-center font-mono text-[0.75rem] font-semibold text-muted hover:border-accent hover:text-accent"
+              className="cursor-pointer border border-line py-2.5 text-center font-mono text-[0.75rem] font-semibold text-muted hover:border-accent hover:text-accent-700"
             >
               Reset Semua Filter
             </button>

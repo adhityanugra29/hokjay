@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 const TYPE_META: Record<ActivityType, { icon: "document" | "box" | "split" | "flame"; color: string }> = {
   "invoice-lunas": { icon: "document", color: "text-moss-deep" },
   "produk-baru": { icon: "box", color: "text-ink" },
-  "komisi-cair": { icon: "split", color: "text-accent" },
-  "flash-sale": { icon: "flame", color: "text-accent" },
+  "komisi-cair": { icon: "split", color: "text-accent-700" },
+  "flash-sale": { icon: "flame", color: "text-accent-700" },
 };
 
 function relativeTime(date: Date) {

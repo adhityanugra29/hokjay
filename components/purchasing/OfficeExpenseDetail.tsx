@@ -108,7 +108,7 @@ export default function OfficeExpenseDetail({ data, role }: { data: OfficeExpens
       {data.status === "diajukan" && (
         <Panel className="mt-5 p-7">
           <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Status</div>
-          <div className="mt-1 font-sans text-[1.1rem] font-bold text-accent">Menunggu Approval</div>
+          <div className="mt-1 font-sans text-[1.1rem] font-bold text-accent-700">Menunggu Approval</div>
 
           {isAdminLevel(role) ? (
             <div className="mt-5">
@@ -152,7 +152,7 @@ export default function OfficeExpenseDetail({ data, role }: { data: OfficeExpens
       {data.status === "ditolak" && (
         <Panel className="mt-5 p-7">
           <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Status</div>
-          <div className="mt-1 font-sans text-[1.1rem] font-bold text-accent">Ditolak</div>
+          <div className="mt-1 font-sans text-[1.1rem] font-bold text-accent-700">Ditolak</div>
           <div className="mt-3 border-l-4 border-accent bg-[#f7f5ee] p-4 font-sans text-[0.85rem]">
             <b>Alasan:</b> {data.alasanTolak}
           </div>
@@ -210,7 +210,7 @@ export default function OfficeExpenseDetail({ data, role }: { data: OfficeExpens
             oleh {data.buktiTransferOleh} · {data.buktiTransferTanggal && formatDateFull(data.buktiTransferTanggal)}
           </div>
           {data.buktiTransferUrl && (
-            <a href={data.buktiTransferUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-accent underline underline-offset-2">
+            <a href={data.buktiTransferUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-accent-700 underline underline-offset-2">
               Lihat bukti transfer
             </a>
           )}
@@ -255,14 +255,14 @@ export default function OfficeExpenseDetail({ data, role }: { data: OfficeExpens
             <Field label="Bukti Transfer">
               <div className="font-sans text-[0.85rem]">{rupiah(data.buktiTransferNominal ?? 0)}</div>
               {data.buktiTransferUrl && (
-                <a href={data.buktiTransferUrl} target="_blank" rel="noreferrer" className="text-[0.78rem] text-accent underline underline-offset-2">
+                <a href={data.buktiTransferUrl} target="_blank" rel="noreferrer" className="text-[0.78rem] text-accent-700 underline underline-offset-2">
                   Lihat bukti
                 </a>
               )}
             </Field>
             <Field label="Bukti Pembelian Berhasil">
               {data.buktiBerhasilUrl ? (
-                <a href={data.buktiBerhasilUrl} target="_blank" rel="noreferrer" className="text-[0.78rem] text-accent underline underline-offset-2">
+                <a href={data.buktiBerhasilUrl} target="_blank" rel="noreferrer" className="text-[0.78rem] text-accent-700 underline underline-offset-2">
                   Lihat bukti
                 </a>
               ) : (

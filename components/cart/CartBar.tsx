@@ -39,7 +39,7 @@ export default function CartBar() {
         <button
           type="button"
           onClick={() => router.push("/invoice/baru")}
-          className="cursor-pointer border border-accent bg-accent px-4.5 py-2 text-[0.85rem] font-semibold text-white"
+          className="cursor-pointer border border-accent bg-accent px-4.5 py-2 text-[0.85rem] font-semibold text-ink"
         >
           Lanjut ke Invoice →
         </button>

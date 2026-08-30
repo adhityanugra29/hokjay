@@ -106,7 +106,7 @@ export default async function MenuPage() {
                   >
                     <b className="font-sans text-[0.85rem] text-white">{item.label}</b>
                     {!!item.badge && (
-                      <span className="bg-accent px-1.5 py-0.5 font-sans text-[10px] font-bold text-white">{item.badge}</span>
+                      <span className="bg-accent px-1.5 py-0.5 font-sans text-[10px] font-bold text-ink">{item.badge}</span>
                     )}
                   </Link>
                 ))}

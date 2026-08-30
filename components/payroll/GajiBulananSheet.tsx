@@ -141,7 +141,7 @@ export default function GajiBulananSheet({
               <span className="col-start-2 font-bold sm:col-auto sm:text-right">{rupiah(r.jumlah)}</span>
               <span
                 className={`col-start-2 font-mono text-[0.68rem] font-bold uppercase tracking-wide sm:col-auto ${
-                  r.sudahDibayar ? "text-muted/60" : r.siapBayar ? "text-ink" : "text-accent"
+                  r.sudahDibayar ? "text-muted/60" : r.siapBayar ? "text-ink" : "text-accent-700"
                 }`}
               >
                 {r.sudahDibayar

@@ -55,7 +55,7 @@ export default function MobileSupplier({ suppliers, totalUtang }: { suppliers: S
         </div>
         <div className="px-4 py-3.5">
           <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">Utang berjalan</div>
-          <div className="mt-1 font-sans text-[1.1rem] font-extrabold tracking-tight text-accent">{rupiahCompact(totalUtang)}</div>
+          <div className="mt-1 font-sans text-[1.1rem] font-extrabold tracking-tight text-accent-700">{rupiahCompact(totalUtang)}</div>
         </div>
       </div>
 
@@ -101,7 +101,7 @@ export default function MobileSupplier({ suppliers, totalUtang }: { suppliers: S
           <button
             type="submit"
             disabled={saving}
-            className="flex min-h-[44px] items-center justify-center bg-accent px-4 py-3 font-sans text-[0.85rem] font-extrabold text-white disabled:opacity-50"
+            className="flex min-h-[44px] items-center justify-center bg-accent px-4 py-3 font-sans text-[0.85rem] font-extrabold text-ink disabled:opacity-50"
           >
             {saving ? "Menyimpan..." : "Simpan supplier"}
           </button>
@@ -120,7 +120,7 @@ export default function MobileSupplier({ suppliers, totalUtang }: { suppliers: S
             <div className="flex items-baseline justify-between gap-3">
               <b className="min-w-0 truncate font-sans text-[0.85rem]">{s.namaUsaha}</b>
               {s.utangBerjalan > 0 && (
-                <b className="whitespace-nowrap font-sans text-[0.8rem] tracking-tight text-accent">{rupiahCompact(s.utangBerjalan)}</b>
+                <b className="whitespace-nowrap font-sans text-[0.8rem] tracking-tight text-accent-700">{rupiahCompact(s.utangBerjalan)}</b>
               )}
             </div>
             <div className="mt-1 truncate font-sans text-[0.72rem] text-muted">
@@ -138,7 +138,7 @@ export default function MobileSupplier({ suppliers, totalUtang }: { suppliers: S
         <div className="grid grid-cols-2 gap-2.5">
           <a
             href="/purchasing/po/baru"
-            className="flex min-h-[44px] items-center justify-center bg-accent px-3 py-3.5 text-center font-sans text-[0.82rem] font-extrabold text-white no-underline"
+            className="flex min-h-[44px] items-center justify-center bg-accent px-3 py-3.5 text-center font-sans text-[0.82rem] font-extrabold text-ink no-underline"
           >
             Buat PO baru
           </a>

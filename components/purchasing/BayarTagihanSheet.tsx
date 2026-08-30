@@ -110,7 +110,7 @@ export default function BayarTagihanSheet({
                   {r.nomor} · {r.namaBarang}
                 </span>
               </span>
-              <span className={`col-start-2 font-mono text-[0.72rem] font-bold sm:col-auto ${urgent ? "text-accent" : "text-muted"}`}>
+              <span className={`col-start-2 font-mono text-[0.72rem] font-bold sm:col-auto ${urgent ? "text-accent-700" : "text-muted"}`}>
                 {urgent
                   ? `Telat ${r.hariTerlambat} hari`
                   : r.jatuhTempo
@@ -135,11 +135,11 @@ export default function BayarTagihanSheet({
 
         <div className="mt-5 border-t-2 border-ink pt-3.5 font-mono text-[0.72rem] text-muted">
           Tagihan supplier muncul sendiri dari PO yang barangnya sudah diterima di{" "}
-          <a href="/purchasing" className="text-accent underline underline-offset-2">
+          <a href="/purchasing" className="text-accent-700 underline underline-offset-2">
             Purchasing
           </a>
           . Pembayaran langsung tercatat sebagai kas keluar di{" "}
-          <a href="/keuangan" className="text-accent underline underline-offset-2">
+          <a href="/keuangan" className="text-accent-700 underline underline-offset-2">
             Keuangan
           </a>
           .
@@ -160,7 +160,7 @@ export default function BayarTagihanSheet({
           </div>
           <div className="flex justify-between border-b border-line py-2.5 font-mono text-[0.78rem]">
             <span className="text-muted">Kas keluar</span>
-            <b className="text-accent">− {rupiah(total)}</b>
+            <b className="text-accent-700">− {rupiah(total)}</b>
           </div>
           <div className="flex justify-between border-b-2 border-ink py-3 font-sans text-[0.85rem]">
             <span className="font-bold">Kas setelah bayar</span>

@@ -108,7 +108,7 @@ export default async function PurchaseOrderDetailPage({ params }: PageProps<"/pu
                     {bills.map((b) => (
                       <tr key={String(b._id)}>
                         <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
-                          <Link href="/purchasing/tagihan" className="text-accent underline underline-offset-2">
+                          <Link href="/purchasing/tagihan" className="text-accent-700 underline underline-offset-2">
                             {b.nomor}
                           </Link>
                         </td>

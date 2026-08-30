@@ -81,7 +81,7 @@ export default function KomisiPaymentForm({
           <button
             type="button"
             onClick={toggleAll}
-            className="cursor-pointer font-sans text-[0.75rem] text-accent underline underline-offset-2"
+            className="cursor-pointer font-sans text-[0.75rem] text-accent-700 underline underline-offset-2"
           >
             {selected.size === invoices.length ? "Batal pilih semua" : "Pilih semua"}
           </button>

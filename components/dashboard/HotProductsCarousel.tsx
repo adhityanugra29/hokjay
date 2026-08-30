@@ -45,7 +45,7 @@ export default function HotProductsCarousel({ products }: { products: HotProduct
             <div className="text-[1.15rem] font-extrabold text-accent-700">{rupiah(p.komisiNominal)}</div>
             <Link
               href="/katalog"
-              className="mt-auto block w-full border border-accent bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-white no-underline"
+              className="mt-auto block w-full border border-accent bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-ink no-underline"
             >
               Ayo Jualan
             </Link>

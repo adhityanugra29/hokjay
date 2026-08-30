@@ -332,11 +332,11 @@ export default function KatalogClient({
         <button
           type="button"
           onClick={() => setFilterOpen(true)}
-          className="flex cursor-pointer items-center gap-1.5 rounded border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.78rem] font-semibold text-ink hover:border-accent hover:text-accent"
+          className="flex cursor-pointer items-center gap-1.5 rounded border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.78rem] font-semibold text-ink hover:border-accent hover:text-accent-700"
         >
           Filter
           {countActiveFilters(filters) > 0 && (
-            <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-accent px-1 text-[0.62rem] font-bold text-white">
+            <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-accent px-1 text-[0.62rem] font-bold text-ink">
               {countActiveFilters(filters)}
             </span>
           )}

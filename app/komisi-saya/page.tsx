@@ -67,10 +67,10 @@ export default async function KomisiSayaPage() {
               <div className="mt-0.5 font-sans text-[0.7rem] text-muted">Invoice sudah lunas</div>
             </div>
             <div className="border border-accent px-4 py-3">
-              <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">
+              <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-accent-700">
                 Tertahan
               </div>
-              <div className="mt-1 font-sans text-[1.25rem] font-extrabold text-accent">{rupiah(summary.tertahan)}</div>
+              <div className="mt-1 font-sans text-[1.25rem] font-extrabold text-accent-700">{rupiah(summary.tertahan)}</div>
               <div className="mt-0.5 font-sans text-[0.7rem] text-muted">Menunggu pelanggan bayar</div>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default async function KomisiSayaPage() {
         {summary.tertahanInvoices.length > 0 && (
           <div className="mt-7">
             <div className="mb-1 flex items-center gap-2.5">
-              <span className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent">
+              <span className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent-700">
                 Tertahan karena belum dibayar
               </span>
               <span className="h-0.5 flex-1 bg-accent" />
@@ -90,7 +90,7 @@ export default async function KomisiSayaPage() {
                 className="grid grid-cols-[64px_1fr_auto] items-center gap-4 border-b border-line py-4"
               >
                 <div className="border-l-4 border-accent pl-2.5">
-                  <div className="font-sans text-[1.15rem] font-extrabold leading-none text-accent">
+                  <div className="font-sans text-[1.15rem] font-extrabold leading-none text-accent-700">
                     {inv.hariBerjalan}
                   </div>
                   <div className="font-mono text-[9px] text-muted">hari</div>
@@ -100,12 +100,12 @@ export default async function KomisiSayaPage() {
                   <div className="mt-0.5 font-mono text-[0.72rem] text-muted">{inv.nomor}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="text-right font-sans text-[0.9rem] font-extrabold text-accent">
+                  <div className="text-right font-sans text-[0.9rem] font-extrabold text-accent-700">
                     {rupiah(inv.komisi)}
                   </div>
                   <Link
                     href={`/invoice/${inv.invoiceId}`}
-                    className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-white no-underline hover:bg-accent-600"
+                    className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600"
                   >
                     Tagih
                   </Link>
@@ -158,7 +158,7 @@ export default async function KomisiSayaPage() {
         {summary.tertahanInvoices.length > 0 && (
           <Link
             href="/follow-up"
-            className="mt-8 block w-full border border-accent bg-accent py-3.5 text-center font-sans text-[0.9rem] font-bold text-white no-underline hover:bg-accent-600 md:w-auto md:px-6"
+            className="mt-8 block w-full border border-accent bg-accent py-3.5 text-center font-sans text-[0.9rem] font-bold text-ink no-underline hover:bg-accent-600 md:w-auto md:px-6"
           >
             Tagih yang tertahan
           </Link>

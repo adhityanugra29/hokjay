@@ -71,7 +71,7 @@ export default function MobileKeuangan({
         </div>
         <div className="px-4 py-3.5">
           <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">Keluar bulan ini</div>
-          <div className="mt-1 font-sans text-[1.05rem] font-extrabold tracking-tight text-accent">{rupiahCompact(cashBook.totalKeluar)}</div>
+          <div className="mt-1 font-sans text-[1.05rem] font-extrabold tracking-tight text-accent-700">{rupiahCompact(cashBook.totalKeluar)}</div>
         </div>
       </div>
 
@@ -90,7 +90,7 @@ export default function MobileKeuangan({
                   {r.sub ? ` · ${r.sub}` : ""}
                 </span>
               </span>
-              <b className={`whitespace-nowrap font-sans text-[0.82rem] tracking-tight ${r.keluar ? "text-accent" : ""}`}>
+              <b className={`whitespace-nowrap font-sans text-[0.82rem] tracking-tight ${r.keluar ? "text-accent-700" : ""}`}>
                 {r.masuk ? `+ ${rupiahCompact(r.masuk)}` : `− ${rupiahCompact(r.keluar ?? 0)}`}
               </b>
             </div>
@@ -130,7 +130,7 @@ export default function MobileKeuangan({
         <div className="mt-2.5 grid grid-cols-2 gap-2.5">
           <Link
             href="/keuangan/transaksi?tipe=keluar"
-            className="flex min-h-[44px] items-center justify-center bg-accent px-3 py-3.5 text-center font-sans text-[0.82rem] font-extrabold text-white no-underline"
+            className="flex min-h-[44px] items-center justify-center bg-accent px-3 py-3.5 text-center font-sans text-[0.82rem] font-extrabold text-ink no-underline"
           >
             Catat pengeluaran
           </Link>

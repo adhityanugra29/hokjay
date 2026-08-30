@@ -1,31 +1,47 @@
 @import "tailwindcss";
 
 /*
- * Design system — "Rak & Rel" (mockup 1a). One accent voice (merah #ec3013)
- * carries every primary action / active state; everything else is ink on
- * paper, structured by 1-2px rules instead of color, shadow or rounded
- * corners. Old semantic token names (moss, clay, gold, violet, teal-bright)
- * are kept so existing className="bg-moss" / "text-clay" usages across the
- * app don't need touching — they're just repointed at the new palette below,
- * which is what reskins the whole app from one file.
+ * Design system — "Foundry" (2026-08-30), evolving "Rak & Rel" (mockup 1a).
+ * Accent voice moved from red (#ec3013) to yellow (#FFC800) — the same
+ * yellow already used in the Katalog PDF export (CatalogPrintDoc.tsx),
+ * confirmed via the "HOJAY Shell — Foundry" mockup. Base surface warmed
+ * from cool grey to cream to match. Old semantic token names (moss, clay,
+ * gold, violet, teal-bright) are kept so existing className="bg-moss" /
+ * "text-clay" usages across the app don't need touching — they're just
+ * repointed at the new palette below, which is what reskins the whole app
+ * from one file.
+ *
+ * IMPORTANT — accent-on-fill text color: yellow reads badly under white
+ * text (same reason the Katalog PDF never puts white text on it either).
+ * Every "bg-accent ... text-white" usage across the app was updated to
+ * "text-ink" instead — see the 2026-08-30 commit for the full list.
+ * --color-accent-700/800 (already used everywhere as the "readable accent
+ * text on a light background" variant, e.g. text-accent-700) are now a
+ * dark amber instead of a dark red — this is what makes most existing
+ * text-accent-700 usages legible again "for free", without per-file edits.
+ *
+ * --color-danger is now its OWN literal red, deliberately NOT derived
+ * from --color-accent-700 anymore (it used to alias it) — danger/error/
+ * destructive-action color must stay red regardless of whatever the brand
+ * accent is, the two are unrelated concepts that happened to collide.
  */
 :root {
   --color-ink: #201e1d;
-  --color-paper: #f3f2f2;
-  --color-panel: #ffffff;
-  --color-surface: #eae9e9;
-  --color-line: rgba(32, 30, 29, 0.4);
-  --color-muted: rgba(32, 30, 29, 0.55);
+  --color-paper: #f7f1e4;
+  --color-panel: #fffdf8;
+  --color-surface: #efe9da;
+  --color-line: rgba(36, 31, 25, 0.16);
+  --color-muted: rgba(36, 31, 25, 0.6);
 
   /* single accent family — every old accent token (moss, clay, gold,
-     violet, teal-bright, danger) resolves into this one red so nav,
-     buttons, pills and badges read as one voice. */
-  --color-accent: #ec3013;
+     violet, teal-bright) resolves into this one yellow so nav, buttons,
+     pills and badges read as one voice. danger is separate, see above. */
+  --color-accent: #ffc800;
   --color-accent-deep: #201e1d;
-  --color-accent-100: #fff2ef;
-  --color-accent-600: #dd2b0f;
-  --color-accent-700: #ae1800;
-  --color-accent-800: #7c1405;
+  --color-accent-100: #fff8e0;
+  --color-accent-600: #f0b800;
+  --color-accent-700: #92610a;
+  --color-accent-800: #6b4808;
 
   --color-moss: var(--color-accent);
   --color-moss-deep: var(--color-accent-deep);
@@ -33,7 +49,7 @@
   --color-clay: var(--color-accent);
   --color-gold: var(--color-accent-600);
   --color-violet: var(--color-accent-700);
-  --color-danger: var(--color-accent-700);
+  --color-danger: #c0392b;
 }
 
 @theme inline {
@@ -81,7 +97,7 @@ h1, h2, h3, h4 {
 
 ::selection {
   background: var(--color-accent);
-  color: #fff;
+  color: var(--color-ink);
 }
 
 @media print {

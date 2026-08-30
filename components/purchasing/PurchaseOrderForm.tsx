@@ -161,7 +161,7 @@ export default function PurchaseOrderForm({
                   type="button"
                   onClick={() => removeRow(idx)}
                   disabled={items.length === 1}
-                  className="col-span-2 h-[42px] cursor-pointer border border-line font-mono text-[0.8rem] text-muted hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:col-span-1"
+                  className="col-span-2 h-[42px] cursor-pointer border border-line font-mono text-[0.8rem] text-muted hover:border-accent hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40 sm:col-span-1"
                 >
                   × Hapus Baris
                 </button>
@@ -171,7 +171,7 @@ export default function PurchaseOrderForm({
           <button
             type="button"
             onClick={addRow}
-            className="mt-2 w-full cursor-pointer border-[1.5px] border-dashed border-line py-2.5 text-center font-sans text-[0.82rem] text-muted hover:border-accent hover:text-accent"
+            className="mt-2 w-full cursor-pointer border-[1.5px] border-dashed border-line py-2.5 text-center font-sans text-[0.82rem] text-muted hover:border-accent hover:text-accent-700"
           >
             + Tambah Barang
           </button>

@@ -116,7 +116,7 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
               <span className="col-start-2 font-bold sm:col-auto sm:text-right">{rupiah(r.totalKomisi)}</span>
               <span
                 className={`col-start-2 font-mono text-[0.68rem] font-bold uppercase tracking-wide sm:col-auto ${
-                  r.rekeningTerverifikasi ? "text-muted/60" : "text-accent"
+                  r.rekeningTerverifikasi ? "text-muted/60" : "text-accent-700"
                 }`}
               >
                 {r.rekeningTerverifikasi ? "Siap bayar" : "Rekening belum diverifikasi"}

@@ -60,15 +60,20 @@ export default function AppShell({
           bar instead (see MobileTabBar / the 2026-08-24 "7" mobile design
           doc) — no more hamburger/sliding drawer on phones. */}
       <div className="flex min-h-screen">
-        <aside className="no-print sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col bg-ink text-[#f3f2f2] md:flex">
+        <aside className="no-print sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col bg-gradient-to-b from-[#221c16] to-[#2c241c] text-[#f3f2f2] md:flex">
           <Logo tone="ink" fill full border={false} shadow />
 
-          <nav className="flex flex-col overflow-y-auto py-2">
+          {/* Nav items are inset (mx-3, rounded) instead of edge-to-edge —
+              "Foundry" direction (2026-08-30): active state reads as a
+              soft pill with an inset glow rather than a hard-edged full-
+              bleed block, matching the rest of the app's Soft Trade
+              language. Per the confirmed "HOJAY Shell — Foundry" mockup. */}
+          <nav className="flex flex-col gap-0.5 overflow-y-auto px-3 py-2">
             {visibleGroups.map((group) => (
               <div key={group.label ?? "beranda"}>
                 {group.label && (
                   <div
-                    className={`px-5 pb-1.5 pt-4 font-sans text-[9.5px] font-semibold uppercase tracking-[0.16em] ${
+                    className={`px-2 pb-1.5 pt-4 font-sans text-[9.5px] font-semibold uppercase tracking-[0.16em] ${
                       group.items.some((item) => isActive(pathname, item.href)) ? "text-accent" : "text-white/35"
                     }`}
                   >
@@ -88,11 +93,11 @@ export default function AppShell({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`grid items-center gap-2.5 px-5 py-[9px] text-[13.5px] no-underline transition ${
+                      className={`grid items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13.5px] no-underline transition ${
                         item.badge ? "grid-cols-[18px_1fr_auto]" : "grid-cols-[18px_1fr]"
                       } ${
                         active
-                          ? "bg-accent py-2.5 font-bold text-white"
+                          ? "bg-accent/[0.16] py-2.5 font-bold text-white shadow-[inset_0_0_0_1px_rgba(255,200,0,0.4)]"
                           : "font-normal text-white/82 hover:bg-white/10 hover:text-white"
                       }`}
                     >

@@ -48,7 +48,7 @@ export default async function PurchasingDashboardPage() {
           <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
             Barang telat datang
           </div>
-          <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold text-accent sm:text-[1.4rem]">{summary.poTelatCount} PO</div>
+          <div className="mt-1.5 font-sans text-[1.15rem] font-extrabold text-accent-700 sm:text-[1.4rem]">{summary.poTelatCount} PO</div>
           <div className="mt-1 font-mono text-[0.7rem] text-muted">{rupiah(summary.poTelatNilai)} tertahan</div>
         </div>
         <div className="min-w-0 bg-ink p-4 text-white sm:p-5">
@@ -80,7 +80,7 @@ export default async function PurchasingDashboardPage() {
                 <span className="mt-0.5 block font-mono text-[0.72rem] text-muted">{po.itemLabel}</span>
               </span>
               <span
-                className={`font-mono text-[0.72rem] font-bold ${po.hariTelat > 0 ? "text-accent" : "text-muted"}`}
+                className={`font-mono text-[0.72rem] font-bold ${po.hariTelat > 0 ? "text-accent-700" : "text-muted"}`}
               >
                 {po.hariTelat > 0
                   ? `Telat ${po.hariTelat} hari`
@@ -126,11 +126,11 @@ export default async function PurchasingDashboardPage() {
 
           <div className="mt-5 border-t-2 border-ink pt-3.5 font-mono text-[0.72rem] text-muted">
             Barang yang diterima langsung menambah stok di{" "}
-            <Link href="/produk" className="text-accent underline underline-offset-2">
+            <Link href="/produk" className="text-accent-700 underline underline-offset-2">
               Inventory
             </Link>{" "}
             dan memunculkan tagihan di{" "}
-            <Link href="/bayar-tagihan" className="text-accent underline underline-offset-2">
+            <Link href="/bayar-tagihan" className="text-accent-700 underline underline-offset-2">
               Bayar Tagihan
             </Link>{" "}
             — tidak ada input dua kali.

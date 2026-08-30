@@ -267,7 +267,7 @@ export default function CustomOrderPage() {
             <button
               type="button"
               onClick={addRow}
-              className="mt-4 w-full cursor-pointer border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-accent hover:text-accent"
+              className="mt-4 w-full cursor-pointer border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-accent hover:text-accent-700"
             >
               + Tambah Item
             </button>

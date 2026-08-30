@@ -74,7 +74,7 @@ export default function PengaturanKeuangan() {
         </FormGrid>
 
         {error && <div className="mt-3 text-[0.75rem] text-accent-700">{error}</div>}
-        {saved && <div className="mt-3 text-[0.75rem] text-accent">Tersimpan.</div>}
+        {saved && <div className="mt-3 text-[0.75rem] text-accent-700">Tersimpan.</div>}
 
         <FormActions>
           <Button type="submit" disabled={saving}>

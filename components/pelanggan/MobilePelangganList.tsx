@@ -28,7 +28,7 @@ export default function MobilePelangganList({ rows, emptyMessage }: { rows: Cust
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-[0.78rem]">
             <span className="font-semibold">{rupiahCompact(r.nilaiBelanja)}</span>
             <span className="text-muted">{r.orderCount} order</span>
-            {r.piutang > 0 && <span className="font-semibold text-accent">Piutang {rupiahCompact(r.piutang)}</span>}
+            {r.piutang > 0 && <span className="font-semibold text-accent-700">Piutang {rupiahCompact(r.piutang)}</span>}
           </div>
         </div>
       ))}

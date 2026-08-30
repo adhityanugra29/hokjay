@@ -456,7 +456,7 @@ export default function InvoiceForm({
             <button
               type="button"
               onClick={() => setEditingCustomer(true)}
-              className="cursor-pointer border border-line bg-panel px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink hover:border-accent hover:text-accent"
+              className="cursor-pointer border border-line bg-panel px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink hover:border-accent hover:text-accent-700"
             >
               Ubah
             </button>

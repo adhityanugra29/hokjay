@@ -158,7 +158,7 @@ export default function MobileGajiBulanan({
                   <b className="block font-sans text-[0.85rem]">
                     {r.nama} <span className="font-mono text-[9px] font-normal uppercase tracking-wide text-muted">{TIPE_LABEL[r.tipe]}</span>
                   </b>
-                  <span className={`mt-0.5 block font-sans text-[0.72rem] ${r.sudahDibayar ? "text-muted" : r.siapBayar ? "text-muted" : "font-bold text-accent"}`}>
+                  <span className={`mt-0.5 block font-sans text-[0.72rem] ${r.sudahDibayar ? "text-muted" : r.siapBayar ? "text-muted" : "font-bold text-accent-700"}`}>
                     {r.sudahDibayar ? "Sudah dibayar" : r.siapBayar ? r.subtitle : r.tipe === "sales" ? "Rekening belum diverifikasi" : "Belum ada absensi"}
                   </span>
                 </span>
@@ -183,12 +183,12 @@ export default function MobileGajiBulanan({
               <span className="block font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-muted">Kas sebelum</span>
               <b className="mt-0.5 block font-sans text-[0.85rem] tracking-tight">{rupiahCompact(kasSekarang)}</b>
             </span>
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-accent">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-accent-700">
               <path d="M4 10h11M10.5 5.5 15 10l-4.5 4.5" />
             </svg>
             <span className="text-right">
               <span className="block font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-muted">Kas sesudah</span>
-              <b className={`mt-0.5 block font-sans text-[0.85rem] tracking-tight ${kasSetelah < 0 ? "text-accent" : ""}`}>{rupiahCompact(kasSetelah)}</b>
+              <b className={`mt-0.5 block font-sans text-[0.85rem] tracking-tight ${kasSetelah < 0 ? "text-accent-700" : ""}`}>{rupiahCompact(kasSetelah)}</b>
             </span>
           </div>
           {error && <div className="mt-2 font-sans text-[0.75rem] text-danger">{error}</div>}
@@ -196,7 +196,7 @@ export default function MobileGajiBulanan({
             type="button"
             onClick={handlePay}
             disabled={saving || selectedRows.length === 0}
-            className="mt-2.5 flex min-h-[44px] w-full items-center justify-center gap-2 bg-accent px-4 py-3.5 font-sans text-[0.9rem] font-extrabold text-white disabled:opacity-50"
+            className="mt-2.5 flex min-h-[44px] w-full items-center justify-center gap-2 bg-accent px-4 py-3.5 font-sans text-[0.9rem] font-extrabold text-ink disabled:opacity-50"
           >
             {saving ? "Memproses..." : `Bayar ${selectedRows.length} orang`}
           </button>

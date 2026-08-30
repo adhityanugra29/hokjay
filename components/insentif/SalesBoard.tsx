@@ -35,7 +35,7 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
             <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
               Sisa waktu
             </div>
-            <div className="mt-2 whitespace-nowrap font-sans text-[1.6rem] font-extrabold leading-none tracking-tight text-accent sm:text-[2rem]">
+            <div className="mt-2 whitespace-nowrap font-sans text-[1.6rem] font-extrabold leading-none tracking-tight text-accent-700 sm:text-[2rem]">
               {daysRemaining} hari
             </div>
           </div>
@@ -71,7 +71,7 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
       ) : (
         <div className="border-b-2 border-ink bg-white px-5 py-5 font-mono text-[0.8rem] text-muted sm:px-10">
           Belum ada target tim tercapai —{" "}
-          <Link href="/admin" className="text-accent underline underline-offset-2">
+          <Link href="/admin" className="text-accent-700 underline underline-offset-2">
             atur target per sales di Admin → Kelola User
           </Link>
           .
@@ -86,7 +86,7 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
             <div
               key={r.salesNama}
               className={`grid grid-cols-[40px_1fr] items-start gap-x-3 gap-y-2.5 px-4 py-4 sm:grid-cols-[58px_1fr_280px_96px_200px] sm:items-center sm:gap-6 sm:px-5 sm:py-5 ${
-                isTop ? "bg-accent text-white" : "border-b border-ink/20 bg-white text-ink"
+                isTop ? "bg-accent text-ink" : "border-b border-ink/20 bg-white text-ink"
               }`}
             >
               <span className={`font-sans text-[1.6rem] font-extrabold leading-none tracking-tight sm:text-[2.1rem] ${isTop ? "text-white" : "text-ink/25"}`}>
@@ -134,7 +134,7 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
       </div>
 
       {rows.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-accent px-5 py-4 text-white sm:px-10">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-accent px-5 py-4 text-ink sm:px-10">
           <span className="font-sans text-[0.9rem] font-extrabold">
             {lewatCount > 0 ? `${lewatCount} orang sudah lewat target` : "Belum ada yang lewat target"}
             {belumCount > 0 ? ` · ${belumCount} orang masih dalam jangkauan` : ""}

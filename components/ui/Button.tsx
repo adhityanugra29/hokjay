@@ -6,11 +6,11 @@ type Variant = "solid" | "ghost" | "clay" | "violet" | "gold";
 // All four "accent" variants collapse to the same single accent color —
 // only solid (primary) vs ghost (secondary) is a meaningful distinction now.
 const VARIANT_CLASS: Record<Variant, string> = {
-  solid: "border-accent bg-accent text-white hover:bg-accent-600",
+  solid: "border-accent bg-accent text-ink hover:bg-accent-600",
   ghost: "border-line bg-transparent text-ink hover:bg-black/5",
-  clay: "border-accent bg-accent text-white hover:bg-accent-600",
-  violet: "border-accent bg-accent text-white hover:bg-accent-600",
-  gold: "border-accent bg-accent text-white hover:bg-accent-600",
+  clay: "border-accent bg-accent text-ink hover:bg-accent-600",
+  violet: "border-accent bg-accent text-ink hover:bg-accent-600",
+  gold: "border-accent bg-accent text-ink hover:bg-accent-600",
 };
 
 const base =

@@ -1,5 +1,5 @@
 const CLASS: Record<number, string> = {
-  1: "bg-accent text-white",
+  1: "bg-accent text-ink",
   2: "bg-surface text-ink",
   3: "bg-surface text-ink",
 };

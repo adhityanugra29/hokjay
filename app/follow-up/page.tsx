@@ -138,7 +138,7 @@ export default async function FollowUpPage() {
                     <td className="border-b border-line px-5 py-4.5">
                       <Link
                         href={r.status === "draft" ? `/invoice/${r.invoiceId}/ubah` : `/invoice/${r.invoiceId}`}
-                        className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent no-underline hover:bg-accent hover:text-white"
+                        className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
                       >
                         {r.status === "draft" ? "Lanjutkan" : "Lihat"}
                       </Link>

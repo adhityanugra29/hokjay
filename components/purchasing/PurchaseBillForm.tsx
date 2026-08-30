@@ -100,7 +100,7 @@ export default function PurchaseBillForm({
             hint={
               <>
                 Belum ada di daftar?{" "}
-                <Link href="/purchasing/supplier" className="text-accent underline">
+                <Link href="/purchasing/supplier" className="text-accent-700 underline">
                   Tambah supplier baru
                 </Link>
               </>

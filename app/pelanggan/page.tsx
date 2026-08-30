@@ -30,7 +30,7 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
     filter === "semua" ? (
       <>
         Belum ada pelanggan.{" "}
-        <Link href="/pelanggan/baru" className="text-accent underline underline-offset-2">
+        <Link href="/pelanggan/baru" className="text-accent-700 underline underline-offset-2">
           Tambah pelanggan pertama
         </Link>
         .
@@ -61,7 +61,7 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Total piutang
             </div>
-            <div className="mt-1.5 font-sans text-[1.05rem] font-extrabold text-accent sm:whitespace-nowrap sm:text-[1.3rem]">
+            <div className="mt-1.5 font-sans text-[1.05rem] font-extrabold text-accent-700 sm:whitespace-nowrap sm:text-[1.3rem]">
               {rupiah(summary.totalPiutang)}
             </div>
             <div className="mt-1 font-mono text-[0.68rem] text-muted">tersebar di {summary.piutangCustomerCount} pelanggan</div>
@@ -120,7 +120,7 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
                   </div>
                   <div className="font-mono text-[0.75rem] text-muted">{r.orderCount} order</div>
                   <div className="text-right font-bold">{rupiahCompact(r.nilaiBelanja)}</div>
-                  <div className={`text-right font-bold ${r.piutang > 0 ? "text-accent" : "text-muted/40"}`}>
+                  <div className={`text-right font-bold ${r.piutang > 0 ? "text-accent-700" : "text-muted/40"}`}>
                     {r.piutang > 0 ? rupiahCompact(r.piutang) : "0"}
                   </div>
                   <div className="text-right">

@@ -15,7 +15,7 @@ export default function SubnavTabs({ tabs }: { tabs: { href: string; label: stri
             href={tab.href}
             className={`-mb-0.5 shrink-0 border-b-2 px-4 py-2.5 font-sans text-[0.75rem] whitespace-nowrap ${
               active
-                ? "border-accent font-extrabold text-accent"
+                ? "border-accent font-extrabold text-accent-700"
                 : "border-transparent text-muted hover:text-ink"
             }`}
           >

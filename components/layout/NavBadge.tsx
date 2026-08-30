@@ -30,7 +30,7 @@ export default function NavBadge({
   if (type === "invoiceCount") {
     return (
       <span
-        className={`px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-white text-accent" : "bg-accent text-white"}`}
+        className={`px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-white text-accent-700" : "bg-accent text-ink"}`}
       >
         {value}
       </span>

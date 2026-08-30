@@ -37,7 +37,7 @@ export default function PageHeader({
   const meta = getModuleMeta(pathname);
 
   return (
-    <div className="flex min-h-[100px] flex-col justify-center border-b-2 border-ink px-6 py-5 pl-16 md:px-9">
+    <div className="flex min-h-[100px] flex-col justify-center border-b border-line px-6 py-5 pl-16 md:px-9">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div>
           {meta && (

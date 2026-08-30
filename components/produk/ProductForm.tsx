@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Panel } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input, Select, Textarea, CurrencyInput } from "@/components/ui/Form";
+import { FormCard, FormSection, FormCardActions } from "@/components/ui/FormSection";
+import { Field, Input, Select, Textarea, CurrencyInput } from "@/components/ui/Form";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
@@ -115,6 +115,26 @@ function DimensiDigitInput({
   );
 }
 
+/**
+ * Reads Nama Produk + Ukuran P×L×T straight out of the photo's filename —
+ * per the user's request 2026-08-30 ("mereka kerja per photo... nanti
+ * nama filenya, dijadikan default di nama produk... ada ukuran, kamu
+ * defaultkan juga itu ukuranya"). Verified as a real interactive demo
+ * (the "HOJAY Shell — Foundry" mockup) before being wired in here.
+ */
+function parseProductFilename(filename: string): { name: string; dims: { p: string; l: string; t: string } | null } {
+  const base = filename.replace(/\.[^/.]+$/, ""); // strip extension
+  const dimMatch = base.match(/(\d{1,4})\s*[xX×]\s*(\d{1,4})\s*[xX×]\s*(\d{1,4})/);
+  let name = base;
+  let dims: { p: string; l: string; t: string } | null = null;
+  if (dimMatch) {
+    dims = { p: dimMatch[1], l: dimMatch[2], t: dimMatch[3] };
+    name = base.slice(0, dimMatch.index) + base.slice(dimMatch.index! + dimMatch[0].length);
+  }
+  name = name.replace(/[_-]+/g, " ").replace(/\s{2,}/g, " ").trim();
+  return { name, dims };
+}
+
 export default function ProductForm({
   mode,
   productId,
@@ -174,6 +194,23 @@ export default function ProductForm({
 
   function set<K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
+  }
+
+  // Autofill Nama Produk / Ukuran P×L×T from the photo's filename — never
+  // overwrites a field the user already typed into by hand (checked per
+  // field, not "any field filled"). Per the user's request 2026-08-30.
+  function handlePhotoSelected(file: File) {
+    const parsed = parseProductFilename(file.name);
+    setValues((v) => {
+      const next = { ...v };
+      if (parsed.name && !v.name.trim()) next.name = parsed.name;
+      if (parsed.dims && !v.panjangCm.trim() && !v.lebarCm.trim() && !v.tinggiCm.trim()) {
+        next.panjangCm = parsed.dims.p;
+        next.lebarCm = parsed.dims.l;
+        next.tinggiCm = parsed.dims.t;
+      }
+      return next;
+    });
   }
 
   // Kondisi drives the commission default (6% baru, 10% bekas), matching
@@ -255,126 +292,149 @@ export default function ProductForm({
   }
 
   return (
-    <Panel className="max-w-3xl p-7">
+    <FormCard
+      className="max-w-3xl"
+      title="Data Produk"
+      description="Harga Modal & Komisi Nominal dihitung otomatis."
+    >
       <form onSubmit={handleSubmit}>
-        <FormGrid>
-          <Field label="Nama Produk">
-            <Input
-              required
-              value={values.name}
-              onChange={(e) => set("name", e.target.value)}
-              placeholder="Contoh: Meja Kerja Stainless Steel 120cm"
-            />
-          </Field>
-          <Field label="Merk" hint="Opsional — nama merek/brand produk.">
-            <Input
-              value={values.merk}
-              onChange={(e) => set("merk", e.target.value)}
-              placeholder="Contoh: Getra"
-            />
-          </Field>
-          <Field label="Kategori" hint="Ketik untuk cari, Enter pilih yang paling atas — defaultnya kategori terakhir yang dipakai.">
-            <SearchableSelect
-              value={values.category}
-              onChange={(v) => set("category", v)}
-              options={categories}
-              placeholder="Cari atau pilih kategori..."
-              emptyLabel="Tidak ada kategori yang cocok."
-            />
-            {categories.length === 0 && (
-              <div className="mt-1 font-mono text-[0.7rem] text-clay">
-                Belum ada kategori — tambahkan dulu di halaman Admin.
-              </div>
-            )}
-          </Field>
+        {/* Foto dipindah ke PALING ATAS — "mereka kerja per photo" (per
+            the user's request 2026-08-30). Nama file di-parse untuk
+            mengisi Nama Produk & Ukuran P×L×T otomatis, tapi cuma kalau
+            field itu masih kosong — lihat parseProductFilename/
+            handlePhotoSelected di atas. Verified as a real interactive
+            demo (the "HOJAY Shell — Foundry" mockup) before landing here. */}
+        <FormSection label="Foto Produk" compact>
+          <UploadBox
+            folder="products"
+            value={values.fotoUrl}
+            onChange={(url) => set("fotoUrl", url)}
+            onFileSelected={handlePhotoSelected}
+            hint="Tampil di Katalog, kartu produk, dan PDF katalog · JPG/PNG, maks 5MB"
+          />
+        </FormSection>
 
-          <Field label="Kondisi" hint="Menentukan default Komisi per Item — 6% untuk baru, 10% untuk bekas.">
-            <Select value={values.kondisi} onChange={(e) => setKondisi(e.target.value as "baru" | "bekas")}>
-              <option value="baru">Baru</option>
-              <option value="bekas">Bekas</option>
-            </Select>
-          </Field>
-          <Field label="Tipe Produk" hint="Menentukan apakah Ketebalan Material berlaku untuk produk ini.">
-            <Select
-              value={values.tipeProduk}
-              onChange={(e) => set("tipeProduk", e.target.value as "elektronik" | "non-elektronik")}
+        {/* Dipadatkan (3 kolom, seksi lebih ringkas) — form ini diisi
+            berkali-kali sehari, kecepatan lebih penting daripada napas
+            visual lega. Per the user's request 2026-08-30. */}
+        <FormSection label="Identitas & Stok" compact>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label="Nama Produk" span2>
+              <Input
+                required
+                value={values.name}
+                onChange={(e) => set("name", e.target.value)}
+                placeholder="Contoh: Meja Kerja Stainless Steel 120cm"
+              />
+            </Field>
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Field label="Merk" hint="Opsional">
+              <Input value={values.merk} onChange={(e) => set("merk", e.target.value)} placeholder="Contoh: Getra" />
+            </Field>
+            <Field label="Kategori">
+              <SearchableSelect
+                value={values.category}
+                onChange={(v) => set("category", v)}
+                options={categories}
+                placeholder="Cari atau pilih kategori..."
+                emptyLabel="Tidak ada kategori yang cocok."
+              />
+              {categories.length === 0 && (
+                <div className="mt-1 font-mono text-[0.7rem] text-clay">Belum ada kategori.</div>
+              )}
+            </Field>
+            <Field label="Kondisi">
+              <Select value={values.kondisi} onChange={(e) => setKondisi(e.target.value as "baru" | "bekas")}>
+                <option value="baru">Baru</option>
+                <option value="bekas">Bekas</option>
+              </Select>
+            </Field>
+          </div>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Field label="Tipe Produk">
+              <Select
+                value={values.tipeProduk}
+                onChange={(e) => set("tipeProduk", e.target.value as "elektronik" | "non-elektronik")}
+              >
+                <option value="non-elektronik">Non-Elektronik</option>
+                <option value="elektronik">Elektronik</option>
+              </Select>
+            </Field>
+            <Field label="Stok Awal">
+              <Input type="number" value={values.stok} onChange={(e) => set("stok", e.target.value)} />
+            </Field>
+            <Field label="Tgl. Barang Masuk">
+              <Input
+                type="date"
+                value={values.tanggalBarangMasuk}
+                onChange={(e) => set("tanggalBarangMasuk", e.target.value)}
+              />
+            </Field>
+          </div>
+        </FormSection>
+
+        {/* Urutan alur yang benar-benar diketik user, berurutan: Harga
+            Minimum -> Harga Rekomendasi -> Komisi %. Nilai otomatis
+            (Harga Modal, Komisi Nominal) dipisah di bawah sebagai teks
+            polos — bukan field/kotak lagi, supaya tidak terbaca seolah
+            bisa diisi manual. Per koreksi user 2026-08-30. */}
+        <FormSection label="Harga & Komisi" compact>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Field
+              label="Harga Minimum"
+              hint={values.kondisi === "bekas" ? "\"Harga bottom\" komisi bekas" : undefined}
             >
-              <option value="non-elektronik">Non-Elektronik</option>
-              <option value="elektronik">Elektronik</option>
-            </Select>
-          </Field>
-
-          <Field
-            label="Harga Minimum"
-            hint={values.kondisi === "bekas" ? "= \"Harga bottom\" — dipakai untuk hitung komisi barang bekas." : undefined}
-          >
-            <CurrencyInput
-              required
-              value={values.hargaMinimum}
-              onChange={(v) => set("hargaMinimum", v)}
-              placeholder="0"
-            />
-          </Field>
-          <Field label="Harga Modal" hint="Otomatis = Harga Minimum ÷ 2.">
-            <Input disabled value={rupiah(hargaModal)} />
-          </Field>
-          <Field label="Harga Rekomendasi">
-            <CurrencyInput
-              required
-              value={values.hargaRekomendasi}
-              onChange={(v) => set("hargaRekomendasi", v)}
-              placeholder="0"
-            />
-          </Field>
-
-          <Field
-            label="Komisi per Item — Persen"
-            hint="Nilai referensi saja — komisi invoice sekarang dihitung otomatis (6% barang baru/custom, atau 10% harga bottom / selisih untuk barang bekas)."
-          >
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              value={values.komisiPercent}
-              onChange={(e) => set("komisiPercent", e.target.value)}
-            />
-          </Field>
-          <Field label="Komisi per Item — Nominal">
-            <Input disabled value={rupiah(komisiNominal)} />
-          </Field>
-
-          <Field label="Stok Awal">
-            <Input type="number" value={values.stok} onChange={(e) => set("stok", e.target.value)} />
-          </Field>
-          <Field label="Tanggal Barang Masuk">
-            <Input type="date" value={values.tanggalBarangMasuk} onChange={(e) => set("tanggalBarangMasuk", e.target.value)} />
-          </Field>
-
-          <Field label="Ukuran P × L × T (cm)">
-            <div className="flex items-center gap-2">
-              <DimensiDigitInput value={values.panjangCm} onChange={(v) => set("panjangCm", v)} nextRef={lebarRef} />
-              <span className="text-muted">×</span>
-              <DimensiDigitInput value={values.lebarCm} onChange={(v) => set("lebarCm", v)} nextRef={tinggiRef} inputRef={lebarRef} />
-              <span className="text-muted">×</span>
-              <DimensiDigitInput value={values.tinggiCm} onChange={(v) => set("tinggiCm", v)} inputRef={tinggiRef} />
-            </div>
-          </Field>
-          {values.tipeProduk !== "elektronik" && (
-            <Field label="Ketebalan Material">
-              <Input value={values.ketebalan} onChange={(e) => set("ketebalan", e.target.value)} placeholder="Contoh: 1.2 mm" />
+              <CurrencyInput required value={values.hargaMinimum} onChange={(v) => set("hargaMinimum", v)} placeholder="0" />
             </Field>
-          )}
-          {values.tipeProduk === "elektronik" && (
-            <Field label="Daya Listrik">
-              <Input value={values.dayaListrik} onChange={(e) => set("dayaListrik", e.target.value)} placeholder="Contoh: 1200 Watt" />
+            <Field label="Harga Rekomendasi">
+              <CurrencyInput required value={values.hargaRekomendasi} onChange={(v) => set("hargaRekomendasi", v)} placeholder="0" />
             </Field>
-          )}
+            <Field label="Komisi — Persen" hint="Nilai referensi — komisi invoice dihitung otomatis.">
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={values.komisiPercent}
+                onChange={(e) => set("komisiPercent", e.target.value)}
+              />
+            </Field>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
+            <span className="flex items-baseline gap-1.5 font-sans text-[0.74rem] text-muted">
+              Harga Modal <span className="font-medium text-ink">{rupiah(hargaModal)}</span>
+            </span>
+            <span className="flex items-baseline gap-1.5 font-sans text-[0.74rem] text-muted">
+              Komisi Nominal <span className="font-medium text-ink">{rupiah(komisiNominal)}</span>
+            </span>
+          </div>
+        </FormSection>
 
-          <Field label="Foto Produk" span2 hint="Tampil di Katalog, kartu produk, dan PDF katalog.">
-            <UploadBox folder="products" value={values.fotoUrl} onChange={(url) => set("fotoUrl", url)} />
-          </Field>
+        <FormSection label="Dimensi & Spesifikasi" compact>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label="Ukuran P × L × T (cm)">
+              <div className="flex items-center gap-2">
+                <DimensiDigitInput value={values.panjangCm} onChange={(v) => set("panjangCm", v)} nextRef={lebarRef} />
+                <span className="text-muted">×</span>
+                <DimensiDigitInput value={values.lebarCm} onChange={(v) => set("lebarCm", v)} nextRef={tinggiRef} inputRef={lebarRef} />
+                <span className="text-muted">×</span>
+                <DimensiDigitInput value={values.tinggiCm} onChange={(v) => set("tinggiCm", v)} inputRef={tinggiRef} />
+              </div>
+            </Field>
+            {values.tipeProduk !== "elektronik" ? (
+              <Field label="Ketebalan Material">
+                <Input value={values.ketebalan} onChange={(e) => set("ketebalan", e.target.value)} placeholder="Contoh: 1.2 mm" />
+              </Field>
+            ) : (
+              <Field label="Daya Listrik">
+                <Input value={values.dayaListrik} onChange={(e) => set("dayaListrik", e.target.value)} placeholder="Contoh: 1200 Watt" />
+              </Field>
+            )}
+          </div>
+        </FormSection>
 
-          <Field label="Deskripsi (tampil di katalog)" span2>
+        <FormSection label="Deskripsi" compact last>
+          <Field label="Deskripsi (tampil di katalog)" hint="Opsional">
             <Textarea
               rows={3}
               value={values.deskripsi}
@@ -382,11 +442,11 @@ export default function ProductForm({
               placeholder="Deskripsi singkat produk untuk pelanggan..."
             />
           </Field>
-        </FormGrid>
+        </FormSection>
 
-        {error && <div className="mt-3 font-mono text-[0.75rem] text-danger">{error}</div>}
+        {error && <div className="px-5 font-mono text-[0.75rem] text-danger">{error}</div>}
 
-        <FormActions>
+        <FormCardActions>
           <Button type="submit" disabled={saving}>
             {saving ? "Menyimpan..." : "Simpan Produk"}
           </Button>
@@ -399,8 +459,8 @@ export default function ProductForm({
               Batal
             </LinkButton>
           )}
-        </FormActions>
+        </FormCardActions>
       </form>
-    </Panel>
+    </FormCard>
   );
 }

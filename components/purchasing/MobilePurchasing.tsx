@@ -36,7 +36,7 @@ export default function MobilePurchasing({
   return (
     <div className="-mx-6 mt-1 flex flex-col bg-panel md:hidden">
       {telat.length > 0 && (
-        <div className="flex items-center justify-between gap-3 bg-accent px-4 py-3.5 text-white">
+        <div className="flex items-center justify-between gap-3 bg-accent px-4 py-3.5 text-ink">
           <span className="min-w-0">
             <b className="block font-sans text-[0.9rem] tracking-tight">{telat.length} PO telat datang</b>
             <span className="mt-0.5 block truncate font-sans text-[0.72rem] text-white/75">{telatLabel}</span>
@@ -66,7 +66,7 @@ export default function MobilePurchasing({
               <div className="flex items-center justify-between gap-2.5">
                 <span className="font-mono text-[10.5px] font-bold text-muted">{po.nomor}</span>
                 {po.hariTelat > 0 ? (
-                  <b className="font-sans text-[0.72rem] text-accent">Telat {po.hariTelat} hari</b>
+                  <b className="font-sans text-[0.72rem] text-accent-700">Telat {po.hariTelat} hari</b>
                 ) : po.tanggalEstimasi ? (
                   <span className="font-sans text-[0.72rem] font-bold text-muted">ETA {formatDateShort(po.tanggalEstimasi)}</span>
                 ) : (
@@ -109,7 +109,7 @@ export default function MobilePurchasing({
         {mostUrgent ? (
           <Link
             href={`/purchasing/po/${mostUrgent.id}`}
-            className="flex min-h-[44px] items-center justify-between gap-2 bg-accent px-4 py-3.5 font-sans text-[0.9rem] font-extrabold text-white no-underline"
+            className="flex min-h-[44px] items-center justify-between gap-2 bg-accent px-4 py-3.5 font-sans text-[0.9rem] font-extrabold text-ink no-underline"
           >
             Terima barang PO
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

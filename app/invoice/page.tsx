@@ -88,7 +88,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
 
         {/* Belum dibayar */}
         <div className="mb-1 flex items-center gap-2.5">
-          <span className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent">
+          <span className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent-700">
             Belum dibayar
           </span>
           <span className="h-0.5 flex-1 bg-accent" />
@@ -102,7 +102,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
           return (
             <div key={String(inv._id)} className="grid grid-cols-[64px_1fr_auto] items-center gap-4 border-b border-line py-4">
               <div className="border-l-4 border-accent pl-2.5">
-                <div className="font-sans text-[1.15rem] font-extrabold leading-none text-accent">{hari}</div>
+                <div className="font-sans text-[1.15rem] font-extrabold leading-none text-accent-700">{hari}</div>
                 <div className="font-mono text-[9px] text-muted">hari</div>
               </div>
               <div>
@@ -129,20 +129,20 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
                     href={`https://wa.me/${(inv.customer?.whatsapp ?? "").replace(/[^0-9]/g, "")}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="border border-line px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent"
+                    className="border border-line px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent-700"
                   >
                     Kirim WA
                   </a>
                   <Link
                     href={`/invoice/${inv._id}/ubah`}
-                    className="border border-line px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent"
+                    className="border border-line px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent-700"
                   >
                     Edit
                   </Link>
                   {!inv.dp?.nominal && <DeleteInvoiceButton invoiceId={String(inv._id)} nomor={inv.nomor} />}
                   <Link
                     href={`/invoice/${inv._id}`}
-                    className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-white no-underline hover:bg-accent-600"
+                    className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600"
                   >
                     Tandai lunas
                   </Link>
@@ -186,7 +186,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
               <DeleteInvoiceButton invoiceId={String(inv._id)} nomor={inv.nomor} />
               <Link
                 href={`/invoice/${inv._id}/ubah`}
-                className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-white no-underline hover:bg-accent-600"
+                className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600"
               >
                 Lanjutkan
               </Link>

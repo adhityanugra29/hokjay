@@ -42,9 +42,11 @@ export default function Logo({
   // convention CatalogPrintDoc already used elsewhere for this exact reason.
   const captionColor = tone === "white" ? "text-[rgba(255,255,255,0.7)]" : "text-muted";
   // On a colored/dark background the badge inverts (white fill, accent
-  // text) instead of the usual accent fill — otherwise an accent-red badge
-  // vanishes against an accent-red cover (see CatalogPrintDoc's cover).
-  const badgeColor = tone === "white" ? "bg-white text-accent" : "bg-accent text-white";
+  // text) instead of the usual accent fill — otherwise an accent badge
+  // vanishes against an accent-colored cover (see CatalogPrintDoc's cover).
+  // text-accent-700 (not plain text-accent) on the white-fill branch —
+  // the accent is yellow now, illegible as plain text on a white chip.
+  const badgeColor = tone === "white" ? "bg-white text-accent-700" : "bg-accent text-ink";
   const bgColor = fill ? (tone === "white" ? "bg-ink" : "bg-white") : "";
   // 1px, not 2 — a 2px outline read as too heavy/wide once scaled up in the
   // katalog PDF (html2canvas renders at scale:2). Per the user's feedback
