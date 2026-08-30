@@ -11,6 +11,7 @@ import { getSession } from "@/lib/auth/session";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { getProdukBaruIds } from "@/lib/katalog";
+import { invoiceVisibilityFilter } from "@/lib/invoice-visibility";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -53,8 +54,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   if (user) {
     badgeCountsPromise = (async () => {
       await dbConnect();
+      // Per-sales invoice privacy extends to this badge too — per the
+      // user's report 2026-08-30 ("notif masih terlihat di semua akun,
+      // tapi invoicenya sudah tidak ada"): this count had no sales-scoping
+      // at all, so a sales rep saw a number that included other reps'
+      // invoices even though opening one of those directly is already
+      // correctly blocked.
       const [invoiceCount, produkBaruIds] = await Promise.all([
-        Invoice.countDocuments({ status: { $in: ["draft", "unpaid"] } }),
+        Invoice.countDocuments({ status: { $in: ["draft", "unpaid"] }, ...invoiceVisibilityFilter(session) }),
         getProdukBaruIds(),
       ]);
       return { invoiceCount, produkBaru: produkBaruIds.size };

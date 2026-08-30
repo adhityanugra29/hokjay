@@ -47,7 +47,7 @@ export default async function DashboardPage() {
     mySummary,
     myDormant,
   ] = await Promise.all([
-    getFollowUpInvoices(),
+    getFollowUpInvoices(session),
     getSalesRanking(currentPeriod()),
     getLowStockProducts(3),
     getKeuanganSummary(thisMonthRange),

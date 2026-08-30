@@ -5,11 +5,15 @@ import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { getFollowUpInvoices, summarizeFollowUpBySales } from "@/lib/dashboard";
 import { rupiah, rupiahCompact } from "@/lib/format";
+import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function FollowUpPage() {
-  const rows = await getFollowUpInvoices();
+  // /follow-up is reachable by a plain "sales" role too (see
+  // lib/auth/access.ts's isAllowedPage) — same per-sales privacy applies.
+  const session = await getSession();
+  const rows = await getFollowUpInvoices(session);
   const bySales = summarizeFollowUpBySales(rows);
 
   const totalNilai = rows.reduce((s, r) => s + r.sisaTagihan, 0);

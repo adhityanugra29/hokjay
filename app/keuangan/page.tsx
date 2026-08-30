@@ -9,6 +9,7 @@ import { dbConnect } from "@/lib/db";
 import { rupiah, rupiahCompact, formatDateShort } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
 import { MONTH_NAMES } from "@/lib/constants";
+import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -21,12 +22,13 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
   const year = Number(sp.tahun) || nowJakarta.year;
   const range = jakartaMonthRange(year, month);
   const tipeFilter = sp.tipe === "masuk" || sp.tipe === "keluar" ? sp.tipe : undefined;
+  const session = await getSession();
 
   const [summary, cashBook, saldoHariIni, followUp] = await Promise.all([
     getKeuanganSummary(range),
     getCashBook(range),
     getCurrentCashBalance(),
-    getFollowUpInvoices(),
+    getFollowUpInvoices(session),
   ]);
 
   const piutang = followUp.filter((i) => i.status === "unpaid");

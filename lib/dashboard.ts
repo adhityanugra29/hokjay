@@ -2,6 +2,8 @@ import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Product } from "@/models/Product";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
+import { invoiceVisibilityFilter } from "@/lib/invoice-visibility";
+import type { SessionPayload } from "@/lib/auth/jwt";
 
 export type HotBadge = "terlaris" | "stok" | "insentif";
 
@@ -105,9 +107,18 @@ export interface FollowUpSalesSummary {
  * — only stock/journal posting is gated behind finalize), so summing it here
  * is safe even for drafts. See confirmation with the user 2026-08-21.
  */
-export async function getFollowUpInvoices(): Promise<FollowUpInvoiceRow[]> {
+export async function getFollowUpInvoices(session?: SessionPayload | null): Promise<FollowUpInvoiceRow[]> {
   await dbConnect();
-  const invoices = await Invoice.find({ status: { $in: ["unpaid", "draft"] } }).sort({ createdAt: 1 });
+  // Per-sales invoice privacy — per the user's report 2026-08-30 ("notif
+  // masih terlihat di semua akun, tapi invoicenya sudah tidak ada"): this
+  // powers both Beranda's "Perlu ditindak" widget and /follow-up, both
+  // reachable by a plain "sales" role (see lib/auth/access.ts's
+  // isAllowedPage), and had no sales-scoping at all. A no-op for every
+  // other role (invoiceVisibilityFilter only restricts "sales").
+  const invoices = await Invoice.find({
+    status: { $in: ["unpaid", "draft"] },
+    ...invoiceVisibilityFilter(session),
+  }).sort({ createdAt: 1 });
 
   return invoices.map((inv) => {
     const komisiPotensial = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
