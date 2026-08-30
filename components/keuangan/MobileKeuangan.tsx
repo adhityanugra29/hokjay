@@ -64,7 +64,7 @@ export default function MobileKeuangan({
         <PeriodPicker month={month} year={year} currentYear={currentYear} />
       </div>
 
-      <div className="grid grid-cols-2 border-b-2 border-ink bg-white">
+      <div className="grid grid-cols-2 border-b-2 border-line bg-white">
         <div className="border-r border-line px-4 py-3.5">
           <div className="font-sans text-[9.5px] font-bold uppercase tracking-[0.13em] text-muted">Masuk bulan ini</div>
           <div className="mt-1 font-sans text-[1.05rem] font-extrabold tracking-tight">{rupiahCompact(cashBook.totalMasuk)}</div>
@@ -120,7 +120,7 @@ export default function MobileKeuangan({
         )}
       </div>
 
-      <div className="sticky bottom-[58px] border-t-2 border-ink bg-white px-4 py-3.5">
+      <div className="sticky bottom-[58px] border-t-2 border-line bg-white px-4 py-3.5">
         <div className="flex items-baseline justify-between">
           <span className="font-sans text-[0.75rem] text-muted">Sisa bulan ini</span>
           <b className="font-sans text-[1rem] tracking-tight">
@@ -130,13 +130,13 @@ export default function MobileKeuangan({
         <div className="mt-2.5 grid grid-cols-2 gap-2.5">
           <Link
             href="/keuangan/transaksi?tipe=keluar"
-            className="flex min-h-[44px] items-center justify-center bg-accent px-3 py-3.5 text-center font-sans text-[0.82rem] font-extrabold text-ink no-underline"
+            className="flex min-h-[44px] items-center justify-center rounded-lg bg-accent px-3 py-3.5 text-center font-sans text-[0.82rem] font-extrabold text-ink no-underline"
           >
             Catat pengeluaran
           </Link>
           <Link
             href="/keuangan/transaksi?tipe=masuk"
-            className="flex min-h-[44px] items-center justify-center border border-line px-3 py-3.5 text-center font-sans text-[0.82rem] font-bold text-ink no-underline"
+            className="flex min-h-[44px] items-center justify-center rounded-lg border border-line px-3 py-3.5 text-center font-sans text-[0.82rem] font-bold text-ink no-underline"
           >
             Catat pemasukan
           </Link>

@@ -81,8 +81,8 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
       <div className="p-6 md:p-9">
         <PeriodPicker month={month} year={year} currentYear={nowJakarta.year} />
 
-        <div className="mb-6 grid grid-cols-2 border-2 border-ink bg-panel lg:grid-cols-4">
-          <div className="min-w-0 border-b border-r border-line p-3.5 sm:p-4.5 lg:border-b-0">
+        <div className="mb-6 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+          <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Saldo awal {MONTH_NAMES[month - 1]}
             </div>
@@ -90,7 +90,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
               {rupiah(cashBook.saldoAwal)}
             </div>
           </div>
-          <div className="min-w-0 border-b border-r-0 border-line p-3.5 sm:p-4.5 lg:border-b-0 lg:border-r">
+          <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Uang masuk
             </div>
@@ -98,7 +98,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
               + {rupiah(cashBook.totalMasuk)}
             </div>
           </div>
-          <div className="min-w-0 border-r border-line p-3.5 sm:p-4.5">
+          <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Uang keluar
             </div>
@@ -106,7 +106,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
               − {rupiah(cashBook.totalKeluar)}
             </div>
           </div>
-          <div className="min-w-0 bg-ink p-3.5 text-white sm:p-4.5">
+          <div className="min-w-0 rounded-xl bg-ink p-4.5 text-white shadow-sm">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
               Sisa kas hari ini
             </div>
@@ -118,26 +118,26 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
           <div>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-ink pb-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2.5">
               <div className="font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
                 Buku kas — {MONTH_NAMES[month - 1]} {year}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 rounded-full bg-surface p-1">
                 <Link
                   href={tipeLink()}
-                  className={`border px-2.5 py-1.5 font-mono text-[0.7rem] ${!tipeFilter ? "border-ink bg-ink text-white" : "border-line text-ink hover:border-accent"}`}
+                  className={`rounded-full px-3 py-1.5 font-mono text-[0.7rem] font-semibold transition ${!tipeFilter ? "bg-ink text-white" : "text-muted hover:text-ink"}`}
                 >
                   Semua
                 </Link>
                 <Link
                   href={tipeLink("masuk")}
-                  className={`border px-2.5 py-1.5 font-mono text-[0.7rem] ${tipeFilter === "masuk" ? "border-ink bg-ink text-white" : "border-line text-ink hover:border-accent"}`}
+                  className={`rounded-full px-3 py-1.5 font-mono text-[0.7rem] font-semibold transition ${tipeFilter === "masuk" ? "bg-ink text-white" : "text-muted hover:text-ink"}`}
                 >
                   Masuk
                 </Link>
                 <Link
                   href={tipeLink("keluar")}
-                  className={`border px-2.5 py-1.5 font-mono text-[0.7rem] ${tipeFilter === "keluar" ? "border-ink bg-ink text-white" : "border-line text-ink hover:border-accent"}`}
+                  className={`rounded-full px-3 py-1.5 font-mono text-[0.7rem] font-semibold transition ${tipeFilter === "keluar" ? "bg-ink text-white" : "text-muted hover:text-ink"}`}
                 >
                   Keluar
                 </Link>
@@ -189,7 +189,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
                 Belum ada transaksi pada periode ini.
               </div>
             )}
-            <div className="border-t-2 border-ink py-3.5 font-sans text-[0.85rem] font-extrabold">
+            <div className="border-t-2 border-line py-3.5 font-sans text-[0.85rem] font-extrabold">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1.5 sm:hidden">
                 <span>Total</span>
                 <span className="font-mono">Masuk {rupiah(cashBook.totalMasuk)}</span>
@@ -206,7 +206,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
           </div>
 
           <div>
-            <div className="border-b-2 border-ink pb-2.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
+            <div className="border-b border-line pb-2.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
               Rekap kategori {MONTH_NAMES[month - 1]}
             </div>
             {summary.nodes.map((n) => (
@@ -225,7 +225,7 @@ export default async function KeuanganPage({ searchParams }: PageProps<"/keuanga
               <span>{summary.netTotal >= 0 ? "+" : "−"} {rupiahCompact(Math.abs(summary.netTotal))}</span>
             </div>
 
-            <div className="mt-6 border-b-2 border-ink pb-2.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
+            <div className="mt-6 border-b border-line pb-2.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
               Belum jadi kas
             </div>
             <div className="border-b border-line py-3">

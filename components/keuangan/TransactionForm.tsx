@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Panel } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input, Select } from "@/components/ui/Form";
+import { FormCard, FormSection, FormCardActions } from "@/components/ui/FormSection";
+import { Field, FormGrid, Input, Select } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
 import { CASHFLOW_CATEGORIES } from "@/lib/constants";
@@ -75,29 +75,32 @@ export default function TransactionForm({ defaultTipe = "keluar" }: { defaultTip
   }
 
   return (
-    <Panel className="max-w-xl p-7">
-      <div className="mb-6 flex overflow-hidden border-2 border-line">
-        <button
-          type="button"
-          onClick={() => switchTipe("masuk")}
-          className={`flex-1 py-2.5 text-[0.85rem] font-semibold ${
-            tipe === "masuk" ? "bg-accent text-ink" : "bg-panel text-muted hover:text-ink"
-          }`}
-        >
-          Pemasukan
-        </button>
-        <button
-          type="button"
-          onClick={() => switchTipe("keluar")}
-          className={`flex-1 border-l-2 border-line py-2.5 text-[0.85rem] font-semibold ${
-            tipe === "keluar" ? "bg-accent text-ink" : "bg-panel text-muted hover:text-ink"
-          }`}
-        >
-          Pengeluaran
-        </button>
+    <FormCard className="max-w-xl" title="Catat Transaksi" description="Uang yang benar-benar keluar atau masuk kas toko.">
+      <div className="px-6 pt-5">
+        <div className="flex gap-1.5 rounded-full bg-surface p-1">
+          <button
+            type="button"
+            onClick={() => switchTipe("masuk")}
+            className={`flex-1 rounded-full py-2.5 text-[0.85rem] font-semibold transition ${
+              tipe === "masuk" ? "bg-accent text-ink" : "text-muted hover:text-ink"
+            }`}
+          >
+            Pemasukan
+          </button>
+          <button
+            type="button"
+            onClick={() => switchTipe("keluar")}
+            className={`flex-1 rounded-full py-2.5 text-[0.85rem] font-semibold transition ${
+              tipe === "keluar" ? "bg-accent text-ink" : "text-muted hover:text-ink"
+            }`}
+          >
+            Pengeluaran
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit}>
+        <FormSection label="Detail Transaksi" last>
         <FormGrid className="sm:grid-cols-1">
           <Field label="Keterangan">
             <Input
@@ -140,16 +143,17 @@ export default function TransactionForm({ defaultTipe = "keluar" }: { defaultTip
         </FormGrid>
 
         {error && <div className="mt-3 text-[0.75rem] text-accent-700">{error}</div>}
+        </FormSection>
 
-        <FormActions>
+        <FormCardActions>
           <Button type="submit" disabled={saving}>
             {saving ? "Menyimpan..." : `Simpan ${tipe === "keluar" ? "Pengeluaran" : "Pemasukan"}`}
           </Button>
           <LinkButton variant="ghost" href="/keuangan">
             Batal
           </LinkButton>
-        </FormActions>
+        </FormCardActions>
       </form>
-    </Panel>
+    </FormCard>
   );
 }
