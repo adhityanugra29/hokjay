@@ -6,7 +6,7 @@
 
 ## Modules not yet swept for "Foundry" hard-edge / contrast issues
 
-Katalog, Pelanggan, Inventory, Invoice, and the shared shell/Dialog/Insentif have been brought up to the "Soft Trade" treatment (rounded corners, shadows instead of `border-2`, yellow-accent-safe contrast). **Not yet checked:** Keuangan, Akuntansi, Purchasing, Payroll, Admin, Dashboard (`app/page.tsx`). See `TASKS.md` TASK-002 for the subtask breakdown. A quick way to find candidates in a new module:
+Katalog, Pelanggan, Inventory, Invoice, Dashboard, Keuangan, Akuntansi, and the shared shell/Dialog/Insentif have been brought up to the "Soft Trade" treatment (rounded corners, shadows instead of `border-2`, yellow-accent-safe contrast). **Not yet checked:** Purchasing, Payroll, Admin. See `TASKS.md` TASK-002 for the subtask breakdown. A quick way to find candidates in a new module:
 ```
 grep -rln "border-2 border-ink" app/<module> components/<module>
 grep -rnP '\brounded\b(?!-[a-z0-9])' app/<module> components/<module>
@@ -19,6 +19,7 @@ These deliberately keep hard borders because they're meant to look like an actua
 - `app/invoice/[id]/page.tsx`'s `#invoice-doc` (the on-screen invoice preview, mirrors the PDF).
 - `components/invoice/InvoicePrintDoc.tsx`, `components/cart/CatalogPrintDoc.tsx`, `components/akuntansi/ReportDocument.tsx` — the actual PDF/print targets.
 - `InvoiceForm.tsx`'s totals-block `border-t-2 border-ink` above the grand total — a deliberate ledger-style emphasis rule, not card chrome.
+- The three Akuntansi report pages' (`laba-rugi`, `neraca`, `neraca-saldo`) bold `border-t-2 border-ink` totals rows and the trial-balance table's cell borders — same ledger-style rule, live inside `ReportDocument.tsx`'s paper card.
 
 ## Yellow accent contrast rule (for any new UI going forward)
 

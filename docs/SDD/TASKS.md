@@ -35,7 +35,7 @@
 - SUBTASK-002 Insentif leaderboard contrast (Dialog.tsx too, found along the way) — DONE.
 - SUBTASK-003 Dashboard (`app/page.tsx`) — DONE.
 - SUBTASK-004 Keuangan — DONE.
-- SUBTASK-005 Akuntansi — TODO.
+- SUBTASK-005 Akuntansi — DONE.
 - SUBTASK-006 Purchasing — TODO.
 - SUBTASK-007 Payroll — TODO.
 - SUBTASK-008 Admin — TODO.

@@ -34,7 +34,7 @@ export default function ReportDocument({
       {children}
 
       {interpretiveNote && (
-        <div className="mt-5 border-l-4 border-accent bg-[#f7f5ee] p-3.5 font-sans text-[0.8rem] leading-relaxed">
+        <div className="mt-5 border-l-4 border-accent bg-surface p-3.5 font-sans text-[0.8rem] leading-relaxed">
           {interpretiveNote}
         </div>
       )}

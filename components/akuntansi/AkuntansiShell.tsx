@@ -33,27 +33,29 @@ export default function AkuntansiShell({ children }: { children: React.ReactNode
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[252px_1fr]">
-      <aside className="border-b-2 border-line bg-panel py-6 lg:border-b-0 lg:border-r-2 lg:border-ink">
+      <aside className="border-b border-line bg-panel py-6 lg:border-b-0 lg:border-r lg:border-line">
         <div className="px-6 pb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
           Laporan
         </div>
-        {REPORTS.map((r) => {
-          const active = pathname === r.href;
-          return (
-            <Link
-              key={r.href}
-              href={`${r.href}?bulan=${month}&tahun=${year}`}
-              className={`block border-t border-line px-6 py-3 text-[0.85rem] no-underline last:border-b ${
-                active ? "bg-ink font-bold text-white" : "text-ink hover:bg-[#f7f5ee]"
-              }`}
-            >
-              {r.label}
-              <div className={`mt-0.5 font-mono text-[0.68rem] font-normal ${active ? "text-white/60" : "text-muted"}`}>
-                {r.desc}
-              </div>
-            </Link>
-          );
-        })}
+        <div className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+          {REPORTS.map((r) => {
+            const active = pathname === r.href;
+            return (
+              <Link
+                key={r.href}
+                href={`${r.href}?bulan=${month}&tahun=${year}`}
+                className={`block border-b border-line px-5 py-3 text-[0.85rem] no-underline last:border-b-0 ${
+                  active ? "bg-ink font-bold text-white" : "text-ink hover:bg-surface"
+                }`}
+              >
+                {r.label}
+                <div className={`mt-0.5 font-mono text-[0.68rem] font-normal ${active ? "text-white/60" : "text-muted"}`}>
+                  {r.desc}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
         <div className="px-6 pt-6 pb-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
           Periode
         </div>

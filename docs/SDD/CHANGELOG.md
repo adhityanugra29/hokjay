@@ -6,6 +6,17 @@
 
 ## 2026-08-30
 
+**TASK-002 SUBTASK-005** — Akuntansi Foundry sweep.
+
+Changed: `AkuntansiShell.tsx`'s report-picker sidebar — hard `border-r-2 border-ink` divider softened to `border-line`, stacked hard-bordered link rows → one `rounded-xl` card; stale hardcoded `#f7f5ee` hex (pre-dating the Foundry cream-token warm-up) replaced with the `bg-surface` token in both `AkuntansiShell.tsx`'s row hover and `ReportDocument.tsx`'s interpretive note.
+Preserved: `ReportDocument.tsx`'s paper-card styling and all 3 report pages' ledger-style `border-t-2 border-ink` totals rows left untouched — deliberate document-styled surfaces (now explicitly listed in `KNOWN_ISSUES.md`), same precedent as `#invoice-doc`. All report math/PDF export untouched.
+Responsive: checked — layout already stacks (`grid-cols-1 lg:grid-cols-[252px_1fr]`), Neraca's 2-col grid and Neraca Saldo's table already collapse/scroll correctly at small widths; no layout/grid changes made, only border/color tokens.
+Regression: PASS.
+
+---
+
+## 2026-08-30
+
 **TASK-002 SUBTASK-004** — Keuangan Foundry sweep.
 
 Changed: stat strip → 4 individual cards; Semua/Masuk/Keluar filter → pill toggle; hard section dividers softened; `TransactionForm.tsx` moved to `FormCard`/`FormSection`, its Pemasukan/Pengeluaran segmented control → pill toggle; `MobileKeuangan.tsx` dividers/CTA buttons softened.
