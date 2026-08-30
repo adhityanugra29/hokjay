@@ -61,6 +61,10 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
   // Diskon-exceeds-insentif warning for barang bekas — see maxDiskonBekas
   // usage below. Per the user's request 2026-08-29.
   const [discountWarning, setDiscountWarning] = useState(false);
+  // Below-minimum price warning — mirrors ProductCard.tsx's Katalog field.
+  // Per the user's report 2026-08-30 ("kenapa masih bisa untuk masukan
+  // harga dibawah harga minimum?") — this field had no floor at all.
+  const [priceWarning, setPriceWarning] = useState(false);
 
   const subtotal = (item.hargaJual - item.diskonPerUnit) * item.qty;
   // Matches lib/services/createInvoice.ts's/updateInvoice.ts's
@@ -122,10 +126,26 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
               user's report 2026-08-25 that this field wasn't formatted yet. */}
           <CurrencyInput
             value={String(item.hargaJual)}
-            onChange={(v) => updateItem(item.productId, { hargaJual: v ? Number(v) : 0 })}
+            onChange={(v) => {
+              updateItem(item.productId, { hargaJual: v ? Number(v) : 0 });
+              setPriceWarning(false);
+            }}
+            onBlur={(v) => {
+              if (item.isCustom) return;
+              const num = v ? Number(v) : 0;
+              if (num > 0 && num < item.hargaMinimum) {
+                updateItem(item.productId, { hargaJual: item.hargaMinimum });
+                setPriceWarning(true);
+              }
+            }}
           />
           {!item.isCustom && (
             <span className="font-mono text-[0.64rem] text-clay">Harga Minimum: {rupiah(item.hargaMinimum)}</span>
+          )}
+          {priceWarning && (
+            <span className="font-mono text-[0.62rem] font-medium text-accent-700">
+              Harga di bawah minimum, disesuaikan otomatis ke {rupiah(item.hargaMinimum)}.
+            </span>
           )}
         </div>
         <div className="flex flex-col gap-1">
