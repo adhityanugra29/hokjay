@@ -1,0 +1,80 @@
+# HOJAY — Change Log
+
+> Newest first. See `TASKS.md`/`BUGS.md` for the full task/bug detail behind each entry.
+
+---
+
+## 2026-08-30
+
+**TASK-002 (subtask)** — Fixed hidden yellow-on-white contrast bugs in Dialog and the Insentif leaderboard (BUG-003).
+
+Changed:
+- `components/ui/Dialog.tsx`: confirm button text color now follows danger/accent branch correctly; dialog box + buttons rounded.
+- `components/insentif/SalesBoard.tsx`, `MobileSalesBoard.tsx`: rank-#1 highlight's internal text/progress-bar colors flipped from white to ink-based, now legible against the yellow fill.
+
+Preserved: all dialog behavior (confirm/cancel/danger styling intent), leaderboard ranking/percent/target logic — unchanged.
+Bugs fixed: BUG-003.
+Regression: PASS (clean build, lint pre-existing-only).
+
+---
+
+## 2026-08-30
+
+**TASK-002** — End-to-end Foundry pass across every remaining Invoice + Inventory page, so none were left on the old hard-bordered chrome (per explicit user request).
+
+Changed:
+- `app/invoice/page.tsx`: stat strip → individual rounded cards.
+- `app/invoice/[id]/page.tsx`: Status Pembayaran / Riwayat sidebar boxes softened (the invoice-preview document itself deliberately left alone, see `KNOWN_ISSUES.md`).
+- `components/invoice/PaymentForm.tsx`, `DpForm.tsx`: `Panel` → `FormCard`/`FormSection`, sidebar info boxes softened.
+- `app/produk/(list)/kategori/page.tsx`, `riwayat/page.tsx`: row hover color moved from a hardcoded hex to the `bg-surface` token.
+
+Preserved: every field/button/sort-column/filter/action on all 6 pages — Tandai Lunas Manual, Catat DP, bukti-transfer upload, kurir/no. resi, sort headers, search, Ubah/Hapus, etc. Nothing hidden, moved, or removed.
+Regression: PASS.
+
+---
+
+## 2026-08-30
+
+**TASK-002 (kicked off)** — Inventory list "extreme" rework + root-cause fix for the app-wide "still kaku" reports.
+
+Changed:
+- **BUG-002 fixed**: bare `rounded` (0px, see `KNOWN_ISSUES.md`) corrected to `rounded-lg`/`rounded-xl` in `Button.tsx` (used by nearly every button app-wide) and 8 more files.
+- `components/ui/Panel.tsx`: `border-2` → `shadow-sm` + `rounded-2xl` (cascades to every page using `<Panel>` — Inventory, Keuangan, Purchasing, Payroll, etc. — for free).
+- `components/invoice/ItemRowEditor.tsx`: item row → shadow card.
+- `components/ui/LoadingOverlay.tsx`: hard border → rounded + shadow + backdrop-blur.
+- `app/pelanggan/page.tsx`: full rework — stat strip → individual cards, filter → pill toggle, flat row list → one card with hover rows, sidebar sections → their own cards.
+- `app/produk/(list)/page.tsx`: added a stat strip (Produk Aktif / Nilai Stok / Stok Lama), Kondisi badge → pill, row hover → token-based.
+
+Bugs fixed: BUG-002.
+Regression: PASS.
+
+---
+
+## 2026-08-30
+
+**TASK-001 (execution)** — Invoice form redesign (was accidentally left as a 1-line change in the previous commit) + softened the 3 remaining hard-edged slide-over drawers.
+
+Changed:
+- `components/invoice/InvoiceForm.tsx`: full `FormCard`/`FormSection` rework (Pelanggan / Detail Invoice / Item Produk / Ringkasan sections) — all state/handlers/validation/draft-restore/API calls untouched.
+- `components/katalog/KatalogFilterSidebar.tsx`, `EditProductDrawer.tsx`, `components/invoice/AddProductSidebar.tsx`: `border-l-2/border-b-2 border-ink` → `shadow-2xl`.
+
+Regression: PASS.
+
+---
+
+## 2026-08-30
+
+**TASK-001** — Full "Foundry" execution: design tokens, shell, and Pelanggan/Inventory forms.
+
+Changed:
+- `app/globals.css`: accent red `#ec3013` → yellow `#FFC800` (same yellow as the Katalog PDF export); base surface warmed to cream; `--color-danger` split into its own literal red (was aliased to `--color-accent-700`, an unrelated-concept coupling bug fixed along the way).
+- ~40 files: `bg-accent + text-white` → `text-ink`; bare `text-accent` on light backgrounds → `text-accent-700` (sidebar/dark-menu contexts deliberately left alone).
+- `components/layout/AppShell.tsx`: warm dark gradient sidebar, active nav → inset pill instead of full-bleed block.
+- `components/layout/PageHeader.tsx`, `components/ui/StatCard.tsx`: softened.
+- New `components/ui/FormSection.tsx` (`FormCard`/`FormSection`/`FormCardActions`) — purely additive.
+- `components/pelanggan/CustomerForm.tsx`: sectioned (Identitas/Kontak/Alamat/Catatan).
+- `components/produk/ProductForm.tsx`: compact layout, Foto Produk moved first + filename-based Nama Produk/Ukuran autofill (never overwrites manually-filled fields), Harga Minimum→Rekomendasi→Komisi% reordered, Harga Modal/Komisi Nominal shown as plain text instead of a fake disabled input.
+- `components/katalog/ProductCard.tsx`, `KatalogClient.tsx`: "Soft Trade" card treatment, grid 4→3 columns (matching the approved mockup), Diskon field stacked instead of squeezed side-by-side.
+
+Bugs fixed: BUG-001 (zoom collapse, fixed same day in a follow-up commit).
+Regression: PASS — no business logic changed anywhere in this task (commission math, validation, privacy filters, stock/price rules all untouched, verified via diff review).

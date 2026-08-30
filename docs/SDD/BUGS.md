@@ -1,0 +1,70 @@
+# HOJAY — Bug Registry
+
+> Once recorded, a bug is never deleted — only its Status changes. Severity: B0 critical / B1 high / B2 medium / B3 low.
+
+---
+
+## BUG-001 — Katalog photo-zoom collapses into the card instead of covering the screen
+
+**Severity:** B1
+**Status:** FIXED (2026-08-30)
+**Source:** User report ("fitur zoom eror di katalog")
+
+**Description:** `ZoomableImage.tsx`'s full-screen preview is `position: fixed`, and the "Soft Trade" card redesign added a hover `transform: translateY(...)` on the card. Any CSS `transform` on an ancestor makes it that element's own containing block instead of the viewport — so the fixed overlay rendered clipped to the card's own box.
+
+**Root cause:** `ProductCard.tsx`'s outer card div had `hover:-translate-y-0.5`.
+
+**Fix:** Dropped the translate; kept `hover:shadow-md` as the hover cue (box-shadow doesn't create a containing block).
+
+**Files:** `components/katalog/ProductCard.tsx`.
+**Regression test:** Manually confirmed zoom opens full-screen while hovering the card. Documented in `docs/SDD/KNOWN_ISSUES.md` as a standing rule for future hover-transform additions.
+
+---
+
+## BUG-002 — Bare `rounded` class computes to 0px app-wide
+
+**Severity:** B2
+**Status:** FIXED (2026-08-30)
+**Source:** Discovered while investigating the user's repeated "masih kaku" reports across several pages.
+
+**Description:** `app/globals.css` sets `--radius-DEFAULT: 0` (the old flat "Rak & Rel" look). Bare `rounded` (no suffix) silently resolves to 0px, so anything using it — including `components/ui/Button.tsx`'s base class, used by nearly every `<Button>`/`<LinkButton>` in the app — kept hard square corners through multiple earlier rounds of "Soft Trade" work, because the buggy class name looked correct.
+
+**Root cause:** Confusion between Tailwind's bare `rounded` utility (tied to `--radius-DEFAULT`) and the suffixed scale (`rounded-lg`, `rounded-xl`, `rounded-full`, unaffected by that override).
+
+**Fix:** `rounded` → `rounded-lg`/`rounded-xl` in `components/ui/Button.tsx`, `Panel.tsx`, `Form.tsx`, and 6 more files found via `grep -rnP '\brounded\b(?!-[a-z0-9])'`.
+
+**Files:** `components/ui/{Button,Panel,Form,UploadBox}.tsx`, `components/katalog/KatalogClient.tsx`, `components/invoice/{AddProductSidebar,InvoiceForm}.tsx`, `app/invoice/[id]/page.tsx`, `app/katalog/custom-order/page.tsx`.
+**Regression test:** Re-ran the same grep after the fix — zero bare matches remain outside comments/already-correct `rounded-[10px]` usages.
+
+---
+
+## BUG-003 — Hidden yellow-on-white contrast in Dialog and Leaderboard
+
+**Severity:** B2
+**Status:** FIXED (2026-08-30)
+**Source:** Proactive sweep after fixing BUG-002 (per the "actively hunt for bugs" rule).
+
+**Description:** The accent color change (red → yellow, part of TASK-001) fixed every `bg-accent ... text-white` pairing found by a literal-adjacency grep, but two files built their className from one shared base class plus a conditional background, so `text-white` never sat next to `bg-accent` on the same line and was missed: `components/ui/Dialog.tsx`'s confirm button (used by every confirm/alert popup in the app), and `SalesBoard.tsx`/`MobileSalesBoard.tsx`'s rank-#1 leaderboard highlight (rank number, order count, progress bar all assumed a dark fill).
+
+**Root cause:** Grep-based sweep only catches literal same-line adjacency, not classes composed via template-literal ternaries with a shared base.
+
+**Fix:** Split the shared base per branch; flipped `text-white`/`bg-white` variants to `text-ink`/`bg-ink` wherever the branch's own background is the yellow accent.
+
+**Files:** `components/ui/Dialog.tsx`, `components/insentif/SalesBoard.tsx`, `components/insentif/MobileSalesBoard.tsx`.
+**Regression test:** Manually re-read every `isTop`/`dialog.danger` conditional in both files to confirm no remaining light-on-light or light-on-yellow pairing.
+
+---
+
+## BUG-004 — Barang Baru/Custom diskon has no server-side ceiling (commission can go negative)
+
+**Severity:** B2
+**Status:** BLOCKED — REQUIRES DECISION (paused as part of TASK-003, not urgent enough to jump the queue per the user's own sequencing choice)
+**Source:** Discovered while designing TASK-003 (Bulk Diskon)'s algorithm.
+
+**Description:** `lib/services/createInvoice.ts`/`updateInvoice.ts` clamp diskon for barang Bekas via `maxDiskonBekas()`, but Barang Baru/Custom has no equivalent clamp at all. Since `computeLineCommission` for Baru/Custom is `round((hargaJual - diskon) * 0.06)`, a raw API request (bypassing the client's own guards) with `diskon > hargaJual` would compute a NEGATIVE commission.
+
+**Why not auto-fixed immediately:** The user already confirmed the fix ("Ya, sekalian tambahkan proteksi" during TASK-003 planning) but explicitly deferred ALL of TASK-003's execution, including this. Not auto-fixed ahead of that instruction even though it qualifies as "safe" under the auto-fix rules, out of respect for the explicit pause.
+
+**Recommended fix (already designed, see [[hojay-bulk-diskon-plan]] in memory):** clamp `diskon ≤ hargaJual` for Baru/Custom in both services, mirroring the existing Bekas protection.
+
+**Files:** `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
