@@ -356,7 +356,7 @@ export default function KatalogClient({
           input on each ProductCard got noticeably more cramped this
           session, so 2-up was too tight on a phone-width screen. Per the
           user's report 2026-08-25. */}
-      <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((p) => (
           <ProductCard
             key={p._id}

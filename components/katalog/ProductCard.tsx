@@ -455,8 +455,13 @@ export default function ProductCard({
                   2026-08-29 ("besaran diskon ... tidak boleh lebih dari
                   total insentif yang diberikan"). Barang baru/custom have
                   no such cap — confirmed scope. */}
-              <div className="flex items-center gap-2">
-                <span className="shrink-0 font-mono text-[0.64rem] uppercase tracking-[0.06em] text-muted">
+              {/* Stacked (label above, full-width input) instead of side-
+                  by-side — per the user's report 2026-08-30 ("tabel
+                  diskon kecil dan menyamping"): squeezing the label onto
+                  the same row as the input left the input itself
+                  cramped. */}
+              <div className="flex flex-col gap-1">
+                <span className="font-mono text-[0.64rem] uppercase tracking-[0.06em] text-muted">
                   Diskon
                 </span>
                 <CurrencyInput
