@@ -220,7 +220,7 @@ export default async function DashboardPage() {
                 <path d="M10 3a5 5 0 0 1 5 5v3l1.5 3H3.5L5 11V8a5 5 0 0 1 5-5zM8 17h4" />
               </svg>
               {recentActivityCount > 0 && (
-                <span className="absolute right-2 top-2 h-1.5 w-1.5 bg-accent" />
+                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-accent" />
               )}
             </Link>
           </div>
@@ -256,7 +256,7 @@ export default async function DashboardPage() {
           {isSales ? (
             <Link
               href="/komisi-saya"
-              className="flex min-h-[44px] items-center justify-between gap-3 border-b-2 border-ink bg-white px-4 py-4 no-underline"
+              className="flex min-h-[44px] items-center justify-between gap-3 border-b border-line bg-white px-4 py-4 no-underline"
             >
               <span>
                 <b className="block font-sans text-[0.95rem] tracking-tight text-ink">Komisi Saya</b>
@@ -269,7 +269,7 @@ export default async function DashboardPage() {
           ) : (
             <Link
               href="/keuangan/transaksi"
-              className="flex min-h-[44px] items-center justify-between gap-3 border-b-2 border-ink bg-white px-4 py-4 no-underline"
+              className="flex min-h-[44px] items-center justify-between gap-3 border-b border-line bg-white px-4 py-4 no-underline"
             >
               <span>
                 <b className="block font-sans text-[0.95rem] tracking-tight text-ink">Catat Pengeluaran</b>
@@ -293,7 +293,7 @@ export default async function DashboardPage() {
               href={row.href}
               className={`flex items-center justify-between gap-2.5 border-t border-line py-3.5 pl-3 pr-4 no-underline ${
                 row.urgent ? "border-l-4 border-l-accent" : "border-l-4 border-l-line"
-              } ${i === mobileUrgentRows.length - 1 ? "border-b-2 border-b-ink" : ""}`}
+              } ${i === mobileUrgentRows.length - 1 ? "border-b border-b-line" : ""}`}
             >
               <span>
                 <b className="block font-sans text-[0.85rem] text-ink">{row.title}</b>
@@ -363,7 +363,7 @@ export default async function DashboardPage() {
                 <path d="M10 3a5 5 0 0 1 5 5v3l1.5 3H3.5L5 11V8a5 5 0 0 1 5-5zM8 17h4" />
               </svg>
               {recentActivityCount > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 bg-accent px-1 text-[9.5px] font-bold text-ink">
+                <span className="absolute -right-1.5 -top-1.5 rounded-full bg-accent px-1.5 text-[9.5px] font-bold text-ink">
                   {recentActivityCount}
                 </span>
               )}
@@ -375,22 +375,22 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
             <Link
               href="/katalog"
-              className="flex min-h-[132px] flex-col bg-accent p-5 text-ink no-underline hover:bg-accent-600"
+              className="flex min-h-[132px] flex-col rounded-2xl bg-accent p-5 text-ink shadow-sm no-underline transition hover:bg-accent-600"
             >
               <NavIcon name="cart" size={20} />
               <div className="mt-auto">
                 <div className="font-sans text-[1.2rem] font-extrabold tracking-tight">Jual barang</div>
-                <div className="mt-1 font-sans text-[0.75rem] text-white/85">Jelajahi katalog → buat invoice</div>
+                <div className="mt-1 font-sans text-[0.75rem] text-ink/70">Jelajahi katalog → buat invoice</div>
               </div>
             </Link>
             <Link
               href="/invoice"
-              className="flex min-h-[132px] flex-col border-2 border-ink bg-panel p-5 no-underline hover:border-accent"
+              className="flex min-h-[132px] flex-col rounded-2xl bg-panel p-5 shadow-sm no-underline transition hover:shadow-md"
             >
               <div className="flex items-start justify-between">
                 <NavIcon name="document" size={20} />
                 {(isSales ? myUnpaid.length + myDraft.length : unpaidCount + draftCount) > 0 && (
-                  <span className="bg-ink px-1.5 py-0.5 text-[10.5px] font-bold text-white">
+                  <span className="rounded-full bg-ink px-1.5 py-0.5 text-[10.5px] font-bold text-white">
                     {isSales ? myUnpaid.length + myDraft.length : unpaidCount + draftCount} nunggu
                   </span>
                 )}
@@ -407,7 +407,7 @@ export default async function DashboardPage() {
             {isSales ? (
               <Link
                 href="/komisi-saya"
-                className="flex min-h-[132px] flex-col border border-line bg-panel p-5 no-underline hover:border-accent"
+                className="flex min-h-[132px] flex-col rounded-2xl bg-panel p-5 shadow-sm no-underline transition hover:shadow-md"
               >
                 <NavIcon name="trophy" size={20} />
                 <div className="mt-auto">
@@ -420,7 +420,7 @@ export default async function DashboardPage() {
             ) : (
               <Link
                 href="/keuangan/transaksi"
-                className="flex min-h-[132px] flex-col border border-line bg-panel p-5 no-underline hover:border-accent"
+                className="flex min-h-[132px] flex-col rounded-2xl bg-panel p-5 shadow-sm no-underline transition hover:shadow-md"
               >
                 <NavIcon name="cashbox" size={20} />
                 <div className="mt-auto">
@@ -433,7 +433,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="px-6 pt-8 pb-6 md:px-9">
-          <div className="flex items-baseline justify-between gap-2.5 border-b-2 border-ink pb-2.5">
+          <div className="flex items-baseline justify-between gap-2.5 border-b border-line pb-2.5">
             <div className="font-sans text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
               {isSales ? "Dikejar hari ini" : "Perlu ditindak"} — {isSales ? salesNeedsAction.length : totalNeedsAction} hal
             </div>
@@ -456,7 +456,7 @@ export default async function DashboardPage() {
                   </div>
                   <Link
                     href={row.actionHref}
-                    className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
+                    className="rounded-full border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
                   >
                     {row.actionLabel}
                   </Link>
@@ -478,7 +478,7 @@ export default async function DashboardPage() {
                   </div>
                   <Link
                     href={inv.status === "draft" ? `/invoice/${inv.invoiceId}/ubah` : `/invoice/${inv.invoiceId}`}
-                    className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
+                    className="rounded-full border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
                   >
                     {inv.status === "draft" ? "Lanjutkan" : "Lihat"}
                   </Link>
@@ -489,7 +489,7 @@ export default async function DashboardPage() {
           {!isSales && lowStock.length > 0 && (
             <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-line py-3.5">
               <div className="flex items-center gap-3">
-                <span className="border border-line px-2 py-0.5 font-sans text-[10px] font-bold uppercase tracking-wide text-muted">
+                <span className="rounded-full border border-line px-2 py-0.5 font-sans text-[10px] font-bold uppercase tracking-wide text-muted">
                   Stok
                 </span>
                 <div>
@@ -503,7 +503,7 @@ export default async function DashboardPage() {
               </div>
               <Link
                 href="/produk"
-                className="border border-line px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent-700"
+                className="rounded-full border border-line px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent-700"
               >
                 Lihat inventory
               </Link>
@@ -524,8 +524,8 @@ export default async function DashboardPage() {
               )}
         </div>
 
-        <div className="grid grid-cols-2 gap-6 border-t-2 border-ink bg-panel px-6 py-5 md:grid-cols-4 md:px-9">
-          <div>
+        <div className="grid grid-cols-2 gap-3.5 px-6 pb-9 md:grid-cols-4 md:px-9">
+          <div className="rounded-xl bg-panel p-4.5 shadow-sm">
             <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Penjualan {MONTH_NAMES[nowJakarta.month - 1]}
             </div>
@@ -533,7 +533,7 @@ export default async function DashboardPage() {
               {rupiahCompact(isSales ? myPenjualanBulanIni : penjualanBulanIni)}
             </div>
           </div>
-          <div>
+          <div className="rounded-xl bg-panel p-4.5 shadow-sm">
             <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Belum tertagih
             </div>
@@ -542,14 +542,14 @@ export default async function DashboardPage() {
             </div>
           </div>
           {isSales ? (
-            <div>
+            <div className="rounded-xl bg-panel p-4.5 shadow-sm">
               <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Peringkat</div>
               <div className="mt-1 font-sans text-[1.35rem] font-extrabold tracking-tight">
                 {myRankIndex >= 0 ? `#${myRankIndex + 1} dari ${ranking.length}` : "—"}
               </div>
             </div>
           ) : (
-            <div>
+            <div className="rounded-xl bg-panel p-4.5 shadow-sm">
               <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
                 Kas bersih bulan ini
               </div>
@@ -558,7 +558,7 @@ export default async function DashboardPage() {
               </div>
             </div>
           )}
-          <div>
+          <div className="rounded-xl bg-panel p-4.5 shadow-sm">
             <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Komisi {isSales ? "saya (berjalan)" : "terkumpul"}
             </div>
