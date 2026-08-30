@@ -33,7 +33,7 @@
 **Subtasks:**
 - SUBTASK-001 Invoice + Inventory end-to-end — DONE (list pages, detail sidebars, PaymentForm/DpForm, Kategori/Riwayat).
 - SUBTASK-002 Insentif leaderboard contrast (Dialog.tsx too, found along the way) — DONE.
-- SUBTASK-003 Dashboard (`app/page.tsx`) — TODO.
+- SUBTASK-003 Dashboard (`app/page.tsx`) — DONE.
 - SUBTASK-004 Keuangan — TODO.
 - SUBTASK-005 Akuntansi — TODO.
 - SUBTASK-006 Purchasing — TODO.

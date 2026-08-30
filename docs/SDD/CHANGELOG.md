@@ -6,6 +6,16 @@
 
 ## 2026-08-30
 
+**TASK-002 SUBTASK-003** — Dashboard (`app/page.tsx`) Foundry sweep.
+
+Changed: 3 action cards unified to `rounded-2xl`+`shadow-sm` (were 3 different border weights); bottom stats strip → 4 individual cards; hard `border-b-2`/`border-t-2` dividers softened; several un-rounded small badges/buttons/dot fixed (including a literal square notification dot missing `rounded-full`).
+Preserved: all data/queries/role-based branching (`isSales` view vs generic) untouched.
+Regression: PASS.
+
+---
+
+## 2026-08-30
+
 **TASK-002 (subtask)** — Fixed hidden yellow-on-white contrast bugs in Dialog and the Insentif leaderboard (BUG-003).
 
 Changed:

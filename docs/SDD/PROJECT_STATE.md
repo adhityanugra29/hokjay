@@ -12,16 +12,17 @@ TASK-002 — "Foundry" UI rework: hunt down and fix remaining "kaku" (stiff/hard
 
 ## CURRENT STATUS
 
-IN PROGRESS — Katalog, Pelanggan, Inventory (Produk), Invoice (list/detail/forms/bayar/dp), the shared shell (sidebar/header/Panel/Button/Dialog/LoadingOverlay), and the Insentif leaderboard's yellow-accent contrast are done and deployed. Keuangan, Akuntansi, Purchasing, Payroll, Admin, and Dashboard have not yet been swept for the same hard-border / bare-`rounded` / hidden-contrast issues.
+IN PROGRESS — Katalog, Pelanggan, Inventory (Produk), Invoice (list/detail/forms/bayar/dp), Dashboard, the shared shell (sidebar/header/Panel/Button/Dialog/LoadingOverlay), and the Insentif leaderboard's yellow-accent contrast are done and deployed. Keuangan, Akuntansi, Purchasing, Payroll, and Admin have not yet been swept for the same hard-border / bare-`rounded` / hidden-contrast issues.
 
 ## LAST COMPLETED
 
+- SUBTASK-003: Dashboard (`app/page.tsx`) — 3 action cards unified to rounded+shadow, bottom stats strip split into individual cards, hard dividers softened, several un-rounded badges/dots fixed.
 - Fixed two "hidden" yellow-on-white contrast bugs that the first sweep's grep missed (`components/ui/Dialog.tsx`'s confirm button, `SalesBoard.tsx`/`MobileSalesBoard.tsx`'s rank-#1 highlight) — both built their className from a shared base + conditional bg, not a literal adjacent `bg-accent`/`text-white` pair.
 - End-to-end Invoice + Inventory Foundry pass (see TASK-001, now DONE).
 
 ## IN PROGRESS
 
-TASK-002 (see above) — next module to sweep: not yet decided, default to Dashboard (`app/page.tsx`) since it's the highest-traffic page not yet covered.
+TASK-002 — next module to sweep: Keuangan (SUBTASK-004), then Akuntansi, Purchasing, Payroll, Admin in that order unless redirected.
 
 ## BLOCKED
 
