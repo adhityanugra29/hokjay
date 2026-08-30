@@ -6,6 +6,18 @@
 
 ## 2026-08-30
 
+**TASK-002 SUBTASK-004** — Keuangan Foundry sweep.
+
+Changed: stat strip → 4 individual cards; Semua/Masuk/Keluar filter → pill toggle; hard section dividers softened; `TransactionForm.tsx` moved to `FormCard`/`FormSection`, its Pemasukan/Pengeluaran segmented control → pill toggle; `MobileKeuangan.tsx` dividers/CTA buttons softened.
+Preserved: all cash-book math, category rekap, piutang/stok summary — untouched.
+Regression: PASS.
+
+Also logged TASK-004 (billing plan for Owner Hojay) — scheduled for after TASK-002 + open bugs, not started yet.
+
+---
+
+## 2026-08-30
+
 **TASK-002 SUBTASK-003** — Dashboard (`app/page.tsx`) Foundry sweep.
 
 Changed: 3 action cards unified to `rounded-2xl`+`shadow-sm` (were 3 different border weights); bottom stats strip → 4 individual cards; hard `border-b-2`/`border-t-2` dividers softened; several un-rounded small badges/buttons/dot fixed (including a literal square notification dot missing `rounded-full`).
