@@ -6,6 +6,7 @@ import { LinkButton } from "@/components/ui/Button";
 import Pill, { type PillVariant } from "@/components/ui/Pill";
 import SortableHeader from "@/components/ui/SortableHeader";
 import DeleteCustomerButton from "@/components/pelanggan/DeleteCustomerButton";
+import MobileCustomerInvoices from "@/components/pelanggan/MobileCustomerInvoices";
 import { dbConnect } from "@/lib/db";
 import { Customer } from "@/models/Customer";
 import { Invoice } from "@/models/Invoice";
@@ -70,6 +71,19 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
       <div className="p-6 md:p-9">
         <Panel>
           <PanelHead title="Semua invoice pelanggan ini" />
+          {/* Mobile card list below md; the fixed-column table takes over
+              at md+. Per the user's request 2026-08-30 ("mereka mobile
+              oriented"). */}
+          <MobileCustomerInvoices
+            invoices={invoices.map((inv) => ({
+              id: String(inv._id),
+              nomor: inv.nomor,
+              tanggal: inv.tanggalInvoice ?? inv.createdAt!,
+              grandTotal: inv.grandTotal,
+              status: inv.status ?? "draft",
+            }))}
+          />
+          <div className="hidden md:block">
           <TableScroll>
             <table className="w-full border-collapse">
               <thead>
@@ -111,6 +125,7 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
               </tbody>
             </table>
           </TableScroll>
+          </div>
         </Panel>
       </div>
     </>

@@ -4,6 +4,7 @@ import InvoiceActions from "@/components/invoice/InvoiceActions";
 import InvoicePrintDoc, { type InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
 import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
 import { LinkButton } from "@/components/ui/Button";
+import { TableScroll } from "@/components/ui/Panel";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
@@ -129,7 +130,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
       </div>
       <div className="p-6 md:p-9">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
-          <div id="invoice-doc" className="border border-line bg-panel p-9">
+          <div id="invoice-doc" className="border border-line bg-panel p-5 sm:p-9">
             {/* "INVOICE" centered above a logo+company-info / no.+tanggal
                 row — per the user's request 2026-08-25. */}
             <h2 className="mb-5 text-center font-serif text-2xl tracking-[0.08em]">INVOICE</h2>
@@ -197,7 +198,12 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
               </div>
             </div>
 
-            <table className="w-full border-collapse">
+            {/* Overflow-contained on a narrow phone — this table used to
+                have no scroll wrapper at all, forcing the whole page to
+                scroll sideways. Per the user's request 2026-08-30
+                ("mereka mobile oriented"). */}
+            <TableScroll>
+            <table className="w-full min-w-[480px] border-collapse">
               <thead>
                 <tr>
                   {["Produk", "Qty", "Harga", "Diskon", "Subtotal"].map((h, idx) => (
@@ -234,6 +240,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                 ))}
               </tbody>
             </table>
+            </TableScroll>
 
             <div className="ml-auto mt-5 w-full max-w-[260px] font-mono">
               <div className="flex justify-between py-1.5 text-[0.88rem]">

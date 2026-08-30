@@ -3,6 +3,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import StatCard from "@/components/ui/StatCard";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
+import { MobileFollowUpBySales, MobileFollowUpRows } from "@/components/dashboard/MobileFollowUp";
 import { getFollowUpInvoices, summarizeFollowUpBySales } from "@/lib/dashboard";
 import { rupiah, rupiahCompact } from "@/lib/format";
 import { getSession } from "@/lib/auth/session";
@@ -34,6 +35,11 @@ export default async function FollowUpPage() {
 
         <Panel className="mb-6">
           <PanelHead title="Total per sales" />
+          {/* Mobile card list below md; the fixed-column table takes over
+              at md+ — tables were the only way to see this data, per the
+              user's request 2026-08-30 ("mereka mobile oriented"). */}
+          <MobileFollowUpBySales bySales={bySales} />
+          <div className="hidden md:block">
           <TableScroll>
             <table className="w-full border-collapse">
               <thead>
@@ -73,10 +79,13 @@ export default async function FollowUpPage() {
               </tbody>
             </table>
           </TableScroll>
+          </div>
         </Panel>
 
         <Panel>
           <PanelHead title="Semua invoice perlu follow-up" />
+          <MobileFollowUpRows rows={rows} />
+          <div className="hidden md:block">
           <TableScroll>
             <table className="w-full border-collapse">
               <thead>
@@ -146,6 +155,7 @@ export default async function FollowUpPage() {
               </tbody>
             </table>
           </TableScroll>
+          </div>
         </Panel>
       </div>
     </>
