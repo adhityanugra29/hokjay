@@ -123,10 +123,10 @@ export default function AddProductSidebar({
   return (
     <div className="no-print fixed inset-0 z-50 flex justify-end bg-black/50" onClick={onClose}>
       <div
-        className="flex h-full w-full max-w-sm flex-col overflow-hidden border-l-2 border-ink bg-panel"
+        className="flex h-full w-full max-w-sm flex-col overflow-hidden bg-panel shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b-2 border-ink bg-surface px-4 py-3.5">
+        <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3.5">
           <h2 className="font-sans text-[0.9rem] font-extrabold text-ink">Tambah Produk</h2>
           <button
             type="button"

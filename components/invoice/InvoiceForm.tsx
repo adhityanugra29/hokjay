@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Panel } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input, Select, CurrencyInput } from "@/components/ui/Form";
+import { FormCard, FormSection, FormCardActions } from "@/components/ui/FormSection";
+import { Field, FormGrid, Input, Select, CurrencyInput } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
 import { useDialog } from "@/components/ui/Dialog";
@@ -403,12 +403,17 @@ export default function InvoiceForm({
   const showCustomerPicker = !customerId || editingCustomer;
 
   return (
-    <Panel className="max-w-4xl p-7">
+    <FormCard
+      className="max-w-4xl"
+      title={mode === "edit" ? `Ubah Invoice ${nextNumberHint}` : "Invoice Baru"}
+      description="Pilih pelanggan, isi detail pengiriman, lalu tambahkan produk dari Katalog."
+    >
       {/* Pelanggan sits at the very top and is read-only by default once
           picked (or already set from the invoice being edited); "Ubah"
           reopens the picker inline instead of it being a plain editable
           dropdown mixed in with the rest of the fields. */}
-      <div className="mb-5 border border-line bg-[#f7f5ee] p-4">
+      <FormSection label="Pelanggan">
+      <div className="border border-line bg-[#f7f5ee] p-4">
         <label className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Pelanggan</label>
         {showCustomerPicker ? (
           <div className="mt-1.5">
@@ -463,7 +468,9 @@ export default function InvoiceForm({
           </div>
         )}
       </div>
+      </FormSection>
 
+      <FormSection label="Detail Invoice">
       <FormGrid className="mb-5 max-w-[420px]">
         <Field label="Nomor Invoice">
           <Input disabled value={nextNumberHint} />
@@ -521,10 +528,11 @@ export default function InvoiceForm({
           />
         </Field>
       </FormGrid>
+      </FormSection>
 
-      <div className="mt-7">
-        <label className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Item Produk</label>
-        <div className="mt-3">
+      <FormSection label="Item Produk">
+      <div>
+        <div>
           {items.map((item) => (
             <ItemRowEditor key={item.productId} item={item} />
           ))}
@@ -549,8 +557,10 @@ export default function InvoiceForm({
           + Tambah Produk
         </button>
       </div>
+      </FormSection>
 
-      <div className="mt-5 border border-line bg-[#f7f5ee] p-5">
+      <FormSection label="Ringkasan" last>
+      <div className="border border-line bg-[#f7f5ee] p-5">
         <h3 className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Estimasi Komisi Sales</h3>
         <div className="mt-1.5 font-mono text-[0.85rem]">
           Total komisi jika invoice ini lunas:{" "}
@@ -578,8 +588,9 @@ export default function InvoiceForm({
       </div>
 
       {error && <div className="mt-3 font-mono text-[0.75rem] text-danger">{error}</div>}
+      </FormSection>
 
-      <FormActions>
+      <FormCardActions>
         <Button variant="clay" disabled={saving || canceling} onClick={() => submit("unpaid")}>
           {saving ? "Menyimpan..." : mode === "edit" ? "Simpan Perubahan" : "Simpan & Kirim Invoice"}
         </Button>
@@ -589,13 +600,13 @@ export default function InvoiceForm({
         <Button variant="ghost" disabled={saving || canceling} onClick={handleCancel}>
           {canceling ? "Menghapus..." : "Batal"}
         </Button>
-      </FormActions>
+      </FormCardActions>
 
       <AddProductSidebar
         open={addingProduct}
         onClose={() => setAddingProduct(false)}
         invoiceId={mode === "edit" ? invoiceId : undefined}
       />
-    </Panel>
+    </FormCard>
   );
 }

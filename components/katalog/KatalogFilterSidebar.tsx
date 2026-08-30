@@ -222,10 +222,10 @@ export default function KatalogFilterSidebar({
   return (
     <div className="no-print fixed inset-0 z-50 flex justify-end bg-black/50" onClick={onClose}>
       <div
-        className="flex h-full w-full max-w-sm flex-col overflow-y-auto border-l-2 border-ink bg-panel"
+        className="flex h-full w-full max-w-sm flex-col overflow-y-auto bg-panel shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b-2 border-ink bg-surface px-5 py-4">
+        <div className="flex items-center justify-between border-b border-line bg-surface px-5 py-4">
           <h2 className="font-sans text-[0.95rem] font-extrabold text-ink">Filter Produk</h2>
           <button
             type="button"
