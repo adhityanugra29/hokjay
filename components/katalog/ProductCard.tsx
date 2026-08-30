@@ -254,8 +254,18 @@ export default function ProductCard({
   }
 
   return (
-    <div className={`flex flex-col overflow-hidden border bg-panel ${pickMode && selected ? "border-accent" : "border-line"}`}>
-      <div className="relative flex aspect-4/3 items-center justify-center overflow-hidden bg-surface text-[0.68rem] text-muted">
+    // "Soft Trade" card treatment (2026-08-30) — replaces the always-on
+    // hard border with a resting shadow + rounded corners, matching the
+    // mockup confirmed with the user (see the "Katalog Card Directions"
+    // artifact). A hover lift signals the card is interactive. The
+    // pickMode "selected" state still needs a visible ring, so the border
+    // stays in the DOM, just transparent at rest instead of border-line.
+    <div
+      className={`flex flex-col overflow-hidden rounded-xl border-2 bg-panel shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+        pickMode && selected ? "border-accent" : "border-transparent"
+      }`}
+    >
+      <div className="relative flex aspect-4/3 items-center justify-center overflow-hidden rounded-t-[10px] bg-surface text-[0.68rem] text-muted">
         {/* Flash Sale banner — per the user's request 2026-08-29 ("harus
             ada ... banner khusus"). Pinned to the photo's very top edge, so
             the pickMode checkbox / edit pencil below get nudged down a
@@ -267,7 +277,7 @@ export default function ProductCard({
         )}
         {pickMode && (
           <label
-            className={`absolute ${flashSaleActive ? "top-8" : "top-2.5"} left-2.5 z-10 flex h-6 w-6 cursor-pointer items-center justify-center border-2 border-line bg-panel`}
+            className={`absolute ${flashSaleActive ? "top-8" : "top-2.5"} left-2.5 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border-2 border-line bg-panel shadow-sm`}
             style={selected ? { background: "var(--color-accent)", borderColor: "var(--color-accent)" } : undefined}
             title="Pilih untuk katalog PDF"
           >
@@ -350,7 +360,7 @@ export default function ProductCard({
             // controls at all while Flash Sale is active, per the user's
             // request 2026-08-29 ("harganya tidak bisa untuk di naikan
             // atau di turunkan"). Only an owner/super_admin can end it.
-            <div className="border border-accent bg-accent/5 px-3 py-2.5">
+            <div className="rounded-lg bg-accent-100 px-3 py-2.5">
               <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-accent">
                 Harga Flash Sale (terkunci)
               </div>
@@ -360,7 +370,7 @@ export default function ProductCard({
                   type="button"
                   disabled={flashSaleSaving}
                   onClick={() => submitFlashSale(false)}
-                  className="mt-2 cursor-pointer border border-line px-2.5 py-1 font-mono text-[0.64rem] font-semibold text-ink hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+                  className="mt-2 cursor-pointer rounded-full border border-line px-2.5 py-1 font-mono text-[0.64rem] font-semibold text-ink hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
                 >
                   {flashSaleSaving ? "Memproses..." : "Akhiri Flash Sale"}
                 </button>
@@ -401,7 +411,7 @@ export default function ProductCard({
                     setPriceMode(product._id, "rekomendasi");
                     setPriceWarning(false);
                   }}
-                  className={`cursor-pointer border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
+                  className={`cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
                     getPriceMode(product._id) === "rekomendasi" && !hasCustomPrice
                       ? "border-accent bg-accent text-white"
                       : "border-line text-ink hover:bg-[#f3f2ec]"
@@ -415,7 +425,7 @@ export default function ProductCard({
                     setPriceMode(product._id, "minimum");
                     setPriceWarning(false);
                   }}
-                  className={`cursor-pointer border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
+                  className={`cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
                     getPriceMode(product._id) === "minimum" && !hasCustomPrice
                       ? "border-accent bg-accent text-white"
                       : "border-line text-ink hover:bg-[#f3f2ec]"
@@ -479,14 +489,14 @@ export default function ProductCard({
                   // the user's report 2026-08-29 that the number field was
                   // too cramped to read next to them (this card column is
                   // narrow to begin with).
-                  <div className="flex flex-col gap-1.5 border border-line p-2">
+                  <div className="flex flex-col gap-1.5 rounded-lg bg-surface p-2">
                     <CurrencyInput value={flashSaleInput} onChange={setFlashSaleInput} showPrefix />
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         disabled={flashSaleSaving || !flashSaleInput}
                         onClick={() => submitFlashSale(true, Number(flashSaleInput))}
-                        className="flex-1 cursor-pointer border border-accent bg-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex-1 cursor-pointer rounded-full border border-accent bg-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-white hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {flashSaleSaving ? "..." : "Aktifkan"}
                       </button>
@@ -496,7 +506,7 @@ export default function ProductCard({
                           setFlashSaleFormOpen(false);
                           setFlashSaleInput("");
                         }}
-                        className="flex-1 cursor-pointer border border-line px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-ink hover:bg-[#f3f2ec]"
+                        className="flex-1 cursor-pointer rounded-full border border-line px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-ink hover:bg-[#f3f2ec]"
                       >
                         Batal
                       </button>
@@ -506,7 +516,7 @@ export default function ProductCard({
                   <button
                     type="button"
                     onClick={() => setFlashSaleFormOpen(true)}
-                    className="cursor-pointer border border-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-accent hover:bg-accent hover:text-white"
+                    className="cursor-pointer rounded-full border border-accent px-2.5 py-1.5 font-mono text-[0.64rem] font-semibold text-accent hover:bg-accent hover:text-white"
                   >
                     🔥 Flash Sale
                   </button>
@@ -522,9 +532,13 @@ export default function ProductCard({
           )}
         </div>
 
+        {/* Badges — soft rounded-full pills with a tinted background
+            instead of hard-bordered rectangles, per the "Soft Trade" card
+            treatment. Same semantic colors as before, just border+text →
+            tint+text. */}
         <div className="mt-2 flex flex-wrap gap-1.5">
           {product.isCustom && (
-            <span className="border border-accent px-2.5 py-1 text-[0.66rem] font-semibold text-accent">
+            <span className="rounded-full bg-accent-100 px-2.5 py-1 text-[0.66rem] font-semibold text-accent">
               Pesanan Custom
             </span>
           )}
@@ -534,17 +548,17 @@ export default function ProductCard({
               confirmed choice 2026-08-27. Still selectable/pickable —
               these are informational, not a reservation. */}
           {!!product.bookedQty && (
-            <span className="border border-[#B45309] px-2.5 py-1 text-[0.66rem] font-semibold text-[#B45309]">
+            <span className="rounded-full bg-[#B45309]/10 px-2.5 py-1 text-[0.66rem] font-semibold text-[#B45309]">
               Booked {product.bookedQty} — {(product.bookedBy ?? []).join(", ")}
             </span>
           )}
           {!!product.dpQty && (
-            <span className="border border-[#0369A1] px-2.5 py-1 text-[0.66rem] font-semibold text-[#0369A1]">
+            <span className="rounded-full bg-[#0369A1]/10 px-2.5 py-1 text-[0.66rem] font-semibold text-[#0369A1]">
               Sudah DP {product.dpQty} — {(product.dpBy ?? []).join(", ")}
             </span>
           )}
           {!!product.soldQty && (
-            <span className="border border-gold px-2.5 py-1 text-[0.66rem] font-semibold text-gold">
+            <span className="rounded-full bg-gold/10 px-2.5 py-1 text-[0.66rem] font-semibold text-gold">
               SOLD {product.soldQty}
             </span>
           )}
@@ -554,7 +568,7 @@ export default function ProductCard({
               the usual neutral outline badge so the status reads at a
               glance. Per the user's request 2026-08-25. */}
           <span
-            className="px-2.5 py-1 text-[0.66rem] font-semibold text-white"
+            className="rounded-full px-2.5 py-1 text-[0.66rem] font-semibold text-white"
             style={{ background: product.kondisi === "bekas" ? "#D97706" : "#16A34A" }}
           >
             {kondisiLabel}
@@ -565,7 +579,7 @@ export default function ProductCard({
             user's report 2026-08-26 that a big accent-colored Komisi figure
             read as competing with the actual price above it, easy to
             mistake for a second price. */}
-        <div className="mt-2.5 inline-flex w-fit items-center gap-1.5 border border-line px-2 py-1 text-[0.66rem] text-muted">
+        <div className="mt-2.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-[0.66rem] text-muted">
           <span className="uppercase tracking-[0.06em]">Komisi</span>
           <span className="font-semibold text-ink">{rupiah(liveKomisi)}</span>
         </div>
@@ -591,7 +605,7 @@ export default function ProductCard({
         )}
 
         {cartItem ? (
-          <div className="mt-auto flex w-full items-stretch border border-accent">
+          <div className="mt-auto flex w-full items-stretch overflow-hidden rounded-lg border border-accent">
             <button
               type="button"
               onClick={() => handleQtyChange(-1)}
@@ -639,7 +653,7 @@ export default function ProductCard({
               // same updateItem path ItemRowEditor's own Diskon field uses.
               if (discount > 0) updateItem(product._id, { diskonPerUnit: discount });
             }}
-            className="mt-auto w-full cursor-pointer border border-accent bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-white transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-auto w-full cursor-pointer rounded-lg bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-white shadow-sm transition hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-40"
           >
             {availableQty <= 0 ? "Tidak Tersedia" : "+ Tambah ke Invoice"}
           </button>
