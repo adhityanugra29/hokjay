@@ -63,8 +63,42 @@ export default async function ProdukListPage({
   }
   const products = (await Product.find(filter).sort(mongoSort(field, dir))) as HydratedDocument<ProductDoc>[];
 
+  // Summary strip — "extreme"/"Soft Trade" rework (2026-08-30), same
+  // treatment as app/pelanggan/page.tsx: a quick-glance stat row above
+  // the list instead of jumping straight into a bare table. Derived from
+  // the same `products` fetch, no extra query.
+  const nilaiStok = products.reduce((s, p) => s + p.hargaRekomendasi * p.stok, 0);
+  const stokLamaCount = products.filter(
+    (p) => stockAgeInfo(p.tanggalBarangMasuk ?? p.createdAt!, p.alertHariTidakTerjual ?? 45).variant === "out"
+  ).length;
+
   return (
-    <Panel>
+    <>
+      <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+        <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
+          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+            Produk aktif
+          </div>
+          <div className="mt-1.5 font-sans text-[1.3rem] font-extrabold">{products.length}</div>
+          <div className="mt-1 font-mono text-[0.68rem] text-muted">stok &gt; 0</div>
+        </div>
+        <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
+          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+            Nilai stok
+          </div>
+          <div className="mt-1.5 font-sans text-[1.3rem] font-extrabold whitespace-nowrap">{rupiah(nilaiStok)}</div>
+          <div className="mt-1 font-mono text-[0.68rem] text-muted">harga rekomendasi × stok</div>
+        </div>
+        <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
+          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+            Stok lama
+          </div>
+          <div className="mt-1.5 font-sans text-[1.3rem] font-extrabold text-accent-700">{stokLamaCount}</div>
+          <div className="mt-1 font-mono text-[0.68rem] text-muted">lewat batas hari tidak terjual</div>
+        </div>
+      </div>
+
+      <Panel>
       <PanelHead title="Semua Produk">
         <form className="w-full sm:w-auto">
           <SearchInput name="search" defaultValue={search as string} placeholder="Cari produk atau SKU..." />
@@ -105,14 +139,14 @@ export default async function ProdukListPage({
             </thead>
             <tbody>
               {products.map((p) => (
-                <tr key={String(p._id)} className="hover:bg-[#fbfaf5]">
+                <tr key={String(p._id)} className="transition hover:bg-surface">
                   <td className="border-b border-line px-5 py-4.5">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{p.name}</span>
                       {/* Just "Bekas"/"Baru", filled bright color — per the
                           user's request 2026-08-25. */}
                       <span
-                        className="shrink-0 px-1.5 py-0.5 text-[0.6rem] font-semibold whitespace-nowrap text-white"
+                        className="shrink-0 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold whitespace-nowrap text-white"
                         style={{ background: p.kondisi === "bekas" ? "#D97706" : "#16A34A" }}
                       >
                         {p.kondisi === "bekas" ? "Bekas" : "Baru"}
@@ -153,6 +187,7 @@ export default async function ProdukListPage({
           </table>
         </TableScroll>
       </div>
-    </Panel>
+      </Panel>
+    </>
   );
 }
