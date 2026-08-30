@@ -115,7 +115,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                 invoiceId={String(invoice._id)}
                 nomor={invoice.nomor}
                 redirectTo="/invoice"
-                className="inline-flex items-center justify-center gap-2 rounded border border-line bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-extrabold text-danger transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-extrabold text-danger transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
               />
             )}
             <InvoiceActions

@@ -80,8 +80,8 @@ export default function UploadBox({
       </div>
       {error && <div className="mt-1.5 font-mono text-[0.7rem] text-danger">{error}</div>}
       {value && !uploading && (
-        <div className="mt-2.5 flex items-center gap-3 rounded border border-line bg-panel p-2.5">
-          <img src={value} alt="Preview" className="h-12 w-12 rounded object-cover" />
+        <div className="mt-2.5 flex items-center gap-3 rounded-lg border border-line bg-panel p-2.5">
+          <img src={value} alt="Preview" className="h-12 w-12 rounded-lg object-cover" />
           <div className="font-mono text-[0.72rem] text-muted">{fileName ?? value}</div>
         </div>
       )}

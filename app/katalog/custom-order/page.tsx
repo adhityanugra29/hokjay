@@ -214,7 +214,7 @@ export default function CustomOrderPage() {
                         <button
                           type="button"
                           onClick={() => updateRow(r.id, { tingkat: Math.max(1, r.tingkat - 1) })}
-                          className="h-9 w-9 rounded border border-line font-mono"
+                          className="h-9 w-9 rounded-lg border border-line font-mono"
                         >
                           −
                         </button>
@@ -222,7 +222,7 @@ export default function CustomOrderPage() {
                         <button
                           type="button"
                           onClick={() => updateRow(r.id, { tingkat: r.tingkat + 1 })}
-                          className="h-9 w-9 rounded border border-line font-mono"
+                          className="h-9 w-9 rounded-lg border border-line font-mono"
                         >
                           +
                         </button>
@@ -233,7 +233,7 @@ export default function CustomOrderPage() {
                         <button
                           type="button"
                           onClick={() => updateRow(r.id, { qty: Math.max(1, r.qty - 1) })}
-                          className="h-9 w-9 rounded border border-line font-mono"
+                          className="h-9 w-9 rounded-lg border border-line font-mono"
                         >
                           −
                         </button>
@@ -241,7 +241,7 @@ export default function CustomOrderPage() {
                         <button
                           type="button"
                           onClick={() => updateRow(r.id, { qty: r.qty + 1 })}
-                          className="h-9 w-9 rounded border border-line font-mono"
+                          className="h-9 w-9 rounded-lg border border-line font-mono"
                         >
                           +
                         </button>

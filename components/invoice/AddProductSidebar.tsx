@@ -144,7 +144,7 @@ export default function AddProductSidebar({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama, SKU, atau ukuran..."
-            className="w-full rounded border border-line bg-panel px-3 py-2 font-sans text-[0.8rem]"
+            className="w-full rounded-lg border border-line bg-panel px-3 py-2 font-sans text-[0.8rem]"
           />
           {/* Wraps on a narrow phone instead of squeezing both controls
               into an unusably thin sliver — per the user's request
@@ -161,7 +161,7 @@ export default function AddProductSidebar({
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="min-w-[110px] flex-1 rounded border border-line bg-panel px-2.5 py-2 font-mono text-[0.72rem] text-ink"
+              className="min-w-[110px] flex-1 rounded-lg border border-line bg-panel px-2.5 py-2 font-mono text-[0.72rem] text-ink"
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>

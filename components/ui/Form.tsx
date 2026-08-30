@@ -25,7 +25,7 @@ export function Field({
 }
 
 export const inputCls =
-  "w-full rounded-[3px] border border-line bg-paper px-3.5 py-2.5 font-sans text-[0.9rem] text-ink placeholder:text-muted outline-offset-1 focus:outline-2 focus:outline-moss disabled:cursor-not-allowed disabled:bg-[#efece3] disabled:text-muted";
+  "w-full rounded-lg border border-line bg-paper px-3.5 py-2.5 font-sans text-[0.9rem] text-ink placeholder:text-muted outline-offset-1 focus:outline-2 focus:outline-moss disabled:cursor-not-allowed disabled:bg-[#efece3] disabled:text-muted";
 
 // forwardRef so callers that need to move focus programmatically (e.g. the
 // Ukuran P x L x T auto-advance fields) can attach a ref — every existing

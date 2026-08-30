@@ -552,7 +552,7 @@ export default function InvoiceForm({
         <button
           type="button"
           onClick={() => setAddingProduct(true)}
-          className="mt-1 block w-full cursor-pointer rounded border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-moss hover:bg-[#fbfaf5] hover:text-moss-deep"
+          className="mt-1 block w-full cursor-pointer rounded-xl border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-moss hover:bg-[#fbfaf5] hover:text-moss-deep"
         >
           + Tambah Produk
         </button>

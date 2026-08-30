@@ -324,7 +324,7 @@ export default function KatalogClient({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cari nama produk atau kode SKU..."
-          className="min-w-[180px] flex-1 rounded border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.85rem]"
+          className="min-w-[180px] flex-1 rounded-lg border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.85rem]"
         />
         {/* Replaces the old plain "Semua Kategori" dropdown — opens a
             sidebar with Kategori, Kondisi, Tipe, and Range Harga, all
@@ -332,7 +332,7 @@ export default function KatalogClient({
         <button
           type="button"
           onClick={() => setFilterOpen(true)}
-          className="flex cursor-pointer items-center gap-1.5 rounded border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.78rem] font-semibold text-ink hover:border-accent hover:text-accent-700"
+          className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.78rem] font-semibold text-ink hover:border-accent hover:text-accent-700"
         >
           Filter
           {countActiveFilters(filters) > 0 && (
@@ -344,7 +344,7 @@ export default function KatalogClient({
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="rounded border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.78rem] text-ink"
+          className="rounded-lg border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.78rem] text-ink"
         >
           <option value="">Urutkan: Default</option>
           <option value="price-asc">Harga: Terendah ke Tertinggi</option>

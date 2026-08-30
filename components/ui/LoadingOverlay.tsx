@@ -73,8 +73,8 @@ if (typeof window !== "undefined" && !window.__loadingOverlayFetchPatched) {
 }
 export function LoadingOverlayContent() {
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40">
-      <div className="flex flex-col items-center gap-3.5 border-2 border-ink bg-panel px-8 py-7 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.35)]">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+      <div className="flex flex-col items-center gap-3.5 rounded-2xl bg-panel px-8 py-7 shadow-2xl">
         <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-line border-t-accent" />
         <div className="font-sans text-[0.9rem] font-semibold text-ink">Mohon menunggu...</div>
       </div>

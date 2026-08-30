@@ -51,7 +51,7 @@ function NumberField({
         setRaw(String(n));
         onCommit(n);
       }}
-      className="w-full rounded border border-line bg-paper px-2 py-2 font-mono text-[0.82rem]"
+      className="w-full rounded-lg border border-line bg-paper px-2 py-2 font-mono text-[0.82rem]"
     />
   );
 }
@@ -80,9 +80,9 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
     isFlashSale: item.isFlashSale,
   });
   return (
-    <div className="mb-2.5 border border-line p-4">
+    <div className="mb-2.5 rounded-xl bg-panel p-4 shadow-sm">
       <div className="mb-2.5 flex items-center gap-2.5">
-        <span className="flex-1 rounded bg-[#efece3] px-2.5 py-2 font-sans text-[0.88rem] font-medium">
+        <span className="flex-1 rounded-lg bg-[#efece3] px-2.5 py-2 font-sans text-[0.88rem] font-medium">
           {item.name}
           {/* Snapshotted when this line was added (see ProductCard.tsx/
               AddProductSidebar.tsx) — stays showing even if the product's
