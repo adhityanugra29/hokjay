@@ -76,7 +76,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
           onClick={() => dialog.type === "alert" && close(false)}
         >
           <div
-            className="w-full max-w-sm border-2 border-ink bg-panel p-6 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.35)]"
+            className="w-full max-w-sm rounded-2xl bg-panel p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {dialog.title && <h3 className="mb-2 font-sans text-[1rem] font-extrabold text-ink">{dialog.title}</h3>}
@@ -86,17 +86,24 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => close(false)}
-                  className="cursor-pointer border border-line px-4 py-2 font-sans text-[0.82rem] font-semibold text-ink hover:bg-black/5"
+                  className="cursor-pointer rounded-lg border border-line px-4 py-2 font-sans text-[0.82rem] font-semibold text-ink hover:bg-black/5"
                 >
                   {dialog.cancelLabel ?? "Batal"}
                 </button>
               )}
+              {/* text color must follow which fill is active — danger stays
+                  red (white text reads fine on it), but the accent fill is
+                  yellow now and needs dark text. Missed in the first
+                  contrast sweep since this file builds its className via
+                  one shared "text-white" base + a conditional bg, not the
+                  "bg-accent ... text-white" adjacency that sweep grepped
+                  for. Found in the 2026-08-30 broader kaku-hunt pass. */}
               <button
                 type="button"
                 onClick={() => close(true)}
                 autoFocus
-                className={`cursor-pointer border px-4 py-2 font-sans text-[0.82rem] font-semibold text-white ${
-                  dialog.danger ? "border-danger bg-danger" : "border-accent bg-accent"
+                className={`cursor-pointer rounded-lg border px-4 py-2 font-sans text-[0.82rem] font-semibold ${
+                  dialog.danger ? "border-danger bg-danger text-white" : "border-accent bg-accent text-ink"
                 }`}
               >
                 {dialog.type === "confirm" ? (dialog.confirmLabel ?? "Ya") : "OK"}

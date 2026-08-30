@@ -89,32 +89,32 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
                 isTop ? "bg-accent text-ink" : "border-b border-ink/20 bg-white text-ink"
               }`}
             >
-              <span className={`font-sans text-[1.6rem] font-extrabold leading-none tracking-tight sm:text-[2.1rem] ${isTop ? "text-white" : "text-ink/25"}`}>
+              <span className={`font-sans text-[1.6rem] font-extrabold leading-none tracking-tight sm:text-[2.1rem] ${isTop ? "text-ink" : "text-ink/25"}`}>
                 {rows.indexOf(r) + 1}
               </span>
               <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 sm:block">
                 <span className="font-sans text-[1.15rem] font-extrabold tracking-tight sm:text-[1.4rem]">{r.salesNama}</span>
-                <span className={`font-mono text-[12px] sm:mt-1 sm:block ${isTop ? "text-white/75" : "text-muted"}`}>
+                <span className={`font-mono text-[12px] sm:mt-1 sm:block ${isTop ? "text-ink/70" : "text-muted"}`}>
                   {r.orderCount} order
                 </span>
               </span>
               <span className="col-start-2 sm:col-auto">
                 {hasTarget ? (
                   <>
-                    <div className={`relative h-3 ${isTop ? "bg-white/30" : "bg-ink/14"}`}>
+                    <div className={`relative h-3 ${isTop ? "bg-ink/15" : "bg-ink/14"}`}>
                       <div
-                        className={`absolute inset-y-0 left-0 ${isTop ? "bg-white" : "bg-accent"}`}
+                        className={`absolute inset-y-0 left-0 ${isTop ? "bg-ink" : "bg-accent"}`}
                         style={{ width: `${Math.min(r.percent, 100)}%` }}
                       />
-                      <div className={`absolute -top-1 -bottom-1 left-full w-0.5 ${isTop ? "bg-white" : "bg-ink"}`} />
+                      <div className={`absolute -top-1 -bottom-1 left-full w-0.5 ${isTop ? "bg-ink" : "bg-ink"}`} />
                     </div>
-                    <div className={`mt-1.5 font-mono text-[11.5px] ${isTop ? "text-white/80" : "text-muted"}`}>
+                    <div className={`mt-1.5 font-mono text-[11.5px] ${isTop ? "text-ink/70" : "text-muted"}`}>
                       {r.lewatTarget ? "Lewat target " : "Kurang "}
                       {rupiahCompact(r.selisih)} · target {rupiah(r.target)}
                     </div>
                   </>
                 ) : (
-                  <span className={`font-mono text-[11.5px] ${isTop ? "text-white/70" : "text-muted"}`}>
+                  <span className={`font-mono text-[11.5px] ${isTop ? "text-ink/70" : "text-muted"}`}>
                     Belum ada target
                   </span>
                 )}

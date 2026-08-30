@@ -69,20 +69,20 @@ export default function MobileSalesBoard({
                 <div className="font-sans text-[2.4rem] font-extrabold leading-[0.8] tracking-tight">1</div>
                 <div>
                   <div className="font-sans text-[1.1rem] font-extrabold tracking-tight">{top.salesNama}</div>
-                  <div className="mt-1 font-sans text-[0.72rem] text-white/75">{top.orderCount} transaksi</div>
+                  <div className="mt-1 font-sans text-[0.72rem] text-ink/70">{top.orderCount} transaksi</div>
                 </div>
               </div>
               {top.target > 0 && (
                 <div className="text-right">
                   <div className="font-sans text-[1.25rem] font-extrabold leading-none tracking-tight">{top.percent}%</div>
-                  <div className="mt-1 font-sans text-[10px] text-white/75">dari target</div>
+                  <div className="mt-1 font-sans text-[10px] text-ink/70">dari target</div>
                 </div>
               )}
             </div>
             <div className="mt-3.5 font-sans text-[1.05rem] font-extrabold tracking-tight">{rupiah(top.totalPenjualan)}</div>
             {top.target > 0 && (
-              <div className="relative mt-2.5 h-2 bg-white/25">
-                <div className="absolute inset-y-0 left-0 bg-white" style={{ width: `${Math.min(top.percent, 100)}%` }} />
+              <div className="relative mt-2.5 h-2 bg-ink/15">
+                <div className="absolute inset-y-0 left-0 bg-ink" style={{ width: `${Math.min(top.percent, 100)}%` }} />
                 <div className="absolute -top-1 -bottom-1 left-full w-0.5 bg-ink" />
               </div>
             )}
