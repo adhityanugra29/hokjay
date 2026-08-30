@@ -61,7 +61,7 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
           </thead>
           <tbody>
             {movements.map((m) => (
-              <tr key={String(m._id)} className="hover:bg-[#fbfaf5]">
+              <tr key={String(m._id)} className="transition hover:bg-surface">
                 <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
                   {formatDateShort(m.tanggal)}
                 </td>

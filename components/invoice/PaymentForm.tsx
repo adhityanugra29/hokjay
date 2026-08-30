@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Panel } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/components/ui/Form";
+import { FormCard, FormSection, FormCardActions } from "@/components/ui/FormSection";
+import { Field, FormGrid, Input, Select, Textarea } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
 import { rupiah } from "@/lib/format";
@@ -87,8 +87,9 @@ export default function PaymentForm({
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
-      <Panel className="p-7">
+      <FormCard title="Konfirmasi Pembayaran" description="Tandai invoice ini lunas — kas masuk tercatat otomatis.">
         <form onSubmit={handleSubmit}>
+          <FormSection label="Pembayaran" last>
           <FormGrid>
             {!isCash && (
               <Field label="Bukti Transfer" span2>
@@ -138,20 +139,21 @@ export default function PaymentForm({
           </FormGrid>
 
           {error && <div className="mt-3 font-mono text-[0.75rem] text-danger">{error}</div>}
+          </FormSection>
 
-          <FormActions>
+          <FormCardActions>
             <Button variant="clay" type="submit" disabled={saving}>
               {saving ? "Memproses..." : "Konfirmasi & Tandai Lunas"}
             </Button>
             <LinkButton variant="ghost" href={`/invoice/${invoiceId}`}>
               Batal
             </LinkButton>
-          </FormActions>
+          </FormCardActions>
         </form>
-      </Panel>
+      </FormCard>
 
       <div>
-        <div className="mb-3.5 border border-line bg-panel p-5">
+        <div className="mb-3.5 rounded-2xl bg-panel p-5 shadow-sm">
           <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Ringkasan Invoice</h3>
           <div className="font-mono text-[0.8rem] leading-loose text-muted">
             No. Invoice: {nomor}
@@ -171,7 +173,7 @@ export default function PaymentForm({
             )}
           </div>
         </div>
-        <div className="border border-line bg-panel p-5">
+        <div className="rounded-2xl bg-panel p-5 shadow-sm">
           <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">
             Apa yang terjadi setelah konfirmasi
           </h3>

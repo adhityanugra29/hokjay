@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Panel } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/components/ui/Form";
+import { FormCard, FormSection, FormCardActions } from "@/components/ui/FormSection";
+import { Field, FormGrid, Input, Select, Textarea } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
 import { rupiah } from "@/lib/format";
@@ -71,8 +71,9 @@ export default function DpForm({
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
-      <Panel className="p-7">
+      <FormCard title="Catat DP" description="Uang muka diterima — sisa tagihan dilunasi lewat Tandai Lunas nanti.">
         <form onSubmit={handleSubmit}>
+          <FormSection label="Detail DP" last>
           <FormGrid>
             <Field label="Nominal DP">
               <Input
@@ -114,20 +115,21 @@ export default function DpForm({
           </FormGrid>
 
           {error && <div className="mt-3 font-mono text-[0.75rem] text-danger">{error}</div>}
+          </FormSection>
 
-          <FormActions>
+          <FormCardActions>
             <Button variant="clay" type="submit" disabled={saving || nominalNum <= 0 || nominalNum >= grandTotal}>
               {saving ? "Memproses..." : "Catat DP"}
             </Button>
             <LinkButton variant="ghost" href={`/invoice/${invoiceId}`}>
               Batal
             </LinkButton>
-          </FormActions>
+          </FormCardActions>
         </form>
-      </Panel>
+      </FormCard>
 
       <div>
-        <div className="mb-3.5 border border-line bg-panel p-5">
+        <div className="mb-3.5 rounded-2xl bg-panel p-5 shadow-sm">
           <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Ringkasan Invoice</h3>
           <div className="font-mono text-[0.8rem] leading-loose text-muted">
             No. Invoice: {nomor}
@@ -137,11 +139,11 @@ export default function DpForm({
             Total: <span className="font-semibold text-ink">{rupiah(grandTotal)}</span>
           </div>
         </div>
-        <div className="mb-3.5 border border-line bg-panel p-5">
+        <div className="mb-3.5 rounded-2xl bg-panel p-5 shadow-sm">
           <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Sisa Setelah DP</h3>
           <div className="font-sans text-[1.3rem] font-extrabold">{rupiah(Math.max(0, sisaSetelahDp))}</div>
         </div>
-        <div className="border border-line bg-panel p-5">
+        <div className="rounded-2xl bg-panel p-5 shadow-sm">
           <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">
             Apa yang terjadi setelah dicatat
           </h3>

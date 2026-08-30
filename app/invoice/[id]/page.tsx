@@ -323,7 +323,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
           </div>
 
           <div className="no-print">
-            <div className="mb-3.5 border border-line bg-panel p-5">
+            <div className="mb-3.5 rounded-2xl bg-panel p-5 shadow-sm">
               <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Status Pembayaran</h3>
               <div className="flex items-center gap-2 font-mono text-[0.8rem]">
                 <span
@@ -361,7 +361,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                 </div>
               )}
             </div>
-            <div className="border border-line bg-panel p-5">
+            <div className="rounded-2xl bg-panel p-5 shadow-sm">
               <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Riwayat</h3>
               <div className="font-mono text-[0.75rem] leading-loose text-muted">
                 {invoice.riwayat.map((r, idx) => (

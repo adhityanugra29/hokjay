@@ -58,30 +58,35 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
         actions={<LinkButton href="/katalog">+ Belanja / Buat Invoice</LinkButton>}
       />
       <div className="p-6 md:p-9">
-        <div className="mb-6 flex flex-wrap items-stretch border-2 border-ink bg-panel">
-          <div className="border-r border-line bg-ink px-6 py-3.5 text-white">
+        {/* Extreme/Soft Trade rework (2026-08-30) — was one hard-bordered
+            strip; now individual rounded cards, matching Pelanggan/
+            Inventory's own stat rows. "Perlu ditindak" stays visually
+            dominant (dark fill) since it's the one number that actually
+            needs action. */}
+        <div className="mb-6 grid grid-cols-2 gap-3.5 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
+          <div className="min-w-0 rounded-xl bg-ink p-4.5 text-white shadow-sm">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
               Perlu ditindak
             </div>
             <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{unpaid.length + draft.length}</div>
           </div>
-          <div className="border-r border-line px-6 py-3.5">
+          <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Belum bayar
             </div>
             <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{unpaid.length}</div>
           </div>
-          <div className="border-r border-line px-6 py-3.5">
+          <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Draft</div>
             <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{draft.length}</div>
           </div>
-          <div className="px-6 py-3.5">
+          <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
               Lunas {MONTH_NAMES[nowJakarta.month - 1]}
             </div>
             <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{paidThisMonth.length}</div>
           </div>
-          <form className="flex w-full items-center px-4 py-3.5 sm:ml-auto sm:w-auto">
+          <form className="col-span-2 flex items-center rounded-xl bg-panel px-4 py-3.5 shadow-sm lg:col-span-1">
             <SearchInput name="search" defaultValue={search as string} placeholder="Cari no. invoice atau pelanggan..." />
           </form>
         </div>

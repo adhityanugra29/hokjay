@@ -52,7 +52,7 @@ export default async function ProdukKategoriPage({ searchParams }: PageProps<"/p
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.kategori} className="hover:bg-[#fbfaf5]">
+              <tr key={r.kategori} className="transition hover:bg-surface">
                 <td className="border-b border-line px-5 py-4.5 font-medium">{r.kategori}</td>
                 <td className="border-b border-line px-5 py-4.5 text-right font-mono text-[0.8rem]">
                   {r.jumlahProduk}
