@@ -257,11 +257,20 @@ export default function ProductCard({
     // "Soft Trade" card treatment (2026-08-30) — replaces the always-on
     // hard border with a resting shadow + rounded corners, matching the
     // mockup confirmed with the user (see the "Katalog Card Directions"
-    // artifact). A hover lift signals the card is interactive. The
-    // pickMode "selected" state still needs a visible ring, so the border
-    // stays in the DOM, just transparent at rest instead of border-line.
+    // artifact). The pickMode "selected" state still needs a visible
+    // ring, so the border stays in the DOM, just transparent at rest
+    // instead of border-line.
+    //
+    // NOTE: deliberately NOT using a hover `transform` (translate) here —
+    // ZoomableImage's full-screen preview is `position: fixed`, and a
+    // `transform` on ANY ancestor makes it that element's own containing
+    // block instead of the viewport, so the fixed overlay collapses to
+    // the card's own box instead of covering the screen. Hit exactly this
+    // bug 2026-08-30 ("fitur zoom eror di katalog") — a hover shadow
+    // alone (box-shadow doesn't create a containing block) gives the same
+    // "this card is interactive" cue without it.
     <div
-      className={`flex flex-col overflow-hidden rounded-xl border-2 bg-panel shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+      className={`flex flex-col overflow-hidden rounded-xl border-2 bg-panel shadow-sm transition hover:shadow-md ${
         pickMode && selected ? "border-accent" : "border-transparent"
       }`}
     >
