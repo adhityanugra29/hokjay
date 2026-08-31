@@ -119,7 +119,7 @@ export default async function FollowUpPage() {
                   <tr key={r.invoiceId} className="hover:bg-[#fbfaf5]">
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{r.nomor}</td>
                     <td className="border-b border-line px-5 py-4.5">
-                      <FollowUpStatusBadge status={r.status} />
+                      <FollowUpStatusBadge status={r.hasDp ? "dp" : r.status} />
                     </td>
                     <td className="border-b border-line px-5 py-4.5 font-medium">{r.customerNama}</td>
                     <td className="border-b border-line px-5 py-4.5">{r.salesNama}</td>

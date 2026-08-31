@@ -83,6 +83,8 @@ export interface FollowUpInvoiceRow {
   invoiceId: string;
   nomor: string;
   status: "draft" | "unpaid";
+  /** True once a DP has been recorded (only possible while status is still "unpaid" — see app/invoice/[id]/dp/page.tsx). Lets the UI show "Sudah DP" instead of lumping it in with a plain "Belum Bayar", per the user's report 2026-08-31 ("jika sudah DP, berikan status DP nya jangan belum bayar"). */
+  hasDp: boolean;
   customerNama: string;
   salesNama: string;
   grandTotal: number;
@@ -128,6 +130,7 @@ export async function getFollowUpInvoices(session?: SessionPayload | null): Prom
       invoiceId: String(inv._id),
       nomor: inv.nomor,
       status: inv.status as "draft" | "unpaid",
+      hasDp: !!inv.dp?.nominal,
       customerNama: inv.customer?.nama || "—",
       salesNama: inv.sales?.nama ?? "—",
       grandTotal: inv.grandTotal,

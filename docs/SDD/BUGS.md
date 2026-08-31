@@ -143,3 +143,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `components/katalog/KatalogClient.tsx` (grid unmounts during download), `app/api/upload/route.ts` (MAX_DIMENSION 1600→1280).
 **Regression test:** Clean build. Re-ran the Playwright network capture before/after — confirmed the fix eliminates the repeated-fetch pattern entirely, not just theorized. Selection/PDF page-packing/output logic untouched — the grid is the only thing conditionally unmounted.
+
+---
+
+## BUG-008 — Beranda shows "Belum Bayar" for invoices that already have a DP
+
+**Severity:** B2
+**Status:** FIXED (2026-08-31)
+**Source:** User report ("Di Beranda, jika sudah DP, berikan status DP nya jangan belum bayar").
+
+**Description:** `Invoice.status` only ever holds `"draft" | "unpaid" | "paid"` — recording a DP (see `app/invoice/[id]/dp/page.tsx`) intentionally leaves status at `"unpaid"` (only the remaining balance changes, per `DpForm.tsx`'s own note "DP bukan pelunasan"). `FollowUpStatusBadge` and every follow-up list read that raw status directly, so an invoice that already had a DP recorded still showed the same "Belum Bayar" badge as one with nothing paid at all — on Beranda's desktop and mobile-sales "Perlu ditindak" lists, and (found while fixing it) the same gap on `/follow-up`'s desktop table and mobile card list, since all four share the exact same `FollowUpStatusBadge` component and `getFollowUpInvoices()` data source.
+
+**Root cause:** No DP-aware state anywhere in the follow-up data/UI layer — only the raw status enum.
+
+**Fix:** `FollowUpInvoiceRow` (`lib/dashboard.ts`) gained `hasDp: boolean` (`!!inv.dp?.nominal`, same check `lib/katalog.ts` already uses for Katalog's own "Sudah DP" badge). `FollowUpStatusBadge` gained a `"dp"` variant ("Sudah DP", same blue already used for this exact state on Katalog's product cards). Every call site that renders the badge from a `FollowUpInvoiceRow` now passes `"dp"` when `hasDp` is true instead of the raw status — Beranda desktop (both the generic and sales-personalized lists), Beranda mobile sales row title, `/follow-up`'s table, and its mobile card list.
+
+**Files:** `lib/dashboard.ts`, `components/dashboard/FollowUpStatusBadge.tsx`, `components/dashboard/MobileFollowUp.tsx`, `app/page.tsx`, `app/follow-up/page.tsx`.
+**Regression test:** Clean build. Aggregate counts (`unpaidCount`, `belumTertagih`, draft/unpaid filters) deliberately left untouched — a DP'd invoice still genuinely has money owed, so it correctly stays counted there; only the per-invoice badge/label changed.

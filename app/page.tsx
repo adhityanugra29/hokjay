@@ -88,7 +88,7 @@ export default async function DashboardPage() {
   // has the room to show all of it.
   const salesNeedsAction: {
     key: string;
-    badgeStatus: "draft" | "unpaid" | "sepi";
+    badgeStatus: "draft" | "unpaid" | "dp" | "sepi";
     title: string;
     subtitle: string;
     actionLabel: string;
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
   }[] = [
     ...myUnpaid.map((inv) => ({
       key: `inv-${inv.invoiceId}`,
-      badgeStatus: "unpaid" as const,
+      badgeStatus: inv.hasDp ? ("dp" as const) : ("unpaid" as const),
       title: inv.customerNama,
       subtitle: `${inv.nomor} · ${rupiah(inv.sisaTagihan)} · ${inv.hariBerjalan} hari`,
       actionLabel: "Lihat",
@@ -128,7 +128,9 @@ export default async function DashboardPage() {
   const salesUrgentRows: { key: string; title: string; subtitle: string; nilai?: number; href: string; urgent: boolean }[] = [
     ...myUnpaid.slice(0, 3).map((inv) => ({
       key: `inv-${inv.invoiceId}`,
-      title: `${inv.customerNama} · ${inv.hariBerjalan} hari belum bayar`,
+      title: inv.hasDp
+        ? `${inv.customerNama} · sudah DP · ${inv.hariBerjalan} hari`
+        : `${inv.customerNama} · ${inv.hariBerjalan} hari belum bayar`,
       subtitle: `${inv.nomor} · komisi ${rupiahCompact(inv.komisiPotensial)}`,
       nilai: inv.sisaTagihan,
       href: `/invoice/${inv.invoiceId}`,
@@ -468,7 +470,7 @@ export default async function DashboardPage() {
                   className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-line py-3.5"
                 >
                   <div className="flex items-center gap-3">
-                    <FollowUpStatusBadge status={inv.status} />
+                    <FollowUpStatusBadge status={inv.hasDp ? "dp" : inv.status} />
                     <div>
                       <div className="font-sans text-[0.95rem] font-bold">{inv.customerNama}</div>
                       <div className="mt-0.5 font-sans text-[0.75rem] text-muted">

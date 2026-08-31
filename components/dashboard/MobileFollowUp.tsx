@@ -46,7 +46,7 @@ export function MobileFollowUpRows({ rows }: { rows: FollowUpInvoiceRow[] }) {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="truncate font-sans text-[0.86rem] font-semibold text-ink">{r.customerNama}</span>
-                <FollowUpStatusBadge status={r.status} />
+                <FollowUpStatusBadge status={r.hasDp ? "dp" : r.status} />
               </div>
               <div className="mt-0.5 font-mono text-[0.68rem] text-muted">
                 {r.nomor} · {r.salesNama} · {r.hariBerjalan} hari

@@ -6,6 +6,15 @@
 
 ## 2026-08-31
 
+**BUG-008 fixed** — Beranda (and `/follow-up`) showed a plain "Belum Bayar" badge for invoices that already had a DP recorded, since `Invoice.status` intentionally stays "unpaid" after a DP (only the balance changes). Added `hasDp` to `FollowUpInvoiceRow` and a new "Sudah DP" badge variant (same blue as Katalog's own DP badge); applied everywhere the shared follow-up badge/data is used — Beranda desktop (generic + sales-personalized), Beranda mobile sales row title, `/follow-up`'s table, and its mobile card list. Aggregate unpaid counts/totals deliberately untouched — a DP'd invoice still has money owed.
+
+Bugs fixed: BUG-008.
+Regression: PASS.
+
+---
+
+## 2026-08-31
+
 **BUG-007 — root cause found and confirmed by actual reproduction, not guessing.** User reported the PDF export was still very slow and asked directly if something was leaking. Minted a real session JWT, drove headless Chromium (Playwright) against a genuine `next build && next start` (ruling out dev-mode Fast Refresh as a confound), pre-seeded 172 selected products, and captured live network traffic generating the PDF: confirmed the exact same explosive pattern from the user's own DevTools screenshot (thousands of requests, each product photo's grid thumbnail re-requested ~70 times). Root cause: `html2canvas` clones the live document on every one of the ~35-40 per-page captures a full-catalog PDF needs — the visible product grid (all its `next/image` thumbnails) sits in that same document the whole time, so every capture re-touched every visible image, not just the off-screen print doc's own photos.
 
 Fix: the grid unmounts (not just CSS-hidden) while a PDF is being generated, so there's nothing left for each capture's clone to re-touch. Re-ran the exact same Playwright capture against the fix: request count stayed flat for 90+ seconds where the unfixed version had already blown past 1,459 by second 20.
