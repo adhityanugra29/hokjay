@@ -21,6 +21,11 @@ interface CatalogProduct {
   isCustom?: boolean;
   /** Owner-set top-down price lock — see models/Product.ts. Per the user's request 2026-08-29. */
   flashSale?: { active: boolean; harga: number };
+  // Booked/Sudah DP qty — needed here (not just for the on-card badges) to
+  // compute the same availableQty guard ProductCard.tsx's checkbox uses.
+  // Per the user's request 2026-08-31.
+  bookedQty?: number;
+  dpQty?: number;
 }
 
 interface CatalogSales {
@@ -257,7 +262,18 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
   // selectedProducts/byCategory computed up here (not further down where
   // they used to live) specifically so the coverHeight effect right below
   // can depend on byCategory.length — see that effect's comment.
-  const selectedProducts = products.filter((p) => selected.has(p._id));
+  //
+  // Also re-checked for availability here, not just trusted from `selected`
+  // — per the user's request 2026-08-31 ("hanya boleh checklist produk yang
+  // tersedia, pastikan ya"). ProductCard.tsx's checkbox already blocks
+  // picking an unavailable product, but `selected` is a plain id set that
+  // can't itself notice a product going out of stock after it was checked
+  // (e.g. another sales rep booked the last unit in between); this is the
+  // one place everything actually destined for the PDF funnels through, so
+  // it's the authoritative guard regardless of how an id got into `selected`.
+  const selectedProducts = products.filter(
+    (p) => selected.has(p._id) && Math.max(0, p.stok - (p.bookedQty ?? 0) - (p.dpQty ?? 0)) > 0
+  );
   // Flash Sale products get their own dedicated section at the very top of
   // page 1 (see flashSaleSection below) instead of sitting in their normal
   // category group — per the user's request 2026-08-29 ("saya mau ini di

@@ -139,36 +139,52 @@ export default function KatalogClient({
       const pageWidthMM = pdf.internal.pageSize.getWidth();
       const pageHeightMM = pdf.internal.pageSize.getHeight();
 
-      for (let i = 0; i < pageEls.length; i++) {
-        // scrollY/scrollX: html2canvas otherwise captures from the
-        // *current* window scroll position — since the button that
-        // triggers this sits far down the page (after browsing/picking
-        // products), whatever the user had scrolled to leaked into the
-        // capture. Per the user's report 2026-08-25.
-        //
-        // logging:false / imageTimeout:0 — per the user's request
-        // 2026-08-27 to speed up the download without touching scale or
-        // JPEG_QUALITY (the two knobs that actually affect visual quality,
-        // already fought over across the fixes above). html2canvas's
-        // default verbose console logging has real per-element overhead
-        // across a many-page catalog; imageTimeout only matters for
-        // images still loading, which none are by this point (already
-        // awaited above).
-        const canvas = await html2canvas(pageEls[i], {
-          scale: KATALOG_PDF_RENDER_SCALE,
-          useCORS: true,
-          scrollY: -window.scrollY,
-          scrollX: 0,
-          logging: false,
-          imageTimeout: 0,
-        });
+      // Captured concurrently, not one page at a time — per the user's
+      // report 2026-08-31 that a bigger catalog took a long time to
+      // download. The old sequential `for` loop fully awaited each page's
+      // html2canvas call (image decode + paint) before even starting the
+      // next one; kicking every page off together lets the browser
+      // interleave that work instead of serializing it end to end, which
+      // matters more the more pages there are. Purely a scheduling change
+      // — KATALOG_PDF_RENDER_SCALE/JPEG_QUALITY (the two knobs that
+      // actually affect visual quality, already fought over and settled
+      // in the comments above) aren't touched, and each page is still its
+      // own independent capture (see "Per-page capture" doc comment in
+      // CatalogPrintDoc.tsx), so nothing about correctness changes — only
+      // the order work happens in.
+      //
+      // scrollY/scrollX: html2canvas otherwise captures from the
+      // *current* window scroll position — since the button that
+      // triggers this sits far down the page (after browsing/picking
+      // products), whatever the user had scrolled to leaked into the
+      // capture. Per the user's report 2026-08-25.
+      //
+      // logging:false / imageTimeout:0 — per the user's request
+      // 2026-08-27 to speed up the download without touching scale or
+      // JPEG_QUALITY. html2canvas's default verbose console logging has
+      // real per-element overhead across a many-page catalog; imageTimeout
+      // only matters for images still loading, which none are by this
+      // point (already awaited above).
+      const canvases = await Promise.all(
+        pageEls.map((el) =>
+          html2canvas(el, {
+            scale: KATALOG_PDF_RENDER_SCALE,
+            useCORS: true,
+            scrollY: -window.scrollY,
+            scrollX: 0,
+            logging: false,
+            imageTimeout: 0,
+          })
+        )
+      );
+      canvases.forEach((canvas, i) => {
         const imgData = canvas.toDataURL("image/jpeg", KATALOG_PDF_JPEG_QUALITY);
         if (i > 0) pdf.addPage();
         // compression: "FAST" — jsPDF's own PDF-stream compression of the
         // already-JPEG-encoded bytes, not a second pass over the image
         // itself; doesn't touch KATALOG_PDF_JPEG_QUALITY.
         pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMM, pageHeightMM, undefined, "FAST");
-      }
+      });
 
       const today = new Date();
       const tanggal = [
@@ -260,6 +276,16 @@ export default function KatalogClient({
     return [...flashSale, ...available, ...encumbered];
   }, [products, search, filters, sort]);
 
+  // "Pilih Semua" only ever selects products a sales rep could actually
+  // check individually on their own card — per the user's request
+  // 2026-08-31 ("hanya boleh checklist produk yang tersedia"). Same
+  // availableQty formula as ProductCard.tsx's own per-card checkbox guard
+  // (stok minus whatever's already Booked/Sudah DP).
+  const availableFiltered = useMemo(
+    () => filtered.filter((p) => Math.max(0, p.stok - (p.bookedQty ?? 0) - (p.dpQty ?? 0)) > 0),
+    [filtered]
+  );
+
   return (
     <>
       {/* Was a bespoke hero block (own header, own font sizes) — the only
@@ -309,11 +335,11 @@ export default function KatalogClient({
           <label className="flex w-fit cursor-pointer items-center gap-2 text-[0.8rem] text-muted select-none">
             <input
               type="checkbox"
-              checked={filtered.length > 0 && filtered.every((p) => selected.has(p._id))}
-              onChange={() => selectAll(filtered.map((p) => p._id))}
+              checked={availableFiltered.length > 0 && availableFiltered.every((p) => selected.has(p._id))}
+              onChange={() => selectAll(availableFiltered.map((p) => p._id))}
               className="h-4 w-4 accent-accent"
             />
-            Pilih Semua ({filtered.length} produk yang tampil)
+            Pilih Semua ({availableFiltered.length} produk tersedia)
           </label>
         </div>
       )}

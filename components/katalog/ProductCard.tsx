@@ -292,15 +292,26 @@ export default function ProductCard({
             🔥 FLASH SALE
           </div>
         )}
+        {/* Only an available product can go into the Katalog PDF — per the
+            user's request 2026-08-31 ("hanya boleh checklist produk yang
+            tersedia"). This is the UI-level guard (dims + blocks the
+            checkbox); the actual guarantee against a stale selection
+            slipping through (e.g. picked while in stock, sold out before
+            the PDF was generated) lives in CatalogPrintDoc.tsx, which
+            filters selectedProducts the same way regardless of what's in
+            the selection state. */}
         {pickMode && (
           <label
-            className={`absolute ${flashSaleActive ? "top-8" : "top-2.5"} left-2.5 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border-2 border-line bg-panel shadow-sm`}
+            className={`absolute ${flashSaleActive ? "top-8" : "top-2.5"} left-2.5 z-10 flex h-6 w-6 items-center justify-center rounded-md border-2 border-line bg-panel shadow-sm ${
+              availableQty <= 0 ? "cursor-not-allowed opacity-40" : "cursor-pointer"
+            }`}
             style={selected ? { background: "var(--color-accent)", borderColor: "var(--color-accent)" } : undefined}
-            title="Pilih untuk katalog PDF"
+            title={availableQty <= 0 ? "Tidak tersedia — tidak bisa dipilih untuk katalog PDF" : "Pilih untuk katalog PDF"}
           >
             <input
               type="checkbox"
               checked={selected}
+              disabled={availableQty <= 0}
               onChange={() => toggle(product._id)}
               className="sr-only"
             />

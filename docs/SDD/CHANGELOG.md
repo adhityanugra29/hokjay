@@ -6,6 +6,19 @@
 
 ## 2026-08-31
 
+**BUG-006 + BUG-007 fixed** — Katalog PDF selection/export hardening, both per direct user reports.
+
+BUG-006: unavailable products (fully Booked/Sudah DP/sold out) could still be checked for the PDF. Fixed at three layers — `ProductCard.tsx`'s checkbox now disables for an unavailable product, `KatalogClient.tsx`'s "Pilih Semua" only selects the available subset, and `CatalogPrintDoc.tsx` (the actual PDF source) re-filters by availability regardless of how an id got selected, so a stale selection can't slip through either.
+
+BUG-007: PDF generation was slow for larger selections — each page was captured by `html2canvas` one at a time in a sequential loop. Changed to `Promise.all` so every page captures concurrently; render scale/JPEG quality (the settings that actually affect visual quality) untouched.
+
+Bugs fixed: BUG-006, BUG-007.
+Regression: PASS.
+
+---
+
+## 2026-08-31
+
 **BUG-005 fixed** — Katalog price field could get silently stuck at Rp 0 (shown both on-card and in the exported Katalog PDF), after an interrupted retype (select-all-on-focus, then blur before typing a replacement). `ProductCard.tsx`'s price `onBlur` now discards the override and falls back to the active preset instead of leaving 0 in place, with a warning explaining why. Confirmed via direct DB query this was never a data problem — no product has a zero base price.
 
 Bugs fixed: BUG-005.

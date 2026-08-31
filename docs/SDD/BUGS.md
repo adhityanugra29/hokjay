@@ -85,3 +85,37 @@
 
 **Files:** `components/katalog/ProductCard.tsx`.
 **Regression test:** Clean build; manually traced the fix against the exact repro (focus → clear → blur before retyping) confirms the override is now dropped instead of persisted at 0.
+
+---
+
+## BUG-006 — Katalog PDF could include unavailable products
+
+**Severity:** B2
+**Status:** FIXED (2026-08-31)
+**Source:** User request ("untuk katalog pdf, hanya boleh checklist produk yang tersedia, pastikan ya").
+
+**Description:** The pick-mode checkbox on every `ProductCard` and the "Pilih Semua" control in `KatalogClient.tsx` let a sales rep check ANY product for the PDF export, including ones already at `availableQty <= 0` (fully Booked/Sudah DP/sold out) — nothing blocked selecting an item with nothing left to actually sell.
+
+**Root cause:** No availability check anywhere in the selection path (per-card checkbox, "Pilih Semua", or the PDF's own product filter).
+
+**Fix:** Three layers, so a stale selection can't slip through even if it predates a stock change: (1) `ProductCard.tsx`'s checkbox is now `disabled` + dimmed for an unavailable product, with a tooltip explaining why; (2) `KatalogClient.tsx`'s "Pilih Semua" only ever selects/counts the currently-available subset of what's on screen; (3) `CatalogPrintDoc.tsx` — the actual authoritative source for what goes into the PDF — re-filters `selectedProducts` by the same availability formula regardless of how an id ended up in the selection set (e.g. checked while in stock, sold out to someone else before the PDF was generated).
+
+**Files:** `components/katalog/ProductCard.tsx`, `components/katalog/KatalogClient.tsx`, `components/cart/CatalogPrintDoc.tsx`.
+**Regression test:** Clean build. Manually confirmed the availability formula (`stok - bookedQty - dpQty`) is applied identically in all three places.
+
+---
+
+## BUG-007 — Katalog PDF generation slow for larger selections
+
+**Severity:** B2
+**Status:** FIXED (2026-08-31)
+**Source:** User report ("lama sekali untuk proses pembuatan katalog untuk bisa di download pdf").
+
+**Description:** `KatalogClient.tsx`'s download handler captured each PDF page with `html2canvas` one at a time in a sequential `for` loop, fully awaiting one page's capture (image decode + paint at `KATALOG_PDF_RENDER_SCALE`) before even starting the next — for a catalog with many pages, that serialization compounds directly into wait time.
+
+**Root cause:** Page captures were unnecessarily serialized; nothing about the work itself requires one page to finish before the next starts (each page is already its own independent, fixed-size capture — see `CatalogPrintDoc.tsx`'s "Per-page capture" doc comment).
+
+**Fix:** Changed the sequential loop to `Promise.all` — every page's `html2canvas` call is kicked off together, letting the browser interleave the work, then the resulting canvases are assembled into the PDF in order afterward. `KATALOG_PDF_RENDER_SCALE`/`KATALOG_PDF_JPEG_QUALITY` (the two knobs that actually affect visual quality, already deliberately tuned up once before after a blur complaint — see the comments in `CatalogPrintDoc.tsx`) were not touched, so this is a scheduling change only, no quality trade-off.
+
+**Files:** `components/katalog/KatalogClient.tsx`.
+**Regression test:** Clean build. No change to per-page output, only capture order/concurrency.
