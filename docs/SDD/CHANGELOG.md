@@ -6,6 +6,19 @@
 
 ## 2026-08-31
 
+**BUG-007 — root cause found and confirmed by actual reproduction, not guessing.** User reported the PDF export was still very slow and asked directly if something was leaking. Minted a real session JWT, drove headless Chromium (Playwright) against a genuine `next build && next start` (ruling out dev-mode Fast Refresh as a confound), pre-seeded 172 selected products, and captured live network traffic generating the PDF: confirmed the exact same explosive pattern from the user's own DevTools screenshot (thousands of requests, each product photo's grid thumbnail re-requested ~70 times). Root cause: `html2canvas` clones the live document on every one of the ~35-40 per-page captures a full-catalog PDF needs — the visible product grid (all its `next/image` thumbnails) sits in that same document the whole time, so every capture re-touched every visible image, not just the off-screen print doc's own photos.
+
+Fix: the grid unmounts (not just CSS-hidden) while a PDF is being generated, so there's nothing left for each capture's clone to re-touch. Re-ran the exact same Playwright capture against the fix: request count stayed flat for 90+ seconds where the unfixed version had already blown past 1,459 by second 20.
+
+Also tightened upload-time photo compression per the user's request (MAX_DIMENSION 1600px -> 1280px, JPEG_QUALITY untouched to avoid reintroducing blur) — new uploads only.
+
+Bugs fixed: BUG-007 (root cause).
+Regression: PASS — verified by re-running the same before/after network capture, not just a clean build.
+
+---
+
+## 2026-08-31
+
 **BUG-007 corrected again (this time with real evidence)** — deferring CatalogPrintDoc's fetch wasn't enough; the user asked directly if something was leaking. Ruled out network/Atlas theories (confirmed with the user Atlas's IP Access List already allows 0.0.0.0/0; production's own unauthenticated response times are fast). Got a real DevTools Network-tab capture from production instead of guessing further: 661 requests, 130 MB of resources, mostly repeated Next.js Image Optimizer calls with "Pilih Semua" checked. Real cause: the Katalog product grid had no cap at all — it rendered all 206 (and growing) products simultaneously, each mounting its own image request. Added pagination (30 at a time, "Tampilkan Lebih Banyak" to reveal more) to `KatalogClient.tsx`; selection/PDF logic untouched, still operates on the full filtered list regardless of how many cards are painted to the screen.
 
 Bugs fixed: BUG-007 (corrected again).

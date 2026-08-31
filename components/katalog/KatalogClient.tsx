@@ -401,33 +401,54 @@ export default function KatalogClient({
           input on each ProductCard got noticeably more cramped this
           session, so 2-up was too tight on a phone-width screen. Per the
           user's report 2026-08-25. */}
-      <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.slice(0, visibleCount).map((p) => (
-          <ProductCard
-            key={p._id}
-            product={p}
-            canEdit={canEditProduct}
-            canFlashSale={canFlashSale}
-            onEdit={() => setEditingProduct(p)}
-          />
-        ))}
-        {filtered.length === 0 && (
-          <div className="col-span-full py-10 text-center font-mono text-sm text-muted">
-            Tidak ada produk yang cocok.
+      {/* Grid swapped out for a plain placeholder while a PDF is actually
+          being generated (2026-08-31) — found via a real Playwright capture
+          against a production build (not dev mode/Fast Refresh — ruled that
+          out first) that every one of html2canvas's ~35+ per-page captures
+          was re-triggering network requests for EVERY visible product
+          card's next/image thumbnail, not just the off-screen print doc's
+          own photos: html2canvas clones the live document on each capture,
+          and this heavy, image-dense grid sits in that same document the
+          whole time PDF generation runs. With it out of the DOM (not just
+          hidden via CSS — actually unmounted, so there's nothing for a
+          clone to re-touch) each of those ~35+ clones has far less to
+          re-process. The grid was already invisible behind the full-screen
+          "Mohon menunggu" overlay during this window anyway, so nothing
+          the user could see or interact with is lost. */}
+      {downloading ? (
+        <div className="py-16 text-center font-mono text-sm text-muted">Menyiapkan PDF...</div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.slice(0, visibleCount).map((p) => (
+              <ProductCard
+                key={p._id}
+                product={p}
+                canEdit={canEditProduct}
+                canFlashSale={canFlashSale}
+                onEdit={() => setEditingProduct(p)}
+              />
+            ))}
+            {filtered.length === 0 && (
+              <div className="col-span-full py-10 text-center font-mono text-sm text-muted">
+                Tidak ada produk yang cocok.
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* "Pilih Semua"/PDF still work on every filtered product regardless
-          of how many are currently painted to the screen — this only
-          controls how many ProductCard/image requests mount at once. Per
-          the user's report 2026-08-31 that opening Katalog was very slow. */}
-      {visibleCount < filtered.length && (
-        <div className="mt-6 flex justify-center">
-          <Button type="button" variant="ghost" onClick={() => setVisibleCount((c) => c + GRID_PAGE_SIZE)}>
-            Tampilkan Lebih Banyak ({filtered.length - visibleCount} produk lagi)
-          </Button>
-        </div>
+          {/* "Pilih Semua"/PDF still work on every filtered product
+              regardless of how many are currently painted to the screen —
+              this only controls how many ProductCard/image requests mount
+              at once. Per the user's report 2026-08-31 that opening
+              Katalog was very slow. */}
+          {visibleCount < filtered.length && (
+            <div className="mt-6 flex justify-center">
+              <Button type="button" variant="ghost" onClick={() => setVisibleCount((c) => c + GRID_PAGE_SIZE)}>
+                Tampilkan Lebih Banyak ({filtered.length - visibleCount} produk lagi)
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       <EditProductDrawer

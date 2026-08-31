@@ -26,7 +26,23 @@ const ALLOWED_FOLDERS = ["products", "payments", "kwitansi", "komisi", "rab", "p
 // full original. 1600px is generous headroom for the largest place a photo
 // actually renders (Katalog PDF pages, ~794px-wide container) while still
 // keeping receipt/kwitansi text legible.
-const MAX_DIMENSION = 1600;
+//
+// MAX_DIMENSION trimmed 1600 -> 1280 (2026-08-31, per the user's request to
+// shrink file size further without introducing blur). Only JPEG_QUALITY
+// affects visible sharpness/artifacting at a given size — that's untouched,
+// since it was already deliberately tuned once before after a real blur
+// complaint (see KATALOG_PDF_JPEG_QUALITY's history in KatalogClient.tsx,
+// the equivalent knob for the exported PDF's own re-encoding — this is a
+// separate constant for the *source* photo, same lesson applies). 1280px
+// is still ~4x the real pixels the Katalog PDF's photo box needs at
+// KATALOG_PDF_RENDER_SCALE (220x165 CSS px x scale 2 = 440x330 real px) and
+// still generous for ZoomableImage's full-resolution zoom view (the one
+// place a visitor deliberately wants maximum detail) — this is a pure
+// resize-headroom trim, not a quality trim. Only applies to NEW uploads;
+// existing photos already in Blob storage keep whatever size they were
+// uploaded at (re-processing every existing photo would need a separate
+// migration script, not done here).
+const MAX_DIMENSION = 1280;
 const JPEG_QUALITY = 80;
 const WEBP_QUALITY = 80;
 
