@@ -133,13 +133,21 @@ export default function ProductCard({
   const selected = isSelected(product._id);
   const hasCustomPrice = customPrices[product._id] !== undefined;
   const [downloadingPhoto, setDownloadingPhoto] = useState(false);
-  // Below-minimum price warning — per the user's request 2026-08-29:
-  // typing a custom price under hargaMinimum snaps it back up to the
-  // minimum and shows why. Checked on blur, not on every keystroke,
-  // since intermediate typed digits are naturally "too low" while a
-  // larger number is still being typed (e.g. typing "150000" reads as
-  // 1, 15, 150... along the way).
-  const [priceWarning, setPriceWarning] = useState(false);
+  // Price warning (below-minimum OR emptied-to-zero) — per the user's
+  // request 2026-08-29 for the below-minimum case, extended 2026-08-31
+  // after a real report of a katalog PDF shipping a Rp 0 price: the price
+  // field select-all's on focus (see CurrencyInput), so clicking in to
+  // retype and getting interrupted before finishing (tab away, click
+  // another card) can leave the field genuinely empty on blur. The old
+  // guard only handled "positive but below hargaMinimum" — an empty/zero
+  // blur fell through untouched, silently persisting customPrice=0
+  // (getEffectivePrice treats 0 as a real override, not "unset") into
+  // both this card's own display and the exported PDF, with no warning
+  // shown at all. Checked on blur, not on every keystroke, since
+  // intermediate typed digits are naturally "too low"/empty while a
+  // larger number is still being typed. Holds the actual message now
+  // (not just a boolean) since there are two different reasons to show.
+  const [priceWarning, setPriceWarning] = useState<string | null>(null);
   // Diskon-exceeds-insentif warning for barang bekas — see maxDiskonBekas
   // usage below. Per the user's request 2026-08-29.
   const [discountWarning, setDiscountWarning] = useState(false);
@@ -391,21 +399,27 @@ export default function ProductCard({
                 value={String(effectivePrice)}
                 onChange={(v) => {
                   setCustomPrice(product._id, v ? Number(v) : 0);
-                  setPriceWarning(false);
+                  setPriceWarning(null);
                 }}
                 onBlur={(v) => {
                   const num = v ? Number(v) : 0;
-                  if (num > 0 && num < product.hargaMinimum) {
+                  if (num <= 0) {
+                    // Emptied out (interrupted retype, see state comment
+                    // above) — discard the override entirely rather than
+                    // leaving Rp 0 in place, falling back to whichever
+                    // preset (Rekomendasi/Minimum) was active before.
+                    setCustomPrice(product._id, undefined);
+                    const fallback = getPriceMode(product._id) === "minimum" ? product.hargaMinimum : product.hargaRekomendasi;
+                    setPriceWarning(`Harga tidak boleh kosong, dikembalikan ke ${rupiah(fallback)}.`);
+                  } else if (num < product.hargaMinimum) {
                     setCustomPrice(product._id, product.hargaMinimum);
-                    setPriceWarning(true);
+                    setPriceWarning(`Harga di bawah minimum, disesuaikan otomatis ke ${rupiah(product.hargaMinimum)}.`);
                   }
                 }}
                 showPrefix
               />
               {priceWarning && (
-                <div className="text-[0.68rem] font-medium text-accent-700">
-                  Harga di bawah minimum, disesuaikan otomatis ke {rupiah(product.hargaMinimum)}.
-                </div>
+                <div className="text-[0.68rem] font-medium text-accent-700">{priceWarning}</div>
               )}
               {/* Two separate preset buttons (per the user's request
                   2026-08-25, replacing the earlier single flip-label
@@ -418,7 +432,7 @@ export default function ProductCard({
                   type="button"
                   onClick={() => {
                     setPriceMode(product._id, "rekomendasi");
-                    setPriceWarning(false);
+                    setPriceWarning(null);
                   }}
                   className={`cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
                     getPriceMode(product._id) === "rekomendasi" && !hasCustomPrice
@@ -432,7 +446,7 @@ export default function ProductCard({
                   type="button"
                   onClick={() => {
                     setPriceMode(product._id, "minimum");
-                    setPriceWarning(false);
+                    setPriceWarning(null);
                   }}
                   className={`cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
                     getPriceMode(product._id) === "minimum" && !hasCustomPrice

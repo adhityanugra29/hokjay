@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-08-31
+
+**BUG-005 fixed** — Katalog price field could get silently stuck at Rp 0 (shown both on-card and in the exported Katalog PDF), after an interrupted retype (select-all-on-focus, then blur before typing a replacement). `ProductCard.tsx`'s price `onBlur` now discards the override and falls back to the active preset instead of leaving 0 in place, with a warning explaining why. Confirmed via direct DB query this was never a data problem — no product has a zero base price.
+
+Bugs fixed: BUG-005.
+Regression: PASS.
+
+---
+
 ## 2026-08-30
 
 **TASK-002 SUBTASK-005** — Akuntansi Foundry sweep.

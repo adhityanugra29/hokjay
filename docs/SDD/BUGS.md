@@ -68,3 +68,20 @@
 **Recommended fix (already designed, see [[hojay-bulk-diskon-plan]] in memory):** clamp `diskon ≤ hargaJual` for Baru/Custom in both services, mirroring the existing Bekas protection.
 
 **Files:** `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
+
+---
+
+## BUG-005 — Katalog price field can get silently stuck at Rp 0 (shows on-screen and in the exported PDF)
+
+**Severity:** B1
+**Status:** FIXED (2026-08-31)
+**Source:** User report ("kenapa di katalog ada harga yang tulisannya 0" — a Katalog PDF shipped with a product priced at Rp 0).
+
+**Description:** `ProductCard.tsx`'s price `CurrencyInput` select-all's its whole value on focus (so retyping doesn't just concatenate digits). If that retype gets interrupted before a new number is typed — click/tab away right after the select-all clears the field — the field blurs empty. `onChange` had already called `setCustomPrice(id, 0)` for the empty intermediate state, and the existing `onBlur` guard only corrected "positive but below `hargaMinimum`" — an empty/zero value fell through untouched. `getEffectivePrice()` treats a stored `0` as a real override (not "unset"), so the price stayed at Rp 0 indefinitely (persisted to `localStorage`, surviving reloads) until someone noticed and retyped it manually. Both the on-screen card and `CatalogPrintDoc.tsx`'s exported PDF read price from this same shared state, so the PDF shipped with Rp 0 too.
+
+**Root cause:** No handling for the empty/zero case in the price field's blur validation — only the below-minimum case was guarded.
+
+**Fix:** `onBlur` now also handles `num <= 0`: discards the custom-price override entirely (`setCustomPrice(id, undefined)`) instead of leaving `0` in place, falling back to whichever preset (Rekomendasi/Minimum) was active, and shows a warning explaining what happened — same pattern as the existing below-minimum warning. Confirmed via a direct DB query that no product actually has `hargaRekomendasi`/`hargaMinimum` ≤ 0 — this was purely the client-side stuck-state bug, not bad data.
+
+**Files:** `components/katalog/ProductCard.tsx`.
+**Regression test:** Clean build; manually traced the fix against the exact repro (focus → clear → blur before retyping) confirms the override is now dropped instead of persisted at 0.
