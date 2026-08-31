@@ -139,52 +139,48 @@ export default function KatalogClient({
       const pageWidthMM = pdf.internal.pageSize.getWidth();
       const pageHeightMM = pdf.internal.pageSize.getHeight();
 
-      // Captured concurrently, not one page at a time — per the user's
-      // report 2026-08-31 that a bigger catalog took a long time to
-      // download. The old sequential `for` loop fully awaited each page's
-      // html2canvas call (image decode + paint) before even starting the
-      // next one; kicking every page off together lets the browser
-      // interleave that work instead of serializing it end to end, which
-      // matters more the more pages there are. Purely a scheduling change
-      // — KATALOG_PDF_RENDER_SCALE/JPEG_QUALITY (the two knobs that
-      // actually affect visual quality, already fought over and settled
-      // in the comments above) aren't touched, and each page is still its
-      // own independent capture (see "Per-page capture" doc comment in
-      // CatalogPrintDoc.tsx), so nothing about correctness changes — only
-      // the order work happens in.
-      //
-      // scrollY/scrollX: html2canvas otherwise captures from the
-      // *current* window scroll position — since the button that
-      // triggers this sits far down the page (after browsing/picking
-      // products), whatever the user had scrolled to leaked into the
-      // capture. Per the user's report 2026-08-25.
-      //
-      // logging:false / imageTimeout:0 — per the user's request
-      // 2026-08-27 to speed up the download without touching scale or
-      // JPEG_QUALITY. html2canvas's default verbose console logging has
-      // real per-element overhead across a many-page catalog; imageTimeout
-      // only matters for images still loading, which none are by this
-      // point (already awaited above).
-      const canvases = await Promise.all(
-        pageEls.map((el) =>
-          html2canvas(el, {
-            scale: KATALOG_PDF_RENDER_SCALE,
-            useCORS: true,
-            scrollY: -window.scrollY,
-            scrollX: 0,
-            logging: false,
-            imageTimeout: 0,
-          })
-        )
-      );
-      canvases.forEach((canvas, i) => {
+      // REVERTED 2026-08-31 — briefly changed this to Promise.all
+      // (capture every page "concurrently") on the theory that the
+      // sequential loop was serializing work unnecessarily. Wrong: by
+      // this point every image is already loaded (awaited above), so
+      // there's essentially no I/O left for html2canvas to overlap —
+      // it's almost entirely synchronous DOM-clone + canvas-rasterize
+      // work, which JS's single thread can't actually run concurrently
+      // regardless of how the promises are scheduled. Promise.all just
+      // held every page's cloned subtree + canvas in memory at once
+      // instead of one at a time, which the user reported made the
+      // export slower, not faster. Back to one page fully processed
+      // (and released) before the next starts.
+      for (let i = 0; i < pageEls.length; i++) {
+        // scrollY/scrollX: html2canvas otherwise captures from the
+        // *current* window scroll position — since the button that
+        // triggers this sits far down the page (after browsing/picking
+        // products), whatever the user had scrolled to leaked into the
+        // capture. Per the user's report 2026-08-25.
+        //
+        // logging:false / imageTimeout:0 — per the user's request
+        // 2026-08-27 to speed up the download without touching scale or
+        // JPEG_QUALITY (the two knobs that actually affect visual quality,
+        // already fought over across the fixes above). html2canvas's
+        // default verbose console logging has real per-element overhead
+        // across a many-page catalog; imageTimeout only matters for
+        // images still loading, which none are by this point (already
+        // awaited above).
+        const canvas = await html2canvas(pageEls[i], {
+          scale: KATALOG_PDF_RENDER_SCALE,
+          useCORS: true,
+          scrollY: -window.scrollY,
+          scrollX: 0,
+          logging: false,
+          imageTimeout: 0,
+        });
         const imgData = canvas.toDataURL("image/jpeg", KATALOG_PDF_JPEG_QUALITY);
         if (i > 0) pdf.addPage();
         // compression: "FAST" — jsPDF's own PDF-stream compression of the
         // already-JPEG-encoded bytes, not a second pass over the image
         // itself; doesn't touch KATALOG_PDF_JPEG_QUALITY.
         pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMM, pageHeightMM, undefined, "FAST");
-      });
+      }
 
       const today = new Date();
       const tanggal = [

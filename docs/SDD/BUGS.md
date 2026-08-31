@@ -105,17 +105,19 @@
 
 ---
 
-## BUG-007 — Katalog PDF generation slow for larger selections
+## BUG-007 — Katalog PDF/page slow (Katalog PDF generation + opening the Katalog page)
 
-**Severity:** B2
+**Severity:** B1
 **Status:** FIXED (2026-08-31)
-**Source:** User report ("lama sekali untuk proses pembuatan katalog untuk bisa di download pdf").
+**Source:** User reports — first "lama sekali untuk proses pembuatan katalog untuk bisa di download pdf", then after the first attempted fix, "masih sangat lambat, bahkan lebih buruk dari sebelum layout terbaru" and a hard target: PDF export and opening `/katalog` both under 1 second.
 
-**Description:** `KatalogClient.tsx`'s download handler captured each PDF page with `html2canvas` one at a time in a sequential `for` loop, fully awaiting one page's capture (image decode + paint at `KATALOG_PDF_RENDER_SCALE`) before even starting the next — for a catalog with many pages, that serialization compounds directly into wait time.
+**First attempt (WRONG, reverted same day):** Guessed the sequential per-page `html2canvas` `for` loop was serializing work unnecessarily and changed it to `Promise.all`, capturing every page "concurrently". This did not help and the user reported it made things worse. Root issue with the theory: by the time capture starts, every image is already loaded (awaited earlier in the same function) — there's essentially no I/O left for html2canvas to overlap, so it's almost entirely synchronous DOM-clone + canvas-rasterize work, which JS's single thread can't actually run concurrently regardless of how the promises are scheduled. `Promise.all` just kept every page's cloned subtree + canvas alive in memory simultaneously instead of one at a time being processed and released — plausibly *increasing* peak memory/GC pressure instead of speeding anything up. Reverted back to the sequential loop (proven working before any of this).
 
-**Root cause:** Page captures were unnecessarily serialized; nothing about the work itself requires one page to finish before the next starts (each page is already its own independent, fixed-size capture — see `CatalogPrintDoc.tsx`'s "Per-page capture" doc comment).
+**Actual root cause found (page-open speed):** `CatalogPrintDoc.tsx` is mounted globally in the root layout (`app/layout.tsx`) — it fetches `/api/products` (all products, again — the page it sits on/near already fetched the same data server-side), `/api/categories`, and `/api/sales` unconditionally on every single mount, unguarded by whether the user is anywhere near the Katalog PDF feature. That means **every page load across the whole app**, and especially landing on `/katalog` itself, paid for three extra API calls this component's own export doesn't need until someone actually starts picking products for a PDF.
 
-**Fix:** Changed the sequential loop to `Promise.all` — every page's `html2canvas` call is kicked off together, letting the browser interleave the work, then the resulting canvases are assembled into the PDF in order afterward. `KATALOG_PDF_RENDER_SCALE`/`KATALOG_PDF_JPEG_QUALITY` (the two knobs that actually affect visual quality, already deliberately tuned up once before after a blur complaint — see the comments in `CatalogPrintDoc.tsx`) were not touched, so this is a scheduling change only, no quality trade-off.
+Ruled out (checked directly against the DB, not guessed): `getProductInvoiceStatusMap()`'s unbounded `Invoice.find({status:"paid"})` scan — only 30 invoices / 23 paid / 206 products in the real data, indexed on `status`, not a real bottleneck at this scale. Katalog's own product-grid thumbnails already use `next/image` (lazy-loaded, per an earlier 2026-08-28 fix) — also not the culprit.
 
-**Files:** `components/katalog/KatalogClient.tsx`.
-**Regression test:** Clean build. No change to per-page output, only capture order/concurrency.
+**Fix:** `CatalogPrintDoc.tsx`'s fetch effect is now gated on `pickMode` (from `CatalogSelectionProvider`) instead of firing unconditionally on mount — it only fires once, the first time `pickMode` flips true (same "fetch once per session" semantics as before, just deferred), giving it the whole browsing-and-checking-boxes window to finish well before "Unduh Katalog PDF" is ever clicked. `KatalogClient.tsx`'s existing wait-for-`data-ready` poll still covers the rare case it hasn't finished. `KATALOG_PDF_RENDER_SCALE`/`KATALOG_PDF_JPEG_QUALITY` (the settings that actually affect visual quality/compression, already deliberately tuned once before after a blur complaint) were not touched by any part of this — confirmed nothing about image compression was removed.
+
+**Files:** `components/katalog/KatalogClient.tsx` (reverted to sequential), `components/cart/CatalogPrintDoc.tsx` (deferred fetch).
+**Regression test:** Clean build. No change to per-page PDF output or image compression — only when the background fetch fires.

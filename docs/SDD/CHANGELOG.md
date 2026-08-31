@@ -6,6 +6,17 @@
 
 ## 2026-08-31
 
+**BUG-007 corrected** — the earlier same-day "capture PDF pages concurrently" fix was wrong and made export slower per the user's follow-up report, not faster (Promise.all provided no real parallelism for html2canvas's mostly-synchronous work and likely raised peak memory instead). Reverted `KatalogClient.tsx` back to the proven sequential per-page loop.
+
+Found the real contributor to BOTH "PDF slow" and "opening /katalog slow": `CatalogPrintDoc.tsx` is mounted globally (`app/layout.tsx`) and was fetching all products/categories/sales unconditionally on every single page mount across the whole app — including landing on `/katalog` itself, redundant with that page's own server-side fetch. Deferred the fetch to only fire once `pickMode` starts (first checkbox click), not on every mount. Ruled out (checked against the real DB, not guessed) the invoice-status-map query and product-grid image loading as bottlenecks — data volume (30 invoices, 206 products) is small, neither was the cause. No PDF quality/compression setting touched anywhere in this correction.
+
+Bugs fixed: BUG-007 (corrected).
+Regression: PASS.
+
+---
+
+## 2026-08-31
+
 **BUG-006 + BUG-007 fixed** — Katalog PDF selection/export hardening, both per direct user reports.
 
 BUG-006: unavailable products (fully Booked/Sudah DP/sold out) could still be checked for the PDF. Fixed at three layers — `ProductCard.tsx`'s checkbox now disables for an unavailable product, `KatalogClient.tsx`'s "Pilih Semua" only selects the available subset, and `CatalogPrintDoc.tsx` (the actual PDF source) re-filters by availability regardless of how an id got selected, so a stale selection can't slip through either.

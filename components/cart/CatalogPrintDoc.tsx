@@ -257,7 +257,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
   const [categories, setCategories] = useState<string[]>([]);
   const [sales, setSales] = useState<CatalogSales[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const { selected, getEffectivePrice, getDiscount } = useCatalogSelection();
+  const { selected, pickMode, getEffectivePrice, getDiscount } = useCatalogSelection();
 
   // selectedProducts/byCategory computed up here (not further down where
   // they used to live) specifically so the coverHeight effect right below
@@ -334,12 +334,26 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
       : undefined;
 
   useEffect(() => {
-    // Deliberately invisible: this fetches on every single page load (this
-    // component is mounted globally), not something the user is waiting on
-    // — opts out of the global "slow fetch shows the loading popup" patch
-    // (see components/ui/LoadingOverlay.tsx) via this header, otherwise a
-    // slow DB response here would pop up "Mohon menunggu" over whatever
-    // page the user is actually looking at.
+    // Deferred until pick-mode actually starts (2026-08-31, per the user's
+    // demand that opening ANY page — not just /katalog — be fast). This
+    // component is mounted globally in the root layout (app/layout.tsx),
+    // so unconditionally fetching all products/categories/sales on every
+    // single mount meant EVERY page load in the whole app paid for 3 API
+    // calls this component's own PDF export doesn't need until someone
+    // actually starts picking products for a catalog. Now it only fires
+    // once (guarded by `loaded`, same "fetch once" semantics as before —
+    // this never re-fetches on a later cancelPicking()/startPicking()
+    // cycle either, matching the old empty-deps behavior), the first time
+    // pickMode flips true — giving it the whole browsing-and-checking-
+    // boxes window to finish well before "Unduh Katalog PDF" is ever
+    // clicked (KatalogClient.tsx's own wait-for-data-ready poll in
+    // downloadCatalogPDF still covers the rare case it hasn't).
+    //
+    // Deliberately invisible even now: opts out of the global "slow fetch
+    // shows the loading popup" patch (see components/ui/LoadingOverlay.tsx)
+    // via this header, since this still isn't something the user is
+    // directly waiting on the moment pickMode flips.
+    if (!pickMode || loaded) return;
     const silent = { headers: { "X-Loading-Overlay": "silent" } };
     Promise.all([
       fetch("/api/products", silent).then((r) => r.json()),
@@ -352,7 +366,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
         setSales((s as CatalogSales[]).filter((x) => x.aktif));
       })
       .finally(() => setLoaded(true));
-  }, []);
+  }, [pickMode, loaded]);
 
   // Flatten category groups into one ordered list (category header still
   // marked on each group's first item), then pack into pages by real
