@@ -121,3 +121,12 @@ Ruled out (checked directly against the DB, not guessed): `getProductInvoiceStat
 
 **Files:** `components/katalog/KatalogClient.tsx` (reverted to sequential), `components/cart/CatalogPrintDoc.tsx` (deferred fetch).
 **Regression test:** Clean build. No change to per-page PDF output or image compression — only when the background fetch fires.
+
+**Second correction (evidence-based, 2026-08-31):** Still not enough — user reported it was still very slow and asked directly whether something was leaking. Tried to reproduce locally first (`npm run dev`, minted a real session JWT to hit the actual authenticated routes) but this sandbox itself can't reach MongoDB Atlas reliably (`MongoNetworkTimeoutError`/`MongooseServerSelectionError`) — that made local timings meaningless, and was honestly reported as such rather than presented as real data. Confirmed the *deployed* production site's own unauthenticated response times are fast (0.2-1.3s), and the user confirmed Atlas's Network Access list already allows `0.0.0.0/0` — so the network-layer theories were dead ends.
+
+Asked the user for a real DevTools Network-tab capture from production instead of guessing again. It showed **661 requests, 130 MB of resources**, mostly repeated `image?url=...` (Next.js Image Optimizer) calls, with "Pilih Semua" checked. Root cause: the product grid (`KatalogClient.tsx`) had **no cap at all** — it always rendered every `filtered` product simultaneously, each `ProductCard` mounting its own `next/image` request. With 206 products in the catalog today (and growing over time — which also explains "sebelumnya tidak masalah", the catalog was smaller then), that's 206 cards' worth of images all loading at once on every single page load, independent of the PDF export code touched in the two attempts above.
+
+**Fix:** `KatalogClient.tsx` now renders only `GRID_PAGE_SIZE` (30) products at a time, with a "Tampilkan Lebih Banyak" button to reveal more; resets to the first page on search/filter/sort change. "Pilih Semua" and the PDF export are untouched — both still operate on the full `filtered`/`availableFiltered` arrays regardless of how many cards are currently painted to the screen, only what's rendered/mounted is capped.
+
+**Files (this correction):** `components/katalog/KatalogClient.tsx`.
+**Regression test:** Clean build. Filter/sort/search/selection/PDF logic unchanged — verified by reading the diff, only the render slice + a page-size button were added.

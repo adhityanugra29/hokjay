@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
 import EditProductDrawer from "./EditProductDrawer";
 import KatalogFilterSidebar, {
@@ -31,6 +31,20 @@ import { Button, LinkButton } from "@/components/ui/Button";
 const KATALOG_PDF_JPEG_QUALITY = 0.94;
 const KATALOG_PDF_RENDER_SCALE = 2;
 
+// Grid pagination (2026-08-31) — found via a real DevTools Network capture
+// (661 requests, 130 MB of resources, a "Pilih Semua" of every product on
+// screen at once) that the grid had no cap at all: it always rendered
+// EVERY `filtered` product simultaneously, each ProductCard mounting its
+// own next/image request. With 206 products in the catalog today (and
+// growing), that's 206 cards' worth of images all loading at once on
+// every page load — the actual cause behind "kecepatan membuka page
+// katalog", not the PDF export code touched in the BUG-007 fixes above.
+// Selection/PDF logic is untouched: "Pilih Semua" and the PDF still
+// operate on the full `filtered`/`availableFiltered` arrays regardless of
+// how many cards are currently rendered — only what's painted to the
+// screen is capped.
+const GRID_PAGE_SIZE = 30;
+
 export default function KatalogClient({
   products,
   categories,
@@ -48,6 +62,15 @@ export default function KatalogClient({
   const [filters, setFilters] = useState<KatalogFilters>(EMPTY_KATALOG_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sort, setSort] = useState("");
+  // How many of `filtered` are actually rendered right now — see
+  // GRID_PAGE_SIZE above. Reset back to the first page whenever the
+  // result set itself changes shape, so switching to a narrower
+  // search/filter doesn't confusingly keep whatever larger count was
+  // reached by "Muat lebih banyak" on the previous query.
+  const [visibleCount, setVisibleCount] = useState(GRID_PAGE_SIZE);
+  useEffect(() => {
+    setVisibleCount(GRID_PAGE_SIZE);
+  }, [search, filters, sort]);
   const [downloading, setDownloading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<KatalogProduct | null>(null);
   const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
@@ -379,7 +402,7 @@ export default function KatalogClient({
           session, so 2-up was too tight on a phone-width screen. Per the
           user's report 2026-08-25. */}
       <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((p) => (
+        {filtered.slice(0, visibleCount).map((p) => (
           <ProductCard
             key={p._id}
             product={p}
@@ -394,6 +417,18 @@ export default function KatalogClient({
           </div>
         )}
       </div>
+
+      {/* "Pilih Semua"/PDF still work on every filtered product regardless
+          of how many are currently painted to the screen — this only
+          controls how many ProductCard/image requests mount at once. Per
+          the user's report 2026-08-31 that opening Katalog was very slow. */}
+      {visibleCount < filtered.length && (
+        <div className="mt-6 flex justify-center">
+          <Button type="button" variant="ghost" onClick={() => setVisibleCount((c) => c + GRID_PAGE_SIZE)}>
+            Tampilkan Lebih Banyak ({filtered.length - visibleCount} produk lagi)
+          </Button>
+        </div>
+      )}
 
       <EditProductDrawer
         product={editingProduct}

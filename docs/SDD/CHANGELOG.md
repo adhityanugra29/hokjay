@@ -6,6 +6,15 @@
 
 ## 2026-08-31
 
+**BUG-007 corrected again (this time with real evidence)** — deferring CatalogPrintDoc's fetch wasn't enough; the user asked directly if something was leaking. Ruled out network/Atlas theories (confirmed with the user Atlas's IP Access List already allows 0.0.0.0/0; production's own unauthenticated response times are fast). Got a real DevTools Network-tab capture from production instead of guessing further: 661 requests, 130 MB of resources, mostly repeated Next.js Image Optimizer calls with "Pilih Semua" checked. Real cause: the Katalog product grid had no cap at all — it rendered all 206 (and growing) products simultaneously, each mounting its own image request. Added pagination (30 at a time, "Tampilkan Lebih Banyak" to reveal more) to `KatalogClient.tsx`; selection/PDF logic untouched, still operates on the full filtered list regardless of how many cards are painted to the screen.
+
+Bugs fixed: BUG-007 (corrected again).
+Regression: PASS.
+
+---
+
+## 2026-08-31
+
 **BUG-007 corrected** — the earlier same-day "capture PDF pages concurrently" fix was wrong and made export slower per the user's follow-up report, not faster (Promise.all provided no real parallelism for html2canvas's mostly-synchronous work and likely raised peak memory instead). Reverted `KatalogClient.tsx` back to the proven sequential per-page loop.
 
 Found the real contributor to BOTH "PDF slow" and "opening /katalog slow": `CatalogPrintDoc.tsx` is mounted globally (`app/layout.tsx`) and was fetching all products/categories/sales unconditionally on every single page mount across the whole app — including landing on `/katalog` itself, redundant with that page's own server-side fetch. Deferred the fetch to only fire once `pickMode` starts (first checkbox click), not on every mount. Ruled out (checked against the real DB, not guessed) the invoice-status-map query and product-grid image loading as bottlenecks — data volume (30 invoices, 206 products) is small, neither was the cause. No PDF quality/compression setting touched anywhere in this correction.
