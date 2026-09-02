@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useCart } from "@/components/cart/CartProvider";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
-import { rupiah } from "@/lib/format";
+import { rupiah, productDisplayName } from "@/lib/format";
 import { computeLineCommission } from "@/lib/commission";
 
 interface SidebarProduct {
   _id: string;
   name: string;
+  merk?: string;
   sku: string;
   category: string;
   hargaRekomendasi: number;
@@ -238,7 +239,9 @@ export default function AddProductSidebar({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="line-clamp-1 text-[0.76rem] font-medium text-ink">{p.name}</div>
+                    <div className="line-clamp-1 text-[0.76rem] font-medium text-ink">
+                      {productDisplayName(p.name, p.merk)}
+                    </div>
                     {dimText && <div className="mt-0.5 font-mono text-[0.62rem] text-muted">{dimText}</div>}
                     <div className="mt-0.5 flex flex-wrap items-center gap-1 font-mono text-[0.64rem] text-muted">
                       <span>{rupiah(hargaJual)}</span>
@@ -287,7 +290,7 @@ export default function AddProductSidebar({
                       onClick={() =>
                         addItem({
                           productId: p._id,
-                          name: p.name,
+                          name: productDisplayName(p.name, p.merk),
                           hargaJual,
                           hargaMinimum: p.hargaMinimum,
                           hargaRekomendasi: p.hargaRekomendasi,

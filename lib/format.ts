@@ -71,6 +71,20 @@ export function formatDateFull(date: Date | string): string {
   return `${DAY_NAMES[d.getDay()]}, ${d.getDate()} ${MONTH_LONG[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+/**
+ * "Kulkas Hosizaki" from name "Kulkas" + merk "Hosizaki" — just the name
+ * if no merk is set. So the sales/customer-facing surfaces (Katalog card
+ * + PDF, Invoice's product picker + snapshot) show the brand automatically
+ * from the existing Merk field instead of requiring it typed into Nama
+ * Produk. Per the user's request 2026-09-02 ("kulkas hosizaki... user
+ * tidak perlu input merk di judul"). The stored `name` itself is left
+ * untouched — this only affects what's displayed/snapshotted.
+ */
+export function productDisplayName(name: string, merk?: string | null): string {
+  const m = merk?.trim();
+  return m ? `${name} ${m}` : name;
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

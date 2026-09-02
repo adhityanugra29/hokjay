@@ -6,6 +6,15 @@
 
 ## 2026-09-02
 
+**TASK-005 done** — Merk (brand) now shows automatically next to the product name on Katalog cards, the Katalog PDF, and the Invoice product picker (+ what gets snapshotted onto the invoice), instead of requiring it typed into Nama Produk by hand. New `productDisplayName()` helper in `lib/format.ts`; stored `name` field itself untouched.
+
+Tasks done: TASK-005.
+Regression: PASS.
+
+---
+
+## 2026-09-02
+
 **BUG-009 fixed** — Katalog search couldn't match a full "80 x 60 x 100" size query, only a single number against one P/L/T dimension at a time. Not actually a regression (git history confirms this was never implemented), but fixed as reported: added shared size-query parsing to `KatalogClient.tsx` — splits on x/×/,/-/whitespace, every number typed must match one of panjang/lebar/tinggi (partial matching, order doesn't matter). Applies to both the main search box and the sidebar's manual Ukuran field; single-number queries behave exactly as before.
 
 Bugs fixed: BUG-009.

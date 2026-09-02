@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { rupiah } from "@/lib/format";
+import { rupiah, productDisplayName } from "@/lib/format";
 import { useCatalogSelection } from "@/components/katalog/CatalogSelectionProvider";
 
 interface CatalogProduct {
@@ -19,6 +19,7 @@ interface CatalogProduct {
   fotoUrl?: string;
   stok: number;
   isCustom?: boolean;
+  merk?: string;
   /** Owner-set top-down price lock — see models/Product.ts. Per the user's request 2026-08-29. */
   flashSale?: { active: boolean; harga: number };
   // Booked/Sudah DP qty — needed here (not just for the on-card badges) to
@@ -474,7 +475,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
               </div>
             )}
             <div className="flex flex-1 flex-col">
-              <h4 className="text-[18px] font-bold">{p.name}</h4>
+              <h4 className="text-[18px] font-bold">{productDisplayName(p.name, p.merk)}</h4>
               <p className="mt-1.5 text-[13px] leading-snug text-muted">{specLine(p)}</p>
               {/* Same treatment as the regular Diskon block below (coret
                   harga normal, harga akhir berwarna, baris Hemat) — per
@@ -556,7 +557,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                         </div>
                       )}
                       <div className="flex flex-1 flex-col">
-                        <h4 className="text-[18px] font-bold">{p.name}</h4>
+                        <h4 className="text-[18px] font-bold">{productDisplayName(p.name, p.merk)}</h4>
                         <p className="mt-1.5 text-[13px] leading-snug text-muted">{specLine(p)}</p>
                         {/* Harga coret + nilai diskon — per the user's
                             request 2026-08-29. Plain `line-through` text

@@ -75,3 +75,20 @@
 **Acceptance criteria:** TBD once scoped.
 
 **Files affected:** None (not application code) — likely a standalone document/artifact, not a repo file.
+
+---
+
+## TASK-005 — Merk otomatis muncul di nama produk (Katalog/PDF/Invoice)
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-02)
+**Dependency:** None
+**Created:** 2026-09-02 · **Last updated:** 2026-09-02
+
+**Description:** The `merk` field already existed on `Product` and its form, but only ever showed on the admin Inventory list (as a separate "· Merk" suffix). Katalog cards, the Katalog PDF, and the Invoice product picker all showed just `product.name`, so a brand only appeared if typed straight into Nama Produk. Per the user's request 2026-09-02 ("kulkas hosizaki... user tidak perlu input merk di judul, cukup mereka input merk di form"), added `productDisplayName(name, merk)` to `lib/format.ts` (`"Kulkas Hosizaki"` when merk is set, else just the name) and applied it at the 3 customer/sales-facing surfaces: Katalog card title + its invoice-snapshot `addItem` call (`ProductCard.tsx`), the Katalog PDF's two product-name render sites (`CatalogPrintDoc.tsx`), and the Invoice "Tambah Produk" sidebar's list + its own `addItem` call (`AddProductSidebar.tsx`).
+
+**Acceptance criteria:** Stored `Product.name` untouched (no DB write changes) — this only changes what's displayed/snapshotted at render/add-to-cart time. Admin Inventory list (`app/produk/(list)/page.tsx`) and the product edit form left as-is (already correct / needs the raw name for editing).
+
+**Files affected:** `lib/format.ts`, `components/katalog/ProductCard.tsx`, `components/cart/CatalogPrintDoc.tsx`, `components/invoice/AddProductSidebar.tsx`.
+**Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` in `AddProductSidebar.tsx`.

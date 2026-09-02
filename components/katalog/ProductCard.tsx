@@ -7,7 +7,7 @@ import { useCatalogSelection } from "./CatalogSelectionProvider";
 import ZoomableImage from "./ZoomableImage";
 import { CurrencyInput } from "@/components/ui/Form";
 import { useDialog } from "@/components/ui/Dialog";
-import { rupiah, slugify } from "@/lib/format";
+import { rupiah, slugify, productDisplayName } from "@/lib/format";
 import { computeLineCommission, maxDiskonBekas } from "@/lib/commission";
 
 /**
@@ -381,7 +381,9 @@ export default function ProductCard({
       <div className="flex flex-1 flex-col p-4">
         {/* Fixed-height name block + Insentif called out bold/red, matching
             the Hot Products carousel cards (see confirmation 2026-08-20). */}
-        <div className="line-clamp-2 min-h-[2.75rem] text-[0.92rem] leading-snug font-medium">{product.name}</div>
+        <div className="line-clamp-2 min-h-[2.75rem] text-[0.92rem] leading-snug font-medium">
+          {productDisplayName(product.name, product.merk)}
+        </div>
         <div className="mt-1.5 flex flex-col gap-1.5">
           {flashSaleActive ? (
             // Top-down locked price — no editable price/preset/Diskon
@@ -673,7 +675,7 @@ export default function ProductCard({
             onClick={() => {
               addItem({
                 productId: product._id,
-                name: product.name,
+                name: productDisplayName(product.name, product.merk),
                 hargaJual: effectivePrice,
                 hargaMinimum: product.hargaMinimum,
                 hargaRekomendasi: product.hargaRekomendasi,
