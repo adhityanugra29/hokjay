@@ -160,3 +160,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `lib/dashboard.ts`, `components/dashboard/FollowUpStatusBadge.tsx`, `components/dashboard/MobileFollowUp.tsx`, `app/page.tsx`, `app/follow-up/page.tsx`.
 **Regression test:** Clean build. Aggregate counts (`unpaidCount`, `belumTertagih`, draft/unpaid filters) deliberately left untouched — a DP'd invoice still genuinely has money owed, so it correctly stays counted there; only the per-invoice badge/label changed.
+
+---
+
+## BUG-009 — Katalog search can't match a full "80 x 60 x 100" size query
+
+**Severity:** B3
+**Status:** FIXED (2026-09-02)
+**Source:** User report ("di katalog bisa search juga by ukuran 80 x 60 x 100, kemarin ini sudah bisa tapi sekarang tidak bisa").
+
+**Description:** Checked git history (`ead1934`, 2026-08-26) — the search box and the sidebar's manual Ukuran field have only ever matched a *single* number against one P/L/T dimension at a time (e.g. "80" matches any side that's exactly 80cm); a combined query like "80 x 60 x 100" was never implemented, so this wasn't a regression, but the gap matched what the user asked for closely enough to fix as reported.
+
+**Root cause:** N/A (missing capability, not a broken one) — `asNumber = /^\d+(\.\d+)?$/.test(q)` only ever recognized a query that was purely one number.
+
+**Fix:** Added `parseSizeQuery()`/`matchesSizeQuery()` to `KatalogClient.tsx` — a query is treated as a size query when, split on `x`/`×`/`,`/`-`/whitespace, every token is a plain number; every number the user types must match one of panjang/lebar/tinggi (partial: fewer than 3 numbers is fine, per the user's explicit choice), unordered. Single-number queries behave exactly as before. Applied to both the main search box (still OR'd with name/SKU text search) and the sidebar's Ukuran field (unchanged: size-only, no text fallback). Sidebar placeholder updated to "Contoh: 80 x 60 x 100 (cm, P/L/T)".
+
+**Files:** `components/katalog/KatalogClient.tsx`, `components/katalog/KatalogFilterSidebar.tsx`.
+**Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` in the same file. Manually reasoned through: "80" alone still exact-matches a single dimension (unchanged); "80 x 60 x 100" now requires all three to be present among P/L/T; "80 x 999" now correctly excludes a product that doesn't have a 999cm side.

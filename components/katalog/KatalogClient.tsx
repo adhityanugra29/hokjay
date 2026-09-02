@@ -45,6 +45,36 @@ const KATALOG_PDF_RENDER_SCALE = 2;
 // screen is capped.
 const GRID_PAGE_SIZE = 30;
 
+// Size-query parsing, shared by the main search box and the sidebar's
+// manual Ukuran field — per the user's request 2026-09-02 ("bisa search
+// juga by ukuran 80 x 60 x 100"). A query only counts as a size query if,
+// once split on x/×/,/-/whitespace, every token is a plain number — so
+// "80" alone still works exactly as before, "80 x 60 x 100" now also
+// works, but something like "Meja 80" (mixed text) is left to the normal
+// name/SKU text search instead of being misread as a size. Confirmed with
+// the user: matching is partial (you don't have to type all 3 dimensions)
+// but every number you DO type must match one of P/L/T — "80 x 60" won't
+// match a product whose sisi are 80/60/999 unless 80 and 60 both appear
+// somewhere among its P/L/T.
+function parseSizeQuery(query: string): number[] | null {
+  const tokens = query.trim().split(/[xX×,\-\s]+/).filter(Boolean);
+  if (tokens.length === 0) return null;
+  const nums: number[] = [];
+  for (const t of tokens) {
+    if (!/^\d+(\.\d+)?$/.test(t)) return null;
+    nums.push(Number(t));
+  }
+  return nums;
+}
+
+function matchesSizeQuery(
+  nums: number[],
+  dimensi?: { panjangCm?: number | null; lebarCm?: number | null; tinggiCm?: number | null }
+): boolean {
+  const sisi = [dimensi?.panjangCm, dimensi?.lebarCm, dimensi?.tinggiCm];
+  return nums.every((n) => sisi.some((s) => s === n));
+}
+
 export default function KatalogClient({
   products,
   categories,
@@ -230,21 +260,14 @@ export default function KatalogClient({
     let list = products;
     const q = search.trim().toLowerCase();
     if (q) {
-      // A pure-number query (e.g. "80") also matches an exact P/L/T
-      // dimension — per the user's request 2026-08-26 ("kalau user ketik
-      // '80' maka akan muncul produk yang PxLxT ada angka 80 nya"),
-      // confirmed as an exact match per dimension (80 matches a 80cm side,
-      // not 180 or 800) rather than a substring match, so the numbers stay
-      // meaningful as actual sizes. Still OR'd with the usual name/SKU
-      // text search, not a replacement for it.
-      const asNumber = /^\d+(\.\d+)?$/.test(q) ? Number(q) : null;
+      // A number-shaped query (e.g. "80" or "80 x 60 x 100") also matches
+      // P/L/T dimensions — see parseSizeQuery above. Still OR'd with the
+      // usual name/SKU text search, not a replacement for it.
+      const sizeNums = parseSizeQuery(q);
       list = list.filter((p) => {
         if (p.name.toLowerCase().includes(q)) return true;
         if (p.sku.toLowerCase().includes(q)) return true;
-        if (asNumber !== null) {
-          const { panjangCm, lebarCm, tinggiCm } = p.dimensi ?? {};
-          if (panjangCm === asNumber || lebarCm === asNumber || tinggiCm === asNumber) return true;
-        }
+        if (sizeNums && matchesSizeQuery(sizeNums, p.dimensi)) return true;
         return false;
       });
     }
@@ -271,13 +294,8 @@ export default function KatalogClient({
       list = list.filter((p) => p.name.toLowerCase().includes(namaQ));
     }
     if (filters.ukuran) {
-      const ukuranQ = filters.ukuran.trim();
-      const asNumber = /^\d+(\.\d+)?$/.test(ukuranQ) ? Number(ukuranQ) : null;
-      list = list.filter((p) => {
-        const { panjangCm, lebarCm, tinggiCm } = p.dimensi ?? {};
-        if (asNumber !== null) return panjangCm === asNumber || lebarCm === asNumber || tinggiCm === asNumber;
-        return false;
-      });
+      const sizeNums = parseSizeQuery(filters.ukuran);
+      list = list.filter((p) => sizeNums !== null && matchesSizeQuery(sizeNums, p.dimensi));
     }
     if (filters.produkBaru) list = list.filter((p) => p.isBaru);
     if (sort === "price-asc") list = [...list].sort((a, b) => a.hargaRekomendasi - b.hargaRekomendasi);

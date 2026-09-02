@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-02
+
+**BUG-009 fixed** — Katalog search couldn't match a full "80 x 60 x 100" size query, only a single number against one P/L/T dimension at a time. Not actually a regression (git history confirms this was never implemented), but fixed as reported: added shared size-query parsing to `KatalogClient.tsx` — splits on x/×/,/-/whitespace, every number typed must match one of panjang/lebar/tinggi (partial matching, order doesn't matter). Applies to both the main search box and the sidebar's manual Ukuran field; single-number queries behave exactly as before.
+
+Bugs fixed: BUG-009.
+Regression: PASS.
+
+---
+
 ## 2026-08-31
 
 **BUG-008 fixed** — Beranda (and `/follow-up`) showed a plain "Belum Bayar" badge for invoices that already had a DP recorded, since `Invoice.status` intentionally stays "unpaid" after a DP (only the balance changes). Added `hasDp` to `FollowUpInvoiceRow` and a new "Sudah DP" badge variant (same blue as Katalog's own DP badge); applied everywhere the shared follow-up badge/data is used — Beranda desktop (generic + sales-personalized), Beranda mobile sales row title, `/follow-up`'s table, and its mobile card list. Aggregate unpaid counts/totals deliberately untouched — a DP'd invoice still has money owed.

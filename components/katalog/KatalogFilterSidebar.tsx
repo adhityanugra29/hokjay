@@ -269,7 +269,7 @@ export default function KatalogFilterSidebar({
             <Input
               value={filters.ukuran}
               onChange={(e) => onChange({ ...filters, ukuran: e.target.value })}
-              placeholder="Contoh: 80 (cm, P/L/T)"
+              placeholder="Contoh: 80 x 60 x 100 (cm, P/L/T)"
             />
           </div>
 
