@@ -10,7 +10,7 @@ import UploadBox from "@/components/ui/UploadBox";
 import { useCart } from "@/components/cart/CartProvider";
 import { CUSTOM_ORDER_CATEGORIES, type CustomOrderCategoryId } from "@/lib/constants";
 import { customOrderEstimate } from "@/lib/pricing";
-import { rupiah } from "@/lib/format";
+import { rupiah, productDisplayName } from "@/lib/format";
 
 interface CustomItemRow {
   id: string;
@@ -127,7 +127,7 @@ export default function CustomOrderPage() {
           addItem(
             {
               productId: product._id,
-              name: product.name,
+              name: productDisplayName(product.name, product.merk),
               hargaJual: product.hargaRekomendasi,
               hargaMinimum: product.hargaMinimum,
               hargaRekomendasi: product.hargaRekomendasi,

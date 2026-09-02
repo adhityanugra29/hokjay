@@ -92,3 +92,5 @@
 
 **Files affected:** `lib/format.ts`, `components/katalog/ProductCard.tsx`, `components/cart/CatalogPrintDoc.tsx`, `components/invoice/AddProductSidebar.tsx`.
 **Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` in `AddProductSidebar.tsx`.
+
+**Follow-up (2026-09-02, same day):** the user asked to confirm no stray "-" ever shows when merk is empty (`productDisplayName` already returns just `name` in that case — confirmed, no change needed) and to audit naming consistency across every surface. Found two gaps missed in the first pass — `app/katalog/custom/page.tsx` (Produk Custom listing) didn't pass `merk` into `ProductCard` at all, and `app/katalog/custom-order/page.tsx` (the "Pesan Produk Custom" flow) added its freshly-created product straight to cart with `product.name`, bypassing `productDisplayName`. Both now consistent with the other 3 surfaces. `EditProductDrawer.tsx`'s header intentionally left showing the raw name (matches the raw-name field below it in the edit form — showing the combined display name there would be confusing while editing).
