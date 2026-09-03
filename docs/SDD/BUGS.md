@@ -58,16 +58,15 @@
 ## BUG-004 — Barang Baru/Custom diskon has no server-side ceiling (commission can go negative)
 
 **Severity:** B2
-**Status:** BLOCKED — REQUIRES DECISION (paused as part of TASK-003, not urgent enough to jump the queue per the user's own sequencing choice)
+**Status:** FIXED (2026-09-03, alongside TASK-003)
 **Source:** Discovered while designing TASK-003 (Bulk Diskon)'s algorithm.
 
 **Description:** `lib/services/createInvoice.ts`/`updateInvoice.ts` clamp diskon for barang Bekas via `maxDiskonBekas()`, but Barang Baru/Custom has no equivalent clamp at all. Since `computeLineCommission` for Baru/Custom is `round((hargaJual - diskon) * 0.06)`, a raw API request (bypassing the client's own guards) with `diskon > hargaJual` would compute a NEGATIVE commission.
 
-**Why not auto-fixed immediately:** The user already confirmed the fix ("Ya, sekalian tambahkan proteksi" during TASK-003 planning) but explicitly deferred ALL of TASK-003's execution, including this. Not auto-fixed ahead of that instruction even though it qualifies as "safe" under the auto-fix rules, out of respect for the explicit pause.
+**Fix:** New `maxDiskonBaru(hargaJual)` in `lib/commission.ts` (cap = the sale price itself — no floor to protect, unlike Bekas). Applied in both services to every Baru/Custom line (product-backed and custom-order, Flash Sale lines untouched — diskon's already locked at 0 there), mirroring the existing Bekas clamp exactly.
 
-**Recommended fix (already designed, see [[hojay-bulk-diskon-plan]] in memory):** clamp `diskon ≤ hargaJual` for Baru/Custom in both services, mirroring the existing Bekas protection.
-
-**Files:** `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
+**Files:** `lib/commission.ts`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
+**Regression test:** Clean build, lint clean.
 
 ---
 

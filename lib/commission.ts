@@ -151,3 +151,110 @@ export function maxDiskonBekas(
   const base = Math.round(hargaMinimum * (komisiBekasPercent / 100));
   return Math.max(0, hargaJual - hargaMinimum + base);
 }
+
+/**
+ * Diskon /unit cap for barang baru/custom — per TASK-003 (Bulk Diskon,
+ * confirmed with the user 2026-08-30): unlike bekas, there's no floor to
+ * protect, so the cap is just the sale price itself (commission can go all
+ * the way to Rp0, never negative). Also closes BUG-004 — createInvoice.ts/
+ * updateInvoice.ts had no server-side ceiling on this diskon at all before,
+ * only bekas was clamped.
+ */
+export function maxDiskonBaru(hargaJual: number): number {
+  return Math.max(0, hargaJual);
+}
+
+/** One invoice line's shape as far as the bulk-diskon allocator cares. */
+export interface BulkDiskonLine {
+  /** Cart key — a real product's _id, or a custom item's synthetic `custom-${name}` id (see CartProvider.tsx/InvoiceForm.tsx). */
+  productId: string;
+  isCustom?: boolean;
+  kondisi?: "baru" | "bekas";
+  hargaJual: number;
+  hargaMinimum: number;
+  komisiBekasPercent?: number;
+  diskonPerUnit: number;
+  isFlashSale?: boolean;
+  qty: number;
+}
+
+export interface BulkDiskonResult {
+  /** productId -> new diskonPerUnit (Rp, a multiple of Rp10.000) for every line the allocator actually touched. */
+  allocations: Map<string, number>;
+  /** Total diskon actually achieved (sum of diskonPerUnit x qty across touched lines) — may be less than requested. */
+  achieved: number;
+  /** True when achieved < requested — ran out of eligible capacity (or the shortfall is smaller than one Rp10.000 step). */
+  capped: boolean;
+}
+
+const BULK_DISKON_STEP = 10000;
+
+/** Cheapest-commission-cost-per-rupiah first, for allocation order — see the module doc comment at the top of this file. A heuristic for ordering only; the real payout is always computeLineCommission's exact formula, never this number. */
+function komisiCostPerRupiah(line: Pick<BulkDiskonLine, "isCustom" | "kondisi">): number {
+  return line.isCustom || line.kondisi !== "bekas" ? 0.06 : 1;
+}
+
+function diskonCapUnit(line: BulkDiskonLine): number {
+  return line.isCustom || line.kondisi !== "bekas"
+    ? maxDiskonBaru(line.hargaJual)
+    : maxDiskonBekas(line.hargaJual, line.hargaMinimum, line.komisiBekasPercent ?? DEFAULT_KOMISI_BEKAS_PERCENT);
+}
+
+/**
+ * Distributes one total discount amount across eligible invoice lines —
+ * TASK-003, confirmed with the user 2026-08-30. Skips Flash Sale lines
+ * (diskon locked at 0 by existing rules) and any line that already has a
+ * manually-typed diskon — bulk diskon only ever fills lines currently at
+ * Rp0, never overwrites a manual entry. Greedy: exhausts Baru/Custom
+ * capacity first (6x cheaper commission-wise per rupiah than Bekas), then
+ * spills into Bekas only if the total isn't covered yet. Every line's
+ * resulting diskonPerUnit is a clean Rp10.000 multiple — filled to the
+ * nearest step below the ideal split, then any leftover (from that
+ * rounding, or simply because the total exceeds every eligible line's
+ * combined capacity) is redistributed in further Rp10.000 steps,
+ * cheapest-line-first, until either the request is met or every eligible
+ * line is maxed out.
+ */
+export function allocateBulkDiskon(lines: BulkDiskonLine[], totalRequested: number): BulkDiskonResult {
+  const eligible = lines.filter((l) => !l.isFlashSale && l.diskonPerUnit === 0 && l.qty > 0);
+  const sorted = [...eligible].sort((a, b) => komisiCostPerRupiah(a) - komisiCostPerRupiah(b));
+
+  const allocations = new Map<string, number>();
+  let remaining = Math.max(0, Math.round(totalRequested));
+
+  for (const line of sorted) {
+    if (remaining < BULK_DISKON_STEP) break;
+    const capTotal = diskonCapUnit(line) * line.qty;
+    if (capTotal < BULK_DISKON_STEP) continue;
+
+    const wantTotal = Math.min(remaining, capTotal);
+    const diskonPerUnit = Math.floor(wantTotal / line.qty / BULK_DISKON_STEP) * BULK_DISKON_STEP;
+    if (diskonPerUnit <= 0) continue;
+
+    allocations.set(line.productId, diskonPerUnit);
+    remaining -= diskonPerUnit * line.qty;
+  }
+
+  // Mop up whatever's left (per-line rounding-down, or simply more than
+  // every line's combined capacity) in further Rp10.000 steps, cheapest
+  // line first, while any line still has headroom.
+  let progressed = true;
+  while (remaining >= BULK_DISKON_STEP && progressed) {
+    progressed = false;
+    for (const line of sorted) {
+      if (remaining < BULK_DISKON_STEP) break;
+      const capUnit = diskonCapUnit(line);
+      const current = allocations.get(line.productId) ?? 0;
+      const nextUnit = current + BULK_DISKON_STEP;
+      if (nextUnit > capUnit) continue;
+      const stepTotal = BULK_DISKON_STEP * line.qty;
+      if (stepTotal > remaining) continue; // this line's qty makes one more step cost more than what's left
+      allocations.set(line.productId, nextUnit);
+      remaining -= stepTotal;
+      progressed = true;
+    }
+  }
+
+  const achieved = Math.max(0, Math.round(totalRequested)) - remaining;
+  return { allocations, achieved, capped: achieved < Math.round(totalRequested) };
+}

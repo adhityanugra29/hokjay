@@ -11,7 +11,7 @@ import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
 import ItemRowEditor from "./ItemRowEditor";
 import InlineCustomerForm, { type CreatedCustomer } from "./InlineCustomerForm";
 import AddProductSidebar from "./AddProductSidebar";
-import { computeLineCommission } from "@/lib/commission";
+import { computeLineCommission, allocateBulkDiskon } from "@/lib/commission";
 import { rupiah } from "@/lib/format";
 
 interface CustomerOption {
@@ -69,7 +69,7 @@ export default function InvoiceForm({
   currentUser?: { nama: string; role: string } | null;
 }) {
   const router = useRouter();
-  const { items, clear } = useCart();
+  const { items, clear, updateItem } = useCart();
   const { confirm, alert } = useDialog();
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
   // Keeps "Mohon menunggu" visible for the WHOLE save-then-navigate flow —
@@ -252,6 +252,52 @@ export default function InvoiceForm({
       ),
     [items]
   );
+
+  // Diskon Bulk — TASK-003, per the user's request 2026-08-30: one total
+  // discount amount, distributed across eligible lines to keep every
+  // per-unit diskon a clean Rp10.000 multiple while eroding commission as
+  // little as possible (Baru/Custom filled first). See
+  // allocateBulkDiskon() in lib/commission.ts for the actual algorithm —
+  // this just feeds it the current cart and applies the result.
+  const [bulkDiskonInput, setBulkDiskonInput] = useState("");
+  const [bulkDiskonStatus, setBulkDiskonStatus] = useState<{ text: string; warn: boolean } | null>(null);
+
+  function applyBulkDiskon() {
+    const requested = Number(bulkDiskonInput.replace(/\D/g, "")) || 0;
+    if (requested <= 0) {
+      setBulkDiskonStatus({ text: "Masukkan jumlah diskon dulu.", warn: true });
+      return;
+    }
+    const result = allocateBulkDiskon(
+      items.map((i) => ({
+        productId: i.productId,
+        isCustom: i.isCustom,
+        kondisi: i.kondisi,
+        hargaJual: i.hargaJual,
+        hargaMinimum: i.hargaMinimum,
+        komisiBekasPercent: i.komisiBekasPercent,
+        diskonPerUnit: i.diskonPerUnit,
+        isFlashSale: i.isFlashSale,
+        qty: i.qty,
+      })),
+      requested
+    );
+    if (result.allocations.size === 0) {
+      setBulkDiskonStatus({
+        text: "Tidak ada baris yang bisa diisi — semua sudah didiskon manual, Flash Sale, atau kapasitasnya penuh.",
+        warn: true,
+      });
+      return;
+    }
+    for (const [productId, diskonPerUnit] of result.allocations) {
+      updateItem(productId, { diskonPerUnit });
+    }
+    setBulkDiskonStatus(
+      result.capped
+        ? { text: `Maksimal yang bisa dicapai: ${rupiah(result.achieved)} (diminta ${rupiah(requested)}).`, warn: true }
+        : { text: `Terdistribusi ${rupiah(result.achieved)} ke ${result.allocations.size} baris.`, warn: false }
+    );
+  }
 
   function selectCustomer(id: string) {
     setCustomerId(id);
@@ -567,6 +613,41 @@ export default function InvoiceForm({
           Total komisi jika invoice ini lunas:{" "}
           <strong className="text-moss-deep">{rupiah(komisiTotal)}</strong>
         </div>
+      </div>
+
+      {/* Diskon Bulk — TASK-003, per the user's request 2026-08-30. Sits
+          right below Estimasi Komisi Sales and right above Total Diskon —
+          both figures update the moment "Distribusikan" runs, in the same
+          section the sales rep is already looking at. Only fills lines
+          currently at Rp0 diskon (see allocateBulkDiskon's doc comment) —
+          existing manual per-line edits are never touched. */}
+      <div className="mt-4 rounded-xl border-[1.5px] border-dashed border-accent-700 bg-accent-100 p-4">
+        <div className="flex flex-wrap items-end gap-2.5">
+          <div className="flex-1" style={{ minWidth: 180 }}>
+            <label className="mb-1.5 block font-mono text-[0.68rem] font-semibold uppercase tracking-wide text-accent-700">
+              Diskon Bulk (Rp)
+            </label>
+            <Input
+              value={bulkDiskonInput}
+              onChange={(e) => {
+                setBulkDiskonInput(e.target.value.replace(/\D/g, ""));
+                setBulkDiskonStatus(null);
+              }}
+              placeholder="Contoh: 150000"
+            />
+          </div>
+          <Button type="button" onClick={applyBulkDiskon}>
+            Distribusikan
+          </Button>
+        </div>
+        <p className="mt-2.5 font-sans text-[0.74rem] text-accent-700">
+          Dibagi otomatis ke setiap item, isi kelipatan Rp10.000.
+        </p>
+        {bulkDiskonStatus && (
+          <p className={`mt-2 font-mono text-[0.76rem] ${bulkDiskonStatus.warn ? "text-danger" : "text-moss-deep"}`}>
+            {bulkDiskonStatus.text}
+          </p>
+        )}
       </div>
 
       <div className="ml-auto mt-5 w-full max-w-[280px] font-mono text-[0.88rem]">

@@ -3,7 +3,7 @@ import { Product } from "@/models/Product";
 import { Invoice } from "@/models/Invoice";
 import { StockMovement } from "@/models/StockMovement";
 import { JournalEntry } from "@/models/JournalEntry";
-import { computeLineCommission, maxDiskonBekas, resolveKomisiBekasPercent } from "@/lib/commission";
+import { computeLineCommission, maxDiskonBekas, maxDiskonBaru, resolveKomisiBekasPercent } from "@/lib/commission";
 import { formatDimensi } from "@/lib/format";
 import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
@@ -64,9 +64,9 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     const rawDiskon = i.diskonPerUnit ?? 0;
 
     if (!i.productId) {
-      // No diskon cap for custom items — see createInvoice.ts's matching
-      // comment.
-      const diskon = rawDiskon;
+      // Diskon cap for custom items — closes BUG-004, see createInvoice.ts's
+      // matching comment.
+      const diskon = i.isFlashSale ? rawDiskon : Math.min(rawDiskon, maxDiskonBaru(i.hargaJual));
       const subtotal = (i.hargaJual - diskon) * i.qty;
       const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual, hargaMinimum: 0, diskon });
       return {
@@ -101,12 +101,13 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       product.komisiBekasPercent,
       kategoriKomisiBekasMap.get(product.category)
     );
-    // Diskon cap for barang bekas — server-side enforcement, see
-    // createInvoice.ts's matching comment. N/A for a Flash Sale line.
-    const diskon =
-      product.kondisi === "bekas" && !i.isFlashSale
+    // Diskon cap for barang bekas/baru — server-side enforcement, see
+    // createInvoice.ts's matching comment (BUG-004). N/A for a Flash Sale line.
+    const diskon = i.isFlashSale
+      ? rawDiskon
+      : product.kondisi === "bekas"
         ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum, komisiBekasPercent))
-        : rawDiskon;
+        : Math.min(rawDiskon, maxDiskonBaru(hargaJual));
     const subtotal = (hargaJual - diskon) * i.qty;
     // See createInvoice.ts's matching comment — Flash Sale items get
     // their own flat 7% instead.

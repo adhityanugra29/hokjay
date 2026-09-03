@@ -2,30 +2,32 @@
 
 > Single "catch up" file — read this first before starting any session or major task. See `TASKS.md`, `BUGS.md`, `KNOWN_ISSUES.md`, `CHANGELOG.md` for detail.
 
-**Last updated:** 2026-08-30
+**Last updated:** 2026-09-03
 
 ---
 
 ## CURRENT TASK
 
-TASK-002 — "Foundry" UI rework: hunt down and fix remaining "kaku" (stiff/hard-edged) surfaces app-wide, module by module.
+None active — TASK-003 (Bulk Diskon) just closed. TASK-002's Purchasing/Payroll/Admin sweep (see IN PROGRESS below) is still the last known open thread from the Foundry rework if the user wants to resume it.
 
 ## CURRENT STATUS
 
-IN PROGRESS — Katalog, Pelanggan, Inventory (Produk), Invoice (list/detail/forms/bayar/dp), Dashboard, Keuangan, Akuntansi, the shared shell (sidebar/header/Panel/Button/Dialog/LoadingOverlay), and the Insentif leaderboard's yellow-accent contrast are done and deployed. Purchasing, Payroll, and Admin have not yet been swept for the same hard-border / bare-`rounded` / hidden-contrast issues.
+Katalog, Pelanggan, Inventory (Produk), Invoice (list/detail/forms/bayar/dp), Dashboard, Keuangan, Akuntansi, the shared shell, and the Insentif leaderboard's yellow-accent contrast are done and deployed (TASK-001/002, partial). Purchasing, Payroll, and Admin have not yet been swept for the same hard-border / bare-`rounded` / hidden-contrast issues — status unconfirmed as of this update, no evidence either way since 2026-08-30.
+
+Since then: Merk now shows automatically in product names everywhere customer/sales-facing (TASK-005 + its "-" placeholder-data follow-up, BUG-010), Owner-only Komisi Bekas override per produk/kategori + Harga Minimum renamed to Harga Bottom (TASK-006 + a same-day follow-up locking Manager out of the Komisi field entirely), Katalog search now matches a full "80 x 60 x 100" query (BUG-009), and Diskon Bulk on Invoice (TASK-003, this update) — see `CHANGELOG.md` for the full trail.
 
 ## LAST COMPLETED
 
-- SUBTASK-005: Akuntansi (`AkuntansiShell.tsx`, `ReportDocument.tsx`) — sidebar report picker softened (hard `border-r-2 border-ink` → `border-line`, stacked rows → one rounded card), stale hardcoded hex colors (`#f7f5ee`, pre-dating the Foundry token warm-up) replaced with the `bg-surface` token. The report documents themselves (`ReportDocument.tsx`'s paper card, the ledger-style `border-t-2 border-ink` totals rows in all 3 report pages) deliberately left alone — same "document-styled surface" exception as `#invoice-doc`/print docs, see `KNOWN_ISSUES.md`.
-- SUBTASK-004: Keuangan (`app/keuangan/page.tsx`, `MobileKeuangan.tsx`, `TransactionForm.tsx`) — stat strip → cards, filter → pill toggle, `TransactionForm` moved to `FormCard`/`FormSection`.
-- TASK-004 logged (billing plan for Owner Hojay) — scheduled for after TASK-002 + open bugs, not started.
-- SUBTASK-003: Dashboard (`app/page.tsx`) — 3 action cards unified to rounded+shadow, bottom stats strip split into individual cards, hard dividers softened, several un-rounded badges/dots fixed.
-- Fixed two "hidden" yellow-on-white contrast bugs that the first sweep's grep missed (`components/ui/Dialog.tsx`'s confirm button, `SalesBoard.tsx`/`MobileSalesBoard.tsx`'s rank-#1 highlight) — both built their className from a shared base + conditional bg, not a literal adjacent `bg-accent`/`text-white` pair.
-- End-to-end Invoice + Inventory Foundry pass (see TASK-001, now DONE).
+- **TASK-003** — Diskon Bulk on Invoice: one total-discount input + "Distribusikan" in Ringkasan, auto-split across line items (Baru/Custom first, clean Rp10.000 steps, manual entries/Flash Sale never touched). Also closed **BUG-004** (Baru/Custom diskon had no server-side ceiling) as part of the same work.
+- **TASK-006** (+ same-day follow-up) — Owner-only Komisi Bekas override per produk/kategori; "Harga Minimum" renamed "Harga Bottom" app-wide (label only); Manager fully locked out of the pre-existing "Komisi — Persen" reference field too, per the user's explicit correction.
+- **TASK-005** (+ follow-up, **BUG-010**) — Merk shows automatically in product names on Katalog/PDF/Invoice; a data quirk (135 of 225 products had `merk` literally stored as `"-"`) caused a visible stray dash, fixed by treating that placeholder as empty.
+- **BUG-009** — Katalog search now matches a full "80 x 60 x 100" size query, not just a single number.
+- SUBTASK-005: Akuntansi (`AkuntansiShell.tsx`, `ReportDocument.tsx`) — sidebar report picker softened, stale hardcoded hex replaced with `bg-surface`. Report documents themselves deliberately left alone (see `KNOWN_ISSUES.md`).
+- SUBTASK-004/003: Keuangan and Dashboard Foundry passes — see `CHANGELOG.md` for detail.
 
 ## IN PROGRESS
 
-TASK-002 — next module to sweep: Purchasing (SUBTASK-006), then Payroll, Admin in that order unless redirected.
+Nothing actively in flight. TASK-002's remaining modules (Purchasing SUBTASK-006, then Payroll, Admin) are the last known unfinished Foundry thread — pick back up if the user asks to continue the UI sweep.
 
 ## BLOCKED
 
@@ -37,7 +39,7 @@ None open. See `BUGS.md` for fixed history.
 
 ## NEXT TASK
 
-Continue TASK-002 into Purchasing → Payroll → Admin, in that order unless the user redirects. After TASK-002 settles, resume TASK-003 (Bulk Diskon — see `TASKS.md`, currently READY/paused by explicit user request).
+No task explicitly queued. If nothing else comes up: resume TASK-002 into Purchasing → Payroll → Admin (unconfirmed whether still needed — check for hard borders/bare `rounded` there first). TASK-004 (billing plan for Owner Hojay) was completed ad-hoc as a standalone document outside this repo (see git history around TASK-004 in `TASKS.md`), not tracked further here.
 
 ## KNOWN RISKS
 

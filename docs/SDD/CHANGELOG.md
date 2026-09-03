@@ -6,6 +6,18 @@
 
 ## 2026-09-03
 
+**TASK-003 done** — Diskon Bulk on Invoice: one total discount input + "Distribusikan" button in Ringkasan, auto-split across line items — Baru/Custom filled first (6x cheaper on commission per rupiah than Bekas), every per-unit diskon a clean Rp10.000 multiple, manual per-line entries and Flash Sale lines never touched. New `allocateBulkDiskon()`/`maxDiskonBaru()` in `lib/commission.ts`. Sanity-tested against 7 cases (split, over-capacity clamp, sub-step request, exact-cap, qty>1 rounding, manual-diskon skip, Flash-Sale skip) via a standalone script before wiring into the UI. Iterated placement/copy with the user first via an interactive HTML preview.
+
+Also closes **BUG-004** — Baru/Custom diskon had no server-side ceiling at all (only Bekas was clamped); both `createInvoice.ts`/`updateInvoice.ts` now clamp it via the new `maxDiskonBaru()`.
+
+Tasks done: TASK-003.
+Bugs fixed: BUG-004.
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
 **BUG-010 fixed** — Product names showed a stray "-" (e.g. "Working Table -") from TASK-005's Merk-in-name feature. Queried production directly: 135 of 225 products have `merk` literally stored as `"-"`, a pre-existing "no brand" data-entry convention, not empty. `productDisplayName()` now treats `"-"`/`"—"` the same as empty — fixes every existing product with no DB migration needed.
 
 Bugs fixed: BUG-010.

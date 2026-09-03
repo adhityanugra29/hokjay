@@ -50,15 +50,18 @@
 
 **Type:** FEATURE
 **Priority:** P2
-**Status:** READY (plan approved, execution explicitly paused by the user — "kamu lewati plan ini tapi ingati saya nanti")
+**Status:** DONE (2026-09-03)
 **Dependency:** None (independent of TASK-002, just sequenced after it by the user's choice)
-**Created:** 2026-08-30 · **Last updated:** 2026-08-30
+**Created:** 2026-08-30 · **Last updated:** 2026-09-03
 
-**Description:** Full plan in memory ([[hojay-bulk-diskon-plan]]) and this repo should get its own detail doc once execution resumes. Summary: one total-discount input in Invoice's Ringkasan section, distributed across line items to (1) keep every customer-visible per-unit discount a clean multiple of Rp10.000, (2) minimize sales commission erosion (Baru/Custom items cost 0.06/rupiah vs Bekas's 1.0/rupiah — greedy-fill Baru/Custom first).
+**Description:** One "Diskon Bulk" input + "Distribusikan" button in Invoice's Ringkasan section (right below Estimasi Komisi Sales, right above Total Diskon — both update live). Distributes one total discount amount across eligible line items to (1) keep every customer-visible per-unit discount a clean multiple of Rp10.000, (2) minimize sales commission erosion (Baru/Custom items cost 0.06/rupiah vs Bekas's ~1.0/rupiah — greedy-fills Baru/Custom first). Before coding, built an interactive HTML placement preview (2 mock line items, the real allocation math running client-side) and iterated the copy/placement with the user there first — see the artifact-preview step in this session.
 
-**Acceptance criteria:** `computeLineCommission`/`maxDiskonBekas` untouched (new pure functions only); server-side clamp added for Baru/Custom diskon (currently unclamped — see BUGS.md BUG-004); manual per-line diskon entries are never overwritten by the bulk allocator.
+**Algorithm** (`allocateBulkDiskon()` in `lib/commission.ts`): filters to eligible lines (not Flash Sale, `diskonPerUnit === 0` — never overwrites a manual entry) → sorts cheapest-commission-cost first → fills each line up to `min(remaining, cap)` rounded down to the nearest Rp10.000, where cap is `maxDiskonBaru(hargaJual)` (new) for Baru/Custom or `maxDiskonBekas(...)` for Bekas → mops up any rounding remainder (or genuine capacity shortfall) in further Rp10.000 steps, cheapest-line-first, until the request is met or every eligible line is maxed. Returns `{ allocations, achieved, capped }` so the UI can show exactly what was distributed and whether it fell short.
 
-**Files affected (planned):** `lib/commission.ts`, `components/invoice/InvoiceForm.tsx`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
+**Acceptance criteria:** `computeLineCommission`/`maxDiskonBekas` untouched (new pure functions only — `maxDiskonBaru`, `allocateBulkDiskon`); server-side clamp added for Baru/Custom diskon in both `createInvoice.ts`/`updateInvoice.ts` (closes BUG-004); manual per-line diskon entries are never overwritten by the bulk allocator (verified via a manual sanity script covering 7 cases: plain split, over-capacity clamp, sub-Rp10k request, exact-cap request, qty>1 rounding, manual-diskon skip, Flash-Sale skip — all correct).
+
+**Files affected:** `lib/commission.ts`, `components/invoice/InvoiceForm.tsx`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
+**Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` in `InvoiceForm.tsx` (2 instances, both pre-existing effects untouched by this change).
 
 ---
 
