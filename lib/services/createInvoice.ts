@@ -75,10 +75,11 @@ export async function createInvoice(input: CreateInvoiceInput) {
       // after diskon, per the user's request 2026-08-29 (a discount now
       // proportionally reduces commission instead of the sales rep
       // keeping full commission on a discounted sale). Clamped the same
-      // way as a regular barang baru line (maxDiskonBaru = hargaJual
-      // itself, no floor to anchor a Bekas-style cap against) — closes
-      // BUG-004, this had no ceiling at all before.
-      const diskon = i.isFlashSale ? rawDiskon : Math.min(rawDiskon, maxDiskonBaru(i.hargaJual));
+      // way as a regular barang baru line — maxDiskonBaru(hargaJual, 0)
+      // degrades to hargaJual itself here since there's no real Harga
+      // Bottom for a bespoke item — closes BUG-004, this had no ceiling
+      // at all before.
+      const diskon = i.isFlashSale ? rawDiskon : Math.min(rawDiskon, maxDiskonBaru(i.hargaJual, 0));
       const subtotal = (i.hargaJual - diskon) * i.qty;
       const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual, hargaMinimum: 0, diskon });
       return {
@@ -139,7 +140,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       ? rawDiskon
       : product.kondisi === "bekas"
         ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum, komisiBekasPercent))
-        : Math.min(rawDiskon, maxDiskonBaru(hargaJual));
+        : Math.min(rawDiskon, maxDiskonBaru(hargaJual, product.hargaMinimum));
     const subtotal = (hargaJual - diskon) * i.qty;
     // Commission is computed from the product's *current* kondisi/harga
     // minimum (never trusting client-supplied values for this) — see

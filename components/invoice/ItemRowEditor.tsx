@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { CartItem } from "@/components/cart/CartProvider";
 import { useCart } from "@/components/cart/CartProvider";
 import { CurrencyInput } from "@/components/ui/Form";
-import { computeLineCommission, maxDiskonBekas } from "@/lib/commission";
+import { computeLineCommission, maxDiskonBekas, maxDiskonBaru } from "@/lib/commission";
 import { rupiah } from "@/lib/format";
 
 /**
@@ -161,9 +161,14 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
               setDiscountWarning(false);
             }}
             onBlur={(v) => {
-              if (item.kondisi !== "bekas") return;
               const num = v ? Number(v) : 0;
-              const max = maxDiskonBekas(item.hargaJual, item.hargaMinimum, item.komisiBekasPercent);
+              // Baru/Custom now has a real cap too (2026-09-03 — see
+              // maxDiskonBaru's doc comment), same on-blur clamp+warning
+              // treatment Bekas already had.
+              const max =
+                item.kondisi === "bekas"
+                  ? maxDiskonBekas(item.hargaJual, item.hargaMinimum, item.komisiBekasPercent)
+                  : maxDiskonBaru(item.hargaJual, item.hargaMinimum);
               if (num > max) {
                 updateItem(item.productId, { diskonPerUnit: max });
                 setDiscountWarning(true);
@@ -172,7 +177,12 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
           />
           {discountWarning && (
             <span className="font-mono text-[0.62rem] font-medium text-accent-700">
-              Melebihi batas insentif, disesuaikan ke maks. {rupiah(maxDiskonBekas(item.hargaJual, item.hargaMinimum, item.komisiBekasPercent))}.
+              Melebihi batas insentif, disesuaikan ke maks.{" "}
+              {rupiah(
+                item.kondisi === "bekas"
+                  ? maxDiskonBekas(item.hargaJual, item.hargaMinimum, item.komisiBekasPercent)
+                  : maxDiskonBaru(item.hargaJual, item.hargaMinimum)
+              )}.
             </span>
           )}
         </div>

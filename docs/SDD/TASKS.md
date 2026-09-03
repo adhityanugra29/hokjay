@@ -65,6 +65,8 @@
 
 **Follow-up (2026-09-03, same day):** the user reported "ini bug" on the Diskon Bulk input. Re-checked the allocator/`updateItem` wiring end to end (including the custom-item `productId` edge case) — no computational defect found. The real issue: the input used a plain `Input` (raw digits while typing, e.g. "150000") instead of `CurrencyInput`, the accounting-style thousand-separator component every other Rupiah field in this app already uses (Harga Jual, Diskon /unit, right next to it). Switched to `CurrencyInput` — matches the user's explicit ask ("format tulisanya harus accounting juga").
 
+**Follow-up #2 (2026-09-03, same day):** the user then reported the allocator "meletakan hanya di satu kolom" with "tanpa ada plafonya" — not actually a distribution bug (greedy cheapest-first, confirmed 2026-08-30, correctly shifts to the next line once one is maxed — see BUG-004's correction), but the CAP itself was wrong: Baru/Custom's `maxDiskonBaru` capped at 100% of `hargaJual` (no real ceiling) instead of the same protected-margin shape `maxDiskonBekas` already used. Fixed at the source (`maxDiskonBaru`, see BUG-004) — the allocator and `InvoiceForm.tsx` needed no changes themselves, since both already consult `maxDiskonBaru` for the cap rather than hardcoding one.
+
 ---
 
 ## TASK-004 — Billing plan for Owner Hojay

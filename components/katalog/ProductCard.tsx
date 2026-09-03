@@ -8,7 +8,7 @@ import ZoomableImage from "./ZoomableImage";
 import { CurrencyInput } from "@/components/ui/Form";
 import { useDialog } from "@/components/ui/Dialog";
 import { rupiah, slugify, productDisplayName } from "@/lib/format";
-import { computeLineCommission, maxDiskonBekas } from "@/lib/commission";
+import { computeLineCommission, maxDiskonBekas, maxDiskonBaru } from "@/lib/commission";
 
 /**
  * Downloads a photo per the user's request 2026-08-27 ("bisa download
@@ -514,9 +514,16 @@ export default function ProductCard({
                     setDiscountWarning(false);
                   }}
                   onBlur={(v) => {
-                    if (product.kondisi !== "bekas") return;
                     const num = v ? Number(v) : 0;
-                    const max = maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent);
+                    // Baru/Custom now has a real cap too (2026-09-03 — see
+                    // maxDiskonBaru's doc comment), same on-blur clamp+
+                    // warning treatment Bekas already had, so a manually
+                    // typed diskon on either kondisi gets the same feedback
+                    // instead of only being silently clamped at save time.
+                    const max =
+                      product.kondisi === "bekas"
+                        ? maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent)
+                        : maxDiskonBaru(effectivePrice, product.hargaMinimum);
                     if (num > max) {
                       setDiscount(product._id, max);
                       setDiscountWarning(true);
@@ -528,7 +535,12 @@ export default function ProductCard({
               {discountWarning && (
                 <div className="text-[0.68rem] font-medium text-accent-700">
                   Diskon melebihi batas insentif, disesuaikan otomatis ke maksimal{" "}
-                  {rupiah(maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent))}.
+                  {rupiah(
+                    product.kondisi === "bekas"
+                      ? maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent)
+                      : maxDiskonBaru(effectivePrice, product.hargaMinimum)
+                  )}
+                  .
                 </div>
               )}
               {discount > 0 && (

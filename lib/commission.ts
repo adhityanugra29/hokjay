@@ -153,15 +153,34 @@ export function maxDiskonBekas(
 }
 
 /**
- * Diskon /unit cap for barang baru/custom — per TASK-003 (Bulk Diskon,
- * confirmed with the user 2026-08-30): unlike bekas, there's no floor to
- * protect, so the cap is just the sale price itself (commission can go all
- * the way to Rp0, never negative). Also closes BUG-004 — createInvoice.ts/
- * updateInvoice.ts had no server-side ceiling on this diskon at all before,
- * only bekas was clamped.
+ * Flat commission rate for barang baru/custom — matches the 0.06 hardcoded
+ * in computeLineCommission's baru/custom branch above. Named here so
+ * maxDiskonBaru (below) can reference it as a percent without repeating
+ * the magic number in two different shapes (0.06 vs 6).
  */
-export function maxDiskonBaru(hargaJual: number): number {
-  return Math.max(0, hargaJual);
+export const DEFAULT_KOMISI_BARU_PERCENT = 6;
+
+/**
+ * Diskon /unit cap for barang baru/custom. Corrected 2026-09-03 — the
+ * original TASK-003 decision (2026-08-30) capped this at the sale price
+ * itself ("commission can go all the way to Rp0"), which the user
+ * subsequently flagged as wrong once bulk diskon could actually dump an
+ * entire request into one Baru line with no real protection ("sejak kapan
+ * plafon diskon itu 100% dari harga jual? plafon itu kan berdasarkan, 1
+ * selisih dari harga jual dengan harga bottom + komisi dari harga bottom").
+ * Now the exact same shape as maxDiskonBekas — the markup already priced in
+ * above Harga Bottom, plus a protected margin worth the flat 6% commission
+ * rate — just parameterized with 6% instead of a resolved bekas rate.
+ * computeLineCommission's baru/custom formula itself is untouched (still
+ * flat 6% of hargaJual-diskon, never consults hargaMinimum) — only this cap
+ * changes. For a true custom-order line with no backing product
+ * (hargaMinimum snapshotted as 0, see createInvoice.ts), this correctly
+ * degrades back to hargaJual itself — there's no real Harga Bottom to
+ * protect there.
+ */
+export function maxDiskonBaru(hargaJual: number, hargaMinimum: number): number {
+  const base = Math.round(hargaMinimum * (DEFAULT_KOMISI_BARU_PERCENT / 100));
+  return Math.max(0, hargaJual - hargaMinimum + base);
 }
 
 /** One invoice line's shape as far as the bulk-diskon allocator cares. */
@@ -196,7 +215,7 @@ function komisiCostPerRupiah(line: Pick<BulkDiskonLine, "isCustom" | "kondisi">)
 
 function diskonCapUnit(line: BulkDiskonLine): number {
   return line.isCustom || line.kondisi !== "bekas"
-    ? maxDiskonBaru(line.hargaJual)
+    ? maxDiskonBaru(line.hargaJual, line.hargaMinimum)
     : maxDiskonBekas(line.hargaJual, line.hargaMinimum, line.komisiBekasPercent ?? DEFAULT_KOMISI_BEKAS_PERCENT);
 }
 

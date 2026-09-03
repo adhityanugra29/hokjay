@@ -6,6 +6,15 @@
 
 ## 2026-09-03
 
+**BUG-004 corrected** — the same-day fix capped Baru/Custom diskon at the sale price itself (100%, no real ceiling). The user caught this once Diskon Bulk could concretely dump an entire request into one Baru line with nothing protecting it — "plafon itu kan berdasarkan, 1 selisih dari harga jual dengan harga bottom + komisi dari harga bottom". `maxDiskonBaru()` now mirrors `maxDiskonBekas`'s exact shape (`hargaJual − hargaMinimum + 6%×hargaMinimum`) instead. Also added the matching on-blur warning to the manual diskon field in Katalog/Invoice (was Bekas-only before).
+
+Bugs fixed: BUG-004 (correction).
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
 **TASK-003 follow-up** — Diskon Bulk's input used a plain `Input` (raw digits, "150000") instead of `CurrencyInput` (accounting-style thousand separators, "150.000") — the same component every other Rupiah field in the app already uses. Checked the allocator/`updateItem` logic itself first (no defect found) before concluding the formatting was the actual complaint.
 
 Tasks done: TASK-003 (follow-up).

@@ -63,10 +63,12 @@
 
 **Description:** `lib/services/createInvoice.ts`/`updateInvoice.ts` clamp diskon for barang Bekas via `maxDiskonBekas()`, but Barang Baru/Custom has no equivalent clamp at all. Since `computeLineCommission` for Baru/Custom is `round((hargaJual - diskon) * 0.06)`, a raw API request (bypassing the client's own guards) with `diskon > hargaJual` would compute a NEGATIVE commission.
 
-**Fix:** New `maxDiskonBaru(hargaJual)` in `lib/commission.ts` (cap = the sale price itself — no floor to protect, unlike Bekas). Applied in both services to every Baru/Custom line (product-backed and custom-order, Flash Sale lines untouched — diskon's already locked at 0 there), mirroring the existing Bekas clamp exactly.
+**Fix:** New `maxDiskonBaru(hargaJual, hargaMinimum)` in `lib/commission.ts`. Applied in both services to every Baru/Custom line (product-backed and custom-order, Flash Sale lines untouched — diskon's already locked at 0 there), mirroring the existing Bekas clamp exactly.
 
-**Files:** `lib/commission.ts`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
-**Regression test:** Clean build, lint clean.
+**Correction (2026-09-03, same day):** the first version capped at `hargaJual` itself (100% of the sale price, no real ceiling) — the user flagged this once Diskon Bulk could concretely dump an entire request into one Baru line with no protection ("sejak kapan plafon diskon itu 100% dari harga jual? plafon itu kan berdasarkan, 1 selisih dari harga jual dengan harga bottom + komisi dari harga bottom"). Rewritten to the exact same shape as `maxDiskonBekas` — `(hargaJual − hargaMinimum) + 6%×hargaMinimum` — just parameterized with the flat 6% baru/custom rate instead of the (possibly overridden) bekas rate. A true custom-order line (no backing product, `hargaMinimum` snapshotted as 0) correctly degrades back to `hargaJual` — there's no real Harga Bottom to protect there. Also added the matching on-blur clamp+warning to the manual per-line diskon field in `ProductCard.tsx`/`ItemRowEditor.tsx` (previously bekas-only), so a manually typed value gets the same client-side feedback as a bulk-allocated one.
+
+**Files:** `lib/commission.ts`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`, `components/katalog/ProductCard.tsx`, `components/invoice/ItemRowEditor.tsx`.
+**Regression test:** Clean build, lint clean. Re-verified via the same manual sanity script: `maxDiskonBaru(1.5jt, 1jt)` now 560rb (was 1.5jt); a bulk request exceeding one line's new (smaller) cap correctly spills into the next-cheapest line instead of silently over-discounting the first.
 
 ---
 

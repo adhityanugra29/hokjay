@@ -66,7 +66,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     if (!i.productId) {
       // Diskon cap for custom items — closes BUG-004, see createInvoice.ts's
       // matching comment.
-      const diskon = i.isFlashSale ? rawDiskon : Math.min(rawDiskon, maxDiskonBaru(i.hargaJual));
+      const diskon = i.isFlashSale ? rawDiskon : Math.min(rawDiskon, maxDiskonBaru(i.hargaJual, 0));
       const subtotal = (i.hargaJual - diskon) * i.qty;
       const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual, hargaMinimum: 0, diskon });
       return {
@@ -107,7 +107,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       ? rawDiskon
       : product.kondisi === "bekas"
         ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum, komisiBekasPercent))
-        : Math.min(rawDiskon, maxDiskonBaru(hargaJual));
+        : Math.min(rawDiskon, maxDiskonBaru(hargaJual, product.hargaMinimum));
     const subtotal = (hargaJual - diskon) * i.qty;
     // See createInvoice.ts's matching comment — Flash Sale items get
     // their own flat 7% instead.
