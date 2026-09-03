@@ -6,6 +6,15 @@
 
 ## 2026-09-03
 
+**TASK-003 follow-up #3** — re-running "Distribusikan" (typo, or a different total) found nothing to redistribute into, since the allocator only ever fills a Rp0 line and every line was already touched by the first run. Now tracks which lines Diskon Bulk itself last set (`lastBulkDiskon` in `InvoiceForm.tsx`) — a re-run overwrites its own previous split, a genuinely manual entry (or one edited since) stays protected.
+
+Tasks done: TASK-003 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
 **BUG-004 corrected** — the same-day fix capped Baru/Custom diskon at the sale price itself (100%, no real ceiling). The user caught this once Diskon Bulk could concretely dump an entire request into one Baru line with nothing protecting it — "plafon itu kan berdasarkan, 1 selisih dari harga jual dengan harga bottom + komisi dari harga bottom". `maxDiskonBaru()` now mirrors `maxDiskonBekas`'s exact shape (`hargaJual − hargaMinimum + 6%×hargaMinimum`) instead. Also added the matching on-blur warning to the manual diskon field in Katalog/Invoice (was Bekas-only before).
 
 Bugs fixed: BUG-004 (correction).

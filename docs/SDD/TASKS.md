@@ -67,6 +67,8 @@
 
 **Follow-up #2 (2026-09-03, same day):** the user then reported the allocator "meletakan hanya di satu kolom" with "tanpa ada plafonya" — not actually a distribution bug (greedy cheapest-first, confirmed 2026-08-30, correctly shifts to the next line once one is maxed — see BUG-004's correction), but the CAP itself was wrong: Baru/Custom's `maxDiskonBaru` capped at 100% of `hargaJual` (no real ceiling) instead of the same protected-margin shape `maxDiskonBekas` already used. Fixed at the source (`maxDiskonBaru`, see BUG-004) — the allocator and `InvoiceForm.tsx` needed no changes themselves, since both already consult `maxDiskonBaru` for the cap rather than hardcoding one.
 
+**Follow-up #3 (2026-09-03, same day):** the user then noticed re-running "Distribusikan" (a typo, or wanting a different total) found nothing to redistribute into, since `allocateBulkDiskon` only ever fills a line sitting at Rp0 — after one run, every touched line looks like a manual entry, indistinguishable from one the sales rep actually typed by hand. `InvoiceForm.tsx` now tracks `lastBulkDiskon: Map<productId, diskonPerUnit>` (the exact values THIS feature itself last set) — a re-run first resets any line still holding exactly that value back to Rp0 before allocating again, so it overwrites its own previous split; a line the rep has since typed something else into (or a genuinely manual one that was never touched by bulk) is never in the map and stays fully protected either way.
+
 ---
 
 ## TASK-004 — Billing plan for Owner Hojay

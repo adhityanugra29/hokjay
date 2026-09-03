@@ -261,6 +261,17 @@ export default function InvoiceForm({
   // this just feeds it the current cart and applies the result.
   const [bulkDiskonInput, setBulkDiskonInput] = useState("");
   const [bulkDiskonStatus, setBulkDiskonStatus] = useState<{ text: string; warn: boolean } | null>(null);
+  // productId -> the exact diskonPerUnit this feature itself last set there
+  // — per the user's report 2026-09-03 ("kalau mau ganti/tambah diskonya,
+  // sepertinya harus di overwrite"): allocateBulkDiskon only ever fills a
+  // line sitting at Rp0, so after one run every touched line looks
+  // "manually discounted" and a second click (fixing a typo, trying a
+  // different total) found nothing left to redistribute into. Re-running
+  // now first resets any line that STILL holds exactly what this ran last
+  // time (i.e. untouched by the sales rep since) back to Rp0 before
+  // allocating again — a real manual entry, or one the rep has since typed
+  // over, is never in this map and stays fully protected either way.
+  const [lastBulkDiskon, setLastBulkDiskon] = useState<Map<string, number>>(new Map());
 
   function applyBulkDiskon() {
     const requested = Number(bulkDiskonInput) || 0;
@@ -268,6 +279,12 @@ export default function InvoiceForm({
       setBulkDiskonStatus({ text: "Masukkan jumlah diskon dulu.", warn: true });
       return;
     }
+
+    const ownLineIds = new Set(
+      items.filter((i) => lastBulkDiskon.get(i.productId) === i.diskonPerUnit).map((i) => i.productId)
+    );
+    for (const productId of ownLineIds) updateItem(productId, { diskonPerUnit: 0 });
+
     const result = allocateBulkDiskon(
       items.map((i) => ({
         productId: i.productId,
@@ -276,13 +293,14 @@ export default function InvoiceForm({
         hargaJual: i.hargaJual,
         hargaMinimum: i.hargaMinimum,
         komisiBekasPercent: i.komisiBekasPercent,
-        diskonPerUnit: i.diskonPerUnit,
+        diskonPerUnit: ownLineIds.has(i.productId) ? 0 : i.diskonPerUnit,
         isFlashSale: i.isFlashSale,
         qty: i.qty,
       })),
       requested
     );
     if (result.allocations.size === 0) {
+      setLastBulkDiskon(new Map());
       setBulkDiskonStatus({
         text: "Tidak ada baris yang bisa diisi — semua sudah didiskon manual, Flash Sale, atau kapasitasnya penuh.",
         warn: true,
@@ -292,6 +310,7 @@ export default function InvoiceForm({
     for (const [productId, diskonPerUnit] of result.allocations) {
       updateItem(productId, { diskonPerUnit });
     }
+    setLastBulkDiskon(new Map(result.allocations));
     setBulkDiskonStatus(
       result.capped
         ? { text: `Maksimal yang bisa dicapai: ${rupiah(result.achieved)} (diminta ${rupiah(requested)}).`, warn: true }
