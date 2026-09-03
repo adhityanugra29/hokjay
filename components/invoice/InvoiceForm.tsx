@@ -263,7 +263,7 @@ export default function InvoiceForm({
   const [bulkDiskonStatus, setBulkDiskonStatus] = useState<{ text: string; warn: boolean } | null>(null);
 
   function applyBulkDiskon() {
-    const requested = Number(bulkDiskonInput.replace(/\D/g, "")) || 0;
+    const requested = Number(bulkDiskonInput) || 0;
     if (requested <= 0) {
       setBulkDiskonStatus({ text: "Masukkan jumlah diskon dulu.", warn: true });
       return;
@@ -627,13 +627,19 @@ export default function InvoiceForm({
             <label className="mb-1.5 block font-mono text-[0.68rem] font-semibold uppercase tracking-wide text-accent-700">
               Diskon Bulk (Rp)
             </label>
-            <Input
+            {/* CurrencyInput (accounting-style thousand separators), same
+                as every other Rupiah field in this app — the plain Input
+                this used at first showed raw digits while typing
+                ("150000"), inconsistent with Harga Jual/Diskon per unit
+                right above it. Per the user's report 2026-09-03. */}
+            <CurrencyInput
               value={bulkDiskonInput}
-              onChange={(e) => {
-                setBulkDiskonInput(e.target.value.replace(/\D/g, ""));
+              onChange={(v) => {
+                setBulkDiskonInput(v);
                 setBulkDiskonStatus(null);
               }}
-              placeholder="Contoh: 150000"
+              placeholder="0"
+              showPrefix
             />
           </div>
           <Button type="button" onClick={applyBulkDiskon}>

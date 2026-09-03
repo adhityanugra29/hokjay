@@ -63,6 +63,8 @@
 **Files affected:** `lib/commission.ts`, `components/invoice/InvoiceForm.tsx`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
 **Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` in `InvoiceForm.tsx` (2 instances, both pre-existing effects untouched by this change).
 
+**Follow-up (2026-09-03, same day):** the user reported "ini bug" on the Diskon Bulk input. Re-checked the allocator/`updateItem` wiring end to end (including the custom-item `productId` edge case) — no computational defect found. The real issue: the input used a plain `Input` (raw digits while typing, e.g. "150000") instead of `CurrencyInput`, the accounting-style thousand-separator component every other Rupiah field in this app already uses (Harga Jual, Diskon /unit, right next to it). Switched to `CurrencyInput` — matches the user's explicit ask ("format tulisanya harus accounting juga").
+
 ---
 
 ## TASK-004 — Billing plan for Owner Hojay

@@ -6,6 +6,15 @@
 
 ## 2026-09-03
 
+**TASK-003 follow-up** — Diskon Bulk's input used a plain `Input` (raw digits, "150000") instead of `CurrencyInput` (accounting-style thousand separators, "150.000") — the same component every other Rupiah field in the app already uses. Checked the allocator/`updateItem` logic itself first (no defect found) before concluding the formatting was the actual complaint.
+
+Tasks done: TASK-003 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
 **TASK-003 done** — Diskon Bulk on Invoice: one total discount input + "Distribusikan" button in Ringkasan, auto-split across line items — Baru/Custom filled first (6x cheaper on commission per rupiah than Bekas), every per-unit diskon a clean Rp10.000 multiple, manual per-line entries and Flash Sale lines never touched. New `allocateBulkDiskon()`/`maxDiskonBaru()` in `lib/commission.ts`. Sanity-tested against 7 cases (split, over-capacity clamp, sub-step request, exact-cap, qty>1 rounding, manual-diskon skip, Flash-Sale skip) via a standalone script before wiring into the UI. Iterated placement/copy with the user first via an interactive HTML preview.
 
 Also closes **BUG-004** — Baru/Custom diskon had no server-side ceiling at all (only Bekas was clamped); both `createInvoice.ts`/`updateInvoice.ts` now clamp it via the new `maxDiskonBaru()`.
