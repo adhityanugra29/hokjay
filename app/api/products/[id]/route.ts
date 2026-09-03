@@ -27,7 +27,10 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/products/[id]"
     "hargaBeli",
     "hargaRekomendasi",
     "hargaMinimum",
-    "komisiPercent",
+    // komisiPercent / komisiBekasPercent deliberately NOT here — both are
+    // Owner-only, handled exclusively by
+    // app/api/products/[id]/komisi-bekas/route.ts (own server-side role
+    // check). Per the user's request 2026-09-03.
     "stok",
     "tanggalBarangMasuk",
     "stokMinimum",

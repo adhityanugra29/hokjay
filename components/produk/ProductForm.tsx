@@ -290,25 +290,30 @@ export default function ProductForm({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal menyimpan produk");
       }
-      // Komisi Bekas override goes through its own Owner-only endpoint,
-      // never the general PATCH above (see komisi-bekas/route.ts's doc
-      // comment) — a separate request, sent only when this field is even
-      // visible (isOwner). Runs after the product itself is saved so a
-      // brand-new product (mode "create") has a real _id to target. Not
-      // sent at all when kondisi isn't bekas — nothing to save either way.
-      if (isOwner && values.kondisi === "bekas") {
+      // Both Komisi fields go through their own Owner-only endpoint, never
+      // the general PATCH above (see komisi-bekas/route.ts's doc comment)
+      // — a separate request, sent only when isOwner (the fields aren't
+      // even visible otherwise, see the two Field blocks above). Runs
+      // after the product itself is saved so a brand-new product (mode
+      // "create") has a real _id to target.
+      if (isOwner) {
         const saved = await res.json();
         const id = mode === "create" ? saved._id : productId;
         const komisiRes = await fetch(`/api/products/${id}/komisi-bekas`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            komisiBekasPercent: values.komisiBekasPercent ? Number(values.komisiBekasPercent) : null,
+            komisiPercent: Number(values.komisiPercent),
+            // Only meaningful for bekas — sent as null (clears any stored
+            // override) when kondisi isn't bekas, since the field wasn't
+            // even shown to set one in the first place.
+            komisiBekasPercent:
+              values.kondisi === "bekas" && values.komisiBekasPercent ? Number(values.komisiBekasPercent) : null,
           }),
         });
         if (!komisiRes.ok) {
           const body = await komisiRes.json().catch(() => ({}));
-          throw new Error(body.error || "Produk tersimpan, tapi Komisi Bekas gagal disimpan");
+          throw new Error(body.error || "Produk tersimpan, tapi Komisi gagal disimpan");
         }
       }
       localStorage.setItem(LAST_KATEGORI_KEY, values.category);
@@ -424,15 +429,25 @@ export default function ProductForm({
             <Field label="Harga Rekomendasi">
               <CurrencyInput required value={values.hargaRekomendasi} onChange={(v) => set("hargaRekomendasi", v)} placeholder="0" />
             </Field>
-            <Field label="Komisi — Persen" hint="Nilai referensi — komisi invoice dihitung otomatis.">
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={values.komisiPercent}
-                onChange={(e) => set("komisiPercent", e.target.value)}
-              />
-            </Field>
+            {/* Owner/Super Admin only — per the user's request 2026-09-03
+                ("manager tidak boleh untuk edit komisi, kolom insentif
+                tidak boleh terlihat pada input barang"). Not just
+                non-editable but fully hidden from Manager, same treatment
+                as Komisi Bekas — Override below. A non-owner's payload
+                still resends whatever komisiPercent the product already
+                has (see handleSubmit/setKondisi's auto-default), it's just
+                never exposed as something they can consciously change. */}
+            {isOwner && (
+              <Field label="Komisi — Persen" hint="Nilai referensi — komisi invoice dihitung otomatis.">
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={values.komisiPercent}
+                  onChange={(e) => set("komisiPercent", e.target.value)}
+                />
+              </Field>
+            )}
             {/* Owner/Super Admin only — the actual invoice-time bekas rate
                 override (unlike Komisi — Persen above, this really does
                 drive computeLineCommission). Kosong = ikut default kategori
@@ -450,13 +465,19 @@ export default function ProductForm({
               </Field>
             )}
           </div>
+          {/* Komisi Nominal is derived straight from komisiPercent, same
+              owner-only visibility — Harga Modal (cost basis, not
+              commission) stays visible to everyone who can edit a
+              product. */}
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
             <span className="flex items-baseline gap-1.5 font-sans text-[0.74rem] text-muted">
               Harga Modal <span className="font-medium text-ink">{rupiah(hargaModal)}</span>
             </span>
-            <span className="flex items-baseline gap-1.5 font-sans text-[0.74rem] text-muted">
-              Komisi Nominal <span className="font-medium text-ink">{rupiah(komisiNominal)}</span>
-            </span>
+            {isOwner && (
+              <span className="flex items-baseline gap-1.5 font-sans text-[0.74rem] text-muted">
+                Komisi Nominal <span className="font-medium text-ink">{rupiah(komisiNominal)}</span>
+              </span>
+            )}
           </div>
         </FormSection>
 

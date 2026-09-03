@@ -6,6 +6,15 @@
 
 ## 2026-09-03
 
+**TASK-006 follow-up** — the pre-existing "Komisi — Persen" reference field was still visible/editable by Manager in the product form, inconsistent with the owner-only Komisi Bekas override just built. Per the user's direct correction ("manager tidak boleh untuk edit komisi, kolom insentif tidak boleh terlihat... hanya owner yang boleh"): the field and its Komisi Nominal readout are now hidden entirely (not just disabled) unless Owner/Super Admin, and moved server-side into the same Owner-only endpoint as Komisi Bekas (no longer in the general product PATCH's allowlist at all).
+
+Tasks done: TASK-006 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
 **TASK-006 done** — Owner (+Super Admin) can now override the barang-bekas commission rate per product (`ProductForm.tsx`, Kondisi=Bekas only) and set a default per category (`CategoryManager.tsx`) — was a hardcoded flat 10% of Harga Minimum everywhere, with zero override capability. Hierarchy: product override → category default → global 10%. Baru/Custom (6%) and Flash Sale (7%) untouched, scope deliberately bekas-only per the user. Server-side (`createInvoice.ts`/`updateInvoice.ts`) always resolves and enforces the rate itself from the DB, same as every other commission input. New Owner-only `PATCH /api/products/[id]/komisi-bekas` (isolated from the general product PATCH, which never accepts this field). Also renamed the "Harga Minimum" label to "Harga Bottom" app-wide (display only, DB field name unchanged) and fixed a bug found along the way: `merk` was stuck behind `canEditProduct` in `app/katalog/page.tsx`, so a Sales rep's own Katalog view never actually got Merk data (TASK-005's fix silently didn't apply to them).
 
 Tasks done: TASK-006.
