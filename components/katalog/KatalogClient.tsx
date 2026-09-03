@@ -472,6 +472,10 @@ export default function KatalogClient({
       <EditProductDrawer
         product={editingProduct}
         categories={categories}
+        // Reuses the same Owner/Super Admin check as canFlashSale (identical
+        // role set — see app/katalog/page.tsx) rather than adding a second,
+        // duplicate prop just for this. Per the user's request 2026-09-03.
+        isOwner={canFlashSale}
         onClose={() => setEditingProduct(null)}
       />
 

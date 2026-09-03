@@ -78,6 +78,7 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
     diskon: item.diskonPerUnit,
     hargaMinimum: item.hargaMinimum,
     isFlashSale: item.isFlashSale,
+    komisiBekasPercent: item.komisiBekasPercent,
   });
   return (
     <div className="mb-2.5 rounded-xl bg-panel p-4 shadow-sm">
@@ -140,7 +141,7 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
             }}
           />
           {!item.isCustom && (
-            <span className="font-mono text-[0.64rem] text-clay">Harga Minimum: {rupiah(item.hargaMinimum)}</span>
+            <span className="font-mono text-[0.64rem] text-clay">Harga Bottom: {rupiah(item.hargaMinimum)}</span>
           )}
           {priceWarning && (
             <span className="font-mono text-[0.62rem] font-medium text-accent-700">
@@ -162,7 +163,7 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
             onBlur={(v) => {
               if (item.kondisi !== "bekas") return;
               const num = v ? Number(v) : 0;
-              const max = maxDiskonBekas(item.hargaJual, item.hargaMinimum);
+              const max = maxDiskonBekas(item.hargaJual, item.hargaMinimum, item.komisiBekasPercent);
               if (num > max) {
                 updateItem(item.productId, { diskonPerUnit: max });
                 setDiscountWarning(true);
@@ -171,7 +172,7 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
           />
           {discountWarning && (
             <span className="font-mono text-[0.62rem] font-medium text-accent-700">
-              Melebihi batas insentif, disesuaikan ke maks. {rupiah(maxDiskonBekas(item.hargaJual, item.hargaMinimum))}.
+              Melebihi batas insentif, disesuaikan ke maks. {rupiah(maxDiskonBekas(item.hargaJual, item.hargaMinimum, item.komisiBekasPercent))}.
             </span>
           )}
         </div>

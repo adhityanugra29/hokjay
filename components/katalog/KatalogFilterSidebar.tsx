@@ -338,7 +338,7 @@ export default function KatalogFilterSidebar({
                 onChange={(v) => onChange({ ...filters, hargaBasis: v })}
                 options={[
                   { value: "rekomendasi", label: "Harga Rekomendasi" },
-                  { value: "minimum", label: "Harga Minimum" },
+                  { value: "minimum", label: "Harga Bottom" },
                 ]}
               />
             </div>

@@ -2,6 +2,7 @@ import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Product } from "@/models/Product";
 import { StockMovement } from "@/models/StockMovement";
+import { Category } from "@/models/Category";
 import { PRODUK_BARU_DAYS } from "@/lib/constants";
 
 export interface ProductInvoiceStatus {
@@ -91,6 +92,24 @@ export async function getProductInvoiceStatusMap(excludeInvoiceId?: string): Pro
   }
 
   return map;
+}
+
+/**
+ * Category name -> its Owner-set default barang-bekas commission rate (%),
+ * only for categories that actually have one set. Feed the looked-up value
+ * (or undefined) into resolveKomisiBekasPercent() alongside the product's
+ * own Product.komisiBekasPercent — that function decides which wins. One
+ * query for every category rather than one per product, since every server
+ * page/route that needs this is already listing many products at once.
+ * Per the user's request 2026-09-03.
+ */
+export async function getKategoriKomisiBekasMap(): Promise<Map<string, number>> {
+  await dbConnect();
+  const categories = await Category.find(
+    { komisiBekasPercent: { $exists: true, $ne: null } },
+    { name: 1, komisiBekasPercent: 1 }
+  ).lean();
+  return new Map(categories.map((c) => [c.name, c.komisiBekasPercent as number]));
 }
 
 /**

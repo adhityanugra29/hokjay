@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
 import { nextProductSku } from "@/lib/counters";
-import { getProductInvoiceStatusMap } from "@/lib/katalog";
+import { getProductInvoiceStatusMap, getKategoriKomisiBekasMap } from "@/lib/katalog";
+import { resolveKomisiBekasPercent } from "@/lib/commission";
 
 export async function GET(req: NextRequest) {
   await dbConnect();
@@ -33,7 +34,10 @@ export async function GET(req: NextRequest) {
   const products = await Product.find(filter).sort({ name: 1 }).lean();
   if (!withStatus) return NextResponse.json(products);
 
-  const statusMap = await getProductInvoiceStatusMap(excludeInvoiceId);
+  const [statusMap, kategoriKomisiBekasMap] = await Promise.all([
+    getProductInvoiceStatusMap(excludeInvoiceId),
+    getKategoriKomisiBekasMap(),
+  ]);
   const withStatusFields = products.map((p) => {
     const status = statusMap.get(String(p._id));
     return {
@@ -43,6 +47,10 @@ export async function GET(req: NextRequest) {
       dpQty: status?.dpQty ?? 0,
       dpBy: status?.dpBy ?? [],
       soldQty: status?.soldQty ?? 0,
+      // Effective barang-bekas commission rate — resolved server-side, see
+      // resolveKomisiBekasPercent(). Powers AddProductSidebar's live
+      // commission preview. Per the user's request 2026-09-03.
+      komisiBekasPercent: resolveKomisiBekasPercent(p.komisiBekasPercent, kategoriKomisiBekasMap.get(p.category)),
     };
   });
   return NextResponse.json(withStatusFields);

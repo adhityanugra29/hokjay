@@ -11,6 +11,8 @@ interface SidebarProduct {
   _id: string;
   name: string;
   merk?: string;
+  /** Effective barang-bekas commission rate (%), already resolved server-side — see resolveKomisiBekasPercent() in lib/commission.ts. */
+  komisiBekasPercent?: number;
   sku: string;
   category: string;
   hargaRekomendasi: number;
@@ -206,6 +208,7 @@ export default function AddProductSidebar({
                 hargaJual,
                 hargaMinimum: p.hargaMinimum,
                 isFlashSale: p.flashSale?.active,
+                komisiBekasPercent: p.komisiBekasPercent,
               });
               const kondisiLabel = p.kondisi === "bekas" ? "Bekas" : "Baru";
               // Per the user's request 2026-08-27 ("ukuranya itu krusial")
@@ -296,6 +299,7 @@ export default function AddProductSidebar({
                           hargaRekomendasi: p.hargaRekomendasi,
                           komisiNominal: p.komisiNominal,
                           kondisi: p.kondisi,
+                          komisiBekasPercent: p.komisiBekasPercent,
                           stok: availableQty,
                           fotoUrl: p.fotoUrl,
                           isFlashSale: p.flashSale?.active ?? false,

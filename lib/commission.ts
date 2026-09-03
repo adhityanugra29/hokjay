@@ -11,6 +11,33 @@
  *   price above the floor keeps the extra margin as commission instead of
  *   being capped at 10%.
  */
+/**
+ * Global fallback rate for barang bekas commission (% of Harga
+ * Bottom/Minimum) when neither the product nor its category has an
+ * override set — see resolveKomisiBekasPercent() below. This is the exact
+ * rate every bekas product effectively used before per-product/per-category
+ * overrides existed (2026-09-03), so leaving both overrides unset must
+ * reproduce the old behavior exactly.
+ */
+export const DEFAULT_KOMISI_BEKAS_PERCENT = 10;
+
+/**
+ * Resolves the effective barang-bekas commission rate for one product:
+ * its own override wins if set, otherwise its category's default, otherwise
+ * the global 10%. Per the user's request 2026-09-03 ("kalau dia ganti per
+ * kategori dia akan mengganti semua kategori, tapi kalau dia mau ganti per
+ * produk, perubahan kategori ini tidak berlaku untuk yang per produk") —
+ * product-level always wins over category-level.
+ */
+export function resolveKomisiBekasPercent(
+  productOverride?: number | null,
+  categoryOverride?: number | null
+): number {
+  if (productOverride !== undefined && productOverride !== null) return productOverride;
+  if (categoryOverride !== undefined && categoryOverride !== null) return categoryOverride;
+  return DEFAULT_KOMISI_BEKAS_PERCENT;
+}
+
 export function computeLineCommission({
   isCustom,
   kondisi,
@@ -18,12 +45,21 @@ export function computeLineCommission({
   hargaMinimum,
   diskon = 0,
   isFlashSale = false,
+  komisiBekasPercent = DEFAULT_KOMISI_BEKAS_PERCENT,
 }: {
   isCustom?: boolean;
   kondisi?: "baru" | "bekas";
   /** The listed/raw sale price — NOT pre-reduced by diskon. Pass diskon separately below. */
   hargaJual: number;
   hargaMinimum: number;
+  /**
+   * Effective barang-bekas commission rate (%, e.g. 10 for 10%) — pass the
+   * result of resolveKomisiBekasPercent() so a product/category override
+   * (Owner-only, per the user's request 2026-09-03) applies here. Ignored
+   * for baru/custom (flat 6%, see below) and Flash Sale (flat 7%).
+   * Defaults to the original global 10% if not passed.
+   */
+  komisiBekasPercent?: number;
   /**
    * Diskon /unit — per the user's request 2026-08-29, worked through
    * three examples the same day to land on the formula below (see the
@@ -54,7 +90,9 @@ export function computeLineCommission({
 
   // Barang bekas, verified against three worked examples 2026-08-29
   // (100rb/150rb/60rb diskon -> 0; 100rb/200rb/60rb diskon -> 40rb;
-  // 5.000.000rb/6.000.000rb/700.000 diskon -> 500rb):
+  // 5.000.000rb/6.000.000rb/700.000 diskon -> 500rb) — all three assume
+  // the default 10% rate; komisiBekasPercent (2026-09-03) generalizes the
+  // same shape to whatever rate resolveKomisiBekasPercent() resolves to.
   //
   // The 10%-of-Harga-Minimum `base` is a guarantee that only makes sense
   // while the sale is still actually happening above Harga Minimum — so
@@ -68,7 +106,7 @@ export function computeLineCommission({
   // that should have been protected by the base guarantee instead (see
   // the 6jt/5jt/700rb example: that version gave 300rb, not the correct
   // 500rb).
-  const base = Math.round(hargaMinimum * 0.1);
+  const base = Math.round(hargaMinimum * (komisiBekasPercent / 100));
   const effective = hargaJual - diskon;
   if (effective > hargaMinimum) {
     return Math.max(base, effective - hargaMinimum);
@@ -98,8 +136,18 @@ export function computeLineCommission({
  * hargaMinimum in practice — see ProductCard.tsx's/ItemRowEditor.tsx's
  * own below-minimum-price guard, which prevents that case from arising
  * in the first place.
+ *
+ * `komisiBekasPercent` (2026-09-03, defaults to the original 10%) —
+ * generalizes the "10%×hargaMinimum" term above to whatever rate
+ * resolveKomisiBekasPercent() resolves for this product, so the diskon cap
+ * always tracks the same guaranteed-commission margin computeLineCommission
+ * actually pays out, even when that rate's been overridden.
  */
-export function maxDiskonBekas(hargaJual: number, hargaMinimum: number): number {
-  const base = Math.round(hargaMinimum * 0.1);
+export function maxDiskonBekas(
+  hargaJual: number,
+  hargaMinimum: number,
+  komisiBekasPercent: number = DEFAULT_KOMISI_BEKAS_PERCENT
+): number {
+  const base = Math.round(hargaMinimum * (komisiBekasPercent / 100));
   return Math.max(0, hargaJual - hargaMinimum + base);
 }

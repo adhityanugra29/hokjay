@@ -66,6 +66,21 @@ export interface KatalogProduct {
   stok: number;
   kondisi: string;
   kondisiPercent?: number;
+  /**
+   * Effective barang-bekas commission rate (%), already resolved from this
+   * product's own override -> its category's default -> the global 10% —
+   * see resolveKomisiBekasPercent() in lib/commission.ts. Sent to every
+   * viewer (drives the live commission preview below), unlike
+   * komisiBekasOverride below. Per the user's request 2026-09-03.
+   */
+  komisiBekasPercent?: number;
+  /**
+   * The RAW per-product override (undefined if this product has none set)
+   * — only populated for Owner/Super Admin, feeds the edit form's input so
+   * it shows the actual stored value rather than the resolved effective
+   * one. Per the user's request 2026-09-03.
+   */
+  komisiBekasOverride?: number;
   isCustom?: boolean;
   dimensi?: { panjangCm?: number | null; lebarCm?: number | null; tinggiCm?: number | null };
   ketebalan?: string;
@@ -208,6 +223,7 @@ export default function ProductCard({
     diskon: discount,
     hargaMinimum: product.hargaMinimum,
     isFlashSale: flashSaleActive,
+    komisiBekasPercent: product.komisiBekasPercent,
   });
 
   const dims = product.dimensi;
@@ -467,7 +483,7 @@ export default function ProductCard({
                       : "border-line text-ink hover:bg-[#f3f2ec]"
                   }`}
                 >
-                  Harga Minimum
+                  Harga Bottom
                 </button>
               </div>
               {/* Diskon — separate field from the price above, per the
@@ -500,7 +516,7 @@ export default function ProductCard({
                   onBlur={(v) => {
                     if (product.kondisi !== "bekas") return;
                     const num = v ? Number(v) : 0;
-                    const max = maxDiskonBekas(effectivePrice, product.hargaMinimum);
+                    const max = maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent);
                     if (num > max) {
                       setDiscount(product._id, max);
                       setDiscountWarning(true);
@@ -512,7 +528,7 @@ export default function ProductCard({
               {discountWarning && (
                 <div className="text-[0.68rem] font-medium text-accent-700">
                   Diskon melebihi batas insentif, disesuaikan otomatis ke maksimal{" "}
-                  {rupiah(maxDiskonBekas(effectivePrice, product.hargaMinimum))}.
+                  {rupiah(maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent))}.
                 </div>
               )}
               {discount > 0 && (
@@ -681,6 +697,7 @@ export default function ProductCard({
                 hargaRekomendasi: product.hargaRekomendasi,
                 komisiNominal: liveKomisi,
                 kondisi: product.kondisi as "baru" | "bekas",
+                komisiBekasPercent: product.komisiBekasPercent,
                 stok: availableQty,
                 fotoUrl: product.fotoUrl,
                 kondisiLabel,

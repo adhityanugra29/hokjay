@@ -19,6 +19,15 @@ export interface ProductFormValues {
   hargaRekomendasi: string;
   hargaMinimum: string;
   komisiPercent: string;
+  /**
+   * Owner-only override of the real invoice-time barang-bekas commission
+   * rate (normally a flat 10% of Harga Bottom) — separate from komisiPercent
+   * above, which is a reference-only figure unrelated to real invoice math
+   * (see its own hint text). Empty = no override, falls back to the
+   * product's category default, then the global 10%. Per the user's
+   * request 2026-09-03.
+   */
+  komisiBekasPercent: string;
   stok: string;
   tanggalBarangMasuk: string;
   stokMinimum: string;
@@ -52,6 +61,7 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   // the field) — 6% for baru, 10% for bekas. Kept in sync with `kondisi`
   // by the Kondisi select's onChange, not just this initial value.
   komisiPercent: "10",
+  komisiBekasPercent: "",
   stok: "1",
   tanggalBarangMasuk: "",
   // No longer a form field (see the user's request 2026-08-25) — schema
@@ -140,6 +150,7 @@ export default function ProductForm({
   productId,
   initial,
   categories,
+  isOwner,
   onSuccess,
   onCancel,
 }: {
@@ -147,6 +158,8 @@ export default function ProductForm({
   productId?: string;
   initial?: Partial<ProductFormValues>;
   categories: string[];
+  /** Owner/Super Admin only — shows the Komisi Bekas override field. Per the user's request 2026-09-03. */
+  isOwner?: boolean;
   // Both default to the original navigate-to-/produk behavior — only the
   // Katalog inline edit drawer (2026-08-27) passes its own, so saving/
   // cancelling from there stays on the Katalog page instead of leaving it.
@@ -277,6 +290,27 @@ export default function ProductForm({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal menyimpan produk");
       }
+      // Komisi Bekas override goes through its own Owner-only endpoint,
+      // never the general PATCH above (see komisi-bekas/route.ts's doc
+      // comment) — a separate request, sent only when this field is even
+      // visible (isOwner). Runs after the product itself is saved so a
+      // brand-new product (mode "create") has a real _id to target. Not
+      // sent at all when kondisi isn't bekas — nothing to save either way.
+      if (isOwner && values.kondisi === "bekas") {
+        const saved = await res.json();
+        const id = mode === "create" ? saved._id : productId;
+        const komisiRes = await fetch(`/api/products/${id}/komisi-bekas`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            komisiBekasPercent: values.komisiBekasPercent ? Number(values.komisiBekasPercent) : null,
+          }),
+        });
+        if (!komisiRes.ok) {
+          const body = await komisiRes.json().catch(() => ({}));
+          throw new Error(body.error || "Produk tersimpan, tapi Komisi Bekas gagal disimpan");
+        }
+      }
       localStorage.setItem(LAST_KATEGORI_KEY, values.category);
       if (onSuccess) {
         onSuccess();
@@ -382,8 +416,8 @@ export default function ProductForm({
         <FormSection label="Harga & Komisi" compact>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field
-              label="Harga Minimum"
-              hint={values.kondisi === "bekas" ? "\"Harga bottom\" komisi bekas" : undefined}
+              label="Harga Bottom"
+              hint={values.kondisi === "bekas" ? "Dasar komisi bekas" : undefined}
             >
               <CurrencyInput required value={values.hargaMinimum} onChange={(v) => set("hargaMinimum", v)} placeholder="0" />
             </Field>
@@ -399,6 +433,22 @@ export default function ProductForm({
                 onChange={(e) => set("komisiPercent", e.target.value)}
               />
             </Field>
+            {/* Owner/Super Admin only — the actual invoice-time bekas rate
+                override (unlike Komisi — Persen above, this really does
+                drive computeLineCommission). Kosong = ikut default kategori
+                lalu 10% global. Per the user's request 2026-09-03. */}
+            {isOwner && values.kondisi === "bekas" && (
+              <Field label="Komisi Bekas — Override (%)" hint="Kosongkan untuk pakai default kategori/global (10%).">
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={values.komisiBekasPercent}
+                  onChange={(e) => set("komisiBekasPercent", e.target.value)}
+                  placeholder="10"
+                />
+              </Field>
+            )}
           </div>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
             <span className="flex items-baseline gap-1.5 font-sans text-[0.74rem] text-muted">

@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-03
+
+**TASK-006 done** — Owner (+Super Admin) can now override the barang-bekas commission rate per product (`ProductForm.tsx`, Kondisi=Bekas only) and set a default per category (`CategoryManager.tsx`) — was a hardcoded flat 10% of Harga Minimum everywhere, with zero override capability. Hierarchy: product override → category default → global 10%. Baru/Custom (6%) and Flash Sale (7%) untouched, scope deliberately bekas-only per the user. Server-side (`createInvoice.ts`/`updateInvoice.ts`) always resolves and enforces the rate itself from the DB, same as every other commission input. New Owner-only `PATCH /api/products/[id]/komisi-bekas` (isolated from the general product PATCH, which never accepts this field). Also renamed the "Harga Minimum" label to "Harga Bottom" app-wide (display only, DB field name unchanged) and fixed a bug found along the way: `merk` was stuck behind `canEditProduct` in `app/katalog/page.tsx`, so a Sales rep's own Katalog view never actually got Merk data (TASK-005's fix silently didn't apply to them).
+
+Tasks done: TASK-006.
+Regression: PASS.
+
+---
+
 ## 2026-09-02
 
 **TASK-005 done** — Merk (brand) now shows automatically next to the product name on Katalog cards, the Katalog PDF, and the Invoice product picker (+ what gets snapshotted onto the invoice), instead of requiring it typed into Nama Produk by hand. New `productDisplayName()` helper in `lib/format.ts`; stored `name` field itself untouched.

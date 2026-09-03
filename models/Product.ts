@@ -25,6 +25,17 @@ const ProductSchema = new Schema(
 
     komisiPercent: { type: Number, required: true, default: 5 },
     komisiNominal: { type: Number, required: true, default: 0 },
+    // Owner-only override of the barang-bekas commission rate (normally a
+    // flat 10% of Harga Bottom/Minimum, see lib/commission.ts) for THIS
+    // product specifically. undefined = no override, falls back to the
+    // product's Category.komisiBekasPercent, then the global 10% default
+    // — see resolveKomisiBekasPercent() in lib/commission.ts. Deliberately
+    // separate from komisiPercent above (that one drives the unrelated
+    // Hot Products reference figure, komisiPercent% x hargaRekomendasi —
+    // reusing it here would have silently dropped every existing bekas
+    // product's real commission from 10% to komisiPercent's 5% default).
+    // Per the user's request 2026-09-03.
+    komisiBekasPercent: { type: Number, min: 0, max: 100 },
 
     stok: { type: Number, required: true, default: 0 },
     // When this stock/product entry actually arrived — distinct from

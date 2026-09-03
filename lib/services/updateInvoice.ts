@@ -3,8 +3,9 @@ import { Product } from "@/models/Product";
 import { Invoice } from "@/models/Invoice";
 import { StockMovement } from "@/models/StockMovement";
 import { JournalEntry } from "@/models/JournalEntry";
-import { computeLineCommission, maxDiskonBekas } from "@/lib/commission";
+import { computeLineCommission, maxDiskonBekas, resolveKomisiBekasPercent } from "@/lib/commission";
 import { formatDimensi } from "@/lib/format";
+import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
 
 /**
@@ -51,7 +52,10 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   }
 
   const productIds = input.items.filter((i) => i.productId).map((i) => i.productId!);
-  const products = await Product.find({ _id: { $in: productIds } });
+  const [products, kategoriKomisiBekasMap] = await Promise.all([
+    Product.find({ _id: { $in: productIds } }),
+    getKategoriKomisiBekasMap(),
+  ]);
   const productMap = new Map(products.map((p) => [String(p._id), p]));
 
   const finalize = input.status !== "draft";
@@ -92,11 +96,16 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       !i.isFlashSale && i.hargaJual > 0 && i.hargaJual < product.hargaMinimum
         ? product.hargaMinimum
         : i.hargaJual;
+    // Owner-only override chain — see createInvoice.ts's matching comment.
+    const komisiBekasPercent = resolveKomisiBekasPercent(
+      product.komisiBekasPercent,
+      kategoriKomisiBekasMap.get(product.category)
+    );
     // Diskon cap for barang bekas — server-side enforcement, see
     // createInvoice.ts's matching comment. N/A for a Flash Sale line.
     const diskon =
       product.kondisi === "bekas" && !i.isFlashSale
-        ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum))
+        ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum, komisiBekasPercent))
         : rawDiskon;
     const subtotal = (hargaJual - diskon) * i.qty;
     // See createInvoice.ts's matching comment — Flash Sale items get
@@ -107,6 +116,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       hargaMinimum: product.hargaMinimum,
       diskon,
       isFlashSale: i.isFlashSale,
+      komisiBekasPercent,
     });
     return {
       product: product._id,

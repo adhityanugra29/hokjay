@@ -94,3 +94,34 @@
 **Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` in `AddProductSidebar.tsx`.
 
 **Follow-up (2026-09-02, same day):** the user asked to confirm no stray "-" ever shows when merk is empty (`productDisplayName` already returns just `name` in that case — confirmed, no change needed) and to audit naming consistency across every surface. Found two gaps missed in the first pass — `app/katalog/custom/page.tsx` (Produk Custom listing) didn't pass `merk` into `ProductCard` at all, and `app/katalog/custom-order/page.tsx` (the "Pesan Produk Custom" flow) added its freshly-created product straight to cart with `product.name`, bypassing `productDisplayName`. Both now consistent with the other 3 surfaces. `EditProductDrawer.tsx`'s header intentionally left showing the raw name (matches the raw-name field below it in the edit form — showing the combined display name there would be confusing while editing).
+
+---
+
+## TASK-006 — Owner-only Komisi Bekas override (per produk & per kategori) + rename Harga Minimum → Harga Bottom
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-03)
+**Dependency:** None
+**Created:** 2026-09-03 · **Last updated:** 2026-09-03
+
+**Description:** The real invoice-time barang-bekas commission rate was a hardcoded flat 10% of Harga Minimum everywhere (`lib/commission.ts`) — the existing `Product.komisiPercent` field looked like it should drive this but is actually unrelated (its own hint already said "Nilai referensi — komisi invoice dihitung otomatis"; it only feeds the Hot Products dashboard figure, `komisiPercent% × hargaRekomendasi`). Per the user's request 2026-09-03, Owner (+ Super Admin) can now override the bekas rate per product and set a default per category, while Baru/Custom (flat 6%) and Flash Sale (flat 7%) stay untouched — confirmed with the user this scope is deliberately bekas-only.
+
+**Hierarchy:** product's own override → its category's default → global 10% — `resolveKomisiBekasPercent()` in `lib/commission.ts`. Confirmed with the user: a category-level change applies to every product in it EXCEPT ones that already have their own override, which always wins.
+
+**Data model:** `Product.komisiBekasPercent?: number` (new, separate from the pre-existing `komisiPercent` — reusing that field would have silently dropped every existing bekas product's real commission from 10% to its 5% default). `Category.komisiBekasPercent?: number` (new).
+
+**Server-side authority:** `createInvoice.ts`/`updateInvoice.ts` resolve the effective rate themselves from the DB (product + a `getKategoriKomisiBekasMap()` category lookup, `lib/katalog.ts`) — never trust a client-submitted rate, same posture as `hargaMinimum`'s own floor enforcement right next to it. `computeLineCommission()`/`maxDiskonBekas()` both gained an optional `komisiBekasPercent` param (defaults to 10, the original behavior, when omitted) so every pre-existing call site with no override set behaves byte-identical to before.
+
+**Client-side preview (cosmetic — the server always recomputes authoritatively on save):** the resolved rate is threaded through the same 4 live-preview call sites as `hargaMinimum` already reaches — `ProductCard.tsx`, `AddProductSidebar.tsx`, `InvoiceForm.tsx`, `ItemRowEditor.tsx` — plus `CartProvider.tsx`'s `CartItem` type and `app/invoice/[id]/ubah/page.tsx`'s existing-invoice-to-cart conversion.
+
+**Owner-only UI:** per-product override lives in the existing `ProductForm.tsx` (Harga & Komisi section), visible only when Kondisi=Bekas and `isOwner` — saved through a dedicated `PATCH /api/products/[id]/komisi-bekas` (own server-side role check, same isolation as `flash-sale/route.ts`; the general product PATCH route deliberately never accepts this field, so a Manager saving unrelated changes can't touch or wipe it). Per-category default lives in `CategoryManager.tsx` (`/admin`, tab Kategori) — that page itself stays reachable by every admin-level role, so just the Komisi Bekas column/field within it is conditionally rendered and the existing `/api/categories/[id]` PATCH gained its own inline role check for that one field only.
+
+**Rename:** "Harga Minimum" → "Harga Bottom" — display label only, `hargaMinimum` left as the DB/code field name (no migration). 4 files: `ProductForm.tsx`, `ItemRowEditor.tsx`, `KatalogFilterSidebar.tsx`, `ProductCard.tsx`.
+
+**Bug found & fixed along the way:** `app/katalog/page.tsx` had `merk` stuck inside the `canEditProduct`-only field block (a leftover from before TASK-005 wired Merk into the card title) — a Sales rep's own Katalog view never actually received Merk data at all, only Manager/Owner/Super Admin did. Moved it to the always-sent section.
+
+**Acceptance criteria:** Every existing bekas product with no override set (the overwhelming majority) computes an identical commission to before — verified by `DEFAULT_KOMISI_BEKAS_PERCENT = 10` being the fallback at every layer. Manager (admin-level, but not Owner) can't see or edit either override anywhere, verified by role checks at both the UI-gate and the API-write layers (2 new/extended server routes).
+
+**Files affected:** `models/Product.ts`, `models/Category.ts`, `lib/commission.ts`, `lib/katalog.ts`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`, `components/katalog/{ProductCard,KatalogClient,EditProductDrawer,KatalogFilterSidebar}.tsx`, `components/invoice/{AddProductSidebar,InvoiceForm,ItemRowEditor}.tsx`, `components/cart/CartProvider.tsx`, `components/produk/ProductForm.tsx`, `components/admin/CategoryManager.tsx`, `app/katalog/page.tsx`, `app/produk/baru/page.tsx`, `app/produk/[id]/edit/page.tsx`, `app/invoice/[id]/ubah/page.tsx`, `app/admin/page.tsx`, `app/api/products/route.ts`, `app/api/products/[id]/komisi-bekas/route.ts` (new), `app/api/categories/[id]/route.ts`.
+**Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` errors, none new.

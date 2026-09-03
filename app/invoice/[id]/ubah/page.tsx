@@ -12,6 +12,8 @@ import { JournalEntry } from "@/models/JournalEntry";
 import { getSession } from "@/lib/auth/session";
 import { customerVisibilityFilter } from "@/lib/pelanggan";
 import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
+import { getKategoriKomisiBekasMap } from "@/lib/katalog";
+import { resolveKomisiBekasPercent } from "@/lib/commission";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +32,10 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
   if (isInvoiceBlockedForSession(session, invoice.sales?.nama)) notFound();
 
   const productIds = invoice.items.filter((i) => i.product).map((i) => i.product);
-  const products = await Product.find({ _id: { $in: productIds } }).lean();
+  const [products, kategoriKomisiBekasMap] = await Promise.all([
+    Product.find({ _id: { $in: productIds } }).lean(),
+    getKategoriKomisiBekasMap(),
+  ]);
   const productMap = new Map(products.map((p) => [String(p._id), p]));
 
   // Since 2026-08-27, a new-style unpaid invoice never deducted stock, so
@@ -63,6 +68,15 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
       diskonPerUnit: item.diskonPerUnit,
       isCustom: item.isCustom,
       kondisi: (product?.kondisi as "baru" | "bekas") ?? "baru",
+      // Resolved fresh from the product's/category's CURRENT state, same as
+      // kondisi above (not a historical snapshot — there's no field for
+      // this rate on the invoice item, only the already-computed
+      // komisiPerItemSnapshot amount). Just powers the live preview while
+      // editing; updateInvoice.ts resolves its own authoritative value
+      // again on save regardless. Per the user's request 2026-09-03.
+      komisiBekasPercent: product
+        ? resolveKomisiBekasPercent(product.komisiBekasPercent, kategoriKomisiBekasMap.get(product.category))
+        : undefined,
       isFlashSale: item.isFlashSale,
     };
   });

@@ -3,7 +3,8 @@ import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
 import { Category } from "@/models/Category";
 import { getSession } from "@/lib/auth/session";
-import { getProductInvoiceStatusMap, getProdukBaruIds } from "@/lib/katalog";
+import { getProductInvoiceStatusMap, getProdukBaruIds, getKategoriKomisiBekasMap } from "@/lib/katalog";
+import { resolveKomisiBekasPercent } from "@/lib/commission";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function KatalogPage() {
   const session = await getSession();
   const canEditProduct = !!session && CAN_EDIT_PRODUCT_ROLES.includes(session.role);
   const canFlashSale = !!session && CAN_FLASH_SALE_ROLES.includes(session.role);
-  const [products, categories, statusMap, produkBaruIds] = await Promise.all([
+  const [products, categories, statusMap, produkBaruIds, kategoriKomisiBekasMap] = await Promise.all([
     // Custom-order products live on their own page (/katalog/custom) so
     // they don't clutter the regular stocked catalog — see confirmation
     // with the user 2026-08-19. Sold-out (stok 0) products are hidden too
@@ -44,6 +45,9 @@ export default async function KatalogPage() {
     // checkbox, same definition as the Inventory nav badge. Per the
     // user's request 2026-08-28.
     getProdukBaruIds(),
+    // Category defaults for the barang-bekas commission override — see
+    // resolveKomisiBekasPercent() below. Per the user's request 2026-09-03.
+    getKategoriKomisiBekasMap(),
   ]);
 
   return (
@@ -74,11 +78,25 @@ export default async function KatalogPage() {
           // Electric/Non-Electric filter in KatalogFilterSidebar. Per the
           // user's request 2026-08-27.
           tipeProduk: (p.tipeProduk as "elektronik" | "non-elektronik") ?? undefined,
+          // Sent to everyone (not gated to canEditProduct) — shown right in
+          // the card title (see productDisplayName() in ProductCard.tsx),
+          // not just the edit form. Found while wiring TASK-005: this was
+          // stuck inside the canEditProduct-only block below, so a Sales
+          // rep's own Katalog view never got the Merk data to show at all.
+          // Per the user's request 2026-09-02 ("kulkas hosizaki...").
+          merk: p.merk ?? undefined,
+          // Effective barang-bekas commission rate — resolved server-side
+          // (product override -> category default -> global 10%), sent to
+          // everyone since it drives the live commission preview on the
+          // card. Per the user's request 2026-09-03.
+          komisiBekasPercent: resolveKomisiBekasPercent(
+            p.komisiBekasPercent,
+            kategoriKomisiBekasMap.get(p.category)
+          ),
           // Only sent for roles that actually see the edit pencil — feeds
           // EditProductDrawer directly with zero extra fetch. Per the
           // user's report 2026-08-27 that opening it felt slow.
           ...(canEditProduct && {
-            merk: p.merk ?? undefined,
             tanggalBarangMasuk: p.tanggalBarangMasuk ? new Date(p.tanggalBarangMasuk).toISOString() : undefined,
             stokMinimum: p.stokMinimum ?? undefined,
             alertHariTidakTerjual: p.alertHariTidakTerjual ?? undefined,
@@ -86,6 +104,10 @@ export default async function KatalogPage() {
             fotoBelakangUrl: p.fotoBelakangUrl ?? undefined,
             deskripsi: p.deskripsi ?? undefined,
           }),
+          // The RAW per-product override (not the resolved one above) —
+          // only for Owner/Super Admin, so EditProductDrawer's form shows
+          // the actual stored value. Per the user's request 2026-09-03.
+          ...(canFlashSale && { komisiBekasOverride: p.komisiBekasPercent ?? undefined }),
           bookedQty: status?.bookedQty ?? 0,
           bookedBy: status?.bookedBy ?? [],
           dpQty: status?.dpQty ?? 0,

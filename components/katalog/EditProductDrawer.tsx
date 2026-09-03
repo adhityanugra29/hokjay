@@ -26,10 +26,13 @@ import type { KatalogProduct } from "./ProductCard";
 export default function EditProductDrawer({
   product,
   categories,
+  isOwner,
   onClose,
 }: {
   product: KatalogProduct | null;
   categories: string[];
+  /** Owner/Super Admin only — shows the Komisi Bekas override field. Per the user's request 2026-09-03. */
+  isOwner?: boolean;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -55,6 +58,7 @@ export default function EditProductDrawer({
     hargaRekomendasi: String(product.hargaRekomendasi),
     hargaMinimum: String(product.hargaMinimum),
     komisiPercent: String(product.komisiPercent),
+    komisiBekasPercent: product.komisiBekasOverride !== undefined ? String(product.komisiBekasOverride) : "",
     stok: String(product.stok),
     tanggalBarangMasuk: product.tanggalBarangMasuk ? product.tanggalBarangMasuk.slice(0, 10) : "",
     stokMinimum: String(product.stokMinimum ?? 5),
@@ -101,6 +105,7 @@ export default function EditProductDrawer({
             mode="edit"
             productId={product._id}
             categories={categories}
+            isOwner={isOwner}
             initial={initial}
             onSuccess={handleSaved}
             onCancel={onClose}

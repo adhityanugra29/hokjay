@@ -2,8 +2,9 @@ import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
 import { Invoice } from "@/models/Invoice";
 import { nextInvoiceNumber } from "@/lib/counters";
-import { computeLineCommission, maxDiskonBekas } from "@/lib/commission";
+import { computeLineCommission, maxDiskonBekas, resolveKomisiBekasPercent } from "@/lib/commission";
 import { formatDimensi } from "@/lib/format";
+import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 
 export interface CreateInvoiceItemInput {
   /** Absent for custom-order line items, which have no backing Product. */
@@ -57,7 +58,10 @@ export async function createInvoice(input: CreateInvoiceInput) {
   }
 
   const productIds = input.items.filter((i) => i.productId).map((i) => i.productId!);
-  const products = await Product.find({ _id: { $in: productIds } });
+  const [products, kategoriKomisiBekasMap] = await Promise.all([
+    Product.find({ _id: { $in: productIds } }),
+    getKategoriKomisiBekasMap(),
+  ]);
   const productMap = new Map(products.map((p) => [String(p._id), p]));
 
   const finalize = input.status !== "draft";
@@ -120,9 +124,17 @@ export async function createInvoice(input: CreateInvoiceInput) {
     // tidak boleh lebih dari total insentif yang diberikan"). Silently
     // clamped (not rejected). N/A when this line is a Flash Sale item —
     // Diskon is locked at 0 for those regardless.
+    // Owner-only override chain (2026-09-03): the product's own rate wins,
+    // then its category's default, then the original global 10% — see
+    // resolveKomisiBekasPercent(). Resolved server-side from the DB, never
+    // trusted from the client, same as everything else in this function.
+    const komisiBekasPercent = resolveKomisiBekasPercent(
+      product.komisiBekasPercent,
+      kategoriKomisiBekasMap.get(product.category)
+    );
     const diskon =
       product.kondisi === "bekas" && !i.isFlashSale
-        ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum))
+        ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum, komisiBekasPercent))
         : rawDiskon;
     const subtotal = (hargaJual - diskon) * i.qty;
     // Commission is computed from the product's *current* kondisi/harga
@@ -140,6 +152,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       hargaMinimum: product.hargaMinimum,
       diskon,
       isFlashSale: i.isFlashSale,
+      komisiBekasPercent,
     });
     return {
       product: product._id,
