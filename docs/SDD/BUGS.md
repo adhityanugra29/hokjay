@@ -177,3 +177,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `components/katalog/KatalogClient.tsx`, `components/katalog/KatalogFilterSidebar.tsx`.
 **Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` in the same file. Manually reasoned through: "80" alone still exact-matches a single dimension (unchanged); "80 x 60 x 100" now requires all three to be present among P/L/T; "80 x 999" now correctly excludes a product that doesn't have a 999cm side.
+
+---
+
+## BUG-010 — Product names show a stray "-" from TASK-005's Merk-in-name feature
+
+**Severity:** B3
+**Status:** FIXED (2026-09-03)
+**Source:** User report ("untuk merk, jika '-' kenapa muncul? bukanya kemaren sudah di fix?").
+
+**Description:** `productDisplayName()` (TASK-005) correctly skips a genuinely empty/blank Merk, but queried the real database and found 135 of 225 products have `merk` stored as the literal string `"-"` — a pre-existing data-entry convention (staff typing "-" to mean "no brand") that predates this feature entirely. Since `"-".trim()` is truthy, the function treated it as a real brand and appended it, producing names like "Working Table -".
+
+**Root cause:** Data, not logic — the function's empty check never accounted for this placeholder convention because it wasn't known about until checked directly against production data.
+
+**Fix:** `productDisplayName()` in `lib/format.ts` now also treats `"-"` and `"—"` the same as empty — no DB migration; the existing 135 products (and any future one someone fills the same way) are corrected everywhere the function is already used (Katalog card, PDF, Invoice picker + snapshot).
+
+**Files:** `lib/format.ts`.
+**Regression test:** Clean build, lint clean. Verified directly against production data via a read-only query (135 products with `merk: "-"`, 0 with `merk: ""`) before and reasoning through after.

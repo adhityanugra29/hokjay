@@ -82,7 +82,11 @@ export function formatDateFull(date: Date | string): string {
  */
 export function productDisplayName(name: string, merk?: string | null): string {
   const m = merk?.trim();
-  return m ? `${name} ${m}` : name;
+  // "-" (and bare "—") is a real stored value on ~135 of 225 existing
+  // products — a pre-existing data-entry convention for "no merk", not an
+  // actual brand. Found 2026-09-03 after the user reported names like
+  // "Working Table -" — treated the same as genuinely empty.
+  return m && m !== "-" && m !== "—" ? `${name} ${m}` : name;
 }
 
 export function slugify(text: string): string {

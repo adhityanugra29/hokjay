@@ -6,6 +6,15 @@
 
 ## 2026-09-03
 
+**BUG-010 fixed** — Product names showed a stray "-" (e.g. "Working Table -") from TASK-005's Merk-in-name feature. Queried production directly: 135 of 225 products have `merk` literally stored as `"-"`, a pre-existing "no brand" data-entry convention, not empty. `productDisplayName()` now treats `"-"`/`"—"` the same as empty — fixes every existing product with no DB migration needed.
+
+Bugs fixed: BUG-010.
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
 **TASK-006 follow-up** — the pre-existing "Komisi — Persen" reference field was still visible/editable by Manager in the product form, inconsistent with the owner-only Komisi Bekas override just built. Per the user's direct correction ("manager tidak boleh untuk edit komisi, kolom insentif tidak boleh terlihat... hanya owner yang boleh"): the field and its Komisi Nominal readout are now hidden entirely (not just disabled) unless Owner/Super Admin, and moved server-side into the same Owner-only endpoint as Komisi Bekas (no longer in the general product PATCH's allowlist at all).
 
 Tasks done: TASK-006 (follow-up).
