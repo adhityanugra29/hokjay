@@ -1,6 +1,7 @@
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
+import { User } from "@/models/User";
 
 export function currentPeriod(): string {
   const now = new Date();
@@ -204,15 +205,33 @@ export interface UnpaidCommissionSales {
  * when it was earned. Backs the /payroll landing page's Komisi tab (moved
  * from the standalone /bayar-komisi 2026-08-23).
  */
+/**
+ * Login accounts with the "owner" role, by nama — a Sales roster entry
+ * sharing that exact name is the Owner's own name matching how they show
+ * up as a "sales" on old invoices, not a real commission-earning rep. Per
+ * the user's request 2026-09-04 ("andi abdillah di payroll, tidak perlu
+ * ada komisinya (karena dia owner)"): scoped to role, not the one name, so
+ * it keeps holding if the Owner account is ever renamed or a second Owner
+ * account is added.
+ */
+async function getOwnerNames(): Promise<Set<string>> {
+  const owners = await User.find({ role: "owner" }).select("nama").lean();
+  return new Set(owners.map((o) => o.nama));
+}
+
 export async function getUnpaidCommissionBySales(): Promise<UnpaidCommissionSales[]> {
   await dbConnect();
-  const invoices = await Invoice.find({ status: "paid", komisiCair: false });
+  const [invoices, ownerNames] = await Promise.all([
+    Invoice.find({ status: "paid", komisiCair: false }),
+    getOwnerNames(),
+  ]);
   const map = new Map<string, UnpaidCommissionSales>();
 
   for (const inv of invoices) {
+    const nama = inv.sales?.nama ?? "—";
+    if (ownerNames.has(nama)) continue;
     const total = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
     if (total <= 0) continue;
-    const nama = inv.sales?.nama ?? "—";
     const row = map.get(nama) ?? { salesNama: nama, invoiceCount: 0, totalKomisi: 0 };
     row.invoiceCount++;
     row.totalKomisi += total;
@@ -233,6 +252,8 @@ export interface UnpaidCommissionInvoice {
 /** One sales's outstanding commission invoices — the checkbox list on /payroll/komisi/[nama]. */
 export async function getUnpaidCommissionInvoices(salesNama: string): Promise<UnpaidCommissionInvoice[]> {
   await dbConnect();
+  const ownerNames = await getOwnerNames();
+  if (ownerNames.has(salesNama)) return [];
   const invoices = await Invoice.find({ status: "paid", komisiCair: false, "sales.nama": salesNama }).sort({
     "payment.tanggalBayar": 1,
   });

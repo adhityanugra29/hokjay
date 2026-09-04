@@ -205,3 +205,21 @@
 **Follow-up #2 (2026-09-04, same day):** the periode selects rendered visibly taller than the search box next to them (`items-center` alone doesn't fix a real height mismatch) — the shared `Select`'s base padding/font-size is sized for full-width form fields, not a compact filter row. Overrode with `!py-2 !text-[0.78rem]` (matching `SearchInput`'s own sizing exactly) so both rows sit level — confirmed via a screenshot before shipping.
 
 **Also investigated the same day:** the user separately reported "tidak bisa untuk generate invoice" (no error message given). Reproduced the create flow at every layer — `createInvoice()` called directly, `POST /api/invoices` over real HTTP, and the full `/invoice/baru` form driven through a headless browser (opening the product sidebar, adding an item) — all succeeded with zero errors and a real invoice persisted each time. No fix applied; asked the user for the specific error/screenshot instead of guessing, per this project's own established rule against fixing without reproduction (see BUG-007's history).
+
+
+---
+
+## TASK-010 — Exclude Owner accounts from Payroll commission listing
+
+**Type:** BUGFIX/SCOPE
+**Priority:** P2
+**Status:** DONE (2026-09-04)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-04
+
+**Description:** Per the user's request ("andi abdillah di payroll, tidak perlu ada komisinya (karena dia owner)"): Andi abdillah's login `nama` exactly matches a real `Sales` roster entry (the app links commission to that plain name string, not a real foreign key — see TASK-007), so every paid invoice attributed to him as the "sales" on it produced a real commission total on Payroll's Daftar Bayar list (Rp 15.103.000, confirmed via screenshot) — technically correct math, but the Owner isn't a commission-earning rep and shouldn't appear there.
+
+**Fix:** `getUnpaidCommissionBySales()` and `getUnpaidCommissionInvoices()` (`lib/insentif.ts`) now exclude any `sales.nama` matching a `User` with `role: "owner"` (new `getOwnerNames()` helper, queried fresh each call — no caching, matching this file's existing pattern). Scoped to role rather than hardcoding "Andi abdillah" so it keeps holding if the Owner account is renamed or a second Owner is added. Both functions are Payroll-only (confirmed via grep — no other page calls either), so the exclusion doesn't touch the Insentif leaderboard, Komisi Saya, or any other ranking/commission view, matching the user's literal "di payroll" scope.
+
+**Files affected:** `lib/insentif.ts`.
+**Regression test:** Clean build, lint clean. Verified live against real data (`next start` + curl as Owner): "Andi abdillah" no longer appears in the Daftar Bayar list (only as the logged-in user's own sidebar name, unrelated), remaining sales' totals (Rp 11.325.000 / 6.221.000 / 1.495.000 / 620.000 / grand total Rp 19.661.000) unchanged from before the fix.

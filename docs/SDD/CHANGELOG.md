@@ -6,6 +6,15 @@
 
 ## 2026-09-04
 
+**TASK-010 done** — Andi abdillah (Owner, whose login name happens to exactly match a real Sales roster entry) no longer appears on Payroll's Daftar Bayar commission list. `getUnpaidCommissionBySales()`/`getUnpaidCommissionInvoices()` now exclude any sales name belonging to a `role: "owner"` User account — scoped to role, not the one name, and Payroll-only (Insentif leaderboard/Komisi Saya untouched).
+
+Tasks done: TASK-010.
+Regression: PASS — clean build, lint clean, verified live: Andi abdillah's Rp 15.103.000 row is gone, every other sales rep's total unchanged.
+
+---
+
+## 2026-09-04
+
 **BUG-012 fixed** — the "tidak bisa generate invoice" report from earlier today turned out to be a real crash, not a false alarm: `app/invoice/[id]/page.tsx` broke for every single invoice (React error #441 — "This page couldn't load", the exact interstitial the user's screenshot showed). Root cause was TASK-009's own `InvoiceDocument.tsx` extraction, done the same day: it called `displayDiskon()`/`displayHarga()` as value imports from `InvoicePrintDoc.tsx`, a `"use client"` file, from a Server Component. Moved those two pure functions (plus their shared types) into a new plain module `lib/invoiceDisplay.ts`. Reproduced live (`next start` + Playwright, server log confirmed the exact throw) before and after the fix.
 
 Bugs fixed: BUG-012.
