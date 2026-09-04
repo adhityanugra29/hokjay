@@ -1,11 +1,12 @@
-import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import { SearchInput } from "@/components/ui/Panel";
 import { LinkButton } from "@/components/ui/Button";
-import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
+import InvoiceListClient, { type InvoiceRow } from "@/components/invoice/InvoiceListClient";
+import type { InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
-import { rupiah, formatDateShort } from "@/lib/format";
+import { Sales } from "@/models/Sales";
+import { formatDateShort } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
 import { MONTH_NAMES } from "@/lib/constants";
 import { getSession } from "@/lib/auth/session";
@@ -17,7 +18,15 @@ function hariBerjalan(from: Date | string) {
   return Math.max(0, Math.floor((Date.now() - new Date(from).getTime()) / 86_400_000));
 }
 
-/** Invoice list — grouped by status instead of one flat table ("1c" in the 2026-08-22 redesign). */
+/**
+ * Invoice list — one flat list filtered through a pill toggle (+ the stat
+ * cards double as filter shortcuts), NOT stacked into separate sections.
+ * Per the user's request 2026-09-04, which explicitly reversed the earlier
+ * "3 sections" version ("kamu jangan pisah itu berdasarkan line...
+ * seharusnya kamu grouping dan ada semacam button tambahan"). All the
+ * actual grouping/filtering/Preview-drawer state lives in
+ * InvoiceListClient.tsx — this page just fetches and shapes the data.
+ */
 export default async function InvoiceListPage({ searchParams }: PageProps<"/invoice">) {
   const sp = await searchParams;
   const { search } = sp;
@@ -35,20 +44,80 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   }
   const invoices = await Invoice.find(filter).sort({ createdAt: -1 });
 
-  const unpaid = invoices
-    .filter((i) => i.status === "unpaid")
-    .sort((a, b) => hariBerjalan(a.tanggalInvoice ?? a.get("createdAt")) < hariBerjalan(b.tanggalInvoice ?? b.get("createdAt")) ? 1 : -1);
-  const draft = invoices.filter((i) => i.status === "draft");
-  const paid = invoices.filter((i) => i.status === "paid");
+  // Live phone-number lookup for the Preview drawer's document footer —
+  // same reasoning as /invoice/[id]'s own salesNomorHp (a number changing
+  // should show up on invoices viewed afterward, unlike the snapshot
+  // fields that deliberately freeze at booking time). Batched once for
+  // every sales name on this page, same pattern as app/payroll/page.tsx.
+  const salesNames = [...new Set(invoices.map((i) => i.sales?.nama).filter((n): n is string => !!n))];
+  const salesDocs = await Sales.find({ nama: { $in: salesNames } }).lean();
+  const salesPhoneByNama = new Map(salesDocs.map((s) => [s.nama, s.nomorHp ?? undefined]));
 
   const nowJakarta = currentJakartaMonthYear();
   const thisMonth = jakartaMonthRange(nowJakarta.year, nowJakarta.month);
-  const paidThisMonth = paid.filter((i) => {
-    const t = new Date(i.tanggalInvoice ?? i.get("createdAt"));
-    return t >= thisMonth.from && t < thisMonth.to;
+
+  const rows: InvoiceRow[] = invoices.map((inv) => {
+    const tanggal = inv.tanggalInvoice ?? inv.get("createdAt");
+    const [tglNum, tglMon] = formatDateShortParts(tanggal);
+    const status: InvoiceRow["status"] =
+      inv.status === "draft" ? "draft" : inv.status === "paid" ? "paid" : inv.dp?.nominal ? "dp" : "unpaid";
+    const komisi = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
+
+    const printData: InvoicePrintData = {
+      nomor: inv.nomor,
+      tanggal: tanggal.toISOString(),
+      customerNama: inv.customer?.nama ?? "—",
+      customerWhatsapp: inv.customer?.whatsapp ?? undefined,
+      shipAddress: inv.shipAddress ?? undefined,
+      tanggalKirim: inv.tanggalKirim ? inv.tanggalKirim.toISOString() : undefined,
+      kurir: inv.kurir ?? undefined,
+      salesNama: inv.sales?.nama ?? "—",
+      salesNomorHp: inv.sales?.nama ? salesPhoneByNama.get(inv.sales.nama) : undefined,
+      items: inv.items.map((item) => ({
+        namaSnapshot: item.namaSnapshot,
+        dimensiSnapshot: item.dimensiSnapshot ?? undefined,
+        qty: item.qty,
+        hargaJual: item.hargaJual,
+        diskonPerUnit: item.diskonPerUnit ?? 0,
+        subtotal: item.subtotal,
+        isFlashSale: item.isFlashSale ?? false,
+        hargaRekomendasiSnapshot: item.hargaRekomendasiSnapshot ?? undefined,
+      })),
+      subtotalProduk: inv.subtotalProduk,
+      ongkosKirim: inv.ongkosKirim ?? 0,
+      grandTotal: inv.grandTotal,
+      dpNominal: inv.dp?.nominal ?? undefined,
+      dpTanggal: inv.dp?.tanggal ? inv.dp.tanggal.toISOString() : undefined,
+    };
+
+    return {
+      id: String(inv._id),
+      status,
+      tglNum,
+      tglMon,
+      hariBerjalan: hariBerjalan(tanggal),
+      custNama: inv.customer?.nama ?? "—",
+      custWhatsapp: inv.customer?.whatsapp ?? undefined,
+      nomor: inv.nomor,
+      salesNama: inv.sales?.nama ?? "—",
+      itemCount: inv.items.length,
+      kurir: inv.kurir ?? undefined,
+      grandTotal: inv.grandTotal,
+      komisi,
+      dpPercent: inv.dp?.nominal ? Math.round((inv.dp.nominal / inv.grandTotal) * 100) : undefined,
+      sisaTagihan: inv.dp?.nominal ? inv.grandTotal - inv.dp.nominal : undefined,
+      printData,
+    };
   });
 
-  const totalPiutang = unpaid.reduce((s, i) => s + i.grandTotal, 0);
+  const totalPiutang = rows
+    .filter((r) => r.status === "unpaid" || r.status === "dp")
+    .reduce((s, r) => s + (r.sisaTagihan ?? r.grandTotal), 0);
+  const paidThisMonthCount = invoices.filter((i) => {
+    if (i.status !== "paid") return false;
+    const t = new Date(i.tanggalInvoice ?? i.get("createdAt"));
+    return t >= thisMonth.from && t < thisMonth.to;
+  }).length;
 
   return (
     <>
@@ -58,177 +127,23 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
         actions={<LinkButton href="/katalog">+ Belanja / Buat Invoice</LinkButton>}
       />
       <div className="p-6 md:p-9">
-        {/* Extreme/Soft Trade rework (2026-08-30) — was one hard-bordered
-            strip; now individual rounded cards, matching Pelanggan/
-            Inventory's own stat rows. "Perlu ditindak" stays visually
-            dominant (dark fill) since it's the one number that actually
-            needs action. */}
-        <div className="mb-6 grid grid-cols-2 gap-3.5 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
-          <div className="min-w-0 rounded-xl bg-ink p-4.5 text-white shadow-sm">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
-              Perlu ditindak
-            </div>
-            <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{unpaid.length + draft.length}</div>
-          </div>
-          <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
-              Belum bayar
-            </div>
-            <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{unpaid.length}</div>
-          </div>
-          <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Draft</div>
-            <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{draft.length}</div>
-          </div>
-          <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
-              Lunas {MONTH_NAMES[nowJakarta.month - 1]}
-            </div>
-            <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{paidThisMonth.length}</div>
-          </div>
-          <form className="col-span-2 flex items-center rounded-xl bg-panel px-4 py-3.5 shadow-sm lg:col-span-1">
-            <SearchInput name="search" defaultValue={search as string} placeholder="Cari no. invoice atau pelanggan..." />
-          </form>
-        </div>
+        <form className="mb-6 flex items-center rounded-xl bg-panel px-4 py-3.5 shadow-sm">
+          <SearchInput name="search" defaultValue={search as string} placeholder="Cari no. invoice atau pelanggan..." />
+        </form>
 
-        {/* Belum dibayar */}
-        <div className="mb-1 flex items-center gap-2.5">
-          <span className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent-700">
-            Belum dibayar
-          </span>
-          <span className="h-0.5 flex-1 bg-accent" />
-          {totalPiutang > 0 && (
-            <span className="font-mono text-[0.72rem] text-muted">{rupiah(totalPiutang)} tertahan</span>
-          )}
-        </div>
-        {unpaid.map((inv) => {
-          const hari = hariBerjalan(inv.tanggalInvoice ?? inv.get("createdAt"));
-          const komisi = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
-          return (
-            <div key={String(inv._id)} className="grid grid-cols-[64px_1fr_auto] items-center gap-4 border-b border-line py-4">
-              <div className="border-l-4 border-accent pl-2.5">
-                <div className="font-sans text-[1.15rem] font-extrabold leading-none text-accent-700">{hari}</div>
-                <div className="font-mono text-[9px] text-muted">hari</div>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-sans text-[1rem] font-bold">{inv.customer?.nama ?? "—"}</span>
-                  {inv.dp?.nominal ? (
-                    <span className="border border-gold px-1.5 py-0.5 font-mono text-[0.62rem] font-bold text-gold">
-                      Sudah DP {Math.round((inv.dp.nominal / inv.grandTotal) * 100)}%
-                    </span>
-                  ) : null}
-                </div>
-                <div className="mt-0.5 font-mono text-[0.72rem] text-muted">
-                  {inv.nomor} · {formatDateShort(inv.tanggalInvoice ?? inv.get("createdAt"))} · sales {inv.sales?.nama} ·{" "}
-                  {inv.items.length} item{inv.kurir ? ` · kirim via ${inv.kurir}` : ""}
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className="font-sans text-[1rem] font-extrabold">{rupiah(inv.grandTotal)}</div>
-                  <div className="font-mono text-[0.68rem] text-muted">komisi {rupiah(komisi)}</div>
-                </div>
-                <div className="flex gap-2">
-                  <a
-                    href={`https://wa.me/${(inv.customer?.whatsapp ?? "").replace(/[^0-9]/g, "")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="border border-line px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent-700"
-                  >
-                    Kirim WA
-                  </a>
-                  <Link
-                    href={`/invoice/${inv._id}/ubah`}
-                    className="border border-line px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent-700"
-                  >
-                    Edit
-                  </Link>
-                  {!inv.dp?.nominal && <DeleteInvoiceButton invoiceId={String(inv._id)} nomor={inv.nomor} />}
-                  <Link
-                    href={`/invoice/${inv._id}`}
-                    className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600"
-                  >
-                    Tandai lunas
-                  </Link>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        {unpaid.length === 0 && (
-          <div className="border-b border-line py-6 text-center font-mono text-[0.8rem] text-muted">
-            Tidak ada invoice belum dibayar.
-          </div>
-        )}
-
-        {/* Draft */}
-        <div className="mb-1 mt-7 flex items-center gap-2.5">
-          <span className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-muted">
-            Draft — belum dikirim, stok belum dipotong
-          </span>
-          <span className="h-px flex-1 bg-line" />
-        </div>
-        {draft.map((inv) => (
-          <div key={String(inv._id)} className="grid grid-cols-[64px_1fr_auto] items-center gap-4 border-b border-line py-4">
-            <div className="border-l-4 border-line pl-2.5">
-              <div className="font-mono text-[0.72rem] font-bold text-muted">DRAFT</div>
-              <div className="font-mono text-[9px] text-muted">
-                {hariBerjalan(inv.get("createdAt"))} hari
-              </div>
-            </div>
-            <div>
-              <div className="font-sans text-[1rem] font-bold">{inv.customer?.nama ?? "—"}</div>
-              <div className="mt-0.5 font-mono text-[0.72rem] text-muted">
-                {inv.nomor} · sales {inv.sales?.nama} · {inv.items.length} item
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="font-sans text-[1rem] font-extrabold">{rupiah(inv.grandTotal)}</div>
-                <div className="font-mono text-[0.68rem] text-muted">estimasi</div>
-              </div>
-              <DeleteInvoiceButton invoiceId={String(inv._id)} nomor={inv.nomor} />
-              <Link
-                href={`/invoice/${inv._id}/ubah`}
-                className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600"
-              >
-                Lanjutkan
-              </Link>
-            </div>
-          </div>
-        ))}
-        {draft.length === 0 && (
-          <div className="border-b border-line py-6 text-center font-mono text-[0.8rem] text-muted">
-            Tidak ada draft.
-          </div>
-        )}
-
-        {/* Sudah lunas */}
-        <div className="mb-1 mt-7 flex items-center gap-2.5">
-          <span className="font-mono text-[0.7rem] font-bold uppercase tracking-[0.14em] text-muted">
-            Sudah lunas — {paid.length} invoice
-          </span>
-          <span className="h-px flex-1 bg-line" />
-        </div>
-        {paid.map((inv) => (
-          <div key={String(inv._id)} className="grid grid-cols-[64px_1fr_auto] items-center gap-4 border-b border-line py-3 text-ink/75">
-            <div className="pl-2.5 font-mono text-[0.7rem] text-muted">
-              {formatDateShort(inv.tanggalInvoice ?? inv.get("createdAt"))}
-            </div>
-            <div className="font-sans text-[0.9rem] font-semibold">
-              {inv.customer?.nama ?? "—"}{" "}
-              <span className="font-mono text-[0.72rem] font-normal text-muted">
-                · {inv.nomor} · {inv.sales?.nama}
-              </span>
-            </div>
-            <div className="font-sans text-[0.9rem] font-bold">{rupiah(inv.grandTotal)}</div>
-          </div>
-        ))}
-        {paid.length === 0 && (
-          <div className="py-6 text-center font-mono text-[0.8rem] text-muted">Belum ada invoice lunas.</div>
-        )}
+        <InvoiceListClient
+          rows={rows}
+          totalPiutang={totalPiutang}
+          paidThisMonthCount={paidThisMonthCount}
+          monthLabel={MONTH_NAMES[nowJakarta.month - 1]}
+        />
       </div>
     </>
   );
+}
+
+/** "29 Agu" -> ["29", "Agu"] — reuses formatDateShort's own day-number/month-abbrev formatting instead of re-deriving it, just split for the two-line day block. */
+function formatDateShortParts(date: Date | string): [string, string] {
+  const [day, mon] = formatDateShort(date).split(" ");
+  return [day, mon];
 }

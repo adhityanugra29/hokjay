@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
 import InvoiceActions from "@/components/invoice/InvoiceActions";
 import InvoicePrintDoc, { type InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
+import InvoiceDocument from "@/components/invoice/InvoiceDocument";
 import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
 import { LinkButton } from "@/components/ui/Button";
-import { TableScroll } from "@/components/ui/Panel";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
@@ -65,33 +65,6 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     dpTanggal: invoice.dp?.tanggal ? invoice.dp.tanggal.toISOString() : undefined,
   };
 
-  // Per the user's request 2026-08-29 ("tambahkan total diskon di
-  // invoice pdf maupun preview"). A Flash Sale line's diskonPerUnit is
-  // always 0 (Diskon is locked out while one is active) — its implied
-  // discount is Harga Rekomendasi − hargaJual instead, per the same
-  // day's follow-up request.
-  function displayDiskon(item: NonNullable<typeof invoice>["items"][number]): number {
-    if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
-      return Math.max(0, item.hargaRekomendasiSnapshot - item.hargaJual);
-    }
-    return item.diskonPerUnit ?? 0;
-  }
-  // "Harga" for a Flash Sale line shows Harga Rekomendasi, not the Flash
-  // Sale price itself — that shows in Subtotal instead. Per the user's
-  // request 2026-08-29.
-  function displayHarga(item: NonNullable<typeof invoice>["items"][number]): number {
-    if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
-      return item.hargaRekomendasiSnapshot;
-    }
-    return item.hargaJual;
-  }
-  const totalDiskon = invoice.items.reduce((s, i) => s + displayDiskon(i) * i.qty, 0);
-  // "Subtotal Produk" renamed to "Total Belanja", logic changed to sum
-  // the Harga column instead — per the user's request 2026-08-29. See
-  // InvoicePrintDoc.tsx's matching comment for why this doesn't affect
-  // grandTotal's own math.
-  const totalBelanja = invoice.items.reduce((s, i) => s + displayHarga(i) * i.qty, 0);
-
   return (
     <>
       <InvoicePrintDoc invoice={printData} />
@@ -130,197 +103,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
       </div>
       <div className="p-6 md:p-9">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
-          <div id="invoice-doc" className="border border-line bg-panel p-5 sm:p-9">
-            {/* "INVOICE" centered above a logo+company-info / no.+tanggal
-                row — per the user's request 2026-08-25. */}
-            <h2 className="mb-5 text-center font-serif text-2xl tracking-[0.08em]">INVOICE</h2>
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b-2 border-ink pb-6">
-              <div>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo/hojay-2b-positif.png" alt="HOJAY Kitchen Equipment" width={110} height={61} className="mb-2 h-auto w-[110px]" />
-                <div className="font-mono text-[0.72rem] leading-relaxed text-muted">
-                  CV. Horeca Jaya Abadi
-                  <br />
-                  Jalan H.Umar no 24, Bekasi Selatan
-                  <br />
-                  0877-8522-3394 · horecajaya.id@gmail.com
-                  <br />
-                  NPWP: 1000-0000-0770-6458
-                </div>
-              </div>
-              <div className="text-right font-mono text-[0.75rem] leading-relaxed text-muted">
-                No. {invoice.nomor}
-                <br />
-                Tanggal: {formatDateLong(invoice.tanggalInvoice ?? invoice.createdAt!)}
-                {/* Sales moved up here, level with the CV. Horeca Jaya
-                    block on the left, right below Tanggal — was down in
-                    the 3-column row below. Per the user's request
-                    2026-08-27. */}
-                <div className="mt-2 border-t border-line pt-2">
-                  Sales Consultant: {invoice.sales!.nama}
-                  {salesNomorHp && (
-                    <>
-                      <br />
-                      {salesNomorHp}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* 3 columns, wider gap between them. Per the user's request
-                2026-08-27 ("terlalu mepet"). */}
-            <div className="mb-7 flex flex-wrap items-start gap-x-12 gap-y-5">
-              <div>
-                <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">
-                  Ditagihkan kepada
-                </div>
-                <div className="font-medium">{invoice.customer!.nama}</div>
-                <div className="mt-1 font-mono text-[0.78rem] text-muted">{invoice.customer!.whatsapp}</div>
-              </div>
-              <div className="max-w-[260px]">
-                <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">
-                  Alamat Pengiriman
-                </div>
-                {/* Capped width + wrap — per the user's request
-                    2026-08-29, same as InvoicePrintDoc.tsx's matching
-                    fix. */}
-                <div className="text-[0.9rem] font-medium break-words">{invoice.shipAddress ?? "—"}</div>
-              </div>
-              <div>
-                <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">
-                  Tanggal Pengiriman
-                </div>
-                <div className="font-mono text-[0.78rem] text-muted">
-                  {invoice.tanggalKirim ? formatDateShort(invoice.tanggalKirim) : "—"}
-                  {invoice.kurir ? ` · ${invoice.kurir}` : ""}
-                </div>
-              </div>
-            </div>
-
-            {/* Overflow-contained on a narrow phone — this table used to
-                have no scroll wrapper at all, forcing the whole page to
-                scroll sideways. Per the user's request 2026-08-30
-                ("mereka mobile oriented"). */}
-            <TableScroll>
-            <table className="w-full min-w-[480px] border-collapse">
-              <thead>
-                <tr>
-                  {["Produk", "Qty", "Harga", "Diskon", "Subtotal"].map((h, idx) => (
-                    <th
-                      key={h}
-                      className={`border-b border-ink py-2 font-mono text-[0.68rem] uppercase text-muted ${
-                        idx === 0 ? "text-left" : idx === 1 ? "text-center" : "text-right"
-                      }`}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.items.map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="border-b border-line py-3 text-[0.88rem]">
-                      {item.namaSnapshot}
-                      {item.dimensiSnapshot && (
-                        <span className="ml-1.5 font-mono text-[0.72rem] text-muted">({item.dimensiSnapshot})</span>
-                      )}
-                      {item.isFlashSale && (
-                        <span className="ml-1.5 font-mono text-[0.72rem] font-semibold text-accent-700">
-                          · Harga Special
-                        </span>
-                      )}
-                    </td>
-                    <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
-                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayHarga(item))}</td>
-                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
-                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </TableScroll>
-
-            <div className="ml-auto mt-5 w-full max-w-[260px] font-mono">
-              <div className="flex justify-between py-1.5 text-[0.88rem]">
-                <span>Total Belanja</span>
-                <span>{rupiah(totalBelanja)}</span>
-              </div>
-              <div className="flex justify-between py-1.5 text-[0.88rem]">
-                <span>Total Diskon</span>
-                <span>{totalDiskon > 0 ? `− ${rupiah(totalDiskon)}` : rupiah(totalDiskon)}</span>
-              </div>
-              <div className="flex justify-between py-1.5 text-[0.88rem]">
-                <span>Ongkos Kirim</span>
-                <span>{rupiah(invoice.ongkosKirim ?? 0)}</span>
-              </div>
-              <div className="mt-2 flex justify-between border-t-2 border-ink pt-3 font-serif text-lg font-semibold">
-                <span>Total</span>
-                <span>{rupiah(invoice.grandTotal)}</span>
-              </div>
-              {invoice.dp?.nominal ? (
-                <>
-                  <div className="flex justify-between py-1.5 text-[0.88rem]">
-                    <span>DP ({formatDateShort(invoice.dp.tanggal ?? invoice.createdAt!)})</span>
-                    <span>− {rupiah(invoice.dp.nominal)}</span>
-                  </div>
-                  <div className="mt-1 flex justify-between border-t border-line pt-2 font-serif text-base font-semibold">
-                    <span>Sisa Tagihan</span>
-                    <span>{rupiah(invoice.grandTotal - invoice.dp.nominal)}</span>
-                  </div>
-                </>
-              ) : null}
-            </div>
-
-            {/* Payment details footnote — a single element placed once at
-                the very end of the document (not repeated per page like
-                the Katalog PDF's footer — this uses native browser print
-                pagination, not the Katalog's manual per-page chunking), so
-                it only ever shows up on whichever page the content
-                naturally ends on. break-inside-avoid keeps it from being
-                split across a page boundary if it lands right at one. Per
-                the user's request 2026-08-25/26. */}
-            {/* Payment Details + closing logo/thank-you note side by side,
-                same row — per the user's request 2026-08-27 (was stacked
-                below before). Translated from the user's own Indonesian
-                wording ("Terimakasih sudah mempercayakan Peralatan dapur
-                anda kepada kami") rather than the earlier English attempt,
-                which read backwards. */}
-            <div className="mt-9 flex flex-wrap items-start justify-between gap-6 border-t-2 border-ink pt-5 [break-inside:avoid]">
-              <div className="font-mono text-[0.78rem] leading-relaxed">
-                <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Payment Details</div>
-                <div>No. Rekening: 5771370277 (BCA)</div>
-                <div>Atas Nama: Mohammad Andi Abdillah</div>
-              </div>
-              <div className="flex flex-col items-end gap-2 text-right">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/logo/hojay-2b-positif.png"
-                  alt="HOJAY Kitchen Equipment"
-                  width={90}
-                  height={50}
-                  className="h-auto w-[90px] opacity-80"
-                />
-                <div className="font-serif text-[0.82rem] italic text-muted">
-                  Thank you for entrusting
-                  <br />
-                  your kitchen equipment to us.
-                </div>
-                {/* Sales name + phone repeated here at the very close of
-                    the document — per the user's request 2026-08-28. */}
-                <div className="mt-1 font-mono text-[0.72rem] leading-relaxed text-muted">
-                  {invoice.sales!.nama}
-                  {salesNomorHp && (
-                    <>
-                      <br />
-                      {salesNomorHp}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <InvoiceDocument invoice={printData} id="invoice-doc" />
 
           <div className="no-print">
             <div className="mb-3.5 rounded-2xl bg-panel p-5 shadow-sm">

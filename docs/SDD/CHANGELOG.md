@@ -6,6 +6,15 @@
 
 ## 2026-09-04
 
+**TASK-009 done** — Invoice list (`/invoice`) rebuilt as one flat list filtered by a status pill toggle + click-to-filter stat cards (Semua/Belum Dibayar/Sudah DP/Draft/Sudah Lunas), replacing the old stacked-sections layout — an interim "3 sections" mockup was explicitly rejected first. Every row gets a "Preview" button opening a drawer with the real invoice document, no page navigation. Extracted the on-screen document into `InvoiceDocument.tsx` (shared with `/invoice/[id]`, which is otherwise unchanged) so the two views can't drift apart. The day block is now always the invoice's own date for every status; the unpaid "N hari" urgency signal moved to its own separate badge.
+
+Tasks done: TASK-009.
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
 **TASK-008 follow-up #2** — "Detail Invoice" was also meant as the Daftar Bayar table's own column header, not just the pop-up's title — that column had no label at all. Added it, widened the column to fit.
 
 Tasks done: TASK-008 (follow-up).

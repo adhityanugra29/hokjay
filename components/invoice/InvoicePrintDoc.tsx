@@ -26,7 +26,7 @@ export interface InvoicePrintItem {
  * request 2026-08-29 ("tampilkan diskonnya dari selisih harga rekomendasi
  * dengan harga flash sale").
  */
-function displayDiskon(item: InvoicePrintItem): number {
+export function displayDiskon(item: InvoicePrintItem): number {
   if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
     return Math.max(0, item.hargaRekomendasiSnapshot - item.hargaJual);
   }
@@ -41,7 +41,7 @@ function displayDiskon(item: InvoicePrintItem): number {
  * 2026-08-29 ("Harga (Harga rekomendasi) | Diskon | Subtotal (harga
  * flashsalenya di subtotal)").
  */
-function displayHarga(item: InvoicePrintItem): number {
+export function displayHarga(item: InvoicePrintItem): number {
   if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
     return item.hargaRekomendasiSnapshot;
   }

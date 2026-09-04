@@ -178,3 +178,24 @@
 **Follow-up (2026-09-04, same day):** per the user's report, 3 fixes: (1) the Detail button moved out of the Sales cell into its own column next to Status, and Status's column widened (150→220px, Detail narrowed 110→90px) + `whitespace-nowrap` added, since "Rekening belum diverifikasi" was wrapping to two lines and throwing the row's alignment off; (2) the drawer's eyebrow now reads exactly "Detail Invoice" (invoice count moved next to the sales name instead); (3) each invoice number in the pop-up's table is now a link straight to `/invoice/[id]`.
 
 **Follow-up #2 (2026-09-04, same day):** the "Detail Invoice" name was meant for the table's own column header too, not just the pop-up's title — that column had been left blank (an empty `<span />`, matching the checkbox column's convention). Added the label and widened the column (90→130px) to fit it.
+
+---
+
+## TASK-009 — Invoice list: single filtered list + Preview drawer
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-04)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-04
+
+**Description:** Per the user's request, `/invoice` gets (1) a status separator between Sudah Lunas / Sudah DP / Belum Dibayar and (2) a way to preview an invoice's actual document without leaving the list. Went through a design-review cycle via an interactive HTML mockup before coding (per this session's established practice): a first version stacked 3 separate sections (mirroring the old Draft/Belum Dibayar/Sudah Lunas layout) was explicitly rejected — "kamu jangan pisah itu berdasarkan line, seharusnya kamu grouping dan ada semacam button tambahan untuk melihat statusnya, seperti slide button... tapi untuk kumpulan invoice, gaperlu kamu pisahkan by line". Rebuilt as **one flat list** filtered through a pill/segmented toggle (Semua/Belum Dibayar/Sudah DP/Draft/Sudah Lunas) plus click-to-filter stat cards — same pattern as Keuangan's existing Semua/Masuk/Keluar filter, not a new one.
+
+**Also corrected mid-review:** the day block (left of each row) used to show different content per status (days-elapsed for unpaid, "DP 40%", a draft placeholder, or the real date for paid) — the user asked for it to always be the invoice's own date instead ("saya mau ini jadi tanggal dibuat saja"), with the "N hari belum bayar" urgency signal kept but moved to its own separate warning badge next to the status tag ("tapi untuk warning belum bayar juga masih ada tapi terpisah").
+
+**Preview:** extracted the on-screen invoice document (previously inline JSX in `app/invoice/[id]/page.tsx`, `id="invoice-doc"`) into a standalone `InvoiceDocument.tsx`, reused by both the detail page (unchanged behavior) and a new right-side drawer on the list (`InvoiceListClient.tsx`) — one component, so the two views can never visually drift apart. `displayDiskon`/`displayHarga` (Flash Sale price-display helpers) exported from `InvoicePrintDoc.tsx` instead of being duplicated a third time. No extra DB query for the preview data: `app/invoice/page.tsx` already fetched full `Invoice` documents (not `.lean()`) for the list, so every field `InvoicePrintData` needs was already in memory — added one batched `Sales.find({nama:{$in:...}})` (same pattern as `app/payroll/page.tsx`) purely for each invoice's live sales phone number.
+
+**Acceptance criteria:** Every existing row action (Kirim WA, Edit, Hapus, Tandai lunas, Lanjutkan) preserved exactly, including the "no Hapus once DP'd" rule. `/invoice/[id]`'s own on-screen document is byte-identical to before (pure extraction, not a redesign).
+
+**Files affected:** `app/invoice/page.tsx` (rewritten), `app/invoice/[id]/page.tsx` (JSX extracted, otherwise unchanged), `components/invoice/InvoiceDocument.tsx` (new), `components/invoice/InvoiceListClient.tsx` (new), `components/invoice/InvoicePrintDoc.tsx` (2 helpers exported).
+**Regression test:** Clean build; lint clean on every touched file (zero errors, not even the usual pre-existing set).
