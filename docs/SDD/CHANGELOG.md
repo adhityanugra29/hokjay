@@ -6,6 +6,15 @@
 
 ## 2026-09-04
 
+**TASK-008 follow-up #2** — "Detail Invoice" was also meant as the Daftar Bayar table's own column header, not just the pop-up's title — that column had no label at all. Added it, widened the column to fit.
+
+Tasks done: TASK-008 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
 **TASK-008 follow-up** — 3 fixes to the Komisi detail pop-up per the user's report: Detail button moved to its own column (was cramped into the Sales cell), Status column widened so its label stops wrapping to two lines and throwing row alignment off, drawer title now reads "Detail Invoice", and each invoice number in the pop-up links straight to `/invoice/[id]`.
 
 Tasks done: TASK-008 (follow-up).

@@ -105,20 +105,20 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
           </div>
         </div>
 
-        <div className="hidden grid-cols-[24px_1.1fr_0.9fr_140px_220px_90px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted sm:grid">
+        <div className="hidden grid-cols-[24px_1.1fr_0.9fr_140px_200px_130px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted sm:grid">
           <span />
           <span>Sales</span>
           <span>Rekening</span>
           <span className="text-right">Komisi</span>
           <span>Status</span>
-          <span />
+          <span>Detail Invoice</span>
         </div>
         {rows.map((r) => {
           const checked = selected.has(r.salesNama);
           return (
             <div
               key={r.salesNama}
-              className="grid grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 text-[0.85rem] sm:grid-cols-[24px_1.1fr_0.9fr_140px_220px_90px] sm:items-center sm:gap-4"
+              className="grid grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 text-[0.85rem] sm:grid-cols-[24px_1.1fr_0.9fr_140px_200px_130px] sm:items-center sm:gap-4"
             >
               <input type="checkbox" checked={checked} onChange={() => toggle(r.salesNama)} className="mt-0.5 h-4 w-4 accent-accent sm:mt-0" />
               <span className="font-semibold">{r.salesNama}</span>

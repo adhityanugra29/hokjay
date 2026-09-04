@@ -176,3 +176,5 @@
 **Regression test:** Clean build, lint clean (also removed one pre-existing unused `useMemo` import found while in this file).
 
 **Follow-up (2026-09-04, same day):** per the user's report, 3 fixes: (1) the Detail button moved out of the Sales cell into its own column next to Status, and Status's column widened (150→220px, Detail narrowed 110→90px) + `whitespace-nowrap` added, since "Rekening belum diverifikasi" was wrapping to two lines and throwing the row's alignment off; (2) the drawer's eyebrow now reads exactly "Detail Invoice" (invoice count moved next to the sales name instead); (3) each invoice number in the pop-up's table is now a link straight to `/invoice/[id]`.
+
+**Follow-up #2 (2026-09-04, same day):** the "Detail Invoice" name was meant for the table's own column header too, not just the pop-up's title — that column had been left blank (an empty `<span />`, matching the checkbox column's convention). Added the label and widened the column (90→130px) to fit it.
