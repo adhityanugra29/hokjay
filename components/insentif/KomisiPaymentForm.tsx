@@ -12,9 +12,15 @@ import type { UnpaidCommissionInvoice } from "@/lib/insentif";
 export default function KomisiPaymentForm({
   salesNama,
   invoices,
+  onSuccess,
+  onCancel,
 }: {
   salesNama: string;
   invoices: UnpaidCommissionInvoice[];
+  /** Defaults to navigating back to /payroll (the standalone /payroll/komisi/[nama] page's own usage). The Daftar Bayar pop-up (BayarKomisiSheet.tsx) passes its own so it just closes + refreshes in place instead of leaving the page. Per the user's request 2026-09-04. */
+  onSuccess?: () => void;
+  /** Defaults to a Link back to /payroll — the pop-up usage passes its own to just close. */
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set(invoices.map((i) => i.invoiceId)));
@@ -65,8 +71,12 @@ export default function KomisiPaymentForm({
         const b = await res.json().catch(() => ({}));
         throw new Error(b.error || "Gagal memproses pembayaran komisi");
       }
-      router.push("/payroll");
-      router.refresh();
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/payroll");
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memproses pembayaran komisi");
     } finally {
@@ -164,9 +174,15 @@ export default function KomisiPaymentForm({
           <Button type="submit" disabled={saving || selected.size === 0}>
             {saving ? "Memproses..." : `Bayar Komisi (${rupiah(total)})`}
           </Button>
-          <LinkButton variant="ghost" href="/payroll">
-            Batal
-          </LinkButton>
+          {onCancel ? (
+            <Button type="button" variant="ghost" onClick={onCancel}>
+              Batal
+            </Button>
+          ) : (
+            <LinkButton variant="ghost" href="/payroll">
+              Batal
+            </LinkButton>
+          )}
         </FormActions>
       </Panel>
     </form>

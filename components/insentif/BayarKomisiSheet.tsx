@@ -1,15 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Field, Input, Textarea } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
+import KomisiPaymentForm from "./KomisiPaymentForm";
 import { rupiah } from "@/lib/format";
+import type { UnpaidCommissionInvoice } from "@/lib/insentif";
 
 interface SheetRow {
   salesNama: string;
   invoiceIds: string[];
+  /** Invoice-level breakdown backing totalKomisi — powers the Detail pop-up. */
+  detail: UnpaidCommissionInvoice[];
   totalKomisi: number;
   invoiceCount: number;
   bank?: string;
@@ -17,7 +21,7 @@ interface SheetRow {
   rekeningTerverifikasi: boolean;
 }
 
-/** The "Daftar bayar" sheet — checkbox per sales (not per invoice; drill into /payroll/komisi/[nama] for invoice-level control), rekening + verification status, consequences panel, one-click batch pay. Lives under Payroll's Komisi tab (formerly the standalone /bayar-komisi). */
+/** The "Daftar bayar" sheet — checkbox per sales (not per invoice; a "Detail" button pops up the invoice-level breakdown, see detailNama below), rekening + verification status, consequences panel, one-click batch pay. Lives under Payroll's Komisi tab (formerly the standalone /bayar-komisi). */
 export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRow[]; saldoHariIni: number }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(
@@ -28,6 +32,13 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
   const [catatan, setCatatan] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Which row's invoice-level detail pop-up is open — per the user's
+  // request 2026-09-04 ("detailnya angka komisi ini, detailnya mana? kamu
+  // bikin pop-up detail aja... ada basis data yang bisa dipercaya"). A
+  // pop-up rather than navigating to /payroll/komisi/[nama] so the batch
+  // checkbox selection on this page isn't lost while checking a number.
+  const [detailNama, setDetailNama] = useState<string | null>(null);
+  const detailRow = rows.find((r) => r.salesNama === detailNama) ?? null;
 
   const selectedRows = rows.filter((r) => selected.has(r.salesNama));
   const total = selectedRows.reduce((s, r) => s + r.totalKomisi, 0);
@@ -109,7 +120,16 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
               className="grid grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 text-[0.85rem] sm:grid-cols-[24px_1.2fr_1fr_150px_190px] sm:items-center sm:gap-4"
             >
               <input type="checkbox" checked={checked} onChange={() => toggle(r.salesNama)} className="mt-0.5 h-4 w-4 accent-accent sm:mt-0" />
-              <span className="font-semibold">{r.salesNama}</span>
+              <span>
+                <span className="font-semibold">{r.salesNama}</span>
+                <button
+                  type="button"
+                  onClick={() => setDetailNama(r.salesNama)}
+                  className="ml-2 cursor-pointer font-mono text-[0.68rem] text-accent-700 underline underline-offset-2"
+                >
+                  Detail ({r.invoiceCount} invoice)
+                </button>
+              </span>
               <span className="col-start-2 font-mono text-[0.72rem] text-muted sm:col-auto">
                 {r.bank ? `${r.bank} · ${r.nomorRekening}` : "belum diisi"}
               </span>
@@ -201,6 +221,49 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
           Unduh daftar transfer (.csv)
         </button>
       </div>
+
+      {/* Detail pop-up — same drawer pattern as EditProductDrawer.tsx, just
+          wider (this content is a table, not a form's worth of fields).
+          Reuses KomisiPaymentForm as-is (same table + pay button the
+          standalone /payroll/komisi/[nama] page uses) so the numbers and
+          the payment action are guaranteed to match exactly — no separate
+          read-only view that could drift from what actually gets paid. */}
+      {detailRow && (
+        <div className="no-print fixed inset-0 z-50 flex justify-end bg-black/50" onClick={() => setDetailNama(null)}>
+          <div
+            className="flex h-full w-full max-w-3xl flex-col overflow-y-auto bg-panel shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-line bg-surface px-5 py-4">
+              <div>
+                <div className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">
+                  Detail Komisi — {detailRow.invoiceCount} invoice
+                </div>
+                <h2 className="font-sans text-[1rem] font-extrabold text-ink">{detailRow.salesNama}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailNama(null)}
+                aria-label="Tutup"
+                className="flex h-9 w-9 cursor-pointer items-center justify-center border border-line text-lg text-ink hover:border-accent hover:text-accent-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-5">
+              <KomisiPaymentForm
+                salesNama={detailRow.salesNama}
+                invoices={detailRow.detail}
+                onCancel={() => setDetailNama(null)}
+                onSuccess={() => {
+                  setDetailNama(null);
+                  router.refresh();
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

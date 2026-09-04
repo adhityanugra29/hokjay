@@ -155,3 +155,22 @@
 
 **Files affected:** `lib/auth/access.ts`, `app/api/admin/users/route.ts`, `app/api/admin/users/[id]/route.ts`.
 **Regression test:** Clean build; lint diff shows one pre-existing unused-var warning (`_omit` in `users/route.ts`, untouched by this change — confirmed via `git diff`), no new errors.
+
+---
+
+## TASK-008 — Komisi detail pop-up on Bayar Komisi's Daftar Bayar list
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-04)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-04
+
+**Description:** Per the user's screenshot + request ("detailnya angka komisi ini, detailnya mana? kamu bikin pop-up detail aja dan berikan buttonya, supaya si owner mudah untuk bayarin komisinya, ada basis data yang bisa dipercaya atas komisi yang kamu hitung"): each row's aggregate commission total on the Daftar Bayar list (Payroll → Komisi tab) had no way to see what it was made of — an Owner had to trust the number outright. A per-sales invoice-level breakdown already existed at `/payroll/komisi/[nama]` (`KomisiPaymentForm.tsx` — table of nomor/tanggal lunas/item/komisi per invoice, plus its own pay flow), but nothing on the Daftar Bayar list linked to it.
+
+**Fix:** Added a "Detail (N invoice)" button per row in `BayarKomisiSheet.tsx` that opens a pop-up (same right-side drawer pattern as `EditProductDrawer.tsx`, just wider for the table) rather than navigating away — navigating to the standalone page would have lost the Daftar Bayar list's own batch-checkbox selection. The pop-up reuses `KomisiPaymentForm` as-is (now takes optional `onSuccess`/`onCancel` so the pop-up usage closes + refreshes in place instead of `router.push`-ing to `/payroll`) — same table, same pay button, same `/api/insentif/bayar` endpoint the standalone page already used, so the number shown and the number actually paid can never drift apart. No new query: `app/payroll/page.tsx` was already fetching each sales's full `getUnpaidCommissionInvoices()` result to build `invoiceIds` — it just kept the rest of that data (`detail`) instead of discarding it.
+
+**Confirmed already correct while investigating (2026-09-04, same day):** the user separately asked "pembayaran komisi itu, hanya invoice yang sudah lunas ya" — checked all 3 layers (`getUnpaidCommissionBySales`, `getUnpaidCommissionInvoices`, and `/api/insentif/bayar`'s `findOneAndUpdate` re-check) and confirmed every one already filters `status: "paid"` — no change needed.
+
+**Files affected:** `components/insentif/BayarKomisiSheet.tsx`, `components/insentif/KomisiPaymentForm.tsx`, `app/payroll/page.tsx`.
+**Regression test:** Clean build, lint clean (also removed one pre-existing unused `useMemo` import found while in this file).

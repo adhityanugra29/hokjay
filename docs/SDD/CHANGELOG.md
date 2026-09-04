@@ -6,6 +6,15 @@
 
 ## 2026-09-04
 
+**TASK-008 done** — Bayar Komisi's Daftar Bayar list gets a "Detail (N invoice)" pop-up per row — reuses the existing per-sales invoice breakdown + pay form (`KomisiPaymentForm.tsx`, previously only reachable via `/payroll/komisi/[nama]`) in a drawer instead of navigating away, so the batch checkbox selection isn't lost. Same data, same pay endpoint as the standalone page — the number shown and the number paid can't drift apart. Confirmed separately (per the user's question) that commission payout was already `status: "paid"`-only at every layer (list, detail, and the actual payout's own server-side re-check) — no change needed there.
+
+Tasks done: TASK-008.
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
 **TASK-007 done** — Akun Login (`/admin/akun`) restricted to Owner/Super Admin, reversing a 2026-08-27 decision that had Manager included. Found while investigating a "Komisi Saya" Rp 0 report — turned out to be a data mismatch (a Manager's login `nama` ≠ their Sales roster name), not a code bug, left for the user to correct via Akun Login. The 2 account-management API routes had no role check of their own (only the general `/api/admin` middleware's `isAdminLevel`, which Manager satisfies) — added a dedicated check to both, same isolation pattern as Flash Sale/Komisi Bekas, so a raw request can't grant a role or reset a password either.
 
 Tasks done: TASK-007.

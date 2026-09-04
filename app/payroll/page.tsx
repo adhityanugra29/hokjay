@@ -57,6 +57,13 @@ export default async function PayrollPage() {
     return {
       salesNama: r.salesNama,
       invoiceIds: invoicesBySales[i].map((inv) => inv.invoiceId),
+      // Full invoice-level breakdown (nomor, tanggal lunas, item, komisi per
+      // invoice) — already fetched above for invoiceIds, just kept instead
+      // of thrown away. Powers the Detail pop-up on each row so the amount
+      // shown has a checkable basis, not just a number. Per the user's
+      // request 2026-09-04 ("ada basis data yang bisa dipercaya atas komisi
+      // yang kamu hitung").
+      detail: invoicesBySales[i],
       totalKomisi: r.totalKomisi,
       invoiceCount: r.invoiceCount,
       bank: bank?.bank ?? undefined,
