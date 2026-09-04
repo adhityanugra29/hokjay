@@ -6,6 +6,15 @@
 
 ## 2026-09-04
 
+**TASK-008 follow-up** — 3 fixes to the Komisi detail pop-up per the user's report: Detail button moved to its own column (was cramped into the Sales cell), Status column widened so its label stops wrapping to two lines and throwing row alignment off, drawer title now reads "Detail Invoice", and each invoice number in the pop-up links straight to `/invoice/[id]`.
+
+Tasks done: TASK-008 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
 **TASK-008 done** — Bayar Komisi's Daftar Bayar list gets a "Detail (N invoice)" pop-up per row — reuses the existing per-sales invoice breakdown + pay form (`KomisiPaymentForm.tsx`, previously only reachable via `/payroll/komisi/[nama]`) in a drawer instead of navigating away, so the batch checkbox selection isn't lost. Same data, same pay endpoint as the standalone page — the number shown and the number paid can't drift apart. Confirmed separately (per the user's question) that commission payout was already `status: "paid"`-only at every layer (list, detail, and the actual payout's own server-side re-check) — no change needed there.
 
 Tasks done: TASK-008.

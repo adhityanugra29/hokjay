@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/Form";
@@ -126,7 +127,11 @@ export default function KomisiPaymentForm({
                       className="h-4 w-4 accent-accent"
                     />
                   </td>
-                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{inv.nomor}</td>
+                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
+                    <Link href={`/invoice/${inv.invoiceId}`} className="text-accent-700 underline underline-offset-2">
+                      {inv.nomor}
+                    </Link>
+                  </td>
                   <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
                     {formatDateShort(inv.tanggalLunas)}
                   </td>

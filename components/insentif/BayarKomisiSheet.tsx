@@ -105,7 +105,7 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
           </div>
         </div>
 
-        <div className="hidden grid-cols-[24px_1.2fr_1fr_150px_190px_110px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted sm:grid">
+        <div className="hidden grid-cols-[24px_1.1fr_0.9fr_140px_220px_90px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted sm:grid">
           <span />
           <span>Sales</span>
           <span>Rekening</span>
@@ -118,7 +118,7 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
           return (
             <div
               key={r.salesNama}
-              className="grid grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 text-[0.85rem] sm:grid-cols-[24px_1.2fr_1fr_150px_190px_110px] sm:items-center sm:gap-4"
+              className="grid grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 text-[0.85rem] sm:grid-cols-[24px_1.1fr_0.9fr_140px_220px_90px] sm:items-center sm:gap-4"
             >
               <input type="checkbox" checked={checked} onChange={() => toggle(r.salesNama)} className="mt-0.5 h-4 w-4 accent-accent sm:mt-0" />
               <span className="font-semibold">{r.salesNama}</span>
@@ -127,14 +127,18 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
               </span>
               <span className="col-start-2 font-bold sm:col-auto sm:text-right">{rupiah(r.totalKomisi)}</span>
               <span
-                className={`col-start-2 font-mono text-[0.68rem] font-bold uppercase tracking-wide sm:col-auto ${
+                className={`col-start-2 font-mono text-[0.68rem] font-bold uppercase tracking-wide whitespace-nowrap sm:col-auto ${
                   r.rekeningTerverifikasi ? "text-muted/60" : "text-accent-700"
                 }`}
               >
                 {r.rekeningTerverifikasi ? "Siap bayar" : "Rekening belum diverifikasi"}
               </span>
               {/* Own column right next to Status, not squeezed into the
-                  Sales cell — per the user's request 2026-09-04. */}
+                  Sales cell — per the user's request 2026-09-04. Status'
+                  column was widened (150->220) and Detail's own narrowed
+                  (110->90) so "Rekening belum diverifikasi" always fits on
+                  one line instead of wrapping and throwing the row's
+                  vertical alignment off. */}
               <span className="col-start-2 sm:col-auto">
                 <button
                   type="button"
@@ -239,10 +243,13 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
           >
             <div className="flex items-center justify-between border-b border-line bg-surface px-5 py-4">
               <div>
-                <div className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">
-                  Detail Komisi — {detailRow.invoiceCount} invoice
-                </div>
-                <h2 className="font-sans text-[1rem] font-extrabold text-ink">{detailRow.salesNama}</h2>
+                <div className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">Detail Invoice</div>
+                <h2 className="font-sans text-[1rem] font-extrabold text-ink">
+                  {detailRow.salesNama}
+                  <span className="ml-2 font-mono text-[0.72rem] font-normal text-muted">
+                    ({detailRow.invoiceCount} invoice)
+                  </span>
+                </h2>
               </div>
               <button
                 type="button"
