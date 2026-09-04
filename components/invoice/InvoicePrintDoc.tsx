@@ -2,69 +2,21 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { rupiah, formatDateShort, formatDateLong } from "@/lib/format";
+import {
+  displayDiskon,
+  displayHarga,
+  type InvoicePrintItem,
+  type InvoicePrintData,
+} from "@/lib/invoiceDisplay";
 
-export interface InvoicePrintItem {
-  namaSnapshot: string;
-  /** e.g. "120x80x60 cm" — shown right after the product name. Per the user's request 2026-08-28. */
-  dimensiSnapshot?: string;
-  qty: number;
-  hargaJual: number;
-  /** Shown in its own table column — per the user's request 2026-08-29 (brought back after being hidden 2026-08-28). */
-  diskonPerUnit: number;
-  subtotal: number;
-  /** Snapshotted at add-to-cart time (see models/Invoice.ts). Per the user's request 2026-08-29. */
-  isFlashSale?: boolean;
-  /** Only meaningfully populated for a Flash Sale line — see displayDiskon below. Per the user's request 2026-08-29. */
-  hargaRekomendasiSnapshot?: number;
-}
-
-/**
- * The Diskon figure to actually show for a line — diskonPerUnit itself is
- * always 0 for a Flash Sale item (Diskon is locked out while one is
- * active), so for those this shows Harga Rekomendasi − hargaJual instead:
- * the discount the Flash Sale price itself represents. Per the user's
- * request 2026-08-29 ("tampilkan diskonnya dari selisih harga rekomendasi
- * dengan harga flash sale").
- */
-export function displayDiskon(item: InvoicePrintItem): number {
-  if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
-    return Math.max(0, item.hargaRekomendasiSnapshot - item.hargaJual);
-  }
-  return item.diskonPerUnit;
-}
-
-/**
- * The "Harga" column for a Flash Sale line shows Harga Rekomendasi, not
- * the Flash Sale price itself — the Flash Sale price shows in Subtotal
- * instead (Diskon in between makes the arithmetic read correctly: Harga −
- * Diskon = the Flash Sale price actually charged). Per the user's request
- * 2026-08-29 ("Harga (Harga rekomendasi) | Diskon | Subtotal (harga
- * flashsalenya di subtotal)").
- */
-export function displayHarga(item: InvoicePrintItem): number {
-  if (item.isFlashSale && item.hargaRekomendasiSnapshot != null) {
-    return item.hargaRekomendasiSnapshot;
-  }
-  return item.hargaJual;
-}
-
-export interface InvoicePrintData {
-  nomor: string;
-  tanggal: string;
-  customerNama: string;
-  customerWhatsapp?: string;
-  shipAddress?: string;
-  tanggalKirim?: string;
-  kurir?: string;
-  salesNama: string;
-  salesNomorHp?: string;
-  items: InvoicePrintItem[];
-  subtotalProduk: number;
-  ongkosKirim: number;
-  grandTotal: number;
-  dpNominal?: number;
-  dpTanggal?: string;
-}
+// displayDiskon/displayHarga/InvoicePrintItem/InvoicePrintData used to live
+// here, but moved to lib/invoiceDisplay.ts (a plain, non-"use client"
+// module) so InvoiceDocument.tsx can call them from a Server Component —
+// see that file's comment. Re-exported below so existing imports from this
+// file (app/invoice/[id]/page.tsx, app/invoice/page.tsx,
+// InvoiceListClient.tsx) keep working unchanged.
+export { displayDiskon, displayHarga };
+export type { InvoicePrintItem, InvoicePrintData };
 
 // Same A4-at-96dpi math as the Katalog PDF (CatalogPrintDoc.tsx) — 794px
 // wide container, 297mm page height maps to ≈1123px at this scale.

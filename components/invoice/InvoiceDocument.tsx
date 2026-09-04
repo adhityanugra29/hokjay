@@ -1,6 +1,6 @@
 import { TableScroll } from "@/components/ui/Panel";
 import { rupiah, formatDateLong, formatDateShort } from "@/lib/format";
-import { displayDiskon, displayHarga, type InvoicePrintData } from "./InvoicePrintDoc";
+import { displayDiskon, displayHarga, type InvoicePrintData } from "@/lib/invoiceDisplay";
 
 /**
  * The on-screen invoice document — extracted from app/invoice/[id]/page.tsx

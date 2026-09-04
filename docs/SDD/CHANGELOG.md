@@ -6,6 +6,15 @@
 
 ## 2026-09-04
 
+**BUG-012 fixed** — the "tidak bisa generate invoice" report from earlier today turned out to be a real crash, not a false alarm: `app/invoice/[id]/page.tsx` broke for every single invoice (React error #441 — "This page couldn't load", the exact interstitial the user's screenshot showed). Root cause was TASK-009's own `InvoiceDocument.tsx` extraction, done the same day: it called `displayDiskon()`/`displayHarga()` as value imports from `InvoicePrintDoc.tsx`, a `"use client"` file, from a Server Component. Moved those two pure functions (plus their shared types) into a new plain module `lib/invoiceDisplay.ts`. Reproduced live (`next start` + Playwright, server log confirmed the exact throw) before and after the fix.
+
+Bugs fixed: BUG-012.
+Regression: PASS — clean build, lint clean, `/invoice/[id]` and `/invoice` both verified error-free after the fix.
+
+---
+
+## 2026-09-04
+
 **TASK-009 follow-up #2** — the Bulan/Tahun periode selects sat visibly taller than the search box next to them; overrode their sizing to match `SearchInput` exactly, confirmed level via screenshot. Also investigated a "tidak bisa generate invoice" report (no error given) — reproduced the create flow at the service, API, and full-browser-form level, all succeeded every time; asked the user for the specific error instead of guessing a fix.
 
 Tasks done: TASK-009 (follow-up).

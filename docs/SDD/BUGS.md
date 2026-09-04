@@ -212,3 +212,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `components/katalog/KatalogClient.tsx`, `components/invoice/AddProductSidebar.tsx`.
 **Regression test:** Clean build, lint clean.
+
+---
+
+## BUG-012 — Invoice detail page crashed with "This page couldn't load — A server error occurred" for every invoice
+
+**Severity:** B0
+**Status:** FIXED (2026-09-04)
+**Source:** User report ("invoice ada bug, tidak bisa untuk generate invoice"), then a screenshot of Chrome's native server-error interstitial ("ERROR 1597884985").
+
+**Description:** TASK-009's `InvoiceDocument.tsx` extraction (2026-09-04, same day) pulled `displayDiskon()`/`displayHarga()` in as value imports from `InvoicePrintDoc.tsx` — a `"use client"` module — so it could reuse them instead of a third duplicate copy. `InvoiceDocument.tsx` itself has no `"use client"` directive and is rendered directly by the Server Component `app/invoice/[id]/page.tsx`, so every single visit to an invoice's detail page (`/invoice/[id]`) threw during the server render: "Attempted to call displayDiskon() from the server but displayDiskon is on the client" (React error #441 in the production build, surfaced to the browser as the generic "This page couldn't load" interstitial with an opaque digest). Reproducing locally required rebuilding with `next start` (not `next dev`) and reading the server process's own stderr — a raw HTTP 200 and a `"digest"` string found in the RSC payload both looked benign at first glance and delayed the diagnosis, since Next.js always embeds a `digest` marker in its RSC error-boundary serialization even for unrelated framework metadata.
+
+**Root cause:** A pure, no-client-dependency helper function got stranded inside a `"use client"` file, and a later refactor started calling it from a Server Component — Next.js's RSC boundary forbids calling (not just importing the type of) a client-module value from server code.
+
+**Fix:** Moved `InvoicePrintItem`, `InvoicePrintData`, `displayDiskon()`, `displayHarga()` into a new plain module `lib/invoiceDisplay.ts` (no `"use client"`). `InvoicePrintDoc.tsx` now imports and re-exports them (so its own internal usage and every existing `import ... from "./InvoicePrintDoc"` elsewhere keep working unchanged); `InvoiceDocument.tsx` imports directly from `lib/invoiceDisplay.ts`.
+
+**Files:** `lib/invoiceDisplay.ts` (new), `components/invoice/InvoicePrintDoc.tsx`, `components/invoice/InvoiceDocument.tsx`.
+**Regression test:** Clean build, lint clean on all three files. Reproduced the crash live (`next start` + Playwright, real error captured: React error #441 + server-log stack trace naming `displayDiskon`), applied the fix, re-ran the identical Playwright load — full invoice content now renders with zero console/page errors and nothing in the server log. Also hit `/invoice` (list) directly — clean.
