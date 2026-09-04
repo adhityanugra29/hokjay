@@ -2,8 +2,24 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { dbConnect } from "@/lib/db";
 import { User, USER_ROLES } from "@/models/User";
+import { getSession } from "@/lib/auth/session";
+import { isAkunLoginAllowed } from "@/lib/auth/access";
+
+// Owner/Super Admin only — see the matching comment in ../route.ts. Extra
+// important here specifically: without this, a raw PATCH could let a
+// Manager grant themselves (or anyone) a higher role, or reset another
+// account's password.
+async function requireAkunLoginAccess() {
+  const session = await getSession();
+  if (!session || !isAkunLoginAllowed(session.role)) {
+    return NextResponse.json({ error: "Hanya Owner/Super Admin yang bisa mengelola Akun Login" }, { status: 403 });
+  }
+  return null;
+}
 
 export async function PATCH(req: Request, ctx: RouteContext<"/api/admin/users/[id]">) {
+  const denied = await requireAkunLoginAccess();
+  if (denied) return denied;
   await dbConnect();
   const { id } = await ctx.params;
   const body = await req.json();
@@ -39,6 +55,8 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/admin/users/[i
 }
 
 export async function DELETE(_req: Request, ctx: RouteContext<"/api/admin/users/[id]">) {
+  const denied = await requireAkunLoginAccess();
+  if (denied) return denied;
   await dbConnect();
   const { id } = await ctx.params;
   await User.findByIdAndDelete(id);

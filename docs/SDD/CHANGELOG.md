@@ -6,6 +6,15 @@
 
 ## 2026-09-04
 
+**TASK-007 done** — Akun Login (`/admin/akun`) restricted to Owner/Super Admin, reversing a 2026-08-27 decision that had Manager included. Found while investigating a "Komisi Saya" Rp 0 report — turned out to be a data mismatch (a Manager's login `nama` ≠ their Sales roster name), not a code bug, left for the user to correct via Akun Login. The 2 account-management API routes had no role check of their own (only the general `/api/admin` middleware's `isAdminLevel`, which Manager satisfies) — added a dedicated check to both, same isolation pattern as Flash Sale/Komisi Bekas, so a raw request can't grant a role or reset a password either.
+
+Tasks done: TASK-007.
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
 **BUG-011 fixed** — Katalog's search box and the Invoice "Tambah Produk" sidebar's own search never matched Merk (only name/SKU/size) — a search for a brand like "Hosizaki" returned nothing even for active products carrying it, ever since TASK-005 made Merk a real separate field. The DB-backed searches (`/api/products`, Inventory) already had it right; only these two client-side JS filters had the gap. Added the same `merk` check to both.
 
 Bugs fixed: BUG-011.

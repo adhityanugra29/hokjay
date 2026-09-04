@@ -77,15 +77,29 @@ export function isAdminLevel(role: UserRole | undefined | null): boolean {
 export const MANAGER_BLOCKED_PREFIXES = ["/akuntansi", "/payroll", "/bayar-tagihan"];
 
 // Admin (2026-08-27): briefly blocked outright, then the user asked for it
-// back open specifically for Kelola User (Akun Login), Kelola Kategori,
-// Metode Pembayaran, and Pengiriman (Kurir) — i.e. everything under
-// /admin EXCEPT these two tabs: "Sales" (/admin/user — the Sales roster,
-// a different thing from login accounts despite the similar name) and
-// "Keuangan" (/admin/keuangan — finance settings). See app/admin/layout.tsx
-// for the tab list this maps to. Checked as its own list rather than
-// folded into MANAGER_BLOCKED_PREFIXES since "/admin" itself needs to stay
-// ALLOWED while only these two of its sub-tabs are blocked.
-export const MANAGER_BLOCKED_ADMIN_PREFIXES = ["/admin/user", "/admin/keuangan"];
+// back open specifically for Kelola Kategori, Metode Pembayaran, and
+// Pengiriman (Kurir) — i.e. everything under /admin EXCEPT "Sales"
+// (/admin/user — the Sales roster) and "Keuangan" (/admin/keuangan —
+// finance settings). "Akun Login" (/admin/akun) was open too at that point,
+// but the user reversed that 2026-09-04 ("manager hojay, tidak boleh untuk
+// masuk ke kelola user [akun login], karena itu khusus untuk superadmin dan
+// owner") — creating/editing login accounts (including roles and
+// passwords) is Owner/Super Admin only now. See app/admin/layout.tsx for
+// the tab list this maps to. Checked as its own list rather than folded
+// into MANAGER_BLOCKED_PREFIXES since "/admin" itself needs to stay ALLOWED
+// while only these sub-tabs are blocked.
+export const MANAGER_BLOCKED_ADMIN_PREFIXES = ["/admin/user", "/admin/keuangan", "/admin/akun"];
+
+// Akun Login (2026-09-04): Owner/Super Admin only, enforced at the API
+// layer too (app/api/admin/users/**), not just the UI tab above — a raw
+// PATCH could otherwise let a Manager grant themselves a higher role or
+// reset another account's password. Deliberately narrower than
+// isAdminLevel (which the /api/admin prefix's own middleware check already
+// grants Manager) — see proxy.ts.
+export const AKUN_LOGIN_ROLES: UserRole[] = ["owner", "super_admin"];
+export function isAkunLoginAllowed(role: UserRole | undefined | null): boolean {
+  return !!role && AKUN_LOGIN_ROLES.includes(role);
+}
 
 // Insentif/Komisi (Leaderboard Sales) locked down to just these roles per
 // the user's request 2026-08-26 — nobody else reaches it, not even a plain

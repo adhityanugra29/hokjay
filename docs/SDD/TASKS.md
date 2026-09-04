@@ -136,3 +136,22 @@
 **Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` errors, none new.
 
 **Follow-up (2026-09-03, same day):** the pre-existing "Komisi — Persen" reference field (`komisiPercent`) was still editable by Manager (anyone with `canEditProduct`) in `ProductForm.tsx`, and its Komisi Nominal readout was visible to them too — inconsistent with the owner-only posture just built for `komisiBekasPercent`. Per the user's direct follow-up ("manager tidak boleh untuk edit komisi, kolom insentif tidak boleh terlihat pada input barang... hanya owner yang boleh"): both the field and its readout are now hidden entirely (not just disabled) unless `isOwner`. Removed `komisiPercent` from the general PATCH route's allowlist (`app/api/products/[id]/route.ts`) and moved it into the same dedicated Owner-only endpoint as `komisiBekasPercent` (`komisi-bekas/route.ts`, now handles both fields under one server-side role check) — a Manager can no longer move this value through a raw API request either, not just the hidden UI. `POST /api/products` (create) deliberately left accepting it unchanged: a non-owner's create payload only ever carries the sensible auto-default `setKondisi()` already computes (6%/10%), never something they consciously typed, so there was nothing to lock down there. Katalog's own live commission figure was already view-only (a computed `<span>`, never an input) — confirmed, no change needed.
+
+---
+
+## TASK-007 — Akun Login restricted to Owner/Super Admin (Manager locked out)
+
+**Type:** ACCESS CONTROL
+**Priority:** P2
+**Status:** DONE (2026-09-04)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-04
+
+**Description:** While investigating a name-mismatch bug on "Komisi Saya" (a Manager's login `nama` — "Avicenna Pangaran" — didn't match their Sales roster entry — "Avi" — so `getMyCommissionSummary()` found none of their own invoices; a data fix, not a code one, left for the user to apply), the user separately confirmed a policy reversal: "manager hojay, tidak boleh untuk masuk ke kelola user [akun login], karena itu khusus untuk superadmin dan owner". This reverses a 2026-08-27 decision that had explicitly reopened Akun Login for Manager alongside Kategori/Kurir/Metode Pembayaran.
+
+**Why it mattered beyond the UI tab:** `/api/admin/users` (GET/POST) and `/api/admin/users/[id]` (PATCH/DELETE) had no role check of their own — only the `/api/admin` prefix's blanket `isAdminLevel` middleware check, which Manager already satisfies. Hiding the tab alone would have left a raw API request able to create accounts, delete them, or — the real risk — PATCH any account's `role` (including their own, to `owner`) or reset a password, same class of gap as BUG-004/Komisi Bekas before their own dedicated routes existed.
+
+**Fix:** `/admin/akun` added to `MANAGER_BLOCKED_ADMIN_PREFIXES` (`lib/auth/access.ts`) — hides the tab and blocks direct navigation, same mechanism as the pre-existing Sales/Keuangan blocks. New `AKUN_LOGIN_ROLES`/`isAkunLoginAllowed()` (Owner/Super Admin only) enforced at the top of all 4 handlers across both API routes — same isolation pattern as `flash-sale/route.ts` and `komisi-bekas/route.ts`, deliberately narrower than the general `/api/admin` middleware grant.
+
+**Files affected:** `lib/auth/access.ts`, `app/api/admin/users/route.ts`, `app/api/admin/users/[id]/route.ts`.
+**Regression test:** Clean build; lint diff shows one pre-existing unused-var warning (`_omit` in `users/route.ts`, untouched by this change — confirmed via `git diff`), no new errors.

@@ -2,14 +2,33 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { dbConnect } from "@/lib/db";
 import { User, USER_ROLES } from "@/models/User";
+import { getSession } from "@/lib/auth/session";
+import { isAkunLoginAllowed } from "@/lib/auth/access";
+
+// Owner/Super Admin only — per the user's request 2026-09-04. The general
+// /api/admin prefix's own middleware check (proxy.ts) only requires
+// isAdminLevel, which Manager also satisfies; this route needs its own
+// stricter check on top; same isolation pattern as
+// app/api/products/[id]/komisi-bekas/route.ts.
+async function requireAkunLoginAccess() {
+  const session = await getSession();
+  if (!session || !isAkunLoginAllowed(session.role)) {
+    return NextResponse.json({ error: "Hanya Owner/Super Admin yang bisa mengelola Akun Login" }, { status: 403 });
+  }
+  return null;
+}
 
 export async function GET() {
+  const denied = await requireAkunLoginAccess();
+  if (denied) return denied;
   await dbConnect();
   const users = await User.find().select("-passwordHash").sort({ nama: 1 });
   return NextResponse.json(users);
 }
 
 export async function POST(req: Request) {
+  const denied = await requireAkunLoginAccess();
+  if (denied) return denied;
   await dbConnect();
   const body = await req.json();
   const nama = String(body.nama || "").trim();
