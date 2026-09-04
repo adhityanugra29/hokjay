@@ -105,31 +105,23 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
           </div>
         </div>
 
-        <div className="hidden grid-cols-[24px_1.2fr_1fr_150px_190px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted sm:grid">
+        <div className="hidden grid-cols-[24px_1.2fr_1fr_150px_190px_110px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted sm:grid">
           <span />
           <span>Sales</span>
           <span>Rekening</span>
           <span className="text-right">Komisi</span>
           <span>Status</span>
+          <span />
         </div>
         {rows.map((r) => {
           const checked = selected.has(r.salesNama);
           return (
             <div
               key={r.salesNama}
-              className="grid grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 text-[0.85rem] sm:grid-cols-[24px_1.2fr_1fr_150px_190px] sm:items-center sm:gap-4"
+              className="grid grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 text-[0.85rem] sm:grid-cols-[24px_1.2fr_1fr_150px_190px_110px] sm:items-center sm:gap-4"
             >
               <input type="checkbox" checked={checked} onChange={() => toggle(r.salesNama)} className="mt-0.5 h-4 w-4 accent-accent sm:mt-0" />
-              <span>
-                <span className="font-semibold">{r.salesNama}</span>
-                <button
-                  type="button"
-                  onClick={() => setDetailNama(r.salesNama)}
-                  className="ml-2 cursor-pointer font-mono text-[0.68rem] text-accent-700 underline underline-offset-2"
-                >
-                  Detail ({r.invoiceCount} invoice)
-                </button>
-              </span>
+              <span className="font-semibold">{r.salesNama}</span>
               <span className="col-start-2 font-mono text-[0.72rem] text-muted sm:col-auto">
                 {r.bank ? `${r.bank} · ${r.nomorRekening}` : "belum diisi"}
               </span>
@@ -140,6 +132,17 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
                 }`}
               >
                 {r.rekeningTerverifikasi ? "Siap bayar" : "Rekening belum diverifikasi"}
+              </span>
+              {/* Own column right next to Status, not squeezed into the
+                  Sales cell — per the user's request 2026-09-04. */}
+              <span className="col-start-2 sm:col-auto">
+                <button
+                  type="button"
+                  onClick={() => setDetailNama(r.salesNama)}
+                  className="cursor-pointer font-mono text-[0.68rem] text-accent-700 underline underline-offset-2"
+                >
+                  Detail ({r.invoiceCount})
+                </button>
               </span>
             </div>
           );
