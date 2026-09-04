@@ -2,12 +2,13 @@ import PageHeader from "@/components/layout/PageHeader";
 import { SearchInput } from "@/components/ui/Panel";
 import { LinkButton } from "@/components/ui/Button";
 import InvoiceListClient, { type InvoiceRow } from "@/components/invoice/InvoiceListClient";
+import InvoicePeriodFilter from "@/components/invoice/InvoicePeriodFilter";
 import type { InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
 import { formatDateShort } from "@/lib/format";
-import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
+import { currentJakartaMonthYear, jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
 import { MONTH_NAMES } from "@/lib/constants";
 import { getSession } from "@/lib/auth/session";
 import { invoiceVisibilityFilter } from "@/lib/invoice-visibility";
@@ -42,6 +43,34 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       { "customer.nama": { $regex: search, $options: "i" } },
     ];
   }
+
+  // "Lunas {month}" stat always reflects the real current month regardless
+  // of the periode filter below — computed against the visibility+search
+  // filter only (not yet narrowed to a periode), so picking a different
+  // periode below never changes this number.
+  const nowJakarta = currentJakartaMonthYear();
+  const thisMonth = jakartaMonthRange(nowJakarta.year, nowJakarta.month);
+  const paidThisMonthCount = await Invoice.countDocuments({
+    ...filter,
+    status: "paid",
+    tanggalInvoice: { $gte: thisMonth.from, $lt: thisMonth.to },
+  });
+
+  // Periode filter — per the user's request 2026-09-04 ("tambahkan di
+  // html itu periode, supaya user bisa untuk filter bulanya"). Both
+  // default to "Semua" (unfiltered, the pre-existing behavior) unlike the
+  // shared PeriodPicker.tsx elsewhere, which always pins to one month —
+  // Invoice's default view is everything, browsing history is the
+  // exception. tanggalInvoice always has a real value (schema default:
+  // Date.now — see models/Invoice.ts), so this can filter on it directly,
+  // no createdAt fallback needed the way display code elsewhere has one.
+  const bulan = sp.bulan ? Number(sp.bulan) : undefined;
+  const tahun = sp.tahun ? Number(sp.tahun) : undefined;
+  if (bulan || tahun) {
+    const range = bulan ? jakartaMonthRange(tahun ?? nowJakarta.year, bulan) : jakartaYearRange(tahun!);
+    filter.tanggalInvoice = { $gte: range.from, $lt: range.to };
+  }
+
   const invoices = await Invoice.find(filter).sort({ createdAt: -1 });
 
   // Live phone-number lookup for the Preview drawer's document footer —
@@ -52,9 +81,6 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   const salesNames = [...new Set(invoices.map((i) => i.sales?.nama).filter((n): n is string => !!n))];
   const salesDocs = await Sales.find({ nama: { $in: salesNames } }).lean();
   const salesPhoneByNama = new Map(salesDocs.map((s) => [s.nama, s.nomorHp ?? undefined]));
-
-  const nowJakarta = currentJakartaMonthYear();
-  const thisMonth = jakartaMonthRange(nowJakarta.year, nowJakarta.month);
 
   const rows: InvoiceRow[] = invoices.map((inv) => {
     const tanggal = inv.tanggalInvoice ?? inv.get("createdAt");
@@ -113,11 +139,6 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   const totalPiutang = rows
     .filter((r) => r.status === "unpaid" || r.status === "dp")
     .reduce((s, r) => s + (r.sisaTagihan ?? r.grandTotal), 0);
-  const paidThisMonthCount = invoices.filter((i) => {
-    if (i.status !== "paid") return false;
-    const t = new Date(i.tanggalInvoice ?? i.get("createdAt"));
-    return t >= thisMonth.from && t < thisMonth.to;
-  }).length;
 
   return (
     <>
@@ -127,9 +148,18 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
         actions={<LinkButton href="/katalog">+ Belanja / Buat Invoice</LinkButton>}
       />
       <div className="p-6 md:p-9">
-        <form className="mb-6 flex items-center rounded-xl bg-panel px-4 py-3.5 shadow-sm">
-          <SearchInput name="search" defaultValue={search as string} placeholder="Cari no. invoice atau pelanggan..." />
-        </form>
+        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl bg-panel px-4 py-3.5 shadow-sm">
+          <form className="flex items-center">
+            {/* Hidden bulan/tahun so submitting search (native GET) never
+                drops whatever periode is currently selected — a plain
+                <form> only sends its own named fields, dropping every
+                other URL param otherwise. */}
+            {bulan ? <input type="hidden" name="bulan" value={bulan} /> : null}
+            {tahun ? <input type="hidden" name="tahun" value={tahun} /> : null}
+            <SearchInput name="search" defaultValue={search as string} placeholder="Cari no. invoice atau pelanggan..." />
+          </form>
+          <InvoicePeriodFilter bulan={bulan} tahun={tahun} currentYear={nowJakarta.year} />
+        </div>
 
         <InvoiceListClient
           rows={rows}

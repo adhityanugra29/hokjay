@@ -6,6 +6,15 @@
 
 ## 2026-09-04
 
+**TASK-009 follow-up** — added a Bulan/Tahun periode filter to `/invoice` (new `InvoicePeriodFilter.tsx`, both defaulting to "Semua"). Filters server-side via `tanggalInvoice`, not client-side. "Lunas {month}" stat card stays anchored to the real current month regardless of the periode picked (separate `countDocuments`, not derived from the fetched/filtered list).
+
+Tasks done: TASK-009 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
 **TASK-009 done** — Invoice list (`/invoice`) rebuilt as one flat list filtered by a status pill toggle + click-to-filter stat cards (Semua/Belum Dibayar/Sudah DP/Draft/Sudah Lunas), replacing the old stacked-sections layout — an interim "3 sections" mockup was explicitly rejected first. Every row gets a "Preview" button opening a drawer with the real invoice document, no page navigation. Extracted the on-screen document into `InvoiceDocument.tsx` (shared with `/invoice/[id]`, which is otherwise unchanged) so the two views can't drift apart. The day block is now always the invoice's own date for every status; the unpaid "N hari" urgency signal moved to its own separate badge.
 
 Tasks done: TASK-009.
