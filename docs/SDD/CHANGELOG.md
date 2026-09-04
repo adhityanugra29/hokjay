@@ -6,6 +6,15 @@
 
 ## 2026-09-04
 
+**TASK-009 follow-up #2** — the Bulan/Tahun periode selects sat visibly taller than the search box next to them; overrode their sizing to match `SearchInput` exactly, confirmed level via screenshot. Also investigated a "tidak bisa generate invoice" report (no error given) — reproduced the create flow at the service, API, and full-browser-form level, all succeeded every time; asked the user for the specific error instead of guessing a fix.
+
+Tasks done: TASK-009 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
 **TASK-009 follow-up** — added a Bulan/Tahun periode filter to `/invoice` (new `InvoicePeriodFilter.tsx`, both defaulting to "Semua"). Filters server-side via `tanggalInvoice`, not client-side. "Lunas {month}" stat card stays anchored to the real current month regardless of the periode picked (separate `countDocuments`, not derived from the fetched/filtered list).
 
 Tasks done: TASK-009 (follow-up).

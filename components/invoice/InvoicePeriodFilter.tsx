@@ -30,13 +30,22 @@ export default function InvoicePeriodFilter({ bulan, tahun, currentYear }: { bul
   }
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 3 + i);
+  // Matches SearchInput's own sizing exactly (py-2/text-[0.78rem]) — the
+  // shared Select's base padding/font-size (py-2.5/text-[0.9rem], sized
+  // for full-width form fields) made these two selects visibly taller
+  // than the search box next to them despite the row's own items-center.
+  // !-prefixed since both properties are already set once by Select's own
+  // base class and same-specificity utilities aren't guaranteed to lose
+  // to whichever is listed later in the className string. Per the user's
+  // request 2026-09-04 ("rapihkan untuk selevel dengan no invoice").
+  const selectCls = "w-auto !py-2 !text-[0.78rem]";
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Select
         value={bulan ?? ""}
         onChange={(e) => update(e.target.value ? Number(e.target.value) : undefined, tahun)}
-        className="w-auto"
+        className={selectCls}
       >
         <option value="">Semua Bulan</option>
         {MONTH_NAMES.map((name, idx) => (
@@ -48,7 +57,7 @@ export default function InvoicePeriodFilter({ bulan, tahun, currentYear }: { bul
       <Select
         value={tahun ?? ""}
         onChange={(e) => update(bulan, e.target.value ? Number(e.target.value) : undefined)}
-        className="w-auto"
+        className={selectCls}
       >
         <option value="">Semua Tahun</option>
         {years.map((y) => (
