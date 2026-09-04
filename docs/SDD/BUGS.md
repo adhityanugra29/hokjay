@@ -229,3 +229,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `lib/invoiceDisplay.ts` (new), `components/invoice/InvoicePrintDoc.tsx`, `components/invoice/InvoiceDocument.tsx`.
 **Regression test:** Clean build, lint clean on all three files. Reproduced the crash live (`next start` + Playwright, real error captured: React error #441 + server-log stack trace naming `displayDiskon`), applied the fix, re-ran the identical Playwright load — full invoice content now renders with zero console/page errors and nothing in the server log. Also hit `/invoice` (list) directly — clean.
+
+---
+
+## BUG-013 — "Kirim WA" on the Invoice list didn't load a chat for local-format numbers
+
+**Severity:** B2
+**Status:** FIXED (2026-09-04)
+**Source:** User report ("coba cek untuk fitur kirim langsung ke wa, ini eror tidak bisa ke load yang wa nya").
+
+**Description:** The Invoice list's (`/invoice`) "Kirim WA" row action built its `wa.me` link from the customer's WhatsApp number with only non-digit characters stripped — a number stored in the normal local format ("0812...", as every customer's number is entered) produced `https://wa.me/0812...`. `wa.me` requires the number in international form without the leading local "0" (Indonesia's is "62"); given the local form it doesn't error visibly, it just fails to load a chat, matching the report exactly. `InvoiceActions.tsx`'s own "Kirim WA" button (on the invoice detail page) already did the "0"→"62" conversion correctly — the list's version was added by TASK-009 the same day and built the link inline instead of reusing that logic, so the two quietly drifted apart.
+
+**Root cause:** Duplicated wa.me-link construction, only one copy of which had the local-to-international prefix conversion.
+
+**Fix:** Added `toWaPhone()` to `lib/format.ts` (strip non-digits, "0" prefix → "62", `""` if nothing usable) and pointed both `InvoiceActions.tsx` and `InvoiceListClient.tsx` at it, so the two "Kirim WA" buttons can't drift apart again.
+
+**Files:** `lib/format.ts`, `components/invoice/InvoiceListClient.tsx`, `components/invoice/InvoiceActions.tsx`.
+**Regression test:** Clean build, lint clean. Verified live against every real invoice on the list (Playwright, read every rendered `wa.me` href directly): all resolve to `62...`, none still carry a leading `0`.

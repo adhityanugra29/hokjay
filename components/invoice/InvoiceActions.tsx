@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { rupiah } from "@/lib/format";
+import { rupiah, toWaPhone } from "@/lib/format";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { useDialog } from "@/components/ui/Dialog";
 
@@ -22,8 +22,7 @@ export default function InvoiceActions({
   const { alert } = useDialog();
 
   function sendWA() {
-    const phone = (customerWhatsapp ?? "").replace(/[^0-9]/g, "");
-    const waPhone = phone.startsWith("0") ? `62${phone.slice(1)}` : phone;
+    const waPhone = toWaPhone(customerWhatsapp);
     const text = `Halo ${customerNama}, berikut invoice ${nomor} dari CV HORECA JAYA.\nTotal: ${rupiah(
       grandTotal
     )}\nTerima kasih!`;

@@ -71,6 +71,30 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
     filter.tanggalInvoice = { $gte: range.from, $lt: range.to };
   }
 
+  // Which Bulan/Tahun options actually have data — per the user's request
+  // 2026-09-04 ("jika tidak ada datanya, gaperlu dimunculin: contoh tidak
+  // ada bulan januari di datanya, di filternya, tidak perlu untuk
+  // dishow"). Scoped to the same visibility filter as the list itself (a
+  // sales rep only sees their own invoices, so their periode options
+  // should match — not the visibility+search+periode filter above, since
+  // narrowing by the currently-typed search text would make the dropdown
+  // options themselves shift while typing, which reads as broken rather
+  // than helpful). $month/$year in Asia/Jakarta so a late-night invoice
+  // never gets bucketed into the wrong day's month/year versus what
+  // jakartaMonthRange/jakartaYearRange filter by above.
+  const periodeAgg = await Invoice.aggregate<{ months: number[]; years: number[] }>([
+    { $match: invoiceVisibilityFilter(session) },
+    {
+      $group: {
+        _id: null,
+        months: { $addToSet: { $month: { date: "$tanggalInvoice", timezone: "Asia/Jakarta" } } },
+        years: { $addToSet: { $year: { date: "$tanggalInvoice", timezone: "Asia/Jakarta" } } },
+      },
+    },
+  ]);
+  const availableMonths = (periodeAgg[0]?.months ?? []).sort((a, b) => a - b);
+  const availableYears = (periodeAgg[0]?.years ?? []).sort((a, b) => b - a);
+
   const invoices = await Invoice.find(filter).sort({ createdAt: -1 });
 
   // Live phone-number lookup for the Preview drawer's document footer —
@@ -158,7 +182,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
             {tahun ? <input type="hidden" name="tahun" value={tahun} /> : null}
             <SearchInput name="search" defaultValue={search as string} placeholder="Cari no. invoice atau pelanggan..." />
           </form>
-          <InvoicePeriodFilter bulan={bulan} tahun={tahun} currentYear={nowJakarta.year} />
+          <InvoicePeriodFilter bulan={bulan} tahun={tahun} availableMonths={availableMonths} availableYears={availableYears} />
         </div>
 
         <InvoiceListClient

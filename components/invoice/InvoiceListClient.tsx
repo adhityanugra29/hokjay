@@ -5,7 +5,7 @@ import Link from "next/link";
 import DeleteInvoiceButton from "./DeleteInvoiceButton";
 import InvoiceDocument from "./InvoiceDocument";
 import type { InvoicePrintData } from "./InvoicePrintDoc";
-import { rupiah } from "@/lib/format";
+import { rupiah, toWaPhone } from "@/lib/format";
 
 export type InvoiceRowStatus = "unpaid" | "dp" | "draft" | "paid";
 
@@ -216,7 +216,7 @@ export default function InvoiceListClient({
                 {(r.status === "unpaid" || r.status === "dp") && (
                   <>
                     <a
-                      href={`https://wa.me/${(r.custWhatsapp ?? "").replace(/[^0-9]/g, "")}`}
+                      href={`https://wa.me/${toWaPhone(r.custWhatsapp)}`}
                       target="_blank"
                       rel="noreferrer"
                       className="border border-line px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent-700"

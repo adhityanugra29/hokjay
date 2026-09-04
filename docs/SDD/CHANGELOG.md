@@ -6,6 +6,24 @@
 
 ## 2026-09-04
 
+**BUG-013 fixed** — "Kirim WA" on the Invoice list opened a wa.me link with the customer's number still in local format ("0812..."), which silently fails to load a chat. `InvoiceActions.tsx`'s detail-page WA button already did the "0"→"62" conversion; centralized it as `toWaPhone()` in `lib/format.ts` and pointed both buttons at it.
+
+Bugs fixed: BUG-013.
+Regression: PASS — clean build, lint clean; every real invoice's WA link checked live, all now `62...`.
+
+---
+
+## 2026-09-04
+
+**TASK-009 follow-up #3** — the periode filter's actual layout bug, per the user's report and "buat dulu planya di html" request: published a mockup, got sign-off, then fixed it for real. `InvoicePeriodFilter.tsx` now renders a Fragment (not its own wrapping flex div) so its two selects sit as direct siblings of the search box in one row; also found the shared `Select`'s `w-full` base class was beating a same-specificity `w-auto` override, fixed with `!w-auto`. Bulan/Tahun now only list months/years that actually have invoice data (new aggregation, replacing the old hardcoded 5-year window).
+
+Tasks done: TASK-009 (follow-up).
+Regression: PASS — clean build, lint clean; verified live via real DOM measurement (single row, correct widths) and the actual rendered option lists.
+
+---
+
+## 2026-09-04
+
 **TASK-010 done** — Andi abdillah (Owner, whose login name happens to exactly match a real Sales roster entry) no longer appears on Payroll's Daftar Bayar commission list. `getUnpaidCommissionBySales()`/`getUnpaidCommissionInvoices()` now exclude any sales name belonging to a `role: "owner"` User account — scoped to role, not the one name, and Payroll-only (Insentif leaderboard/Komisi Saya untouched).
 
 Tasks done: TASK-010.

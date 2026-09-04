@@ -89,6 +89,25 @@ export function productDisplayName(name: string, merk?: string | null): string {
   return m && m !== "-" && m !== "—" ? `${name} ${m}` : name;
 }
 
+/**
+ * Local Indonesian phone/WhatsApp number ("0812...", however it was
+ * typed/pasted, dashes/spaces and all) -> a wa.me-ready international
+ * number ("62812..."), or "" if there's nothing usable. wa.me silently
+ * fails to open a chat for a number still carrying the local leading "0"
+ * (no error, the WhatsApp Web/app landing page just doesn't load a
+ * conversation) — found as a real bug 2026-09-04: InvoiceActions.tsx's
+ * own "Kirim WA" (invoice detail page) already did this conversion,
+ * InvoiceListClient.tsx's "Kirim WA" (invoice list row, added by TASK-009
+ * the same day) didn't, since it built the wa.me link inline instead of
+ * sharing this logic. Centralized here so the two can't drift apart
+ * again.
+ */
+export function toWaPhone(phone?: string | null): string {
+  const digits = (phone ?? "").replace(/[^0-9]/g, "");
+  if (!digits) return "";
+  return digits.startsWith("0") ? `62${digits.slice(1)}` : digits;
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
