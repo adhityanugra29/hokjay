@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-04
+
+**BUG-011 fixed** — Katalog's search box and the Invoice "Tambah Produk" sidebar's own search never matched Merk (only name/SKU/size) — a search for a brand like "Hosizaki" returned nothing even for active products carrying it, ever since TASK-005 made Merk a real separate field. The DB-backed searches (`/api/products`, Inventory) already had it right; only these two client-side JS filters had the gap. Added the same `merk` check to both.
+
+Bugs fixed: BUG-011.
+Regression: PASS.
+
+---
+
 ## 2026-09-03
 
 **TASK-003 follow-up #3** — re-running "Distribusikan" (typo, or a different total) found nothing to redistribute into, since the allocator only ever fills a Rp0 line and every line was already touched by the first run. Now tracks which lines Diskon Bulk itself last set (`lastBulkDiskon` in `InvoiceForm.tsx`) — a re-run overwrites its own previous split, a genuinely manual entry (or one edited since) stays protected.

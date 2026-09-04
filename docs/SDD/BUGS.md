@@ -195,3 +195,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `lib/format.ts`.
 **Regression test:** Clean build, lint clean. Verified directly against production data via a read-only query (135 products with `merk: "-"`, 0 with `merk: ""`) before and reasoning through after.
+
+---
+
+## BUG-011 — Katalog search never matched Merk (active products "disappear" when searching a brand)
+
+**Severity:** B2
+**Status:** FIXED (2026-09-04)
+**Source:** User report ("Di katalog, eror jika search by merk... barang aktifnya tidak muncul").
+
+**Description:** TASK-005 (2026-09-02) made Merk a real, separately-typed field shown alongside the product name — but the actual search predicates were never updated to match it. Typing a brand (e.g. "Hosizaki") into Katalog's search box, or the Invoice "Tambah Produk" sidebar's own search, matched nothing at all, even for active products genuinely carrying that Merk — both filters only ever checked `name`/`sku` (+ size, for Katalog). The DB-backed searches (`/api/products`'s `search` param, Inventory's list) already included `merk` in their `$or` — only these two purely client-side JS filters had the gap.
+
+**Root cause:** TASK-005 changed what's *displayed* (name + merk) without auditing every place a product is *searched*, and both gaps are hand-written JS predicates independent of the server-side `$regex` filters that already got it right.
+
+**Fix:** Added `p.merk.toLowerCase().includes(q)` (guarded for `undefined`) to both filters — OR'd in alongside the existing name/SKU checks, same pattern as the DB-side searches.
+
+**Files:** `components/katalog/KatalogClient.tsx`, `components/invoice/AddProductSidebar.tsx`.
+**Regression test:** Clean build, lint clean.

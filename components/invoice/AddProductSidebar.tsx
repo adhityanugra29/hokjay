@@ -107,6 +107,9 @@ export default function AddProductSidebar({
       list = list.filter((p) => {
         if (p.name.toLowerCase().includes(q)) return true;
         if (p.sku.toLowerCase().includes(q)) return true;
+        // Same gap as Katalog's own search box — merk was never matched
+        // here either. Per the user's report 2026-09-04.
+        if (p.merk && p.merk.toLowerCase().includes(q)) return true;
         if (asNumber !== null) {
           const { panjangCm, lebarCm, tinggiCm } = p.dimensi ?? {};
           if (panjangCm === asNumber || lebarCm === asNumber || tinggiCm === asNumber) return true;

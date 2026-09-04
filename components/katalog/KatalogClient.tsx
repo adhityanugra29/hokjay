@@ -267,6 +267,13 @@ export default function KatalogClient({
       list = list.filter((p) => {
         if (p.name.toLowerCase().includes(q)) return true;
         if (p.sku.toLowerCase().includes(q)) return true;
+        // Merk was never in this predicate — search never matched it even
+        // after TASK-005 made it a real, separately-typed field (so it no
+        // longer rides along inside `name` for most products). A search
+        // for a brand like "Hosizaki" returned zero results even though
+        // active matching products existed. Per the user's report
+        // 2026-09-04.
+        if (p.merk && p.merk.toLowerCase().includes(q)) return true;
         if (sizeNums && matchesSizeQuery(sizeNums, p.dimensi)) return true;
         return false;
       });
