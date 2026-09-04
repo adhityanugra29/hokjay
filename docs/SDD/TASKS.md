@@ -214,6 +214,23 @@
 **Files affected (follow-up #3):** `components/invoice/InvoicePeriodFilter.tsx`, `app/invoice/page.tsx`.
 **Regression test:** Clean build, lint clean. Verified live via Playwright `getBoundingClientRect()` at a 1470px viewport (both selects now sit in the same row as the search box, ~125px wide each, not 1117px) and read the rendered `<option>` lists directly (only "Agustus"/"September"/"2026" — the real available periods in this data).
 
+---
+
+## TASK-011 — Invoice "Kirim ke Pelanggan (WA)": attach the PDF where the OS allows it
+
+**Type:** FEATURE
+**Priority:** P3
+**Status:** DONE (2026-09-04)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-04
+
+**Description:** User asked "kenapa pengiriman PDF tidak bisa langsung ke nomor whatsapp yang dituju?". Explained the real constraint: `wa.me` links can only pre-fill text, WhatsApp exposes no public URL parameter to pre-attach a file — this is why the invoice detail page (`/invoice/[id]`) always needed two separate manual steps (download PDF, then re-attach it by hand inside WhatsApp). Offered 3 options; the user picked the Web Share API route.
+
+**Fix:** `InvoiceActions.tsx`'s "Kirim ke Pelanggan (WA)" button now feature-detects `navigator.share`/`navigator.canShare` support for files (`typeof` checked, not just `in`, so a webview that stubs the keys without real functions behind them falls back safely instead of throwing). Where supported (mobile Chrome/Safari, confirmed to also report `true` in this session's headless Chromium test rig), it builds the same PDF `downloadInvoicePdf()` already did (that PDF-generation core was extracted into a shared `buildInvoicePdf()`) and hands it to the native OS share sheet via `navigator.share({ files, text })` — WhatsApp becomes one tap away with the file already attached, no detour through the Downloads folder. Where unsupported (desktop browsers), falls back to the original text-only `wa.me` link unchanged. The target phone number still can't be picked programmatically once the OS share sheet or WhatsApp itself takes over — that's an OS/WhatsApp-side limitation with no public workaround (a real "auto-send to number X" would require the paid, Meta-approved WhatsApp Business Platform API, out of scope here and not requested).
+
+**Files affected:** `components/invoice/InvoiceActions.tsx`.
+**Regression test:** Clean build, lint clean. Verified both branches live (Playwright, real invoice, real PDF bytes): the share path calls `navigator.share` with the correct message text and a real ~220KB `<nomor>.pdf` File; the fallback path (canShare/share stubbed absent) still opens the identical `wa.me?text=...` link as before. Also caught and fixed a real crash during this testing — an unrealistic-but-defensive-worth-fixing case where `canShare`/`share` exist as non-function properties threw "navigator.canShare is not a function"; switched the guard from `"x" in navigator` to `typeof navigator.x === "function"`.
+
 
 ---
 

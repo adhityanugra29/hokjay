@@ -6,6 +6,15 @@
 
 ## 2026-09-04
 
+**TASK-011 done** — "Kirim ke Pelanggan (WA)" on the invoice detail page now attaches the PDF directly via the Web Share API where the OS supports it (mobile), instead of always requiring a manual download-then-attach. Falls back to the original text-only wa.me link on desktop. Explained to the user why a `wa.me` link alone could never do this (no public file-attach parameter), and why the target number still can't be auto-picked once WhatsApp opens (OS/app-side limitation).
+
+Tasks done: TASK-011.
+Regression: PASS — clean build, lint clean; both the share path and the desktop fallback verified live with a real invoice and real PDF bytes.
+
+---
+
+## 2026-09-04
+
 **BUG-013 fixed** — "Kirim WA" on the Invoice list opened a wa.me link with the customer's number still in local format ("0812..."), which silently fails to load a chat. `InvoiceActions.tsx`'s detail-page WA button already did the "0"→"62" conversion; centralized it as `toWaPhone()` in `lib/format.ts` and pointed both buttons at it.
 
 Bugs fixed: BUG-013.
