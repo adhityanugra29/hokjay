@@ -306,3 +306,20 @@
 
 **Files affected:** `components/produk/ProductForm.tsx`.
 **Regression test:** Clean build, lint diff shows only one pre-existing `react-hooks/set-state-in-effect` (an unrelated localStorage-last-category effect, untouched by this change). Verified live as Owner against real products: a bekas product's edit page now shows exactly one commission-related label ("Komisi Bekas (%)"); a baru product's shows none; saving the bekas product unchanged still returns 200 and correctly persists `komisiPercent: 10`/`komisiNominal` recalculated to match (10% × hargaRekomendasi) — confirming the auto-tracking and Komisi Nominal display still work with the input gone.
+
+---
+
+## TASK-015 — Commission settings: narrow to Owner-only (was also allowing Super Admin)
+
+**Type:** BUGFIX/SCOPE
+**Priority:** P2
+**Status:** DONE (2026-09-05)
+**Dependency:** None
+**Created:** 2026-09-05 · **Last updated:** 2026-09-05
+
+**Description:** Per the user's request ("yang hanya boleh akses setting komisi hanya owner"). Every commission-setting surface built since TASK-006 (2026-09-03) used the app's usual owner-level pairing — `["owner", "super_admin"]` — copy-pasted independently into 4 different files, even though `app/api/products/[id]/komisi-bekas/route.ts`'s own error message already claimed "Hanya Owner" (a pre-existing inconsistency between the message and the actual check). Also found while auditing: `KatalogClient.tsx`'s `EditProductDrawer` was passed `isOwner={canFlashSale}` (Owner+Super Admin, matching Flash Sale's role set) instead of a real owner-only check — a stray leftover from before TASK-013 added a genuinely owner-only `isOwner` prop to that same component for the diskon-plafon feature.
+
+**Fix:** New `KOMISI_SETTING_ROLES = ["owner"]` / `isKomisiSettingAllowed()` in `lib/auth/access.ts` — one canonical definition instead of 4 independent copies that could (and did, silently, re: the error-message mismatch) drift apart. Applied to: `app/api/products/[id]/komisi-bekas/route.ts` (PATCH, the real enforcement for a product's Komisi Bekas override + the internal Komisi — Persen figure), `app/api/categories/[id]/route.ts` (PATCH, a category's default Komisi Bekas rate), `app/produk/[id]/edit/page.tsx` + `app/produk/baru/page.tsx` (Inventory's `isOwner` prop into `ProductForm.tsx`), `app/admin/page.tsx` (`CategoryManager`'s Komisi Bekas column/edit-form), and `components/katalog/KatalogClient.tsx` (its `EditProductDrawer`'s `isOwner`, now reusing the already-correct owner-only `isOwner` prop from TASK-013 instead of `canFlashSale`).
+
+**Files affected:** `lib/auth/access.ts`, `app/api/products/[id]/komisi-bekas/route.ts`, `app/api/categories/[id]/route.ts`, `app/produk/[id]/edit/page.tsx`, `app/produk/baru/page.tsx`, `app/admin/page.tsx`, `components/katalog/KatalogClient.tsx`.
+**Regression test:** Clean build, lint clean on every file. Verified live end-to-end with minted Owner vs Super Admin sessions: `PATCH /api/products/[id]/komisi-bekas` — Owner 200 (value persisted), Super Admin 403 ("Hanya Owner yang bisa mengatur Komisi"); UI-level, all three entry points checked directly (Inventory's edit page, Katalog's EditProductDrawer via a real search-then-click flow, Admin's Kelola Kategori table) — Owner sees the Komisi field/column in every one, Super Admin sees it in none.

@@ -3,14 +3,15 @@ import { dbConnect } from "@/lib/db";
 import { Category } from "@/models/Category";
 import { Product } from "@/models/Product";
 import { getSession } from "@/lib/auth/session";
+import { isKomisiSettingAllowed } from "@/lib/auth/access";
 
 // Owner-only, same as the per-product override at
 // app/api/products/[id]/komisi-bekas/route.ts — per the user's request
-// 2026-09-03. Doesn't affect the rename below, which any admin-level role
-// could already do (Category writes are gated ADMIN_ONLY_WRITE_PREFIXES,
-// see lib/auth/access.ts) — this is an extra, narrower check on top, only
-// for this one field.
-const KOMISI_BEKAS_ROLES = ["owner", "super_admin"];
+// 2026-09-03, narrowed to literally just "owner" 2026-09-05 (see
+// lib/auth/access.ts's isKomisiSettingAllowed). Doesn't affect the rename
+// below, which any admin-level role could already do (Category writes
+// are gated ADMIN_ONLY_WRITE_PREFIXES, see lib/auth/access.ts) — this is
+// an extra, narrower check on top, only for this one field.
 
 /**
  * Renames a category — per the user's request 2026-08-27 ("di kelola
@@ -42,7 +43,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/categories/[id
 
   if (body.komisiBekasPercent !== undefined) {
     const session = await getSession();
-    if (session && KOMISI_BEKAS_ROLES.includes(session.role)) {
+    if (isKomisiSettingAllowed(session?.role)) {
       const raw = body.komisiBekasPercent;
       if (raw === null) {
         existing.komisiBekasPercent = undefined;

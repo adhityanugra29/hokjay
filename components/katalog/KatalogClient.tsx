@@ -506,10 +506,14 @@ export default function KatalogClient({
       <EditProductDrawer
         product={editingProduct}
         categories={categories}
-        // Reuses the same Owner/Super Admin check as canFlashSale (identical
-        // role set — see app/katalog/page.tsx) rather than adding a second,
-        // duplicate prop just for this. Per the user's request 2026-09-03.
-        isOwner={canFlashSale}
+        // Was `canFlashSale` (Owner+Super Admin) until 2026-09-05 — per
+        // the user's request ("yang hanya boleh akses setting komisi
+        // hanya owner"), commission settings are narrower than Flash
+        // Sale's role set. `isOwner` here is the real Owner-only prop
+        // this component already receives (see TASK-013's diskon-plafon
+        // removal, same role check) — reused instead of adding a third
+        // near-duplicate prop.
+        isOwner={isOwner}
         onClose={() => setEditingProduct(null)}
       />
 

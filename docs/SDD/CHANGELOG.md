@@ -6,6 +6,15 @@
 
 ## 2026-09-05
 
+**TASK-015 done** — Every commission-setting surface (product's Komisi Bekas override, category's default rate) now Owner-only, not Owner+Super Admin like before. Consolidated 4 separate `["owner","super_admin"]` copies into one `KOMISI_SETTING_ROLES`/`isKomisiSettingAllowed()` in `lib/auth/access.ts`. Also found and fixed a stray leftover: Katalog's EditProductDrawer was still keying its commission-field visibility off `canFlashSale` (Owner+Super Admin) instead of the real owner-only check.
+
+Tasks done: TASK-015.
+Regression: PASS — clean build, lint clean; verified live with minted Owner/Super Admin sessions (API PATCH: Owner 200, Super Admin 403; UI: all 3 entry points checked directly).
+
+---
+
+## 2026-09-05
+
 **BUG-014 fixed** — "Komisi Nominal" on the product form stopped reacting to input right after TASK-014 (same day) removed "Komisi — Persen" — it was still computed from that now-invisible field. Recomputed from the real commission formula instead (Harga Bottom × Komisi Bekas% for kondisi Bekas, flat 6% × Harga Rekomendasi for Baru), so it now updates live with whatever's actually being typed. Display-only fix — the DB-stored `komisiNominal`/Hot Products are untouched.
 
 Bugs fixed: BUG-014.

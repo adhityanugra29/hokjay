@@ -161,3 +161,22 @@ export function isAllowedPage(role: UserRole, pathname: string): boolean {
 export function isPayrollAdminLevel(role: UserRole | undefined | null): boolean {
   return isAdminLevel(role) && role !== "manager";
 }
+
+// Commission settings — Owner ONLY, not even Super Admin. Per the user's
+// request 2026-09-05 ("yang hanya boleh akses setting komisi hanya
+// owner"), narrowed from the ["owner","super_admin"] pairing every other
+// owner-level feature in this app uses (Flash Sale, Akun Login) — this is
+// the one place that's deliberately Owner-exclusive, matching TASK-013's
+// same-day diskon-plafon-removal (also owner-only, not super_admin).
+// Covers: a product's Komisi Bekas override + the (now-hidden, still
+// internally tracked) Komisi — Persen field (app/api/products/[id]/
+// komisi-bekas/route.ts, components/produk/ProductForm.tsx and its
+// callers), and a category's default Komisi Bekas rate
+// (app/api/categories/[id]/route.ts, components/admin/CategoryManager.tsx).
+// Previously 4 separate files each hardcoded their own identical
+// ["owner","super_admin"] copy of this — consolidated here so they can't
+// drift out of sync with each other again.
+export const KOMISI_SETTING_ROLES: UserRole[] = ["owner"];
+export function isKomisiSettingAllowed(role: UserRole | undefined | null): boolean {
+  return !!role && KOMISI_SETTING_ROLES.includes(role);
+}

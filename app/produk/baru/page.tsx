@@ -3,13 +3,9 @@ import ProductForm from "@/components/produk/ProductForm";
 import { dbConnect } from "@/lib/db";
 import { Category } from "@/models/Category";
 import { getSession } from "@/lib/auth/session";
+import { isKomisiSettingAllowed } from "@/lib/auth/access";
 
 export const dynamic = "force-dynamic";
-
-// Owner-only, matching app/katalog/page.tsx's CAN_FLASH_SALE_ROLES/
-// app/api/products/[id]/komisi-bekas/route.ts. Per the user's request
-// 2026-09-03.
-const KOMISI_BEKAS_ROLES = ["owner", "super_admin"];
 
 export default async function ProdukBaruPage() {
   await dbConnect();
@@ -17,7 +13,7 @@ export default async function ProdukBaruPage() {
     Category.find().sort({ name: 1 }).lean(),
     getSession(),
   ]);
-  const isOwner = !!session && KOMISI_BEKAS_ROLES.includes(session.role);
+  const isOwner = isKomisiSettingAllowed(session?.role);
 
   return (
     <>

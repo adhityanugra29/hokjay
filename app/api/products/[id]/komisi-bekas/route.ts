@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
 import { getSession } from "@/lib/auth/session";
+import { isKomisiSettingAllowed } from "@/lib/auth/access";
 
 /**
  * Owner-only commission fields — per-product override of the barang-bekas
@@ -14,12 +15,13 @@ import { getSession } from "@/lib/auth/session";
  * (app/api/products/[id]/route.ts) has no role check of its own and
  * deliberately does NOT accept either field, so a Manager saving unrelated
  * changes there can never touch or silently wipe an Owner-set value.
+ * Narrowed 2026-09-05 to literally just "owner" (was also letting
+ * super_admin through, contradicting this route's own error message
+ * below) — see lib/auth/access.ts's isKomisiSettingAllowed.
  */
-const KOMISI_ROLES = ["owner", "super_admin"];
-
 export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/products/[id]/komisi-bekas">) {
   const session = await getSession();
-  if (!session || !KOMISI_ROLES.includes(session.role)) {
+  if (!isKomisiSettingAllowed(session?.role)) {
     return NextResponse.json({ error: "Hanya Owner yang bisa mengatur Komisi" }, { status: 403 });
   }
 
