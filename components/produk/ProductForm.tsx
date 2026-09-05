@@ -8,6 +8,7 @@ import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
 import { rupiah } from "@/lib/format";
+import { DEFAULT_KOMISI_BEKAS_PERCENT, DEFAULT_KOMISI_BARU_PERCENT } from "@/lib/commission";
 
 export interface ProductFormValues {
   name: string;
@@ -194,11 +195,29 @@ export default function ProductForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Bug found by the user 2026-09-05 ("komisi nominal tidak sesuai dengan
+  // yang sedang diubah, harusnya tercalculate secara live"): this used to
+  // read values.komisiPercent — the "Komisi — Persen" field TASK-014 just
+  // removed from view. That field is still tracked internally (Hot
+  // Products still needs it, see ProductForm's own TASK-014 comment
+  // above), but it no longer changes when the user edits the one visible
+  // commission field, so this display had gone stale/disconnected from
+  // whatever was actually being typed. Recomputed to mirror the REAL
+  // commission formula (lib/commission.ts's computeLineCommission) instead
+  // of the old Hot-Products-only figure: for bekas, Harga Bottom × Komisi
+  // Bekas% (the guaranteed floor-price commission — matches
+  // maxDiskonBekas's own "base" term); for baru, the flat 6% of Harga
+  // Rekomendasi (baru has no per-product override, so nothing to react to
+  // there — this stays a static reference like before).
   const komisiNominal = useMemo(() => {
-    const pct = Number(values.komisiPercent) || 0;
-    const harga = Number(values.hargaRekomendasi) || 0;
-    return Math.round((pct / 100) * harga);
-  }, [values.komisiPercent, values.hargaRekomendasi]);
+    const hargaRekomendasi = Number(values.hargaRekomendasi) || 0;
+    if (values.kondisi === "bekas") {
+      const hargaMinimum = Number(values.hargaMinimum) || 0;
+      const pct = values.komisiBekasPercent ? Number(values.komisiBekasPercent) : DEFAULT_KOMISI_BEKAS_PERCENT;
+      return Math.round((pct / 100) * hargaMinimum);
+    }
+    return Math.round((DEFAULT_KOMISI_BARU_PERCENT / 100) * hargaRekomendasi);
+  }, [values.kondisi, values.komisiBekasPercent, values.hargaMinimum, values.hargaRekomendasi]);
 
   // Harga Modal — per the user's request 2026-08-25: no longer a manual
   // entry, always Harga Minimum ÷ 2. Still saved into the schema's

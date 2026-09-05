@@ -6,6 +6,15 @@
 
 ## 2026-09-05
 
+**BUG-014 fixed** — "Komisi Nominal" on the product form stopped reacting to input right after TASK-014 (same day) removed "Komisi — Persen" — it was still computed from that now-invisible field. Recomputed from the real commission formula instead (Harga Bottom × Komisi Bekas% for kondisi Bekas, flat 6% × Harga Rekomendasi for Baru), so it now updates live with whatever's actually being typed. Display-only fix — the DB-stored `komisiNominal`/Hot Products are untouched.
+
+Bugs fixed: BUG-014.
+Regression: PASS — clean build, lint clean; verified live (20%/15%/empty all produced the exact correct Rupiah figure against Harga Bottom).
+
+---
+
+## 2026-09-05
+
 **TASK-014 done** — Product edit form (Inventory + Katalog's drawer, same shared `ProductForm.tsx`) now shows only ONE commission field instead of two confusing ones. Removed "Komisi — Persen" (never drove real invoice commission — only fed one of Dashboard's Hot Products rankings, explained this trade-off to the user before removing) as a visible input; it still auto-tracks kondisi (6%/10%) under the hood so Komisi Nominal/Hot Products keep working. "Komisi Bekas (%)" remains as the one real commission control, shown only for kondisi Bekas.
 
 Tasks done: TASK-014.

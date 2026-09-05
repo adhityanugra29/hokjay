@@ -246,3 +246,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `lib/format.ts`, `components/invoice/InvoiceListClient.tsx`, `components/invoice/InvoiceActions.tsx`.
 **Regression test:** Clean build, lint clean. Verified live against every real invoice on the list (Playwright, read every rendered `wa.me` href directly): all resolve to `62...`, none still carry a leading `0`.
+
+---
+
+## BUG-014 — "Komisi Nominal" stopped updating live after TASK-014 removed the "Komisi — Persen" field
+
+**Severity:** B3
+**Status:** FIXED (2026-09-05)
+**Source:** User report with screenshot ("bug komisi nominal tidak sesuai dengan yang sedang diubah, harusnya tercalculate secara live").
+
+**Description:** TASK-014 (same day) removed "Komisi — Persen" as a visible/editable field from the product form, leaving "Komisi Bekas (%)" as the only commission input. But the "Komisi Nominal" display below it was still computed from `values.komisiPercent × hargaRekomendasi` — the now-invisible, frozen field — so typing into "Komisi Bekas (%)" (a completely different state field) never moved it. For a product with a historical `komisiPercent` unrelated to its current inputs (e.g. 7%, set before TASK-014 when the field was freely editable), the shown nominal looked arbitrary and disconnected from whatever the user was actively editing.
+
+**Root cause:** TASK-014 hid the field `komisiNominal`'s formula actually depended on, without updating the formula itself to track the field that replaced it in the UI.
+
+**Fix:** `komisiNominal` (the on-screen figure only — `product.komisiPercent`/`product.komisiNominal` stored in the DB, and Hot Products, are untouched) now mirrors the real commission formula from `lib/commission.ts` instead: for kondisi Bekas, `Harga Bottom × Komisi Bekas%` (or the 10% default when the field is empty) — the same guaranteed floor-price commission `computeLineCommission`/`maxDiskonBekas` actually use; for Baru, a static flat 6% × Harga Rekomendasi (unchanged from before, since Baru has no per-product override to react to).
+
+**Files:** `components/produk/ProductForm.tsx`.
+**Regression test:** Clean build, lint clean (same one pre-existing unrelated `react-hooks/set-state-in-effect`). Verified live as Owner against a real bekas product: typing 20/15/(empty) into "Komisi Bekas (%)" updated "Komisi Nominal" to exactly Rp 260.000 / Rp 195.000 / Rp 130.000 (20%/15%/10% of Harga Bottom Rp 1.300.000) each time.
