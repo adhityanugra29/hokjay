@@ -429,31 +429,26 @@ export default function ProductForm({
             <Field label="Harga Rekomendasi">
               <CurrencyInput required value={values.hargaRekomendasi} onChange={(v) => set("hargaRekomendasi", v)} placeholder="0" />
             </Field>
-            {/* Owner/Super Admin only — per the user's request 2026-09-03
-                ("manager tidak boleh untuk edit komisi, kolom insentif
-                tidak boleh terlihat pada input barang"). Not just
-                non-editable but fully hidden from Manager, same treatment
-                as Komisi Bekas — Override below. A non-owner's payload
-                still resends whatever komisiPercent the product already
-                has (see handleSubmit/setKondisi's auto-default), it's just
-                never exposed as something they can consciously change. */}
-            {isOwner && (
-              <Field label="Komisi — Persen" hint="Nilai referensi — komisi invoice dihitung otomatis.">
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={values.komisiPercent}
-                  onChange={(e) => set("komisiPercent", e.target.value)}
-                />
-              </Field>
-            )}
-            {/* Owner/Super Admin only — the actual invoice-time bekas rate
-                override (unlike Komisi — Persen above, this really does
-                drive computeLineCommission). Kosong = ikut default kategori
-                lalu 10% global. Per the user's request 2026-09-03. */}
+            {/* Simplified to ONE visible commission field — per the user's
+                report 2026-09-05 ("kenapa ada 2 untuk setting komisi %?
+                dibuat satu kolom saja... ini membingungkan owner"). There
+                used to be a separate "Komisi — Persen" input here too —
+                it never actually drove real invoice commission (baru is
+                always a hardcoded flat 6%, bekas uses komisiBekasPercent
+                below), it only fed komisiNominal, which in turn feeds one
+                of Dashboard's three "Hot Products" rankings (the
+                "insentif" badge — see lib/dashboard.ts's getHotProducts).
+                Removed as an editable field (explained this trade-off to
+                the user before removing): komisiPercent still auto-tracks
+                kondisi under the hood exactly as before (6% baru / 10%
+                bekas, see setKondisi below), so komisiNominal/Hot Products
+                keep working, just without manual per-product tuning of
+                that one ranking. Owner/Super Admin only, same as before —
+                the actual invoice-time bekas rate override (this really
+                does drive computeLineCommission). Kosong = ikut default
+                kategori lalu 10% global. Per the user's request 2026-09-03. */}
             {isOwner && values.kondisi === "bekas" && (
-              <Field label="Komisi Bekas — Override (%)" hint="Kosongkan untuk pakai default kategori/global (10%).">
+              <Field label="Komisi Bekas (%)" hint="Kosongkan untuk pakai default kategori/global (10%).">
                 <Input
                   type="number"
                   min={0}

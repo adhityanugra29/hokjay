@@ -289,3 +289,20 @@
 
 **Files affected:** `lib/commission.ts`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`, `app/api/invoices/route.ts`, `app/api/invoices/[id]/route.ts`, `components/invoice/{ItemRowEditor,InvoiceForm,EditInvoiceLoader}.tsx`, `app/invoice/[id]/ubah/page.tsx`, `components/katalog/{ProductCard,KatalogClient}.tsx`, `app/katalog/page.tsx`.
 **Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` (InvoiceForm.tsx x2, ItemRowEditor.tsx x1 — all in effects untouched by this change). Verified live end-to-end against a real Bekas product (hargaJual 1.800.000, hargaMinimum 1.300.000): a minted Owner session's `POST /api/invoices` requesting a full 1.800.000 diskon stored exactly that (no clamp); the identical request under a Manager session was correctly clamped to 630.000 (`maxDiskonBekas`'s normal cap) — confirming the Owner override and the still-enforced normal cap coexist correctly. Test invoices deleted after verification.
+
+---
+
+## TASK-014 — Simplify Komisi% to one field on the product form
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** DONE (2026-09-05)
+**Dependency:** None
+**Created:** 2026-09-05 · **Last updated:** 2026-09-05
+
+**Description:** User reported (with a screenshot) two separate commission-percent fields on the product edit form — "Komisi — Persen" and "Komisi Bekas — Override (%)" — as confusing, and asked for one column. Investigated and explained to the user before changing anything (per this project's own SDD discipline): the two fields are NOT duplicates, they drive genuinely different things — "Komisi — Persen" never actually drives real invoice commission (baru is always a hardcoded flat 6%, bekas uses the other field), it only feeds `komisiNominal`, which in turn feeds one of Dashboard's three "Hot Products" carousel rankings (the "insentif" badge, `getHotProducts()` in `lib/dashboard.ts`, sorted by `komisiNominal` descending). "Komisi Bekas — Override (%)" is the field that really does drive `computeLineCommission()` for bekas sales. Explained this trade-off (removing the first field means every bekas product ties at the same 10%/hargaRekomendasi ratio for that one Hot Products ranking, degrading it to effectively "highest-priced bekas product") — user confirmed they still want one field regardless.
+
+**Fix:** Removed "Komisi — Persen" as a visible/editable input in `ProductForm.tsx` (shared by both Inventory's edit page and Katalog's `EditProductDrawer.tsx` — same component, one fix covers both entry points). `komisiPercent` still auto-tracks kondisi under the hood exactly as before (6% baru / 10% bekas, unchanged `setKondisi` logic), so `komisiNominal`/Hot Products keep computing without erroring — Owner just can't manually override that one number per product anymore. The remaining single field ("Komisi Bekas (%)", renamed from "Komisi Bekas — Override (%)" since it's now the only commission control) still only shows for `kondisi === "bekas"` — for "baru" products, no commission field shows at all, matching reality (always flat 6%, no override concept exists there).
+
+**Files affected:** `components/produk/ProductForm.tsx`.
+**Regression test:** Clean build, lint diff shows only one pre-existing `react-hooks/set-state-in-effect` (an unrelated localStorage-last-category effect, untouched by this change). Verified live as Owner against real products: a bekas product's edit page now shows exactly one commission-related label ("Komisi Bekas (%)"); a baru product's shows none; saving the bekas product unchanged still returns 200 and correctly persists `komisiPercent: 10`/`komisiNominal` recalculated to match (10% × hargaRekomendasi) — confirming the auto-tracking and Komisi Nominal display still work with the input gone.

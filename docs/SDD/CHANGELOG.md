@@ -6,6 +6,15 @@
 
 ## 2026-09-05
 
+**TASK-014 done** — Product edit form (Inventory + Katalog's drawer, same shared `ProductForm.tsx`) now shows only ONE commission field instead of two confusing ones. Removed "Komisi — Persen" (never drove real invoice commission — only fed one of Dashboard's Hot Products rankings, explained this trade-off to the user before removing) as a visible input; it still auto-tracks kondisi (6%/10%) under the hood so Komisi Nominal/Hot Products keep working. "Komisi Bekas (%)" remains as the one real commission control, shown only for kondisi Bekas.
+
+Tasks done: TASK-014.
+Regression: PASS — clean build; verified live as Owner (bekas product shows exactly one commission label, baru shows none, save still persists komisiPercent/komisiNominal correctly).
+
+---
+
+## 2026-09-05
+
 **TASK-013 done** — Owner role (only, not Super Admin) can now set diskon up to 100% of an item's value everywhere a plafon existed (new/edit invoice, per-line cart/Katalog diskon, Diskon Bulk). `maxDiskonBaru`/`maxDiskonBekas` gained an `unlimited` param, resolved server-side from the session role (never trusted from the client). Along the way, found and fixed a real gap: the edit-invoice flow never passed the logged-in user down to `InvoiceForm.tsx` at all, which would have silently left this not working for Owner-edited invoices.
 
 Tasks done: TASK-013.
