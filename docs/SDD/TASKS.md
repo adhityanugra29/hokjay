@@ -248,3 +248,25 @@
 
 **Files affected:** `lib/insentif.ts`.
 **Regression test:** Clean build, lint clean. Verified live against real data (`next start` + curl as Owner): "Andi abdillah" no longer appears in the Daftar Bayar list (only as the logged-in user's own sidebar name, unrelated), remaining sales' totals (Rp 11.325.000 / 6.221.000 / 1.495.000 / 620.000 / grand total Rp 19.661.000) unchanged from before the fix.
+
+
+---
+
+## TASK-012 — Katalog: server-paginated infinite scroll (12 produk/batch) + Terbaru→Kategori→Harga default sort
+
+**Type:** PERFORMANCE
+**Priority:** P2
+**Status:** DONE (2026-09-05)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-05
+
+**Description:** Per the user's request ("untuk penarikan data yang ingin ditampilkan pagination dengan otomatis menarik data baru setelah scroll sudah sampai bawah, kamu limit saja 12 produk, supaya ini lebih cepat lagi untuk ngeload katalognya"). `app/katalog/page.tsx` previously fetched **every** matching product (200+, growing) in one shot and shipped the full array to the client, which then did all searching/filtering/sorting in a client-side `useMemo` over the in-memory array — a prior fix (2026-08-31) already capped how many `<ProductCard>`s/images mounted at once, but never reduced the actual data pull, which is what was still slow.
+
+**Also folded in the same day:** the user separately specified the default sort order explicitly — "Urutan produk di katalog: 1. Produk terbaru, 2. Kategori, 3. Harga". Confirmed via AskUserQuestion: "Produk terbaru" reuses the existing "Produk Baru" concept (`getProdukBaruIds()` — same rule as the Filter sidebar's "Hanya Produk Baru" checkbox) as a leading block, not a raw `createdAt` sort; Harga's default direction within a category is termahal dulu (descending); picking "Urutkan: Harga Terendah/Tertinggi" from the existing dropdown is a full override (Produk Baru/Kategori grouping drops out entirely, Flash Sale/booked-DP-sold tier still applies).
+
+**Fix:** Moved all filtering/sorting/grouping into a shared `queryKatalogProducts()`/`queryKatalogAvailableIds()` (`lib/katalog.ts`) built as a MongoDB aggregation — `$match` (every `KatalogFilters` field, incl. `parseSizeQuery`/`sizeMatchClauses` ported server-side from the old client-side size-query parser) —> `$addFields` (`tier`: Flash Sale 0 / available 1 / booked-DP-sold 2, from a fresh `getProductInvoiceStatusMap()` scan since that status isn't a Product field; `produkBaruRank`: 0/1 from `getProdukBaruIds()`) —> `$sort` —> `$skip`/`$limit` (default 12). New `app/api/katalog/route.ts` (GET) serves every page after the first and every filter/search/sort change (`mode=ids` returns every matching *available* id, unpaginated, for "Pilih Semua"); `app/katalog/page.tsx` calls the same function directly for a server-rendered page 1 (plus a cheap `Product.countDocuments()` for the header's "N PRODUK TERSEDIA", since that's no longer implicit in a full fetch). `components/katalog/KatalogClient.tsx`: `items`/`cursor` state (starts as the server-rendered page 1), an `IntersectionObserver` sentinel below the grid (via a "latest ref" pattern so it always reads current filter state, not a stale mount-time closure) triggers the next batch on scroll, search/filter/sort changes debounce 350ms then replace the grid via a fresh page-1 fetch, "Pilih Semua" fetches the complete matching-id list only when picking starts (not on every render) since it needs every match, not just what's been scrolled into view. `CatalogPrintDoc.tsx` needed no changes (already independently, lazily fetches all products via `/api/products` on its own).
+
+**Trade-off (flagged to the user in the plan before building):** search/filter/sort changes now cost a debounced network round-trip instead of being instant/local — unavoidable once the actual data pull is what's being reduced.
+
+**Files affected:** `lib/katalog.ts`, `app/api/katalog/route.ts` (new), `app/katalog/page.tsx`, `components/katalog/KatalogClient.tsx`.
+**Regression test:** Clean build, lint clean. Verified live against real data (`next start` + direct fetch/Playwright, established pattern this session): page 1 renders exactly 12 cards server-side with zero `/api/katalog` calls; scrolling fires one correctly-cursored request per batch (12→24→36→48, confirmed via response logging) with no duplicate/missing ids across a full 190-product paginated fetch (`_id` tiebreaker keeping pagination stable); typing a search query fires exactly one debounced request, not one per keystroke; "Pilih Semua" fetched a real 162-id available list independent of how many cards were scrolled into view; tier ordering (Flash Sale → available → booked/DP/sold), Produk-Baru-leads, category-ascending, and price-descending-within-category all checked programmatically across the complete paginated result set — zero violations found.

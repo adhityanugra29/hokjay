@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-05
+
+**TASK-012 done** — Katalog's data pull is now server-paginated (12 products/batch, real infinite scroll via IntersectionObserver) instead of fetching every matching product on every load. Filtering/sorting/grouping moved into a shared MongoDB aggregation (`lib/katalog.ts`'s `queryKatalogProducts`) reused by page 1 (server-rendered) and every subsequent page/filter change (new `app/api/katalog/route.ts`). Also changed the default sort order to Produk Terbaru → Kategori → Harga (termahal dulu), per the user's explicit spec — the existing Harga dropdown fully overrides this when picked.
+
+Tasks done: TASK-012.
+Regression: PASS — clean build, lint clean; verified live end-to-end (correct per-batch cursors across a full 190-product paginated fetch, zero duplicate/missing ids, debounced search, "Pilih Semua" fetching the complete matching set, and zero tier/sort-order violations across the whole catalog).
+
+---
+
 ## 2026-09-04
 
 **TASK-011 done** — "Kirim ke Pelanggan (WA)" on the invoice detail page now attaches the PDF directly via the Web Share API where the OS supports it (mobile), instead of always requiring a manual download-then-attach. Falls back to the original text-only wa.me link on desktop. Explained to the user why a `wa.me` link alone could never do this (no public file-attach parameter), and why the target number still can't be auto-picked once WhatsApp opens (OS/app-side limitation).

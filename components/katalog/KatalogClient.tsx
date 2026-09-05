@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ProductCard, { type KatalogProduct } from "./ProductCard";
 import EditProductDrawer from "./EditProductDrawer";
 import KatalogFilterSidebar, {
@@ -31,57 +31,55 @@ import { Button, LinkButton } from "@/components/ui/Button";
 const KATALOG_PDF_JPEG_QUALITY = 0.94;
 const KATALOG_PDF_RENDER_SCALE = 2;
 
-// Grid pagination (2026-08-31) — found via a real DevTools Network capture
-// (661 requests, 130 MB of resources, a "Pilih Semua" of every product on
-// screen at once) that the grid had no cap at all: it always rendered
-// EVERY `filtered` product simultaneously, each ProductCard mounting its
-// own next/image request. With 206 products in the catalog today (and
-// growing), that's 206 cards' worth of images all loading at once on
-// every page load — the actual cause behind "kecepatan membuka page
-// katalog", not the PDF export code touched in the BUG-007 fixes above.
-// Selection/PDF logic is untouched: "Pilih Semua" and the PDF still
-// operate on the full `filtered`/`availableFiltered` arrays regardless of
-// how many cards are currently rendered — only what's painted to the
-// screen is capped.
-const GRID_PAGE_SIZE = 30;
+// Server-paginated grid (TASK-012, 2026-09-04) — replaces the earlier
+// client-side-only GRID_PAGE_SIZE/"Tampilkan Lebih Banyak" cap
+// (2026-08-31, which only limited how many ProductCards/images mounted
+// at once but still shipped every matching product from the server on
+// every load). Per the user's explicit request: limit the actual data
+// pull to 12 products/batch, auto-loading more via infinite scroll.
+// Filtering/sorting/grouping (search incl. the size-query parser, every
+// sidebar filter, Flash-Sale-first, booked/DP/sold-sink-to-bottom) all
+// moved server-side — see lib/katalog.ts's queryKatalogProducts() /
+// app/api/katalog/route.ts, the single shared implementation both this
+// page and app/katalog/page.tsx (page 1) now call.
+const KATALOG_PAGE_SIZE = 12;
+// Debounce before a search/filter/sort change actually fires a request —
+// unlike the old client-side useMemo (instant, since it only touched an
+// already-in-memory array), every change now costs a real network
+// round-trip, so this keeps fast typing from firing one request per
+// keystroke.
+const FILTER_DEBOUNCE_MS = 350;
 
-// Size-query parsing, shared by the main search box and the sidebar's
-// manual Ukuran field — per the user's request 2026-09-02 ("bisa search
-// juga by ukuran 80 x 60 x 100"). A query only counts as a size query if,
-// once split on x/×/,/-/whitespace, every token is a plain number — so
-// "80" alone still works exactly as before, "80 x 60 x 100" now also
-// works, but something like "Meja 80" (mixed text) is left to the normal
-// name/SKU text search instead of being misread as a size. Confirmed with
-// the user: matching is partial (you don't have to type all 3 dimensions)
-// but every number you DO type must match one of P/L/T — "80 x 60" won't
-// match a product whose sisi are 80/60/999 unless 80 and 60 both appear
-// somewhere among its P/L/T.
-function parseSizeQuery(query: string): number[] | null {
-  const tokens = query.trim().split(/[xX×,\-\s]+/).filter(Boolean);
-  if (tokens.length === 0) return null;
-  const nums: number[] = [];
-  for (const t of tokens) {
-    if (!/^\d+(\.\d+)?$/.test(t)) return null;
-    nums.push(Number(t));
-  }
-  return nums;
-}
-
-function matchesSizeQuery(
-  nums: number[],
-  dimensi?: { panjangCm?: number | null; lebarCm?: number | null; tinggiCm?: number | null }
-): boolean {
-  const sisi = [dimensi?.panjangCm, dimensi?.lebarCm, dimensi?.tinggiCm];
-  return nums.every((n) => sisi.some((s) => s === n));
+/** Builds the app/api/katalog/route.ts query string from the current search/filters/sort state — shared by the grid fetch and the "Pilih Semua" ids fetch so the two can never target different result sets. */
+function buildKatalogParams(search: string, filters: KatalogFilters, sort: string): URLSearchParams {
+  const params = new URLSearchParams();
+  if (search.trim()) params.set("search", search.trim());
+  for (const cat of filters.categories) params.append("category", cat);
+  if (filters.kondisi) params.set("kondisi", filters.kondisi);
+  if (filters.tipe) params.set("tipe", filters.tipe);
+  if (filters.hargaMin) params.set("hargaMin", filters.hargaMin);
+  if (filters.hargaMax) params.set("hargaMax", filters.hargaMax);
+  if (filters.hargaBasis) params.set("hargaBasis", filters.hargaBasis);
+  if (filters.nama) params.set("nama", filters.nama);
+  if (filters.ukuran) params.set("ukuran", filters.ukuran);
+  if (filters.produkBaru) params.set("produkBaru", "1");
+  if (sort) params.set("sort", sort);
+  return params;
 }
 
 export default function KatalogClient({
-  products,
+  initialProducts,
+  initialNextCursor,
+  totalProductCount,
   categories,
   canEditProduct,
   canFlashSale,
 }: {
-  products: KatalogProduct[];
+  initialProducts: KatalogProduct[];
+  /** null once there's nothing left to load — see queryKatalogProducts()'s own nextCursor. */
+  initialNextCursor: number | null;
+  /** Total catalog size (unfiltered) — only powers the header's "N PRODUK TERSEDIA", never affected by search/filter (that text never updated live even before this task). */
+  totalProductCount: number;
   categories: string[];
   /** Manager/Owner/Super Admin only. Per the user's request 2026-08-27. */
   canEditProduct?: boolean;
@@ -92,20 +90,114 @@ export default function KatalogClient({
   const [filters, setFilters] = useState<KatalogFilters>(EMPTY_KATALOG_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sort, setSort] = useState("");
-  // How many of `filtered` are actually rendered right now — see
-  // GRID_PAGE_SIZE above. Reset back to the first page whenever the
-  // result set itself changes shape, so switching to a narrower
-  // search/filter doesn't confusingly keep whatever larger count was
-  // reached by "Muat lebih banyak" on the previous query.
-  const [visibleCount, setVisibleCount] = useState(GRID_PAGE_SIZE);
-  useEffect(() => {
-    setVisibleCount(GRID_PAGE_SIZE);
-  }, [search, filters, sort]);
+
+  // The grid itself — starts as the server-rendered page 1, grows via
+  // infinite scroll, gets replaced wholesale on a search/filter/sort
+  // change. `cursor === null` means there's nothing left to load.
+  const [items, setItems] = useState<KatalogProduct[]>(initialProducts);
+  const [cursor, setCursor] = useState<number | null>(initialNextCursor);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingFilters, setLoadingFilters] = useState(false);
+  // Every id matching the current filters with real available stock —
+  // fetched fresh only when picking starts (see startPicking below), not
+  // on every render: "Pilih Semua" needs the *complete* matching set, not
+  // just whatever's been scrolled into view so far.
+  const [availableIds, setAvailableIds] = useState<string[]>([]);
+  const isFirstRender = useRef(true);
+  // Bumped on every fetch — a response is only applied if this hasn't
+  // moved on since (e.g. a filter change fired while a "load more" from
+  // the previous filter state was still in flight), so a slow, now-stale
+  // response can't clobber newer state.
+  const fetchSeq = useRef(0);
+
   const [downloading, setDownloading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<KatalogProduct | null>(null);
   const { selected, selectAll, pickMode, startPicking, cancelPicking } = useCatalogSelection();
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
   const { alert } = useDialog();
+
+  async function fetchAvailableIds() {
+    const params = buildKatalogParams(search, filters, sort);
+    params.set("mode", "ids");
+    const res = await fetch(`/api/katalog?${params.toString()}`);
+    const data: { ids: string[] } = await res.json();
+    setAvailableIds(data.ids);
+  }
+
+  // Search/filter/sort -> replace the grid with a fresh page 1. Skips the
+  // very first run: page 1 with empty filters is exactly what the server
+  // already rendered, so re-fetching it on mount would just be a wasted
+  // duplicate request.
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const seq = ++fetchSeq.current;
+    const timer = setTimeout(async () => {
+      setLoadingFilters(true);
+      try {
+        const params = buildKatalogParams(search, filters, sort);
+        params.set("cursor", "0");
+        params.set("limit", String(KATALOG_PAGE_SIZE));
+        const res = await fetch(`/api/katalog?${params.toString()}`);
+        const data: { products: KatalogProduct[]; nextCursor: number | null } = await res.json();
+        if (seq !== fetchSeq.current) return;
+        setItems(data.products);
+        setCursor(data.nextCursor);
+        if (pickMode) await fetchAvailableIds();
+      } finally {
+        if (seq === fetchSeq.current) setLoadingFilters(false);
+      }
+    }, FILTER_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchAvailableIds/pickMode intentionally read fresh via closure, not tracked as deps (would refire this effect on every pick-mode toggle, which isn't a filter change)
+  }, [search, filters, sort]);
+
+  async function loadMore() {
+    if (cursor === null || loadingMore || loadingFilters) return;
+    setLoadingMore(true);
+    const seq = ++fetchSeq.current;
+    try {
+      const params = buildKatalogParams(search, filters, sort);
+      params.set("cursor", String(cursor));
+      params.set("limit", String(KATALOG_PAGE_SIZE));
+      const res = await fetch(`/api/katalog?${params.toString()}`);
+      const data: { products: KatalogProduct[]; nextCursor: number | null } = await res.json();
+      if (seq !== fetchSeq.current) return;
+      setItems((prev) => [...prev, ...data.products]);
+      setCursor(data.nextCursor);
+    } finally {
+      if (seq === fetchSeq.current) setLoadingMore(false);
+    }
+  }
+
+  // Infinite scroll — a sentinel div after the grid; loads the next batch
+  // once it scrolls into view. Per the user's explicit request ("otomatis
+  // menarik data baru setelah scroll sudah sampai bawah"). The observer
+  // itself is only ever created once (empty deps — no need to tear down
+  // and recreate it on every keystroke/state change), so it calls
+  // `loadMore` through a ref kept fresh every render rather than closing
+  // over the mount-time `loadMore` — closing over it directly would keep
+  // reading the initial render's stale `cursor`/`search`/`filters`/`sort`
+  // forever, since this effect never re-runs to pick up a new closure.
+  const loadMoreRef = useRef(loadMore);
+  useEffect(() => {
+    loadMoreRef.current = loadMore;
+  });
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMoreRef.current();
+      },
+      { rootMargin: "400px" } // start loading a bit before the sentinel is actually on-screen, so scrolling feels continuous
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Staged flow: idle button ("Buat Katalog") -> click reveals checkboxes +
   // "Pilih Semua" (label stays "Buat Katalog", disabled while 0 selected) ->
@@ -114,6 +206,7 @@ export default function KatalogClient({
   function handleMainButtonClick() {
     if (!pickMode) {
       startPicking();
+      fetchAvailableIds();
       return;
     }
     if (selected.size === 0) return; // disabled below, but guard anyway
@@ -256,79 +349,10 @@ export default function KatalogClient({
     }
   }
 
-  const filtered = useMemo(() => {
-    let list = products;
-    const q = search.trim().toLowerCase();
-    if (q) {
-      // A number-shaped query (e.g. "80" or "80 x 60 x 100") also matches
-      // P/L/T dimensions — see parseSizeQuery above. Still OR'd with the
-      // usual name/SKU text search, not a replacement for it.
-      const sizeNums = parseSizeQuery(q);
-      list = list.filter((p) => {
-        if (p.name.toLowerCase().includes(q)) return true;
-        if (p.sku.toLowerCase().includes(q)) return true;
-        // Merk was never in this predicate — search never matched it even
-        // after TASK-005 made it a real, separately-typed field (so it no
-        // longer rides along inside `name` for most products). A search
-        // for a brand like "Hosizaki" returned zero results even though
-        // active matching products existed. Per the user's report
-        // 2026-09-04.
-        if (p.merk && p.merk.toLowerCase().includes(q)) return true;
-        if (sizeNums && matchesSizeQuery(sizeNums, p.dimensi)) return true;
-        return false;
-      });
-    }
-    // Kategori/Kondisi/Tipe/Range Harga — from the Filter sidebar
-    // (KatalogFilterSidebar.tsx), replacing the old plain "Semua Kategori"
-    // dropdown. All default to "Semua" (no restriction). Per the user's
-    // request 2026-08-27.
-    if (filters.categories.length > 0) list = list.filter((p) => filters.categories.includes(p.category));
-    if (filters.kondisi) list = list.filter((p) => p.kondisi === filters.kondisi);
-    if (filters.tipe) list = list.filter((p) => p.tipeProduk === filters.tipe);
-    // Compares against Harga Rekomendasi or Harga Minimum, per the
-    // hargaBasis toggle shown right below the range inputs — per the
-    // user's request 2026-08-28.
-    if (filters.hargaMin || filters.hargaMax) {
-      const hargaField = filters.hargaBasis === "minimum" ? "hargaMinimum" : "hargaRekomendasi";
-      if (filters.hargaMin) list = list.filter((p) => p[hargaField] >= Number(filters.hargaMin));
-      if (filters.hargaMax) list = list.filter((p) => p[hargaField] <= Number(filters.hargaMax));
-    }
-    // Manual Nama Produk / Ukuran fields — separate from the main search
-    // box above (which already does the same matching combined with SKU),
-    // per the user's request 2026-08-28.
-    if (filters.nama) {
-      const namaQ = filters.nama.trim().toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(namaQ));
-    }
-    if (filters.ukuran) {
-      const sizeNums = parseSizeQuery(filters.ukuran);
-      list = list.filter((p) => sizeNums !== null && matchesSizeQuery(sizeNums, p.dimensi));
-    }
-    if (filters.produkBaru) list = list.filter((p) => p.isBaru);
-    if (sort === "price-asc") list = [...list].sort((a, b) => a.hargaRekomendasi - b.hargaRekomendasi);
-    if (sort === "price-desc") list = [...list].sort((a, b) => b.hargaRekomendasi - a.hargaRekomendasi);
-    // Flash Sale products always lead the grid, ahead of every other
-    // grouping below — per the user's request 2026-08-29.
-    const flashSale = list.filter((p) => p.flashSale?.active);
-    const rest = list.filter((p) => !p.flashSale?.active);
-    // Booked/Sudah DP/SOLD products sink to the bottom — fully available
-    // stock shows first, so it's what gets the user's attention. Per the
-    // user's request 2026-08-27. Whatever sort/filter already applied
-    // above is preserved within each of the two groups.
-    const available = rest.filter((p) => !p.bookedQty && !p.dpQty && !p.soldQty);
-    const encumbered = rest.filter((p) => p.bookedQty || p.dpQty || p.soldQty);
-    return [...flashSale, ...available, ...encumbered];
-  }, [products, search, filters, sort]);
-
-  // "Pilih Semua" only ever selects products a sales rep could actually
-  // check individually on their own card — per the user's request
-  // 2026-08-31 ("hanya boleh checklist produk yang tersedia"). Same
-  // availableQty formula as ProductCard.tsx's own per-card checkbox guard
-  // (stok minus whatever's already Booked/Sudah DP).
-  const availableFiltered = useMemo(
-    () => filtered.filter((p) => Math.max(0, p.stok - (p.bookedQty ?? 0) - (p.dpQty ?? 0)) > 0),
-    [filtered]
-  );
+  // Search/filter/sort/Flash-Sale-first/booked-sinks-to-bottom are all
+  // applied server-side now (lib/katalog.ts's queryKatalogProducts) --
+  // `items` already IS the correctly filtered/sorted/grouped page. See
+  // the debounced fetch effect above.
 
   return (
     <>
@@ -342,7 +366,7 @@ export default function KatalogClient({
           "Lihat Produk Custom" and the PDF export are secondary (ghost). */}
       <PageHeader
         title="Katalog CV HORECA JAYA"
-        subtitle={`STOK TER-UPDATE OTOMATIS · ${products.length} PRODUK TERSEDIA`}
+        subtitle={`STOK TER-UPDATE OTOMATIS · ${totalProductCount} PRODUK TERSEDIA`}
         actions={
           <>
             <LinkButton href="/katalog/custom-order">Pesan Produk Custom</LinkButton>
@@ -379,11 +403,11 @@ export default function KatalogClient({
           <label className="flex w-fit cursor-pointer items-center gap-2 text-[0.8rem] text-muted select-none">
             <input
               type="checkbox"
-              checked={availableFiltered.length > 0 && availableFiltered.every((p) => selected.has(p._id))}
-              onChange={() => selectAll(availableFiltered.map((p) => p._id))}
+              checked={availableIds.length > 0 && availableIds.every((id) => selected.has(id))}
+              onChange={() => selectAll(availableIds)}
               className="h-4 w-4 accent-accent"
             />
-            Pilih Semua ({availableFiltered.length} produk tersedia)
+            Pilih Semua ({availableIds.length} produk tersedia)
           </label>
         </div>
       )}
@@ -444,8 +468,8 @@ export default function KatalogClient({
         <div className="py-16 text-center font-mono text-sm text-muted">Menyiapkan PDF...</div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4.5 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.slice(0, visibleCount).map((p) => (
+          <div className={`grid grid-cols-1 gap-4.5 sm:grid-cols-2 lg:grid-cols-3 ${loadingFilters ? "opacity-50" : ""}`}>
+            {items.map((p) => (
               <ProductCard
                 key={p._id}
                 product={p}
@@ -454,23 +478,22 @@ export default function KatalogClient({
                 onEdit={() => setEditingProduct(p)}
               />
             ))}
-            {filtered.length === 0 && (
+            {items.length === 0 && !loadingFilters && (
               <div className="col-span-full py-10 text-center font-mono text-sm text-muted">
                 Tidak ada produk yang cocok.
               </div>
             )}
           </div>
 
-          {/* "Pilih Semua"/PDF still work on every filtered product
-              regardless of how many are currently painted to the screen —
-              this only controls how many ProductCard/image requests mount
-              at once. Per the user's report 2026-08-31 that opening
-              Katalog was very slow. */}
-          {visibleCount < filtered.length && (
-            <div className="mt-6 flex justify-center">
-              <Button type="button" variant="ghost" onClick={() => setVisibleCount((c) => c + GRID_PAGE_SIZE)}>
-                Tampilkan Lebih Banyak ({filtered.length - visibleCount} produk lagi)
-              </Button>
+          {/* Infinite scroll (TASK-012, 2026-09-04) — replaces the old
+              "Tampilkan Lebih Banyak" button. This sentinel sits after the
+              grid; an IntersectionObserver (set up above) loads the next
+              12-product batch the moment it scrolls into view. Per the
+              user's explicit request ("otomatis menarik data baru setelah
+              scroll sudah sampai bawah"). */}
+          {cursor !== null && (
+            <div ref={sentinelRef} className="mt-6 flex justify-center py-4">
+              {loadingMore && <span className="font-mono text-[0.78rem] text-muted">Memuat produk lagi...</span>}
             </div>
           )}
         </>
