@@ -69,6 +69,13 @@ export default function InvoiceForm({
   currentUser?: { nama: string; role: string } | null;
 }) {
   const router = useRouter();
+  // Owner-only "no plafon diskon" override — per the user's request
+  // 2026-09-05 ("khusus untuk owner hojay, plafon diskon di hilangkan").
+  // Purely a UI convenience (instant feedback, no clamp/warning shown) —
+  // the actual enforcement is server-side in createInvoice.ts/
+  // updateInvoice.ts, resolved from the session there too, never trusted
+  // from this client value.
+  const isOwner = currentUser?.role === "owner";
   const { items, clear, updateItem } = useCart();
   const { confirm, alert } = useDialog();
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
@@ -297,7 +304,8 @@ export default function InvoiceForm({
         isFlashSale: i.isFlashSale,
         qty: i.qty,
       })),
-      requested
+      requested,
+      isOwner
     );
     if (result.allocations.size === 0) {
       setLastBulkDiskon(new Map());
@@ -600,7 +608,7 @@ export default function InvoiceForm({
       <div>
         <div>
           {items.map((item) => (
-            <ItemRowEditor key={item.productId} item={item} />
+            <ItemRowEditor key={item.productId} item={item} isOwner={isOwner} />
           ))}
           {items.length === 0 && (
             <div className="border border-dashed border-line py-6 text-center font-mono text-[0.8rem] text-muted">

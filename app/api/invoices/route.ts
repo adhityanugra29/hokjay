@@ -25,9 +25,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getSession();
   const body: CreateInvoiceInput = await req.json();
   try {
-    const invoice = await createInvoice(body);
+    // Owner-only "no plafon diskon" override — resolved here from the
+    // session, never trusted from the request body. Per the user's
+    // request 2026-09-05.
+    const invoice = await createInvoice(body, { isOwner: session?.role === "owner" });
     return NextResponse.json(invoice, { status: 201 });
   } catch (err) {
     return NextResponse.json(

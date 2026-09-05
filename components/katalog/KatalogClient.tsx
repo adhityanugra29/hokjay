@@ -74,6 +74,7 @@ export default function KatalogClient({
   categories,
   canEditProduct,
   canFlashSale,
+  isOwner,
 }: {
   initialProducts: KatalogProduct[];
   /** null once there's nothing left to load — see queryKatalogProducts()'s own nextCursor. */
@@ -85,6 +86,8 @@ export default function KatalogClient({
   canEditProduct?: boolean;
   /** Owner/Super Admin only. Per the user's request 2026-08-29. */
   canFlashSale?: boolean;
+  /** Owner role only (not Super Admin) — skips the diskon plafon on each card's inline diskon field. Per the user's request 2026-09-05. */
+  isOwner?: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<KatalogFilters>(EMPTY_KATALOG_FILTERS);
@@ -475,6 +478,7 @@ export default function KatalogClient({
                 product={p}
                 canEdit={canEditProduct}
                 canFlashSale={canFlashSale}
+                isOwner={isOwner}
                 onEdit={() => setEditingProduct(p)}
               />
             ))}

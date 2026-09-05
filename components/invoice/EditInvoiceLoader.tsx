@@ -63,6 +63,7 @@ export default function EditInvoiceLoader({
   customers,
   salesList,
   couriers,
+  currentUser,
 }: {
   invoiceId: string;
   nomor: string;
@@ -71,6 +72,8 @@ export default function EditInvoiceLoader({
   customers: CustomerOption[];
   salesList: SalesOption[];
   couriers: CourierOption[];
+  /** Wasn't threaded through to the edit flow before — see InvoiceForm.tsx's own isOwner. Per the user's request 2026-09-05. */
+  currentUser?: { nama: string; role: string } | null;
 }) {
   const { loadItems } = useCart();
   const loaded = useRef(false);
@@ -91,6 +94,7 @@ export default function EditInvoiceLoader({
       salesList={salesList}
       couriers={couriers}
       initial={initial}
+      currentUser={currentUser}
     />
   );
 }

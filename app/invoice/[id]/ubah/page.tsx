@@ -107,6 +107,7 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
         <EditInvoiceLoader
           invoiceId={id}
           nomor={invoice.nomor}
+          currentUser={session ? { nama: session.nama, role: session.role } : null}
           items={cartItems}
           initial={{
             customerId: invoice.customer?.ref ? String(invoice.customer.ref) : undefined,

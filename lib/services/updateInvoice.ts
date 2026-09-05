@@ -26,8 +26,11 @@ import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
  * — no re-application, since new-style unpaid invoices don't touch stock at
  * all.
  */
-export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput) {
+export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput, opts: { isOwner?: boolean } = {}) {
   await dbConnect();
+  // See createInvoice.ts's matching comment — Owner-only "no plafon"
+  // override, resolved from the CURRENT SESSION's role by the caller.
+  const unlimited = opts.isOwner ?? false;
 
   const existing = await Invoice.findById(invoiceId);
   if (!existing) throw new Error("Invoice tidak ditemukan");
@@ -66,7 +69,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     if (!i.productId) {
       // Diskon cap for custom items — closes BUG-004, see createInvoice.ts's
       // matching comment.
-      const diskon = i.isFlashSale ? rawDiskon : Math.min(rawDiskon, maxDiskonBaru(i.hargaJual, 0));
+      const diskon = i.isFlashSale ? rawDiskon : Math.min(rawDiskon, maxDiskonBaru(i.hargaJual, 0, unlimited));
       const subtotal = (i.hargaJual - diskon) * i.qty;
       const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual, hargaMinimum: 0, diskon });
       return {
@@ -106,8 +109,8 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     const diskon = i.isFlashSale
       ? rawDiskon
       : product.kondisi === "bekas"
-        ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum, komisiBekasPercent))
-        : Math.min(rawDiskon, maxDiskonBaru(hargaJual, product.hargaMinimum));
+        ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum, komisiBekasPercent, unlimited))
+        : Math.min(rawDiskon, maxDiskonBaru(hargaJual, product.hargaMinimum, unlimited));
     const subtotal = (hargaJual - diskon) * i.qty;
     // See createInvoice.ts's matching comment — Flash Sale items get
     // their own flat 7% instead.

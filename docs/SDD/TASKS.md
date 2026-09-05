@@ -270,3 +270,22 @@
 
 **Files affected:** `lib/katalog.ts`, `app/api/katalog/route.ts` (new), `app/katalog/page.tsx`, `components/katalog/KatalogClient.tsx`.
 **Regression test:** Clean build, lint clean. Verified live against real data (`next start` + direct fetch/Playwright, established pattern this session): page 1 renders exactly 12 cards server-side with zero `/api/katalog` calls; scrolling fires one correctly-cursored request per batch (12→24→36→48, confirmed via response logging) with no duplicate/missing ids across a full 190-product paginated fetch (`_id` tiebreaker keeping pagination stable); typing a search query fires exactly one debounced request, not one per keystroke; "Pilih Semua" fetched a real 162-id available list independent of how many cards were scrolled into view; tier ordering (Flash Sale → available → booked/DP/sold), Produk-Baru-leads, category-ascending, and price-descending-within-category all checked programmatically across the complete paginated result set — zero violations found.
+
+---
+
+## TASK-013 — Owner-only: remove the diskon plafon entirely (up to 100% off)
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-05)
+**Dependency:** None
+**Created:** 2026-09-05 · **Last updated:** 2026-09-05
+
+**Description:** Per the user's request ("khusus untuk owner hojay, plafon diskon di hilangkan, jadi bisa untuk diskon sampai 100% nilai barang"). Confirmed via AskUserQuestion: scoped to role `owner` only (NOT `super_admin` — narrower than the app's usual owner+super_admin pairing for top-tier features), and applies everywhere a diskon plafon exists: new invoice, edit invoice, per-line diskon on the cart/Katalog card, AND Diskon Bulk — not just one of them.
+
+**Fix:** `maxDiskonBaru()`/`maxDiskonBekas()` (`lib/commission.ts`) gained an `unlimited` param — when true, returns `hargaJual` itself (the diskon can reach the full sale price, net Rp0) instead of the usual protected-margin cap. `allocateBulkDiskon()`/`diskonCapUnit()` thread the same flag through. Server-side (the actual enforcement — `createInvoice.ts`/`updateInvoice.ts`) resolves `isOwner` from the **current session's role**, never a client-supplied field: both `app/api/invoices/route.ts` (POST) and `app/api/invoices/[id]/route.ts` (PATCH) now pass `{ isOwner: session?.role === "owner" }` into the service functions. Client-side (`InvoiceForm.tsx`, `ItemRowEditor.tsx`, `ProductCard.tsx`) mirrors the same check purely for instant UI feedback (no clamp/warning shown to an Owner) — the server clamp is what actually matters.
+
+**Found and fixed along the way:** `EditInvoiceLoader.tsx` (the `/invoice/[id]/ubah` edit flow) never threaded `currentUser` through to `InvoiceForm.tsx` at all — only the create flow (`/invoice/baru`) did. Without fixing this, `isOwner` would have silently stayed `false` on every edit regardless of who was logged in, missing half of the confirmed scope. Added `currentUser` to `EditInvoiceLoader`'s props, threaded from `app/invoice/[id]/ubah/page.tsx`'s own `session` (already fetched there for the existing `isInvoiceBlockedForSession` check).
+
+**Files affected:** `lib/commission.ts`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`, `app/api/invoices/route.ts`, `app/api/invoices/[id]/route.ts`, `components/invoice/{ItemRowEditor,InvoiceForm,EditInvoiceLoader}.tsx`, `app/invoice/[id]/ubah/page.tsx`, `components/katalog/{ProductCard,KatalogClient}.tsx`, `app/katalog/page.tsx`.
+**Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` (InvoiceForm.tsx x2, ItemRowEditor.tsx x1 — all in effects untouched by this change). Verified live end-to-end against a real Bekas product (hargaJual 1.800.000, hargaMinimum 1.300.000): a minted Owner session's `POST /api/invoices` requesting a full 1.800.000 diskon stored exactly that (no clamp); the identical request under a Manager session was correctly clamped to 630.000 (`maxDiskonBekas`'s normal cap) — confirming the Owner override and the still-enforced normal cap coexist correctly. Test invoices deleted after verification.

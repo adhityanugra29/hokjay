@@ -50,8 +50,14 @@ export interface CreateInvoiceInput {
  * Custom-order items (no productId) never touch stock but do earn the flat
  * 6% "barang baru" commission rate.
  */
-export async function createInvoice(input: CreateInvoiceInput) {
+export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?: boolean } = {}) {
   await dbConnect();
+  // Owner-only, resolved by the caller from the CURRENT SESSION's role
+  // (never a client-supplied field on `input`) — per the user's request
+  // 2026-09-05 ("khusus untuk owner hojay, plafon diskon di hilangkan,
+  // jadi bisa untuk diskon sampai 100% nilai barang"). See
+  // lib/commission.ts's maxDiskonBaru/maxDiskonBekas `unlimited` param.
+  const unlimited = opts.isOwner ?? false;
 
   if (input.items.length === 0) {
     throw new Error("Invoice harus punya minimal 1 item produk");
@@ -79,7 +85,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       // degrades to hargaJual itself here since there's no real Harga
       // Bottom for a bespoke item — closes BUG-004, this had no ceiling
       // at all before.
-      const diskon = i.isFlashSale ? rawDiskon : Math.min(rawDiskon, maxDiskonBaru(i.hargaJual, 0));
+      const diskon = i.isFlashSale ? rawDiskon : Math.min(rawDiskon, maxDiskonBaru(i.hargaJual, 0, unlimited));
       const subtotal = (i.hargaJual - diskon) * i.qty;
       const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual, hargaMinimum: 0, diskon });
       return {
@@ -139,8 +145,8 @@ export async function createInvoice(input: CreateInvoiceInput) {
     const diskon = i.isFlashSale
       ? rawDiskon
       : product.kondisi === "bekas"
-        ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum, komisiBekasPercent))
-        : Math.min(rawDiskon, maxDiskonBaru(hargaJual, product.hargaMinimum));
+        ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum, komisiBekasPercent, unlimited))
+        : Math.min(rawDiskon, maxDiskonBaru(hargaJual, product.hargaMinimum, unlimited));
     const subtotal = (hargaJual - diskon) * i.qty;
     // Commission is computed from the product's *current* kondisi/harga
     // minimum (never trusting client-supplied values for this) — see

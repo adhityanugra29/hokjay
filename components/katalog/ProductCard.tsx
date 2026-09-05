@@ -120,6 +120,7 @@ export default function ProductCard({
   product,
   canEdit,
   canFlashSale,
+  isOwner,
   onEdit,
 }: {
   product: KatalogProduct;
@@ -127,6 +128,8 @@ export default function ProductCard({
   canEdit?: boolean;
   /** Owner/Super Admin only — shows the Flash Sale button. Per the user's request 2026-08-29. */
   canFlashSale?: boolean;
+  /** Owner role only (not Super Admin — narrower than canFlashSale) — skips the diskon plafon entirely. Per the user's request 2026-09-05. */
+  isOwner?: boolean;
   onEdit?: () => void;
 }) {
   const router = useRouter();
@@ -522,8 +525,8 @@ export default function ProductCard({
                     // instead of only being silently clamped at save time.
                     const max =
                       product.kondisi === "bekas"
-                        ? maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent)
-                        : maxDiskonBaru(effectivePrice, product.hargaMinimum);
+                        ? maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent, isOwner)
+                        : maxDiskonBaru(effectivePrice, product.hargaMinimum, isOwner);
                     if (num > max) {
                       setDiscount(product._id, max);
                       setDiscountWarning(true);
@@ -537,8 +540,8 @@ export default function ProductCard({
                   Diskon melebihi batas insentif, disesuaikan otomatis ke maksimal{" "}
                   {rupiah(
                     product.kondisi === "bekas"
-                      ? maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent)
-                      : maxDiskonBaru(effectivePrice, product.hargaMinimum)
+                      ? maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent, isOwner)
+                      : maxDiskonBaru(effectivePrice, product.hargaMinimum, isOwner)
                   )}
                   .
                 </div>

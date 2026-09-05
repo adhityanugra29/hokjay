@@ -142,12 +142,22 @@ export function computeLineCommission({
  * resolveKomisiBekasPercent() resolves for this product, so the diskon cap
  * always tracks the same guaranteed-commission margin computeLineCommission
  * actually pays out, even when that rate's been overridden.
+ *
+ * `unlimited` (2026-09-05) — Owner-only ("khusus untuk owner hojay, plafon
+ * diskon di hilangkan, jadi bisa untuk diskon sampai 100% nilai barang"):
+ * when true, skips the margin-protection formula entirely and returns
+ * `hargaJual` itself, so diskon can go all the way to the full sale price
+ * (net Rp0). Every caller resolves this from the CURRENT SESSION's role
+ * server-side (never a client-supplied flag) before passing it in — see
+ * createInvoice.ts/updateInvoice.ts.
  */
 export function maxDiskonBekas(
   hargaJual: number,
   hargaMinimum: number,
-  komisiBekasPercent: number = DEFAULT_KOMISI_BEKAS_PERCENT
+  komisiBekasPercent: number = DEFAULT_KOMISI_BEKAS_PERCENT,
+  unlimited = false
 ): number {
+  if (unlimited) return hargaJual;
   const base = Math.round(hargaMinimum * (komisiBekasPercent / 100));
   return Math.max(0, hargaJual - hargaMinimum + base);
 }
@@ -177,8 +187,12 @@ export const DEFAULT_KOMISI_BARU_PERCENT = 6;
  * (hargaMinimum snapshotted as 0, see createInvoice.ts), this correctly
  * degrades back to hargaJual itself — there's no real Harga Bottom to
  * protect there.
+ *
+ * `unlimited` (2026-09-05) -- see maxDiskonBekas's matching doc comment;
+ * same Owner-only "up to 100% of item value" override.
  */
-export function maxDiskonBaru(hargaJual: number, hargaMinimum: number): number {
+export function maxDiskonBaru(hargaJual: number, hargaMinimum: number, unlimited = false): number {
+  if (unlimited) return hargaJual;
   const base = Math.round(hargaMinimum * (DEFAULT_KOMISI_BARU_PERCENT / 100));
   return Math.max(0, hargaJual - hargaMinimum + base);
 }
@@ -213,10 +227,10 @@ function komisiCostPerRupiah(line: Pick<BulkDiskonLine, "isCustom" | "kondisi">)
   return line.isCustom || line.kondisi !== "bekas" ? 0.06 : 1;
 }
 
-function diskonCapUnit(line: BulkDiskonLine): number {
+function diskonCapUnit(line: BulkDiskonLine, unlimited: boolean): number {
   return line.isCustom || line.kondisi !== "bekas"
-    ? maxDiskonBaru(line.hargaJual, line.hargaMinimum)
-    : maxDiskonBekas(line.hargaJual, line.hargaMinimum, line.komisiBekasPercent ?? DEFAULT_KOMISI_BEKAS_PERCENT);
+    ? maxDiskonBaru(line.hargaJual, line.hargaMinimum, unlimited)
+    : maxDiskonBekas(line.hargaJual, line.hargaMinimum, line.komisiBekasPercent ?? DEFAULT_KOMISI_BEKAS_PERCENT, unlimited);
 }
 
 /**
@@ -233,8 +247,16 @@ function diskonCapUnit(line: BulkDiskonLine): number {
  * combined capacity) is redistributed in further Rp10.000 steps,
  * cheapest-line-first, until either the request is met or every eligible
  * line is maxed out.
+ *
+ * `unlimited` (2026-09-05) — see maxDiskonBekas's matching doc comment;
+ * per the user's explicit request, the Owner-only "no plafon" override
+ * applies everywhere diskon is capped, Diskon Bulk included.
  */
-export function allocateBulkDiskon(lines: BulkDiskonLine[], totalRequested: number): BulkDiskonResult {
+export function allocateBulkDiskon(
+  lines: BulkDiskonLine[],
+  totalRequested: number,
+  unlimited = false
+): BulkDiskonResult {
   const eligible = lines.filter((l) => !l.isFlashSale && l.diskonPerUnit === 0 && l.qty > 0);
   const sorted = [...eligible].sort((a, b) => komisiCostPerRupiah(a) - komisiCostPerRupiah(b));
 
@@ -243,7 +265,7 @@ export function allocateBulkDiskon(lines: BulkDiskonLine[], totalRequested: numb
 
   for (const line of sorted) {
     if (remaining < BULK_DISKON_STEP) break;
-    const capTotal = diskonCapUnit(line) * line.qty;
+    const capTotal = diskonCapUnit(line, unlimited) * line.qty;
     if (capTotal < BULK_DISKON_STEP) continue;
 
     const wantTotal = Math.min(remaining, capTotal);
@@ -262,7 +284,7 @@ export function allocateBulkDiskon(lines: BulkDiskonLine[], totalRequested: numb
     progressed = false;
     for (const line of sorted) {
       if (remaining < BULK_DISKON_STEP) break;
-      const capUnit = diskonCapUnit(line);
+      const capUnit = diskonCapUnit(line, unlimited);
       const current = allocations.get(line.productId) ?? 0;
       const nextUnit = current + BULK_DISKON_STEP;
       if (nextUnit > capUnit) continue;

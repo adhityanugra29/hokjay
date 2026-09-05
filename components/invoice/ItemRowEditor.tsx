@@ -56,7 +56,7 @@ function NumberField({
   );
 }
 
-export default function ItemRowEditor({ item }: { item: CartItem }) {
+export default function ItemRowEditor({ item, isOwner }: { item: CartItem; isOwner?: boolean }) {
   const { updateItem, removeItem } = useCart();
   // Diskon-exceeds-insentif warning for barang bekas — see maxDiskonBekas
   // usage below. Per the user's request 2026-08-29.
@@ -164,11 +164,13 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
               const num = v ? Number(v) : 0;
               // Baru/Custom now has a real cap too (2026-09-03 — see
               // maxDiskonBaru's doc comment), same on-blur clamp+warning
-              // treatment Bekas already had.
+              // treatment Bekas already had. `isOwner` (2026-09-05) skips
+              // the cap entirely — see maxDiskonBaru/maxDiskonBekas's
+              // `unlimited` param doc comment.
               const max =
                 item.kondisi === "bekas"
-                  ? maxDiskonBekas(item.hargaJual, item.hargaMinimum, item.komisiBekasPercent)
-                  : maxDiskonBaru(item.hargaJual, item.hargaMinimum);
+                  ? maxDiskonBekas(item.hargaJual, item.hargaMinimum, item.komisiBekasPercent, isOwner)
+                  : maxDiskonBaru(item.hargaJual, item.hargaMinimum, isOwner);
               if (num > max) {
                 updateItem(item.productId, { diskonPerUnit: max });
                 setDiscountWarning(true);
@@ -180,8 +182,8 @@ export default function ItemRowEditor({ item }: { item: CartItem }) {
               Melebihi batas insentif, disesuaikan ke maks.{" "}
               {rupiah(
                 item.kondisi === "bekas"
-                  ? maxDiskonBekas(item.hargaJual, item.hargaMinimum, item.komisiBekasPercent)
-                  : maxDiskonBaru(item.hargaJual, item.hargaMinimum)
+                  ? maxDiskonBekas(item.hargaJual, item.hargaMinimum, item.komisiBekasPercent, isOwner)
+                  : maxDiskonBaru(item.hargaJual, item.hargaMinimum, isOwner)
               )}.
             </span>
           )}

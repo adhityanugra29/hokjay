@@ -51,7 +51,8 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/invoices/[id]"
   }
   const body: CreateInvoiceInput = await req.json();
   try {
-    const invoice = await updateInvoice(id, body);
+    // Owner-only "no plafon diskon" override — see app/api/invoices/route.ts's matching comment.
+    const invoice = await updateInvoice(id, body, { isOwner: session?.role === "owner" });
     return NextResponse.json(invoice);
   } catch (err) {
     return NextResponse.json(

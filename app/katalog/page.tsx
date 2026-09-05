@@ -14,6 +14,11 @@ export default async function KatalogPage() {
   const session = await getSession();
   const canEditProduct = !!session && CAN_EDIT_PRODUCT_ROLES.includes(session.role);
   const canFlashSale = !!session && CAN_FLASH_SALE_ROLES.includes(session.role);
+  // Owner role only (not Super Admin — narrower than canFlashSale above),
+  // skips the diskon plafon on each card's inline diskon field. Per the
+  // user's request 2026-09-05 ("khusus untuk owner hojay, plafon diskon
+  // di hilangkan").
+  const isOwner = session?.role === "owner";
 
   // Only page 1 (12 products, unfiltered/default-sorted) is fetched
   // server-side — TASK-012 (2026-09-04), per the user's request to speed
@@ -37,6 +42,7 @@ export default async function KatalogPage() {
     <KatalogClient
       canEditProduct={canEditProduct}
       canFlashSale={canFlashSale}
+      isOwner={isOwner}
       categories={categories.map((c) => c.name)}
       initialProducts={products}
       initialNextCursor={nextCursor}

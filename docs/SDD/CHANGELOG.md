@@ -6,6 +6,15 @@
 
 ## 2026-09-05
 
+**TASK-013 done** — Owner role (only, not Super Admin) can now set diskon up to 100% of an item's value everywhere a plafon existed (new/edit invoice, per-line cart/Katalog diskon, Diskon Bulk). `maxDiskonBaru`/`maxDiskonBekas` gained an `unlimited` param, resolved server-side from the session role (never trusted from the client). Along the way, found and fixed a real gap: the edit-invoice flow never passed the logged-in user down to `InvoiceForm.tsx` at all, which would have silently left this not working for Owner-edited invoices.
+
+Tasks done: TASK-013.
+Regression: PASS — clean build; verified live (minted Owner vs Manager sessions against a real product): Owner's requested 1.800.000 diskon stored in full, Manager's identical request correctly clamped to 630.000.
+
+---
+
+## 2026-09-05
+
 **TASK-012 done** — Katalog's data pull is now server-paginated (12 products/batch, real infinite scroll via IntersectionObserver) instead of fetching every matching product on every load. Filtering/sorting/grouping moved into a shared MongoDB aggregation (`lib/katalog.ts`'s `queryKatalogProducts`) reused by page 1 (server-rendered) and every subsequent page/filter change (new `app/api/katalog/route.ts`). Also changed the default sort order to Produk Terbaru → Kategori → Harga (termahal dulu), per the user's explicit spec — the existing Harga dropdown fully overrides this when picked.
 
 Tasks done: TASK-012.
