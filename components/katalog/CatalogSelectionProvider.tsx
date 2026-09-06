@@ -106,10 +106,25 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
 
   function selectAll(ids: string[]) {
     setSelected((prev) => {
-      // If everything given is already selected, treat it as "deselect all"
-      // (mirrors a checkbox's own indeterminate -> checked -> unchecked cycle).
+      // Merges into whatever's already selected instead of replacing it —
+      // per the user's bug report 2026-09-06 ("waktu user search dan
+      // select all lainnya, dia reset"): "Pilih Semua" only ever sees the
+      // CURRENT search/filter's ids (KatalogClient.tsx's availableIds), so
+      // replacing `selected` outright silently dropped every product
+      // picked under a previous search the moment a new one ran "Pilih
+      // Semua" again. If everything given is already selected, treat it
+      // as "deselect just these" (mirrors a checkbox's own
+      // indeterminate -> checked -> unchecked cycle) — still scoped to
+      // `ids`, so it doesn't touch selections made under a different
+      // search either.
       const allSelected = ids.length > 0 && ids.every((id) => prev.has(id));
-      return allSelected ? new Set() : new Set(ids);
+      const next = new Set(prev);
+      if (allSelected) {
+        for (const id of ids) next.delete(id);
+      } else {
+        for (const id of ids) next.add(id);
+      }
+      return next;
     });
   }
 

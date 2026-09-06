@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-09-06
+
+**BUG-015 fixed** — Katalog's "Pilih Semua" replaced the whole selection with just the current search's matching products instead of adding to it, so picking under one search then searching again and picking more silently dropped the first batch. Now merges (union) instead of replacing, still supporting "click again to deselect" scoped to the current search only.
+
+Bugs fixed: BUG-015.
+Regression: PASS — clean build, lint clean; verified live (Cabinet 15 + Meja 6 = 21, confirmed via both the UI count and the raw persisted selection).
+
+Also checked the same day: whether a Lunas invoice still shows its Riwayat — confirmed already working correctly against a real paid invoice, no fix needed.
+
+---
+
 ## 2026-09-05
 
 **TASK-015 done** — Every commission-setting surface (product's Komisi Bekas override, category's default rate) now Owner-only, not Owner+Super Admin like before. Consolidated 4 separate `["owner","super_admin"]` copies into one `KOMISI_SETTING_ROLES`/`isKomisiSettingAllowed()` in `lib/auth/access.ts`. Also found and fixed a stray leftover: Katalog's EditProductDrawer was still keying its commission-field visibility off `canFlashSale` (Owner+Super Admin) instead of the real owner-only check.

@@ -263,3 +263,22 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `components/produk/ProductForm.tsx`.
 **Regression test:** Clean build, lint clean (same one pre-existing unrelated `react-hooks/set-state-in-effect`). Verified live as Owner against a real bekas product: typing 20/15/(empty) into "Komisi Bekas (%)" updated "Komisi Nominal" to exactly Rp 260.000 / Rp 195.000 / Rp 130.000 (20%/15%/10% of Harga Bottom Rp 1.300.000) each time.
+
+---
+
+## BUG-015 — Katalog "Pilih Semua" reset every previous search's selection instead of accumulating
+
+**Severity:** B2
+**Status:** FIXED (2026-09-06)
+**Source:** User report ("untuk select all, di katalog, kenapa waktu user search dan select all lainnya, dia reset? seharusnya dia bisa ngesave").
+
+**Description:** `CatalogSelectionProvider.tsx`'s `selectAll(ids)` replaced the entire `selected` Set with `new Set(ids)`. Since "Pilih Semua" only ever sees the CURRENT search/filter's matching ids (`KatalogClient.tsx`'s `availableIds`), clicking it under one search, then searching for something else and clicking it again, silently discarded every product picked under the first search the instant the second call ran.
+
+**Root cause:** `selectAll` was written as a full replace, correct only for the single-search case it was originally built and tested against — nothing about it was wrong until "Pilih Semua" needed to compose across multiple searches, which the original design never accounted for.
+
+**Fix:** `selectAll` now merges into whatever's already selected (union) instead of replacing it, while preserving the existing "click again to deselect" behavior — but scoped to just the ids passed in, so deselecting the current search's picks never touches selections made under a different one.
+
+**Files:** `components/katalog/CatalogSelectionProvider.tsx`.
+**Regression test:** Clean build, lint clean (same one pre-existing unrelated `react-hooks/set-state-in-effect`, the provider's own localStorage-hydration effect). Verified live end-to-end: searched "Cabinet" → Pilih Semua (15 produk) → searched "Meja" → Pilih Semua (6 produk) → main button correctly read "Unduh Katalog PDF - 21 itemnya" and the persisted `localStorage` selection held the exact union of both searches' ids, not just the most recent one.
+
+**Also investigated the same day:** the user separately asked whether a paid ("Lunas") invoice still shows its Riwayat (activity history) — checked a real paid invoice's detail page directly and confirmed this already works correctly: `payInvoice.ts` pushes a "Pembayaran dikonfirmasi — status Lunas" entry at payment time, and the Riwayat panel on `/invoice/[id]` renders unconditionally regardless of status. No fix needed; reported back to the user with the real invoice's rendered Riwayat/Status Pembayaran output as evidence.
