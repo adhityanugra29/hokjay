@@ -6,6 +6,15 @@
 
 ## 2026-09-07
 
+**BUG-016 fixed** — "Avi" and "Avicenna Pangaran" showed as two separate people on the Insentif leaderboard (User/Sales records were already correctly merged; 11 older invoices and 1 customer still carried the pre-rename name "Avi" as a plain string snapshot). Pure data correction, no code change — updated exactly those 12 documents after confirming no other collection still had the stale name.
+
+Bugs fixed: BUG-016.
+Regression: PASS — verified live: zero remaining "Avi" on any invoice, leaderboard shows one unified name.
+
+---
+
+## 2026-09-07
+
 **TASK-016 done** — Invoice list's Preview drawer gets an "Invoice"/"Bukti Transfer" tab pair (Invoice shown by default), surfacing the proof-of-transfer already captured by PaymentForm.tsx/DpForm.tsx but never viewable anywhere. Two mockup rounds first, per the user's explicit requests — one to see the layout before coding, one rebuilt with the app's real Tailwind classes/tokens instead of hand-approximated CSS. Only shows when the invoice actually has a bukti (cash payments have none); shows both DP and settlement proof separately when both exist.
 
 Tasks done: TASK-016.

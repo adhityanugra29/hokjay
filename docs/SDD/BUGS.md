@@ -282,3 +282,20 @@ Also applied, per the user's related request, a conservative compression tighten
 **Regression test:** Clean build, lint clean (same one pre-existing unrelated `react-hooks/set-state-in-effect`, the provider's own localStorage-hydration effect). Verified live end-to-end: searched "Cabinet" → Pilih Semua (15 produk) → searched "Meja" → Pilih Semua (6 produk) → main button correctly read "Unduh Katalog PDF - 21 itemnya" and the persisted `localStorage` selection held the exact union of both searches' ids, not just the most recent one.
 
 **Also investigated the same day:** the user separately asked whether a paid ("Lunas") invoice still shows its Riwayat (activity history) — checked a real paid invoice's detail page directly and confirmed this already works correctly: `payInvoice.ts` pushes a "Pembayaran dikonfirmasi — status Lunas" entry at payment time, and the Riwayat panel on `/invoice/[id]` renders unconditionally regardless of status. No fix needed; reported back to the user with the real invoice's rendered Riwayat/Status Pembayaran output as evidence.
+
+---
+
+## BUG-016 — "Avi" showed as a separate person from "Avicenna Pangaran" on the leaderboard
+
+**Severity:** B2
+**Status:** FIXED (2026-09-07)
+**Source:** User report ("untuk akun avi, tolong namanya diganti semua menjadi Avicenna Pangaran, karena di leaderboard mereka terpisah, padahal 1 orang").
+
+**Description:** Same underlying risk this project's own [[sales-user-name-matching]] pattern already flags: `Invoice.sales.nama`/`Customer.assignedSales` are plain string snapshots, not live references. The `User`/`Sales` records for this person were already correctly "Avicenna Pangaran" (no code bug there), but 11 older invoices and 1 customer still carried the earlier name "Avi" from before a rename — so anything grouping/ranking by that raw string (the Insentif leaderboard, most visibly) split into two separate rows for what's really one person.
+
+**Root cause:** Data, not logic — a historical name change (Sales roster/User account) was never backfilled onto the Invoice/Customer documents that had already snapshotted the old name.
+
+**Fix:** Direct data correction (no code change — the snapshot-on-write architecture itself is intentional, see TASK-007/BUG's history). Investigated the full blast radius first (`User`, `Sales`, `Invoice.sales.nama`, `Customer.assignedSales`, `PurchaseRequest.sales.nama`/`diajukanOleh`, `Karyawan.nama` — `GajiPayment.sales` is a real ObjectId ref, unaffected) before touching anything: only `Invoice.sales.nama` (11 documents) and `Customer.assignedSales` (1 document) still had "Avi"; everywhere else was already correct. Updated exactly those 12 documents to "Avicenna Pangaran".
+
+**Files:** None — pure data correction via a one-off script (Invoice.updateMany/Customer.updateMany, exact-match filter, deleted after use).
+**Regression test:** Verified live: `Invoice.distinct("sales.nama")` (real API) now returns only "Avicenna Pangaran", zero remaining "Avi"; `/insentif` leaderboard page (real HTTP fetch) shows only the one name, no split entry.
