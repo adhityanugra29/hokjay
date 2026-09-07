@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-07
+
+**TASK-016 done** — Invoice list's Preview drawer gets an "Invoice"/"Bukti Transfer" tab pair (Invoice shown by default), surfacing the proof-of-transfer already captured by PaymentForm.tsx/DpForm.tsx but never viewable anywhere. Two mockup rounds first, per the user's explicit requests — one to see the layout before coding, one rebuilt with the app's real Tailwind classes/tokens instead of hand-approximated CSS. Only shows when the invoice actually has a bukti (cash payments have none); shows both DP and settlement proof separately when both exist.
+
+Tasks done: TASK-016.
+Regression: PASS — clean build, lint clean; verified live against real invoices with real uploaded proof files.
+
+---
+
 ## 2026-09-06
 
 **BUG-015 fixed** — Katalog's "Pilih Semua" replaced the whole selection with just the current search's matching products instead of adding to it, so picking under one search then searching again and picking more silently dropped the first batch. Now merges (union) instead of replacing, still supporting "click again to deselect" scoped to the current search only.

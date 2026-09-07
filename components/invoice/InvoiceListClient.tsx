@@ -5,7 +5,7 @@ import Link from "next/link";
 import DeleteInvoiceButton from "./DeleteInvoiceButton";
 import InvoiceDocument from "./InvoiceDocument";
 import type { InvoicePrintData } from "./InvoicePrintDoc";
-import { rupiah, toWaPhone } from "@/lib/format";
+import { rupiah, toWaPhone, formatDateShort } from "@/lib/format";
 
 export type InvoiceRowStatus = "unpaid" | "dp" | "draft" | "paid";
 
@@ -82,6 +82,11 @@ export default function InvoiceListClient({
 }) {
   const [filter, setFilter] = useState<FilterKey>("semua");
   const [previewId, setPreviewId] = useState<string | null>(null);
+  // Preview drawer's "Invoice"/"Bukti Transfer" tabs — TASK-016
+  // (2026-09-07), per the user's request. Always starts on "invoice"
+  // (reset alongside setPreviewId, not via a separate effect) so opening
+  // a different row's preview never lands on the previous row's tab.
+  const [previewTab, setPreviewTab] = useState<"invoice" | "bukti">("invoice");
 
   const unpaidCount = rows.filter((r) => r.status === "unpaid").length;
   const dpCount = rows.filter((r) => r.status === "dp").length;
@@ -208,7 +213,10 @@ export default function InvoiceListClient({
               <div className="flex flex-wrap justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setPreviewId(r.id)}
+                  onClick={() => {
+                    setPreviewId(r.id);
+                    setPreviewTab("invoice");
+                  }}
                   className="cursor-pointer border border-accent-600 bg-accent-100 px-3 py-1.5 font-sans text-[0.72rem] font-bold text-accent-700 hover:bg-accent-100/70"
                 >
                   Preview
@@ -280,12 +288,113 @@ export default function InvoiceListClient({
                 ✕
               </button>
             </div>
+            {(previewRow.printData.dpBuktiUrl || previewRow.printData.paymentBuktiUrl) && (
+              // Only rendered when there's actually something to switch to
+              // — a cash-paid invoice has neither buktiUrl (PaymentForm.tsx
+              // clears it for "tunai/cash"), so there's nothing to tab
+              // between and this row is skipped entirely rather than
+              // showing a dead second tab. Same pill styling the status
+              // filter row above already uses, for visual consistency.
+              <div className="flex flex-wrap gap-1.5 border-b border-line bg-panel px-5 py-3">
+                {(
+                  [
+                    ["invoice", "Invoice"],
+                    ["bukti", "Bukti Transfer"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setPreviewTab(key)}
+                    className={`cursor-pointer rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[0.72rem] font-bold ${
+                      previewTab === key ? "border-accent bg-accent text-ink" : "border-line text-ink hover:border-accent-600"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="p-5">
-              <InvoiceDocument invoice={previewRow.printData} />
+              {previewTab === "bukti" ? (
+                <BuktiTransferView invoice={previewRow.printData} />
+              ) : (
+                <InvoiceDocument invoice={previewRow.printData} />
+              )}
             </div>
           </div>
         </div>
       )}
     </>
+  );
+}
+
+/** True for a URL that's a PDF (case-insensitive extension check) — UploadBox accepts both images and PDFs for Bukti Transfer, so this can't assume every buktiUrl is safely <img>-able. */
+function isPdfUrl(url: string): boolean {
+  return /\.pdf($|\?)/i.test(url);
+}
+
+/** One bukti card — an inline <img> preview for an image, or a plain "Buka PDF" link when the upload was a PDF (browsers can't inline-preview those in an <img> tag). Either way, "Buka ukuran penuh" always opens the real file in a new tab. */
+function BuktiCard({ eyebrow, url }: { eyebrow: string; url: string }) {
+  return (
+    <div className="rounded-xl bg-panel p-5 shadow-sm">
+      <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">{eyebrow}</h3>
+      {isPdfUrl(url) ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="flex h-[220px] w-full items-center justify-center rounded-lg border border-line bg-surface font-sans text-[0.82rem] font-semibold text-accent-700 underline underline-offset-2"
+        >
+          Buka file PDF ↗
+        </a>
+      ) : (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element -- an
+              uploaded file's URL, not one of this app's own optimizable
+              assets; ZoomableImage.tsx's thumbnails use next/image for the
+              same reason a plain <img> doesn't fit there, but this is a
+              one-off preview shown at most once per open drawer, not a
+              whole grid of them. */}
+          <img
+            src={url}
+            alt={eyebrow}
+            className="h-[220px] w-full rounded-lg border border-line bg-surface object-contain p-3"
+          />
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-block font-sans text-[0.78rem] font-semibold text-accent-700 underline underline-offset-2"
+          >
+            Buka ukuran penuh ↗
+          </a>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** The Preview drawer's "Bukti Transfer" tab body — up to two cards (DP and/or full settlement), whichever the invoice actually has. */
+function BuktiTransferView({ invoice }: { invoice: InvoicePrintData }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {invoice.dpBuktiUrl && (
+        <BuktiCard
+          eyebrow={`Bukti DP · ${formatDateShort(invoice.dpTanggal ?? invoice.tanggal)}${
+            invoice.dpNominal ? ` · ${rupiah(invoice.dpNominal)}` : ""
+          }`}
+          url={invoice.dpBuktiUrl}
+        />
+      )}
+      {invoice.paymentBuktiUrl && (
+        <BuktiCard
+          eyebrow={`Bukti Pelunasan · ${formatDateShort(invoice.paymentTanggalBayar ?? invoice.tanggal)}${
+            invoice.paymentNominalDiterima ? ` · ${rupiah(invoice.paymentNominalDiterima)}` : ""
+          }`}
+          url={invoice.paymentBuktiUrl}
+        />
+      )}
+    </div>
   );
 }

@@ -323,3 +323,22 @@
 
 **Files affected:** `lib/auth/access.ts`, `app/api/products/[id]/komisi-bekas/route.ts`, `app/api/categories/[id]/route.ts`, `app/produk/[id]/edit/page.tsx`, `app/produk/baru/page.tsx`, `app/admin/page.tsx`, `components/katalog/KatalogClient.tsx`.
 **Regression test:** Clean build, lint clean on every file. Verified live end-to-end with minted Owner vs Super Admin sessions: `PATCH /api/products/[id]/komisi-bekas` — Owner 200 (value persisted), Super Admin 403 ("Hanya Owner yang bisa mengatur Komisi"); UI-level, all three entry points checked directly (Inventory's edit page, Katalog's EditProductDrawer via a real search-then-click flow, Admin's Kelola Kategori table) — Owner sees the Komisi field/column in every one, Super Admin sees it in none.
+
+---
+
+## TASK-016 — Invoice Preview drawer: "Bukti Transfer" tab
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-07)
+**Dependency:** None
+**Created:** 2026-09-07 · **Last updated:** 2026-09-07
+
+**Description:** Per the user's request ("preview invoice yang sudah lunas, dibutuhkan button juga untuk melihat bukti transfer"). The data already existed — `PaymentForm.tsx`/`DpForm.tsx` already capture a proof-of-transfer upload (`invoice.payment.buktiUrl`/`invoice.dp.buktiUrl`), just never surfaced anywhere for viewing.
+
+Went through 2 rounds of HTML mockup before coding, per the user's explicit request ("buat htmlnya dulu, karena saya mau lihat layoutnya"): the first version (an inline "Lihat bukti transfer" link buried in the document's Payment Details block) was rejected — "seharusnya, pada user klik preview, secara default akan muncul invoicenya, lalu ada button ke 2 untuk lihat bukti transfer". Rebuilt as two tabs at the top of the Preview drawer (Invoice / Bukti Transfer), Invoice shown by default. The user then asked for the mockup itself to use the real app's actual Tailwind classes/tokens (via CDN + a config mirroring `app/globals.css`'s real color/font values) instead of hand-approximated CSS, "supaya kamu waktu koding tidak salah" — confirmed via AskUserQuestion that this only needs to apply to the list's Preview drawer, not `/invoice/[id]`'s own detail page.
+
+**Fix:** `InvoicePrintData` (`lib/invoiceDisplay.ts`) gained `dpBuktiUrl`/`paymentBuktiUrl`/`paymentTanggalBayar`/`paymentNominalDiterima` — populated only in `app/invoice/page.tsx` (the list, which already builds `printData` from a full, non-`.lean()` Invoice document — no new query), deliberately left unset on `/invoice/[id]`'s own `printData` per the confirmed scope. `InvoiceListClient.tsx`: new `previewTab` state ("invoice" | "bukti", reset alongside `previewId` whenever a new row's Preview is opened) driving a 2-button tab row — styled with the exact pill classes the list's own status filter already uses — that only renders at all when the invoice actually has a `dpBuktiUrl` or `paymentBuktiUrl` (a cash-paid invoice has neither, so no dead second tab). New `BuktiTransferView`/`BuktiCard` render up to two cards (DP and/or settlement, whichever exist) — an inline `<img>` preview for an image upload, or a plain "Buka file PDF ↗" link when the upload was a PDF (`UploadBox` accepts both), plus a "Buka ukuran penuh ↗" new-tab link either way.
+
+**Files affected:** `lib/invoiceDisplay.ts`, `app/invoice/page.tsx`, `components/invoice/InvoiceListClient.tsx`.
+**Regression test:** Clean build, lint clean. Verified live against real invoices with real uploaded bukti (Playwright, DOM-traversal-based row targeting since the search form's native-submit + text-based locators kept resolving to the wrong row otherwise): an invoice with both a DP and a settlement bukti showed both cards with the correct dates/amounts read straight off the real stored data (Bukti DP · 31 Agu · Rp 2.000.000, Bukti Pelunasan · 7 Sep · Rp 2.000.000); an invoice with neither correctly showed no tab row at all.

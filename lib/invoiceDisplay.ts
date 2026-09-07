@@ -44,6 +44,22 @@ export interface InvoicePrintData {
   grandTotal: number;
   dpNominal?: number;
   dpTanggal?: string;
+  /**
+   * Proof-of-transfer for the DP and the full settlement, respectively —
+   * both already captured today (DpForm.tsx/PaymentForm.tsx's own "Bukti
+   * Transfer" UploadBox, stored as invoice.dp.buktiUrl/invoice.payment.
+   * buktiUrl) but never surfaced anywhere for viewing. Only populated by
+   * app/invoice/page.tsx (the list's Preview drawer, TASK-016) — the
+   * detail page (app/invoice/[id]/page.tsx) deliberately leaves these
+   * undefined per the user's explicit scope choice 2026-09-07 ("Drawer
+   * Preview di list Invoice saja"). Absent (not just empty-string) when
+   * paid in cash — PaymentForm.tsx clears buktiUrl for "tunai/cash".
+   */
+  dpBuktiUrl?: string;
+  paymentBuktiUrl?: string;
+  /** Only meaningful alongside paymentBuktiUrl — labels the "Bukti Pelunasan" card with when/how much was actually recorded as received. */
+  paymentTanggalBayar?: string;
+  paymentNominalDiterima?: number;
 }
 
 /**
