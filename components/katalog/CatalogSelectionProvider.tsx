@@ -26,12 +26,25 @@ interface CatalogSelectionContextValue {
   cancelPicking: () => void;
   // Which preset price each item shows — per-product (per the user's
   // request 2026-08-25, replacing the earlier global toggle), stored as an
-  // override map keyed by product id and defaulting to "rekomendasi" when a
-  // product has no entry. Overridable further via customPrices. Read by
-  // both ProductCard (the two Harga Rekomendasi/Minimum buttons + override
-  // input live there) and CatalogPrintDoc (what actually prints).
+  // override map keyed by product id and defaulting to `defaultPriceMode`
+  // (below) when a product has no entry. Overridable further via
+  // customPrices. Read by both ProductCard (the two Harga
+  // Rekomendasi/Minimum buttons + override input live there) and
+  // CatalogPrintDoc (what actually prints).
   getPriceMode: (id: string) => CatalogPriceMode;
   setPriceMode: (id: string, mode: CatalogPriceMode) => void;
+  /**
+   * The Filter sidebar's own Harga Rekomendasi/Harga Bottom toggle
+   * (KatalogFilterSidebar.tsx's `hargaBasis`) — brings the global switch
+   * back per the user's request 2026-09-07 ("harga di semua katalog
+   * langsung berganti"), on top of (not instead of) the per-product
+   * buttons above. Confirmed with the user this is a full, unconditional
+   * reset: every per-product priceMode override AND every manually-typed
+   * customPrice are cleared, then every card falls back to this new
+   * basis — a sales rep can still fine-tune individual items again
+   * afterward via the per-card buttons.
+   */
+  setGlobalPriceMode: (mode: CatalogPriceMode) => void;
   customPrices: Record<string, number>;
   setCustomPrice: (id: string, price: number | undefined) => void;
   getEffectivePrice: (product: { _id: string; hargaRekomendasi: number; hargaMinimum: number }) => number;
@@ -48,6 +61,7 @@ interface CatalogSelectionContextValue {
 const CatalogSelectionContext = createContext<CatalogSelectionContextValue | null>(null);
 const STORAGE_KEY = "horeca-catalog-selection";
 const PRICE_MODES_KEY = "horeca-catalog-price-modes";
+const DEFAULT_PRICE_MODE_KEY = "horeca-catalog-default-price-mode";
 const CUSTOM_PRICES_KEY = "horeca-catalog-custom-prices";
 const DISCOUNTS_KEY = "horeca-catalog-discounts";
 
@@ -56,6 +70,11 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
   const [hydrated, setHydrated] = useState(false);
   const [pickMode, setPickMode] = useState(false);
   const [priceModes, setPriceModes] = useState<Record<string, CatalogPriceMode>>({});
+  // What getPriceMode() falls back to for a product with no per-id entry
+  // in priceModes — set by the Filter sidebar's global toggle (see
+  // setGlobalPriceMode below). Was always a hardcoded "rekomendasi"
+  // before this.
+  const [defaultPriceMode, setDefaultPriceMode] = useState<CatalogPriceMode>("rekomendasi");
   const [customPrices, setCustomPrices] = useState<Record<string, number>>({});
   const [discounts, setDiscounts] = useState<Record<string, number>>({});
 
@@ -65,6 +84,8 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
       if (raw) setSelected(new Set(JSON.parse(raw)));
       const rawModes = localStorage.getItem(PRICE_MODES_KEY);
       if (rawModes) setPriceModes(JSON.parse(rawModes));
+      const rawDefaultMode = localStorage.getItem(DEFAULT_PRICE_MODE_KEY);
+      if (rawDefaultMode === "rekomendasi" || rawDefaultMode === "minimum") setDefaultPriceMode(rawDefaultMode);
       const rawCustom = localStorage.getItem(CUSTOM_PRICES_KEY);
       if (rawCustom) setCustomPrices(JSON.parse(rawCustom));
       const rawDiscounts = localStorage.getItem(DISCOUNTS_KEY);
@@ -82,6 +103,10 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
   useEffect(() => {
     if (hydrated) localStorage.setItem(PRICE_MODES_KEY, JSON.stringify(priceModes));
   }, [priceModes, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) localStorage.setItem(DEFAULT_PRICE_MODE_KEY, defaultPriceMode);
+  }, [defaultPriceMode, hydrated]);
 
   useEffect(() => {
     if (hydrated) localStorage.setItem(CUSTOM_PRICES_KEY, JSON.stringify(customPrices));
@@ -145,7 +170,7 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
   }
 
   function getPriceMode(id: string): CatalogPriceMode {
-    return priceModes[id] ?? "rekomendasi";
+    return priceModes[id] ?? defaultPriceMode;
   }
 
   function setPriceMode(id: string, mode: CatalogPriceMode) {
@@ -153,6 +178,13 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
     // Picking a preset discards any manually-typed custom price for this
     // item — mirrors the existing "pakai Harga Minimum/Rekomendasi" link.
     setCustomPrice(id, undefined);
+  }
+
+  /** See the interface's own doc comment above — a full, unconditional reset confirmed with the user. */
+  function setGlobalPriceMode(mode: CatalogPriceMode) {
+    setDefaultPriceMode(mode);
+    setPriceModes({});
+    setCustomPrices({});
   }
 
   function setCustomPrice(id: string, price: number | undefined) {
@@ -195,6 +227,7 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
         cancelPicking,
         getPriceMode,
         setPriceMode,
+        setGlobalPriceMode,
         customPrices,
         setCustomPrice,
         getEffectivePrice,

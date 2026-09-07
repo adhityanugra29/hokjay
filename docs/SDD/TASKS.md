@@ -342,3 +342,20 @@ Went through 2 rounds of HTML mockup before coding, per the user's explicit requ
 
 **Files affected:** `lib/invoiceDisplay.ts`, `app/invoice/page.tsx`, `components/invoice/InvoiceListClient.tsx`.
 **Regression test:** Clean build, lint clean. Verified live against real invoices with real uploaded bukti (Playwright, DOM-traversal-based row targeting since the search form's native-submit + text-based locators kept resolving to the wrong row otherwise): an invoice with both a DP and a settlement bukti showed both cards with the correct dates/amounts read straight off the real stored data (Bukti DP · 31 Agu · Rp 2.000.000, Bukti Pelunasan · 7 Sep · Rp 2.000.000); an invoice with neither correctly showed no tab row at all.
+
+---
+
+## TASK-017 — Katalog: Filter's Harga Rekomendasi/Bottom toggle changes every product's displayed price
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-07)
+**Dependency:** None
+**Created:** 2026-09-07 · **Last updated:** 2026-09-07
+
+**Description:** Per the user's request ("ketika user pencet harga bottom / rekomendasi [di Filter], harga di semua katalog langsung berganti"). The Filter sidebar's `hargaBasis` toggle already existed but only affected the min/max price range filter's comparison basis — it had no effect on what price actually showed on each card. Each card already had its own independent Harga Rekomendasi/Harga Bottom buttons (2026-08-25, driving the price actually used when adding to invoice) — confirmed with the user via AskUserQuestion that the Filter's toggle should be a full, unconditional reset of every card (including ones already manually set or given a typed custom price), not just a default for untouched ones.
+
+**Fix:** `CatalogSelectionProvider.tsx` gained `defaultPriceMode` state (persisted to localStorage like everything else there) — `getPriceMode()`'s fallback for a product with no per-id override switched from a hardcoded `"rekomendasi"` to this. New `setGlobalPriceMode(mode)`: sets `defaultPriceMode`, then clears both `priceModes` (every per-card override) and `customPrices` (every manually-typed price) outright. `KatalogFilterSidebar.tsx`'s `hargaBasis` `SegmentedControl` now calls this alongside its existing filter-state update.
+
+**Files affected:** `components/katalog/CatalogSelectionProvider.tsx`, `components/katalog/KatalogFilterSidebar.tsx`.
+**Regression test:** Clean build, lint clean (same one pre-existing unrelated `react-hooks/set-state-in-effect`, the provider's own localStorage-hydration effect). Verified live: clicking "Harga Bottom" in the Filter sidebar flipped all 12 currently-loaded cards' own Harga Rekomendasi/Harga Bottom buttons to show Bottom as active, and the actual displayed price numbers changed to match (e.g. Rp 6.000.000 → Rp 5.000.000).

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CurrencyInput, Input, inputCls } from "@/components/ui/Form";
+import { useCatalogSelection } from "./CatalogSelectionProvider";
 
 export type KondisiFilter = "" | "baru" | "bekas";
 export type TipeFilter = "" | "elektronik" | "non-elektronik";
@@ -206,6 +207,7 @@ export default function KatalogFilterSidebar({
   filters: KatalogFilters;
   onChange: (next: KatalogFilters) => void;
 }) {
+  const { setGlobalPriceMode } = useCatalogSelection();
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -331,11 +333,19 @@ export default function KatalogFilterSidebar({
               />
             </div>
             {/* Which price field the range above compares against — per
-                the user's request 2026-08-28. */}
+                the user's request 2026-08-28. Also drives every product
+                card's actual displayed/effective price app-wide (per the
+                user's request 2026-09-07, "harga di semua katalog
+                langsung berganti") — a full reset of every per-card
+                override, confirmed with the user, not just a default for
+                untouched cards. */}
             <div className="mt-2">
               <SegmentedControl
                 value={filters.hargaBasis}
-                onChange={(v) => onChange({ ...filters, hargaBasis: v })}
+                onChange={(v) => {
+                  onChange({ ...filters, hargaBasis: v });
+                  setGlobalPriceMode(v);
+                }}
                 options={[
                   { value: "rekomendasi", label: "Harga Rekomendasi" },
                   { value: "minimum", label: "Harga Bottom" },
