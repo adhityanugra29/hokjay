@@ -83,7 +83,11 @@ export async function getActivityLog(limit = 50): Promise<ActivityEntry[]> {
       tanggal: new Date(p.createdAt),
       title: `Produk baru ditambahkan`,
       detail: p.name,
-      href: `/produk/${p._id}/edit`,
+      // Goes to Katalog, not the edit page — per the user's bug report
+      // 2026-09-07 ("kenapa pada saat produk baru ditambahkan larinya ke
+      // edit? harusnya ke katalog ya"). Matches the Flash Sale entry's own
+      // href just below, which already did this correctly.
+      href: `/katalog`,
     });
   }
 

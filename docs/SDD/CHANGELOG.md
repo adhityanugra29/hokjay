@@ -6,6 +6,15 @@
 
 ## 2026-09-07
 
+**TASK-019 done, BUG-018 fixed** — Deleting a product is now Owner-only everywhere it appears (Inventory's list and a new "Hapus" button in Katalog's edit pencil) — this used to have zero role restriction at all on Inventory. Inventory's list also now shows "Ukuran" (dimensions) right under each product's name, on both desktop and mobile, with the SKU text shrunk slightly to make room. Separately, the Beranda bell's "Produk baru ditambahkan" notification was linking straight to the product's edit page instead of Katalog — now matches the Flash Sale notification's own `/katalog` link.
+
+Tasks done: TASK-019. Bugs fixed: BUG-018.
+Regression: PASS — clean build, lint clean; verified live against a production build with minted Owner/Manager sessions (delete: Manager 403, Owner 200; Owner's Inventory page rendered 368 "Hapus" occurrences, Manager's rendered 0), Playwright screenshots confirmed Ukuran placement on both viewports, and `/aktivitas` confirmed all 66 "Produk baru ditambahkan" entries now link to `/katalog`.
+
+---
+
+## 2026-09-07
+
 **TASK-018 done** — New "Unduh Surat Jalan (PDF)" on the invoice detail page: same document as the Invoice, but with every price stripped out, title swapped to "SURAT JALAN", and a driver name. Went through 2 mockup rounds (layout, then exact button placement) before coding. The driver name is deliberately never stored anywhere — typed fresh via a new `prompt()` (extending the app's existing styled dialog system) each time the PDF is generated, since the assigned driver can change per dispatch.
 
 Tasks done: TASK-018.

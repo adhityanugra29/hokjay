@@ -315,4 +315,21 @@ Also applied, per the user's related request, a conservative compression tighten
 **Fix:** Reused `ZoomableImage.tsx` (already proven — Katalog product photos use the exact same pattern) for the image case: clicking the bukti thumbnail now opens the same in-app full-screen overlay with a working ✕/Escape/backdrop close, no new tab at all. A PDF bukti still opens in a new tab (no in-app PDF viewer exists to reuse, and that's standard, expected behavior for a PDF).
 
 **Files:** `components/invoice/InvoiceListClient.tsx`.
+
+---
+
+## BUG-018 — Beranda notification "Produk baru ditambahkan" linked to the edit page instead of Katalog
+
+**Severity:** B2
+**Status:** FIXED (2026-09-07)
+**Source:** User report ("kenapa pada saat produk baru ditambahkan larinya ke edit? harusnya ke katalog ya"), confirmed via a screenshot showing the "Ubah Booth wawawa" edit page reached from the Beranda bell.
+
+**Description:** The Beranda activity/notification feed's "Produk baru ditambahkan" entry (`lib/activity.ts`) linked straight to `/produk/[id]/edit`. The sibling "Flash Sale diaktifkan" entry right below it already linked to `/katalog` — the new-product entry was the odd one out.
+
+**Root cause:** `getActivityLog()`'s `produk-baru` entry was built with `href: /produk/${p._id}/edit` instead of following the same `/katalog` pattern used by the other product-related entry type.
+
+**Fix:** Changed the `produk-baru` entry's `href` to `/katalog`, matching `flash-sale`'s existing href exactly. No deep-link-to-one-product mechanism exists in Katalog today, so this is a plain, consistent link to the Katalog page — same level of specificity as the Flash Sale entry already had.
+
+**Files:** `lib/activity.ts`.
+**Regression test:** Clean build, lint clean. Verified live against a production build: `/aktivitas` rendered 66 "Produk baru ditambahkan" entries, all with `href="/katalog"`, zero remaining `/produk/.../edit` links anywhere on the page.
 **Regression test:** Clean build, lint clean. Verified live: clicking a real bukti image opens the in-app zoom overlay (confirmed a working ✕ close button renders, zero new browser tabs/popups opened).

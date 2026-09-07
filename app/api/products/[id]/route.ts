@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Product } from "@/models/Product";
+import { getSession } from "@/lib/auth/session";
+import { isProductDeleteAllowed } from "@/lib/auth/access";
 
 export async function GET(_req: Request, ctx: RouteContext<"/api/products/[id]">) {
   await dbConnect();
@@ -60,7 +62,13 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/products/[id]"
   }
 }
 
+// Owner-only (2026-09-07) — previously had no role check at all, see
+// lib/auth/access.ts's isProductDeleteAllowed doc comment.
 export async function DELETE(_req: Request, ctx: RouteContext<"/api/products/[id]">) {
+  const session = await getSession();
+  if (!isProductDeleteAllowed(session?.role)) {
+    return NextResponse.json({ error: "Hanya Owner yang bisa menghapus produk" }, { status: 403 });
+  }
   await dbConnect();
   const { id } = await ctx.params;
   const product = await Product.findByIdAndDelete(id);

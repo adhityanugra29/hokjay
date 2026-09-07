@@ -180,3 +180,16 @@ export const KOMISI_SETTING_ROLES: UserRole[] = ["owner"];
 export function isKomisiSettingAllowed(role: UserRole | undefined | null): boolean {
   return !!role && KOMISI_SETTING_ROLES.includes(role);
 }
+
+// Deleting a product — Owner only. Per the user's request 2026-09-07
+// ("Fitur Hapus produk khusus untuk owner di katalog"): found while
+// building this that DELETE /api/products/[id] (already live —
+// DeleteProductButton.tsx on Inventory's list, both desktop and mobile)
+// had NO role check at all — any Manager/Finance/Purchasing reaching
+// /produk could already delete a product. Confirmed with the user this
+// should apply everywhere the delete button appears, not just the new
+// Katalog one, so this narrows both surfaces at once.
+export const PRODUCT_DELETE_ROLES: UserRole[] = ["owner"];
+export function isProductDeleteAllowed(role: UserRole | undefined | null): boolean {
+  return !!role && PRODUCT_DELETE_ROLES.includes(role);
+}

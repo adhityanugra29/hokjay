@@ -7,8 +7,10 @@ import SortableHeader from "@/components/ui/SortableHeader";
 import MobileProdukList from "@/components/produk/MobileProdukList";
 import { dbConnect } from "@/lib/db";
 import { Product, type ProductDoc } from "@/models/Product";
-import { rupiah } from "@/lib/format";
+import { rupiah, formatDimensi } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
+import { getSession } from "@/lib/auth/session";
+import { isProductDeleteAllowed } from "@/lib/auth/access";
 import type { HydratedDocument } from "mongoose";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +50,12 @@ export default async function ProdukListPage({
   const { search } = sp;
   const { field, dir } = parseSort(sp, SORT_FIELDS, "name");
   await dbConnect();
+
+  // Owner-only (2026-09-07) — see lib/auth/access.ts's
+  // isProductDeleteAllowed doc comment: this used to have no restriction
+  // at all.
+  const session = await getSession();
+  const isOwner = isProductDeleteAllowed(session?.role);
 
   // Sold-out products (stok <= 0) no longer show in Inventory's browsing
   // list — per the user's request 2026-08-25. Nothing is deleted (the
@@ -108,6 +116,7 @@ export default async function ProdukListPage({
           only, TableScroll) takes over at md+. Per the user's request
           2026-08-25. */}
       <MobileProdukList
+        isOwner={isOwner}
         products={products.map((p) => {
           const { label, variant } = stockAgeInfo(p.tanggalBarangMasuk ?? p.createdAt!, p.alertHariTidakTerjual ?? 45);
           return {
@@ -116,6 +125,7 @@ export default async function ProdukListPage({
             category: p.category,
             merk: p.merk ?? undefined,
             sku: p.sku,
+            dimensi: p.dimensi ?? undefined,
             hargaRekomendasi: p.hargaRekomendasi,
             stok: p.stok,
             kondisi: p.kondisi ?? "baru",
@@ -152,12 +162,23 @@ export default async function ProdukListPage({
                         {p.kondisi === "bekas" ? "Bekas" : "Baru"}
                       </span>
                     </div>
+                    {/* Ukuran — per the user's request 2026-09-07 ("tambahkan
+                        Ukuran di Inventory, tepat dibawah nama produknya").
+                        Own line, right under the name, before Kategori/Merk;
+                        absent (no empty line) for a product with no
+                        panjang/lebar/tinggi set at all. */}
+                    {formatDimensi(p.dimensi) && (
+                      <div className="font-mono text-[0.7rem] text-muted">{formatDimensi(p.dimensi)}</div>
+                    )}
                     <div className="font-mono text-[0.7rem] text-muted">
                       {p.category}
                       {p.merk ? ` · ${p.merk}` : ""}
                     </div>
                   </td>
-                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{p.sku}</td>
+                  {/* Shrunk 0.8rem -> 0.7rem — the Produk cell now has a 3rd
+                      line (Ukuran), this keeps the row's overall visual
+                      weight balanced. Per the user's same request. */}
+                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.7rem]">{p.sku}</td>
                   <td className="border-b border-line px-5 py-4.5 text-right font-mono text-[0.8rem]">
                     {rupiah(p.hargaRekomendasi)}
                   </td>
@@ -168,7 +189,7 @@ export default async function ProdukListPage({
                   <td className="border-b border-line px-5 py-4.5">
                     <div className="flex flex-wrap gap-2">
                       <RowActionLink href={`/produk/${p._id}/edit`}>Ubah</RowActionLink>
-                      <DeleteProductButton productId={String(p._id)} productName={p.name} />
+                      {isOwner && <DeleteProductButton productId={String(p._id)} productName={p.name} />}
                     </div>
                   </td>
                 </tr>

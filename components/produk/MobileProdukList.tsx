@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { rupiah } from "@/lib/format";
+import { rupiah, formatDimensi } from "@/lib/format";
 import { RowActionLink } from "@/components/ui/RowAction";
 import DeleteProductButton from "@/components/produk/DeleteProductButton";
 
@@ -9,6 +9,7 @@ export interface MobileProdukRow {
   category: string;
   merk?: string;
   sku: string;
+  dimensi?: { panjangCm?: number | null; lebarCm?: number | null; tinggiCm?: number | null };
   hargaRekomendasi: number;
   stok: number;
   kondisi: string;
@@ -29,7 +30,14 @@ const UMUR_DOT: Record<MobileProdukRow["umurStokVariant"], string> = {
  * Mobile* card-list pattern (e.g. components/purchasing/MobileSupplier.tsx)
  * rather than inventing a new one. Per the user's request 2026-08-25.
  */
-export default function MobileProdukList({ products }: { products: MobileProdukRow[] }) {
+export default function MobileProdukList({
+  products,
+  isOwner,
+}: {
+  products: MobileProdukRow[];
+  /** Owner-only Hapus button — per the user's request 2026-09-07, see lib/auth/access.ts's isProductDeleteAllowed doc comment (this used to have no restriction at all). */
+  isOwner?: boolean;
+}) {
   return (
     <div className="border-t border-line md:hidden">
       {products.map((p) => (
@@ -37,7 +45,14 @@ export default function MobileProdukList({ products }: { products: MobileProdukR
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="truncate font-sans text-[0.88rem] font-semibold">{p.name}</div>
-              <div className="mt-0.5 truncate font-mono text-[0.68rem] text-muted">
+              {/* Ukuran — per the user's request 2026-09-07, own line right
+                  under the name; absent (no empty line) when unset. The
+                  category/merk/sku line below shrinks slightly (0.68rem ->
+                  0.64rem) so 3 lines still sit comfortably in one card. */}
+              {formatDimensi(p.dimensi) && (
+                <div className="mt-0.5 truncate font-mono text-[0.7rem] text-muted">{formatDimensi(p.dimensi)}</div>
+              )}
+              <div className="mt-0.5 truncate font-mono text-[0.64rem] text-muted">
                 {p.category}
                 {p.merk ? ` · ${p.merk}` : ""} · {p.sku}
               </div>
@@ -63,7 +78,7 @@ export default function MobileProdukList({ products }: { products: MobileProdukR
 
           <div className="mt-2.5 flex flex-wrap gap-2">
             <RowActionLink href={`/produk/${p.id}/edit`}>Ubah</RowActionLink>
-            <DeleteProductButton productId={p.id} productName={p.name} />
+            {isOwner && <DeleteProductButton productId={p.id} productName={p.name} />}
           </div>
         </div>
       ))}

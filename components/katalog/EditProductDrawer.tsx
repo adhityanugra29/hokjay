@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProductForm, { type ProductFormValues } from "@/components/produk/ProductForm";
+import DeleteProductButton from "@/components/produk/DeleteProductButton";
 import type { KatalogProduct } from "./ProductCard";
 
 /**
@@ -31,7 +32,7 @@ export default function EditProductDrawer({
 }: {
   product: KatalogProduct | null;
   categories: string[];
-  /** Owner/Super Admin only — shows the Komisi Bekas override field. Per the user's request 2026-09-03. */
+  /** Owner role only (not Super Admin) — shows the Komisi Bekas override field (2026-09-03) and, as of 2026-09-07, the "Hapus" button. Narrowed from the original "Owner/Super Admin" comment here when TASK-015 (2026-09-05) made every commission setting Owner-exclusive; this component's own wiring already followed that (app/katalog/page.tsx's real isOwner, not canFlashSale), the comment had just gone stale. */
   isOwner?: boolean;
   onClose: () => void;
 }) {
@@ -90,14 +91,23 @@ export default function EditProductDrawer({
             <div className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">Ubah Produk</div>
             <h2 className="font-sans text-[1rem] font-extrabold text-ink">{product.name}</h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Tutup"
-            className="flex h-9 w-9 cursor-pointer items-center justify-center border border-line text-lg text-ink hover:border-accent hover:text-accent-700"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Owner-only — per the user's request 2026-09-07 ("Fitur
+                Hapus produk khusus untuk owner di katalog... saya lebih
+                sarankan ini dalam pencil"). onDeleted closes this drawer
+                since the product it was editing is now gone. */}
+            {isOwner && (
+              <DeleteProductButton productId={product._id} productName={product.name} onDeleted={onClose} />
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Tutup"
+              className="flex h-9 w-9 cursor-pointer items-center justify-center border border-line text-lg text-ink hover:border-accent hover:text-accent-700"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="p-5">
