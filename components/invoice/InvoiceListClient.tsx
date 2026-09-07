@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import DeleteInvoiceButton from "./DeleteInvoiceButton";
 import InvoiceDocument from "./InvoiceDocument";
+import ZoomableImage from "@/components/katalog/ZoomableImage";
 import type { InvoicePrintData } from "./InvoicePrintDoc";
 import { rupiah, toWaPhone, formatDateShort } from "@/lib/format";
 
@@ -334,7 +335,20 @@ function isPdfUrl(url: string): boolean {
   return /\.pdf($|\?)/i.test(url);
 }
 
-/** One bukti card — an inline <img> preview for an image, or a plain "Buka PDF" link when the upload was a PDF (browsers can't inline-preview those in an <img> tag). Either way, "Buka ukuran penuh" always opens the real file in a new tab. */
+/**
+ * One bukti card — an image opens the same in-app full-screen zoom Katalog
+ * product photos already use (ZoomableImage.tsx, with its own working ✕/
+ * Escape/backdrop close), not a new browser tab. A PDF still opens in a
+ * new tab (no in-app PDF viewer exists in this app to reuse, and that's
+ * standard, expected browser behavior for a PDF either way).
+ *
+ * Originally used a plain `target="_blank"` link ("Buka ukuran penuh") for
+ * both cases — per the user's report 2026-09-07 ("ketika sudah klik
+ * penuh, tidak ada tombol untuk kembali"), a new tab can leave a mobile
+ * user stranded with no obvious way back to the drawer. Reusing
+ * ZoomableImage fixes this for the image case (the vast majority of real
+ * bukti uploads) without inventing a second full-screen pattern.
+ */
 function BuktiCard({ eyebrow, url }: { eyebrow: string; url: string }) {
   return (
     <div className="rounded-xl bg-panel p-5 shadow-sm">
@@ -349,27 +363,15 @@ function BuktiCard({ eyebrow, url }: { eyebrow: string; url: string }) {
           Buka file PDF ↗
         </a>
       ) : (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element -- an
-              uploaded file's URL, not one of this app's own optimizable
-              assets; ZoomableImage.tsx's thumbnails use next/image for the
-              same reason a plain <img> doesn't fit there, but this is a
-              one-off preview shown at most once per open drawer, not a
-              whole grid of them. */}
-          <img
-            src={url}
-            alt={eyebrow}
-            className="h-[220px] w-full rounded-lg border border-line bg-surface object-contain p-3"
-          />
-          <a
-            href={url}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 inline-block font-sans text-[0.78rem] font-semibold text-accent-700 underline underline-offset-2"
-          >
-            Buka ukuran penuh ↗
-          </a>
-        </>
+        <div className="relative h-[220px] w-full overflow-hidden rounded-lg border border-line bg-surface">
+          {/* !object-contain: ZoomableImage's own base class already sets
+              object-cover (right for a cropped product-photo thumbnail,
+              wrong here — a bukti transfer needs to show the WHOLE
+              receipt, not crop it) — same-specificity utilities aren't
+              guaranteed to lose to whichever is listed later in the
+              className string, so this needs the ! to reliably win. */}
+          <ZoomableImage src={url} alt={eyebrow} className="!object-contain p-3" />
+        </div>
       )}
     </div>
   );

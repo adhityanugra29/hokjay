@@ -6,6 +6,24 @@
 
 ## 2026-09-07
 
+**BUG-017 fixed** — "Bukti Transfer"'s "Buka ukuran penuh" opened a new browser tab with no obvious way back on mobile. Reused ZoomableImage.tsx (same pattern already proven for Katalog product photos) — clicking the bukti image now opens an in-app full-screen overlay with a real close button instead. PDF uploads still open in a new tab (no in-app viewer to reuse).
+
+Bugs fixed: BUG-017.
+Regression: PASS — clean build, lint clean; verified live (in-app overlay confirmed, zero new tabs opened).
+
+---
+
+## 2026-09-07
+
+**TASK-017 done** — Katalog's Filter sidebar Harga Rekomendasi/Harga Bottom toggle now changes every product's displayed price app-wide, not just the min/max range filter's comparison basis. Confirmed with the user this is a full reset (clears every per-card override and typed custom price too, not just a fallback default). `CatalogSelectionProvider.tsx` gained a persisted `defaultPriceMode` + `setGlobalPriceMode()`.
+
+Tasks done: TASK-017.
+Regression: PASS — clean build, lint clean; verified live (all 12 loaded cards flipped to Harga Bottom, displayed prices changed to match).
+
+---
+
+## 2026-09-07
+
 **BUG-016 fixed** — "Avi" and "Avicenna Pangaran" showed as two separate people on the Insentif leaderboard (User/Sales records were already correctly merged; 11 older invoices and 1 customer still carried the pre-rename name "Avi" as a plain string snapshot). Pure data correction, no code change — updated exactly those 12 documents after confirming no other collection still had the stale name.
 
 Bugs fixed: BUG-016.

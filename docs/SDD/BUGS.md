@@ -299,3 +299,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** None — pure data correction via a one-off script (Invoice.updateMany/Customer.updateMany, exact-match filter, deleted after use).
 **Regression test:** Verified live: `Invoice.distinct("sales.nama")` (real API) now returns only "Avicenna Pangaran", zero remaining "Avi"; `/insentif` leaderboard page (real HTTP fetch) shows only the one name, no split entry.
+
+---
+
+## BUG-017 — "Bukti Transfer" full-size link had no way back on mobile
+
+**Severity:** B2
+**Status:** FIXED (2026-09-07)
+**Source:** User report ("ketika sudah klik penuh, tidak ada tombol untuk kembali").
+
+**Description:** TASK-016's "Buka ukuran penuh" link opened the bukti image via a plain `target="_blank"` new browser tab — on mobile, this can strand the user with no obvious way back to the Preview drawer (no visible tab bar/back affordance in some mobile browser contexts).
+
+**Root cause:** Relied on browser-level tab navigation instead of an in-app control for something the app can render itself (an image).
+
+**Fix:** Reused `ZoomableImage.tsx` (already proven — Katalog product photos use the exact same pattern) for the image case: clicking the bukti thumbnail now opens the same in-app full-screen overlay with a working ✕/Escape/backdrop close, no new tab at all. A PDF bukti still opens in a new tab (no in-app PDF viewer exists to reuse, and that's standard, expected behavior for a PDF).
+
+**Files:** `components/invoice/InvoiceListClient.tsx`.
+**Regression test:** Clean build, lint clean. Verified live: clicking a real bukti image opens the in-app zoom overlay (confirmed a working ✕ close button renders, zero new browser tabs/popups opened).
