@@ -53,7 +53,25 @@ const DEFAULT_FOOTER_HEIGHT_PX = 300; // bumped after adding the closing logo + 
  * via ref rather than guessed, since either can vary in height (Dikirim
  * ke / Kurir being present or not; DP being recorded or not).
  */
-export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData }) {
+export default function InvoicePrintDoc({
+  invoice,
+  mode = "invoice",
+  id = "invoice-print-doc",
+}: {
+  invoice: InvoicePrintData;
+  /**
+   * "surat-jalan" (TASK-018, 2026-09-07) — the same document, minus every
+   * price (no Harga/Diskon/Subtotal columns, no totals/Payment Details
+   * block at all), title swapped to "SURAT JALAN", plus a driver-name
+   * line. A second, separate hidden instance renders alongside the
+   * normal "invoice" one (see app/invoice/[id]/page.tsx) rather than
+   * toggling the existing one, so both PDFs stay independently
+   * downloadable without re-rendering between clicks.
+   */
+  mode?: "invoice" | "surat-jalan";
+  /** Lets a second instance coexist in the DOM with its own id — defaults to the original hardcoded value so the existing "invoice" caller needs no change. */
+  id?: string;
+}) {
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState<number | null>(null);
@@ -124,50 +142,66 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
   // row displays.
   const totalBelanja = invoice.items.reduce((s, i) => s + displayHarga(i) * i.qty, 0);
 
+  // Surat Jalan skips this whole block's price content (Total
+  // Belanja/Diskon/Ongkir/Total/DP/Sisa + Payment Details) — a delivery
+  // note has no prices on it at all, per the user's request 2026-09-07.
+  // Only the closing logo/"Thank you" note stays, still ref-measured for
+  // the same adaptive page-packing math (just much shorter for this
+  // mode).
   const totalsBlock = (
     <div ref={footerRef}>
-      <div className="ml-auto mt-5 w-full max-w-[260px] font-mono">
-        <div className="flex justify-between py-1.5 text-[0.88rem]">
-          <span>Total Belanja</span>
-          <span>{rupiah(totalBelanja)}</span>
+      {mode !== "surat-jalan" && (
+        <div className="ml-auto mt-5 w-full max-w-[260px] font-mono">
+          <div className="flex justify-between py-1.5 text-[0.88rem]">
+            <span>Total Belanja</span>
+            <span>{rupiah(totalBelanja)}</span>
+          </div>
+          <div className="flex justify-between py-1.5 text-[0.88rem]">
+            <span>Total Diskon</span>
+            <span>{totalDiskon > 0 ? `− ${rupiah(totalDiskon)}` : rupiah(totalDiskon)}</span>
+          </div>
+          <div className="flex justify-between py-1.5 text-[0.88rem]">
+            <span>Ongkos Kirim</span>
+            <span>{rupiah(invoice.ongkosKirim)}</span>
+          </div>
+          <div className="mt-2 flex justify-between border-t-2 border-ink pt-3 font-serif text-lg font-semibold">
+            <span>Total</span>
+            <span>{rupiah(invoice.grandTotal)}</span>
+          </div>
+          {invoice.dpNominal ? (
+            <>
+              <div className="flex justify-between py-1.5 text-[0.88rem]">
+                <span>DP ({formatDateShort(invoice.dpTanggal ?? invoice.tanggal)})</span>
+                <span>− {rupiah(invoice.dpNominal)}</span>
+              </div>
+              <div className="mt-1 flex justify-between border-t border-line pt-2 font-serif text-base font-semibold">
+                <span>Sisa Tagihan</span>
+                <span>{rupiah(invoice.grandTotal - invoice.dpNominal)}</span>
+              </div>
+            </>
+          ) : null}
         </div>
-        <div className="flex justify-between py-1.5 text-[0.88rem]">
-          <span>Total Diskon</span>
-          <span>{totalDiskon > 0 ? `− ${rupiah(totalDiskon)}` : rupiah(totalDiskon)}</span>
-        </div>
-        <div className="flex justify-between py-1.5 text-[0.88rem]">
-          <span>Ongkos Kirim</span>
-          <span>{rupiah(invoice.ongkosKirim)}</span>
-        </div>
-        <div className="mt-2 flex justify-between border-t-2 border-ink pt-3 font-serif text-lg font-semibold">
-          <span>Total</span>
-          <span>{rupiah(invoice.grandTotal)}</span>
-        </div>
-        {invoice.dpNominal ? (
-          <>
-            <div className="flex justify-between py-1.5 text-[0.88rem]">
-              <span>DP ({formatDateShort(invoice.dpTanggal ?? invoice.tanggal)})</span>
-              <span>− {rupiah(invoice.dpNominal)}</span>
-            </div>
-            <div className="mt-1 flex justify-between border-t border-line pt-2 font-serif text-base font-semibold">
-              <span>Sisa Tagihan</span>
-              <span>{rupiah(invoice.grandTotal - invoice.dpNominal)}</span>
-            </div>
-          </>
-        ) : null}
-      </div>
+      )}
       {/* Payment Details + closing logo/thank-you note side by side, same
           row — per the user's request 2026-08-27 (was stacked below
           before). Translated from the user's own Indonesian wording
           ("Terimakasih sudah mempercayakan Peralatan dapur anda kepada
           kami") rather than the earlier English attempt, which read
-          backwards. */}
-      <div className="mt-9 flex flex-wrap items-start justify-between gap-6 border-t-2 border-ink pt-5">
-        <div className="font-mono text-[0.78rem] leading-relaxed">
-          <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Payment Details</div>
-          <div>No. Rekening: 5771370277 (BCA)</div>
-          <div>Atas Nama: Mohammad Andi Abdillah</div>
-        </div>
+          backwards. Surat Jalan drops the Payment Details half entirely
+          (justify-end instead of justify-between once there's only one
+          side left). */}
+      <div
+        className={`mt-9 flex flex-wrap items-start gap-6 border-t-2 border-ink pt-5 ${
+          mode === "surat-jalan" ? "justify-end" : "justify-between"
+        }`}
+      >
+        {mode !== "surat-jalan" && (
+          <div className="font-mono text-[0.78rem] leading-relaxed">
+            <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Payment Details</div>
+            <div>No. Rekening: 5771370277 (BCA)</div>
+            <div>Atas Nama: Mohammad Andi Abdillah</div>
+          </div>
+        )}
         {/* Logo flush right, sentence wrapped to 2 short lines instead of
             one long one — more compact. Per the user's request
             2026-08-27. */}
@@ -203,7 +237,9 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
 
   const headerBlock = (
     <div ref={headerRef}>
-      <h2 className="mb-5 text-center font-serif text-2xl tracking-[0.08em]">INVOICE</h2>
+      <h2 className="mb-5 text-center font-serif text-2xl tracking-[0.08em]">
+        {mode === "surat-jalan" ? "SURAT JALAN" : "INVOICE"}
+      </h2>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b-2 border-ink pb-6">
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -266,13 +302,28 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
             {invoice.kurir ? ` · ${invoice.kurir}` : ""}
           </div>
         </div>
+        {/* Surat Jalan only — typed fresh at download time, never stored
+            (see InvoicePrintData.namaDriver's own doc comment). The
+            data-driver-slot hook is what InvoiceActions.tsx's
+            downloadSuratJalanPdf() patches with the typed name right
+            before html2canvas captures this element. */}
+        {mode === "surat-jalan" && (
+          <div>
+            <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Nama Driver</div>
+            <div className="font-mono text-[0.78rem] text-muted" data-driver-slot>
+              {invoice.namaDriver ?? "—"}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 
+  const tableHeaders = mode === "surat-jalan" ? ["Produk", "Qty"] : ["Produk", "Qty", "Harga", "Diskon", "Subtotal"];
+
   return (
     <div className="h-0 overflow-hidden print:hidden">
-      <div id="invoice-print-doc" data-ready="true" className="font-sans text-ink">
+      <div id={id} data-ready="true" className="font-sans text-ink">
         {rowPages.map((rows, pi) => {
           const isFirstPage = pi === 0;
           const isLastRowPage = pi === rowPages.length - 1;
@@ -288,7 +339,7 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      {["Produk", "Qty", "Harga", "Diskon", "Subtotal"].map((h, idx) => (
+                      {tableHeaders.map((h, idx) => (
                         <th
                           key={h}
                           className={`border-b border-ink py-2 font-mono text-[0.68rem] uppercase text-muted ${
@@ -320,9 +371,13 @@ export default function InvoicePrintDoc({ invoice }: { invoice: InvoicePrintData
                           )}
                         </td>
                         <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
-                        <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayHarga(item))}</td>
-                        <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
-                        <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
+                        {mode !== "surat-jalan" && (
+                          <>
+                            <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayHarga(item))}</td>
+                            <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
+                            <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
+                          </>
+                        )}
                       </tr>
                     ))}
                   </tbody>

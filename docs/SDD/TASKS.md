@@ -359,3 +359,22 @@ Went through 2 rounds of HTML mockup before coding, per the user's explicit requ
 
 **Files affected:** `components/katalog/CatalogSelectionProvider.tsx`, `components/katalog/KatalogFilterSidebar.tsx`.
 **Regression test:** Clean build, lint clean (same one pre-existing unrelated `react-hooks/set-state-in-effect`, the provider's own localStorage-hydration effect). Verified live: clicking "Harga Bottom" in the Filter sidebar flipped all 12 currently-loaded cards' own Harga Rekomendasi/Harga Bottom buttons to show Bottom as active, and the actual displayed price numbers changed to match (e.g. Rp 6.000.000 → Rp 5.000.000).
+
+---
+
+## TASK-018 — Surat Jalan: price-free delivery note PDF, manual driver name
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-07)
+**Dependency:** None
+**Created:** 2026-09-07 · **Last updated:** 2026-09-07
+
+**Description:** Per the user's request: a "Surat Jalan" (delivery note/waybill) a driver physically carries, same shape as the Invoice document but with no prices anywhere, the title "INVOICE" swapped to "SURAT JALAN", and a driver-name field added. Went through the established mockup-first process (published as an Artifact, including a follow-up showing the new button's exact real placement in the invoice detail page's header, next to the existing "Unduh Invoice (PDF)"). Mid-review the user corrected the driver-name approach: it must NOT be stored on the invoice at all ("jangan isi nama driver di invoice, karena driver bisa berganti tergantung kondisi di lapangan") — typed fresh every time the PDF is generated instead, since the assigned driver can change per actual dispatch.
+
+**Fix:** `InvoicePrintDoc.tsx` gained `mode?: "invoice" | "surat-jalan"` (default `"invoice"`, zero change to the existing caller) and `id?: string` (so a second hidden instance can coexist). In `"surat-jalan"` mode: title swaps, the item table drops the Harga/Diskon/Subtotal columns entirely (Produk/Qty only), and the whole totals+Payment Details block is skipped (only the closing logo/"Thank you" note remains) — genuinely zero price figures anywhere. A "Nama Driver" field renders in the existing 3-column info row, reading from a new `data-driver-slot`-tagged element. `app/invoice/[id]/page.tsx` renders a second hidden `<InvoicePrintDoc mode="surat-jalan" id="surat-jalan-print-doc" />` alongside the original.
+
+Driver name is never captured by any form or stored on `Invoice` — `InvoiceActions.tsx`'s new "Unduh Surat Jalan (PDF)" button calls a new `prompt()` (added to the shared `useDialog()` — this app's existing styled alert/confirm replacement, extended with the same pattern rather than falling back to a native `window.prompt()`), then patches the typed name directly into the hidden `#surat-jalan-print-doc`'s `[data-driver-slot]` DOM node right before `html2canvas` captures it (a plain DOM write, not React state — the value only needs to exist for the few seconds it takes to build that one PDF). `buildInvoicePdf()` (already extracted, TASK-011) now takes an `elementId` param so both PDFs can be captured from the same shared code path.
+
+**Files affected:** `components/ui/Dialog.tsx` (new `prompt()`), `lib/invoiceDisplay.ts`, `components/invoice/InvoicePrintDoc.tsx`, `app/invoice/[id]/page.tsx`, `components/invoice/InvoiceActions.tsx`.
+**Regression test:** Clean build, lint clean. Verified live against a real invoice: the hidden Surat Jalan DOM read directly confirmed title "SURAT JALAN", table headers exactly `["Produk", "Qty"]`, zero "Rp" figures anywhere in the whole document, no "Payment Details" text; the regular Invoice PDF's own hidden DOM confirmed unchanged (title "INVOICE", prices present) — proving the new `mode`/`id` defaults didn't disturb the existing path. The prompt dialog rendered and accepted input correctly; confirming it triggered a real download named `SuratJalan-<nomor>.pdf` with the typed driver name correctly patched into the DOM; clicking Batal correctly closed the dialog and triggered no download at all.

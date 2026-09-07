@@ -67,7 +67,14 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
 
   return (
     <>
-      <InvoicePrintDoc invoice={printData} />
+      <InvoicePrintDoc invoice={printData} id="invoice-print-doc" />
+      {/* Surat Jalan — TASK-018 (2026-09-07), a second hidden instance
+          (own id, mode="surat-jalan") so it's independently downloadable
+          from "Unduh Invoice (PDF)" without re-rendering between clicks.
+          namaDriver is deliberately left unset here — it's typed fresh
+          into a prompt() at download time (InvoiceActions.tsx), never
+          stored (see InvoicePrintData.namaDriver's own doc comment). */}
+      <InvoicePrintDoc invoice={printData} mode="surat-jalan" id="surat-jalan-print-doc" />
       {/* App chrome (title/subtitle/action buttons) has no place on the
           actual printed document — #invoice-doc below is the on-screen
           preview; InvoicePrintDoc above is the hidden layout that's

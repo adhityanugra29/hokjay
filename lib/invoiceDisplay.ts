@@ -60,6 +60,18 @@ export interface InvoicePrintData {
   /** Only meaningful alongside paymentBuktiUrl — labels the "Bukti Pelunasan" card with when/how much was actually recorded as received. */
   paymentTanggalBayar?: string;
   paymentNominalDiterima?: number;
+  /**
+   * Surat Jalan's driver name — deliberately NEVER populated server-side
+   * and NEVER stored anywhere. Per the user's explicit request 2026-09-07
+   * ("jangan isi nama driver di invoice, karena driver bisa berganti
+   * tergantung kondisi di lapangan"): typed fresh into a prompt() each
+   * time "Unduh Surat Jalan (PDF)" is clicked (see InvoiceActions.tsx),
+   * patched directly into the hidden InvoicePrintDoc's DOM right before
+   * html2canvas captures it. This field only exists so that component has
+   * somewhere to read the value from — it's not meant to come from a
+   * server-built `printData` object.
+   */
+  namaDriver?: string;
 }
 
 /**

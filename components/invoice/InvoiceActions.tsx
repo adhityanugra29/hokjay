@@ -18,9 +18,10 @@ export default function InvoiceActions({
   grandTotal: number;
 }) {
   const [downloading, setDownloading] = useState(false);
+  const [downloadingSuratJalan, setDownloadingSuratJalan] = useState(false);
   const [sendingWA, setSendingWA] = useState(false);
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
-  const { alert } = useDialog();
+  const { alert, prompt } = useDialog();
 
   function waMessage() {
     return `Halo ${customerNama}, berikut invoice ${nomor} dari CV HORECA JAYA.\nTotal: ${rupiah(
@@ -29,13 +30,16 @@ export default function InvoiceActions({
   }
 
   /**
-   * PDF generation itself, pulled out of downloadInvoicePdf so sendWA can
-   * reuse it (see that function's comment for why the per-page-canvas
-   * approach). Returns the built jsPDF instance — caller decides whether
-   * to .save() it or turn it into a File for sharing.
+   * PDF generation itself, pulled out of downloadInvoicePdf so sendWA (and
+   * now downloadSuratJalanPdf, TASK-018) can reuse it (see that function's
+   * comment for why the per-page-canvas approach). `elementId` picks which
+   * hidden InvoicePrintDoc instance to capture — app/invoice/[id]/page.tsx
+   * renders two, "invoice-print-doc" (the default) and
+   * "surat-jalan-print-doc". Returns the built jsPDF instance — caller
+   * decides whether to .save() it or turn it into a File for sharing.
    */
-  async function buildInvoicePdf() {
-    const element = document.getElementById("invoice-print-doc");
+  async function buildInvoicePdf(elementId: string = "invoice-print-doc") {
+    const element = document.getElementById(elementId);
     if (!element) return null;
 
     // Logo + product photos aren't part of this doc beyond the HOJAY
@@ -182,6 +186,48 @@ export default function InvoiceActions({
     }
   }
 
+  /**
+   * TASK-018 (2026-09-07) — Surat Jalan: same document, no prices,
+   * "SURAT JALAN" title, plus a driver name — per the user's explicit
+   * choice, the driver name is NEVER stored on the invoice ("driver bisa
+   * berganti tergantung kondisi di lapangan"). Prompted fresh every time
+   * this button is clicked, then patched straight into the hidden
+   * #surat-jalan-print-doc's DOM (the `data-driver-slot` element —
+   * InvoicePrintDoc.tsx) right before html2canvas captures it — a plain
+   * DOM write, not React state, since this value only ever needs to
+   * exist for the few seconds it takes to generate this one PDF.
+   */
+  async function downloadSuratJalanPdf() {
+    const driverName = await prompt("Nama driver yang mengantar barang ini:", {
+      title: "Nama Driver",
+      placeholder: "Contoh: Pak Joko",
+      confirmLabel: "Buat Surat Jalan",
+    });
+    if (driverName === null) return; // cancelled
+
+    setDownloadingSuratJalan(true);
+    showLoading();
+    try {
+      const slot = document.querySelector<HTMLElement>("#surat-jalan-print-doc [data-driver-slot]");
+      if (slot) slot.textContent = driverName.trim() || "—";
+
+      const pdf = await buildInvoicePdf("surat-jalan-print-doc");
+      if (!pdf) {
+        await alert("Tidak ada halaman untuk diunduh.");
+        return;
+      }
+      pdf.save(`SuratJalan-${nomor}.pdf`);
+    } catch (err) {
+      console.error("Gagal membuat PDF surat jalan:", err);
+      await alert(
+        `Gagal membuat PDF surat jalan: ${err instanceof Error ? err.message : String(err)}\n\nCoba lagi, atau screenshot pesan ini untuk dilaporkan.`
+      );
+    } finally {
+      setDownloadingSuratJalan(false);
+      hideLoading();
+    }
+  }
+
   return (
     <>
       <Button variant="clay" onClick={sendWA} disabled={sendingWA}>
@@ -189,6 +235,9 @@ export default function InvoiceActions({
       </Button>
       <Button variant="ghost" onClick={downloadInvoicePdf} disabled={downloading}>
         {downloading ? "Menyiapkan PDF..." : "Unduh Invoice (PDF)"}
+      </Button>
+      <Button variant="ghost" onClick={downloadSuratJalanPdf} disabled={downloadingSuratJalan}>
+        {downloadingSuratJalan ? "Menyiapkan PDF..." : "Unduh Surat Jalan (PDF)"}
       </Button>
     </>
   );

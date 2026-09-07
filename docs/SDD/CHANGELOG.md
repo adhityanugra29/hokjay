@@ -6,6 +6,15 @@
 
 ## 2026-09-07
 
+**TASK-018 done** — New "Unduh Surat Jalan (PDF)" on the invoice detail page: same document as the Invoice, but with every price stripped out, title swapped to "SURAT JALAN", and a driver name. Went through 2 mockup rounds (layout, then exact button placement) before coding. The driver name is deliberately never stored anywhere — typed fresh via a new `prompt()` (extending the app's existing styled dialog system) each time the PDF is generated, since the assigned driver can change per dispatch.
+
+Tasks done: TASK-018.
+Regression: PASS — clean build, lint clean; verified live (Surat Jalan DOM has zero price figures/Payment Details, regular Invoice PDF unchanged, real download triggered with the typed driver name, cancel correctly aborts with no download).
+
+---
+
+## 2026-09-07
+
 **BUG-017 fixed** — "Bukti Transfer"'s "Buka ukuran penuh" opened a new browser tab with no obvious way back on mobile. Reused ZoomableImage.tsx (same pattern already proven for Katalog product photos) — clicking the bukti image now opens an in-app full-screen overlay with a real close button instead. PDF uploads still open in a new tab (no in-app viewer to reuse).
 
 Bugs fixed: BUG-017.

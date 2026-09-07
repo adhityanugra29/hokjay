@@ -15,14 +15,18 @@ import { createContext, useCallback, useContext, useState } from "react";
  */
 
 interface DialogState {
-  type: "alert" | "confirm";
+  type: "alert" | "confirm" | "prompt";
   message: string;
   title?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   /** Confirm button reads as destructive (red) instead of the usual accent — for delete/discard actions. */
   danger?: boolean;
+  /** prompt only. */
+  placeholder?: string;
   resolve: (value: boolean) => void;
+  /** prompt only — separate from `resolve` since a prompt resolves to a string (or null on cancel), not a boolean. */
+  promptResolve?: (value: string | null) => void;
 }
 
 interface ConfirmOptions {
@@ -32,15 +36,26 @@ interface ConfirmOptions {
   danger?: boolean;
 }
 
+interface PromptOptions {
+  title?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  placeholder?: string;
+  defaultValue?: string;
+}
+
 interface DialogContextValue {
   alert: (message: string, opts?: { title?: string }) => Promise<void>;
   confirm: (message: string, opts?: ConfirmOptions) => Promise<boolean>;
+  /** A styled replacement for window.prompt() — resolves to the typed text, or null if cancelled/dismissed. Per the user's request 2026-09-07 (Surat Jalan's driver name, typed at download time, never stored). */
+  prompt: (message: string, opts?: PromptOptions) => Promise<string | null>;
 }
 
 const DialogContext = createContext<DialogContextValue | null>(null);
 
 export function DialogProvider({ children }: { children: React.ReactNode }) {
   const [dialog, setDialog] = useState<DialogState | null>(null);
+  const [promptValue, setPromptValue] = useState("");
 
   const alertFn = useCallback((message: string, opts?: { title?: string }) => {
     return new Promise<void>((resolve) => {
@@ -62,13 +77,30 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const promptFn = useCallback((message: string, opts?: PromptOptions) => {
+    return new Promise<string | null>((promptResolve) => {
+      setPromptValue(opts?.defaultValue ?? "");
+      setDialog({
+        type: "prompt",
+        message,
+        title: opts?.title,
+        confirmLabel: opts?.confirmLabel,
+        cancelLabel: opts?.cancelLabel,
+        placeholder: opts?.placeholder,
+        resolve: () => {},
+        promptResolve,
+      });
+    });
+  }, []);
+
   function close(result: boolean) {
-    dialog?.resolve(result);
+    if (dialog?.type === "prompt") dialog.promptResolve?.(result ? promptValue : null);
+    else dialog?.resolve(result);
     setDialog(null);
   }
 
   return (
-    <DialogContext.Provider value={{ alert: alertFn, confirm: confirmFn }}>
+    <DialogContext.Provider value={{ alert: alertFn, confirm: confirmFn, prompt: promptFn }}>
       {children}
       {dialog && (
         <div
@@ -81,8 +113,19 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
           >
             {dialog.title && <h3 className="mb-2 font-sans text-[1rem] font-extrabold text-ink">{dialog.title}</h3>}
             <p className="whitespace-pre-line font-sans text-[0.88rem] leading-relaxed text-ink">{dialog.message}</p>
+            {dialog.type === "prompt" && (
+              <input
+                type="text"
+                autoFocus
+                value={promptValue}
+                onChange={(e) => setPromptValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && close(true)}
+                placeholder={dialog.placeholder}
+                className="mt-3 w-full rounded-lg border border-line bg-paper px-3.5 py-2.5 font-sans text-[0.9rem] text-ink outline-offset-1 focus:outline-2 focus:outline-accent"
+              />
+            )}
             <div className="mt-5 flex justify-end gap-2.5">
-              {dialog.type === "confirm" && (
+              {(dialog.type === "confirm" || dialog.type === "prompt") && (
                 <button
                   type="button"
                   onClick={() => close(false)}
@@ -101,12 +144,16 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => close(true)}
-                autoFocus
+                autoFocus={dialog.type !== "prompt"}
                 className={`cursor-pointer rounded-lg border px-4 py-2 font-sans text-[0.82rem] font-semibold ${
                   dialog.danger ? "border-danger bg-danger text-white" : "border-accent bg-accent text-ink"
                 }`}
               >
-                {dialog.type === "confirm" ? (dialog.confirmLabel ?? "Ya") : "OK"}
+                {dialog.type === "confirm"
+                  ? (dialog.confirmLabel ?? "Ya")
+                  : dialog.type === "prompt"
+                    ? (dialog.confirmLabel ?? "OK")
+                    : "OK"}
               </button>
             </div>
           </div>
