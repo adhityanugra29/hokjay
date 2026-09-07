@@ -9,7 +9,6 @@ import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
 import { formatDateShort } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
-import { MONTH_NAMES } from "@/lib/constants";
 import { getSession } from "@/lib/auth/session";
 import { invoiceVisibilityFilter } from "@/lib/invoice-visibility";
 
@@ -20,13 +19,13 @@ function hariBerjalan(from: Date | string) {
 }
 
 /**
- * Invoice list — one flat list filtered through a pill toggle (+ the stat
- * cards double as filter shortcuts), NOT stacked into separate sections.
- * Per the user's request 2026-09-04, which explicitly reversed the earlier
- * "3 sections" version ("kamu jangan pisah itu berdasarkan line...
- * seharusnya kamu grouping dan ada semacam button tambahan"). All the
- * actual grouping/filtering/Preview-drawer state lives in
- * InvoiceListClient.tsx — this page just fetches and shapes the data.
+ * Invoice list — one flat list filtered through a pill toggle, NOT stacked
+ * into separate sections. Per the user's request 2026-09-04, which
+ * explicitly reversed the earlier "3 sections" version ("kamu jangan
+ * pisah itu berdasarkan line... seharusnya kamu grouping dan ada semacam
+ * button tambahan"). All the actual grouping/filtering/Preview-drawer
+ * state lives in InvoiceListClient.tsx — this page just fetches and
+ * shapes the data.
  */
 export default async function InvoiceListPage({ searchParams }: PageProps<"/invoice">) {
   const sp = await searchParams;
@@ -44,17 +43,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
     ];
   }
 
-  // "Lunas {month}" stat always reflects the real current month regardless
-  // of the periode filter below — computed against the visibility+search
-  // filter only (not yet narrowed to a periode), so picking a different
-  // periode below never changes this number.
   const nowJakarta = currentJakartaMonthYear();
-  const thisMonth = jakartaMonthRange(nowJakarta.year, nowJakarta.month);
-  const paidThisMonthCount = await Invoice.countDocuments({
-    ...filter,
-    status: "paid",
-    tanggalInvoice: { $gte: thisMonth.from, $lt: thisMonth.to },
-  });
 
   // Periode filter — per the user's request 2026-09-04 ("tambahkan di
   // html itu periode, supaya user bisa untuk filter bulanya"). Both
@@ -167,10 +156,6 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
     };
   });
 
-  const totalPiutang = rows
-    .filter((r) => r.status === "unpaid" || r.status === "dp")
-    .reduce((s, r) => s + (r.sisaTagihan ?? r.grandTotal), 0);
-
   return (
     <>
       <PageHeader
@@ -192,12 +177,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
           <InvoicePeriodFilter bulan={bulan} tahun={tahun} availableMonths={availableMonths} availableYears={availableYears} />
         </div>
 
-        <InvoiceListClient
-          rows={rows}
-          totalPiutang={totalPiutang}
-          paidThisMonthCount={paidThisMonthCount}
-          monthLabel={MONTH_NAMES[nowJakarta.month - 1]}
-        />
+        <InvoiceListClient rows={rows} />
       </div>
     </>
   );

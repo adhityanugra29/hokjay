@@ -57,30 +57,26 @@ const DAY_NUM_CLASS: Record<InvoiceRowStatus, string> = {
   paid: "text-muted",
 };
 
-/** "perlu" (Perlu Ditindak) spans 3 statuses at once — not a single pill's worth, only reachable by clicking that one stat card, not its own pill. */
-type FilterKey = "semua" | InvoiceRowStatus | "perlu";
+type FilterKey = "semua" | InvoiceRowStatus;
 
 /**
  * Invoice list — one flat list (not stacked sections) filtered through a
- * pill toggle + click-to-filter stat cards, same pattern as Keuangan's own
- * Semua/Masuk/Keluar filter. Per the user's request 2026-09-04, which
- * explicitly rejected an earlier "3 sections stacked" version: "kamu
- * jangan pisah itu berdasarkan line... ada semacam button tambahan untuk
- * melihat statusnya". Every row also gets a "Preview" button opening a
- * drawer with the real invoice document (InvoiceDocument.tsx, shared with
- * /invoice/[id]) instead of navigating away.
+ * pill toggle, same pattern as Keuangan's own Semua/Masuk/Keluar filter.
+ * Per the user's request 2026-09-04, which explicitly rejected an earlier
+ * "3 sections stacked" version: "kamu jangan pisah itu berdasarkan line...
+ * ada semacam button tambahan untuk melihat statusnya". Every row also
+ * gets a "Preview" button opening a drawer with the real invoice document
+ * (InvoiceDocument.tsx, shared with /invoice/[id]) instead of navigating
+ * away.
+ *
+ * The 2 summary cards above the pill row are pure display, driven by
+ * whichever pill is active — not their own click targets, and not
+ * independent fixed-bucket counts — per the user's request 2026-09-07
+ * (this replaced 4 independently-clickable cards, one of which,
+ * "Perlu ditindak", had no pill of its own and is gone with no
+ * replacement).
  */
-export default function InvoiceListClient({
-  rows,
-  totalPiutang,
-  paidThisMonthCount,
-  monthLabel,
-}: {
-  rows: InvoiceRow[];
-  totalPiutang: number;
-  paidThisMonthCount: number;
-  monthLabel: string;
-}) {
+export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
   const [filter, setFilter] = useState<FilterKey>("semua");
   const [previewId, setPreviewId] = useState<string | null>(null);
   // Preview drawer's "Invoice"/"Bukti Transfer" tabs — TASK-016
@@ -93,54 +89,40 @@ export default function InvoiceListClient({
   const dpCount = rows.filter((r) => r.status === "dp").length;
   const draftCount = rows.filter((r) => r.status === "draft").length;
   const paidCount = rows.filter((r) => r.status === "paid").length;
-  const perluCount = unpaidCount + dpCount + draftCount;
 
-  const filtered =
-    filter === "semua"
-      ? rows
-      : filter === "perlu"
-        ? rows.filter((r) => r.status !== "paid")
-        : rows.filter((r) => r.status === filter);
+  const filtered = filter === "semua" ? rows : rows.filter((r) => r.status === filter);
   const previewRow = rows.find((r) => r.id === previewId) ?? null;
+
+  // "Total Nilai Invoice" — meaning shifts with the active pill so it never
+  // mixes piutang (still owed) with uang yang sudah lunas into one
+  // misleading number. Per the user's request 2026-09-07 ("Kamu Break jika
+  // dia pilih semua : Berapa piutangnya? berapa yang sudah lunas?"), then
+  // confirmed: "Sudah DP" sums the remaining sisa tagihan (what's still
+  // owed on those invoices); every other filter — including "Semua", which
+  // mixes lunas and belum lunas together — sums the full grandTotal.
+  const totalNilaiInvoice =
+    filter === "dp"
+      ? filtered.reduce((s, r) => s + (r.sisaTagihan ?? r.grandTotal), 0)
+      : filtered.reduce((s, r) => s + r.grandTotal, 0);
 
   return (
     <>
-      {/* Stat cards — click to filter, same numbers the pill row below
-          shows counts for. "Perlu ditindak" isn't its own pill (it spans 3
-          statuses at once) so it's only reachable from here. */}
-      <div className="mb-6 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-        <button
-          type="button"
-          onClick={() => setFilter("perlu")}
-          className={`min-w-0 rounded-xl bg-ink p-4.5 text-left text-white shadow-sm ${filter === "perlu" ? "ring-2 ring-accent" : ""}`}
-        >
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">Perlu ditindak</div>
-          <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{perluCount}</div>
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilter("unpaid")}
-          className={`min-w-0 rounded-xl bg-panel p-4.5 text-left shadow-sm ${filter === "unpaid" ? "ring-2 ring-accent-700" : ""}`}
-        >
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Belum bayar</div>
-          <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{unpaidCount}</div>
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilter("dp")}
-          className={`min-w-0 rounded-xl bg-panel p-4.5 text-left shadow-sm ${filter === "dp" ? "ring-2 ring-accent-700" : ""}`}
-        >
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Sudah DP</div>
-          <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{dpCount}</div>
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilter("paid")}
-          className={`min-w-0 rounded-xl bg-panel p-4.5 text-left shadow-sm ${filter === "paid" ? "ring-2 ring-accent-700" : ""}`}
-        >
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Lunas {monthLabel}</div>
-          <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{paidThisMonthCount}</div>
-        </button>
+      {/* Summary cards — pure display, not clickable (the pill row below is
+          the only filter control). Both numbers track whichever pill is
+          active: per the user's request 2026-09-07, this replaces the old
+          4 independently-clickable/independently-counted cards ("Perlu
+          ditindak", "Belum bayar", "Sudah DP", "Lunas {bulan}") with 2 that
+          read together as "of what I'm looking at right now, how many and
+          how much". */}
+      <div className="mb-6 grid grid-cols-2 gap-3.5">
+        <div className="min-w-0 rounded-xl bg-ink p-4.5 text-white shadow-sm">
+          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">Jumlah Invoice</div>
+          <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{filtered.length}</div>
+        </div>
+        <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
+          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Total Nilai Invoice</div>
+          <div className="mt-0.5 truncate font-sans text-[1.25rem] font-extrabold">{rupiah(totalNilaiInvoice)}</div>
+        </div>
       </div>
 
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
@@ -166,10 +148,6 @@ export default function InvoiceListClient({
             </button>
           ))}
         </div>
-        <span className="font-mono text-[0.74rem] text-muted">
-          {filtered.length} invoice
-          {(filter === "unpaid" || filter === "perlu") && totalPiutang > 0 && ` · ${rupiah(totalPiutang)} tertahan`}
-        </span>
       </div>
 
       <div className="mt-3.5">

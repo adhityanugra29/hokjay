@@ -6,6 +6,15 @@
 
 ## 2026-09-07
 
+**TASK-020 done** — Invoice list's 4 stat cards (Perlu ditindak/Belum bayar/Sudah DP/Lunas {bulan} — each independently clickable, each showing its own fixed count regardless of which pill was active) collapsed into 2 plain, non-clickable cards: "Jumlah Invoice" and "Total Nilai Invoice", both now tracking whichever pill filter is currently active. "Total Nilai Invoice" sums the remaining sisa tagihan for "Sudah DP" and the full grandTotal for every other filter, so it never blends "already paid" and "still owed" into one misleading figure the way a single flat sum would have. Went through 3 rounds of confirmation with the user, including a genuine design correction mid-way (their first-round proposal — summing raw grandTotal always — was flagged as breaking for the "Semua" view before being redesigned).
+
+Tasks done: TASK-020.
+Regression: PASS — clean build, lint clean; verified live across all 5 pill states with Playwright, numbers cross-checked by hand against the visible rows for "Belum Dibayar" and "Sudah DP".
+
+---
+
+## 2026-09-07
+
 **TASK-019 done, BUG-018 fixed** — Deleting a product is now Owner-only everywhere it appears (Inventory's list and a new "Hapus" button in Katalog's edit pencil) — this used to have zero role restriction at all on Inventory. Inventory's list also now shows "Ukuran" (dimensions) right under each product's name, on both desktop and mobile, with the SKU text shrunk slightly to make room. Separately, the Beranda bell's "Produk baru ditambahkan" notification was linking straight to the product's edit page instead of Katalog — now matches the Flash Sale notification's own `/katalog` link.
 
 Tasks done: TASK-019. Bugs fixed: BUG-018.
