@@ -6,6 +6,13 @@
 
 ## 2026-09-08
 
+**BUG-019 fixed** — Right after TASK-021 deployed, the Invoice list's Preview drawer rendered docked to the LEFT instead of the right. The two hidden `InvoicePrintDoc` instances TASK-021 added (for PDF capture only) were nested inside the drawer overlay's own `flex justify-end` container — each is `h-0 overflow-hidden` so it paints as invisible, but its un-clipped 794px-wide content still counted toward the row's flex sizing, so `justify-end` packed the whole row (real panel + 2 invisible spacers) flush right, shoving the actually-visible panel to the left in the process. Moved both hidden instances out of that flex container entirely.
+
+Bugs fixed: BUG-019.
+Regression: PARTIAL — clean build, lint clean; reasoned through directly (no live browser pass available this session, same gap as TASK-021).
+
+---
+
 **TASK-021 done** — Invoice list's Preview drawer gained a "Surat Jalan" tab (next to Invoice and the still-conditional Bukti Transfer), each with its own "Unduh ... (PDF)" button, so both documents can be previewed/downloaded straight from `/invoice` without opening `/invoice/[id]`. Mid-review the user asked for one more thing: a driver name typed once should actually show up in the on-screen preview (not just silently feed the PDF) — opening the tab for the first time now prompts for it immediately, shows it live in the preview, and offers an "Ubah" link to correct it; the detail page's own download still prompts fresh every click, unchanged. Extracted the shared PDF-building logic out of `InvoiceActions.tsx` into a new `useInvoicePdfDownload()` hook so the list didn't duplicate it.
 
 Tasks done: TASK-021.

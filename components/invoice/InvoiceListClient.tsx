@@ -401,13 +401,28 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
               )}
             </div>
           </div>
-          {/* Hidden, hidden-from-view paginated layouts the download
-              buttons above actually capture (html2canvas + jsPDF) — same
-              approach as app/invoice/[id]/page.tsx's own two instances.
-              Keyed on the row id so switching preview rows always starts
-              each instance's adaptive page-packing fresh instead of
-              carrying over a previous invoice's measured header/footer
-              heights. Mounted only while a row is being previewed. */}
+        </div>
+      )}
+      {/* Hidden, off-screen paginated layouts the download buttons above
+          actually capture (html2canvas + jsPDF) — same approach as
+          app/invoice/[id]/page.tsx's own two instances. Deliberately a
+          SEPARATE block from the drawer overlay above, not nested inside
+          it — BUG-019: nesting these as extra children of that overlay's
+          own `flex justify-end` row made them count as flex items too,
+          and even though each renders at `h-0`, its un-clipped content
+          width (a 794px-wide invoice page) still occupies horizontal
+          space along the row — so `justify-end` packed the whole row
+          flush right INCLUDING these two invisible spacers, shoving the
+          actually-visible drawer panel over to the left. Rendering them
+          here, outside that flex container entirely, keeps them exactly
+          as invisible/off-screen as intended without them ever being able
+          to influence the overlay's own layout again. Keyed on the row id
+          so switching preview rows always starts each instance's adaptive
+          page-packing fresh instead of carrying over a previous invoice's
+          measured header/footer heights. Mounted only while a row is
+          being previewed. */}
+      {previewRow && (
+        <>
           <InvoicePrintDoc key={`inv-${previewRow.id}`} invoice={previewRow.printData} id="list-invoice-print-doc" />
           <InvoicePrintDoc
             key={`sj-${previewRow.id}`}
@@ -415,7 +430,7 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
             mode="surat-jalan"
             id="list-surat-jalan-print-doc"
           />
-        </div>
+        </>
       )}
     </>
   );

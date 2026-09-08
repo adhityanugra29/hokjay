@@ -333,3 +333,20 @@ Also applied, per the user's related request, a conservative compression tighten
 **Files:** `lib/activity.ts`.
 **Regression test:** Clean build, lint clean. Verified live against a production build: `/aktivitas` rendered 66 "Produk baru ditambahkan" entries, all with `href="/katalog"`, zero remaining `/produk/.../edit` links anywhere on the page.
 **Regression test:** Clean build, lint clean. Verified live: clicking a real bukti image opens the in-app zoom overlay (confirmed a working ✕ close button renders, zero new browser tabs/popups opened).
+
+---
+
+## BUG-019 — Invoice list's Preview drawer rendered docked to the left instead of the right
+
+**Severity:** B1
+**Status:** FIXED (2026-09-08)
+**Source:** User report with screenshot, right after TASK-021 deployed ("hei, penempatanya kenapa jadi sebelah kiri? ini bug").
+
+**Description:** TASK-021 (same session) added two hidden `InvoicePrintDoc` instances (`list-invoice-print-doc`/`list-surat-jalan-print-doc`, used only for the PDF-capture path) as direct children of the drawer overlay's own container — `<div className="... flex justify-end ...">`. Each `InvoicePrintDoc` renders at `h-0 overflow-hidden` (correctly invisible), but its un-clipped content still includes a real 794px-wide invoice page — as a flex item, that content width still counts toward the row's layout even though its rendered height is zero. With 2 such spacer-width items now sharing the flex row with the actual visible drawer panel, `justify-end` packed the whole row (panel + both invisible spacers) flush against the right edge — which meant the panel itself, being first in DOM order, got shoved over to the LEFT so the two invisible spacers could sit flush right instead.
+
+**Root cause:** Mounting a "purely for background capture, always h-0" component as a sibling flex item inside a `justify-end` layout — `overflow: hidden` only clips what's *painted*, it doesn't stop the element's own intrinsic content width from participating in flex sizing.
+
+**Fix:** Moved both hidden `InvoicePrintDoc` instances out of the drawer overlay's flex container entirely — now a separate `{previewRow && (...)}` block rendered as a sibling after it, outside any flex layout, so they can't influence anyone's positioning again.
+
+**Files:** `components/invoice/InvoiceListClient.tsx`.
+**Regression test:** Clean build, lint clean. Reasoned through the fix directly (the two hidden docs are now outside the only flex container on the page that could be affected) — same live-verification gap flagged for the rest of TASK-021 applies here too (no Playwright/session-minting available in this environment this session).
