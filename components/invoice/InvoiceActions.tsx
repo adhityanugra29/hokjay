@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { rupiah, toWaPhone } from "@/lib/format";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { useDialog } from "@/components/ui/Dialog";
+import { useInvoicePdfDownload } from "./useInvoicePdfDownload";
 
 export default function InvoiceActions({
   nomor,
@@ -17,78 +18,18 @@ export default function InvoiceActions({
   customerWhatsapp?: string;
   grandTotal: number;
 }) {
-  const [downloading, setDownloading] = useState(false);
-  const [downloadingSuratJalan, setDownloadingSuratJalan] = useState(false);
   const [sendingWA, setSendingWA] = useState(false);
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
-  const { alert, prompt } = useDialog();
+  const { alert } = useDialog();
+  // Shared with InvoiceListClient.tsx's Preview drawer — see
+  // useInvoicePdfDownload.ts for why this was extracted out of this file.
+  const { downloading, downloadingSuratJalan, buildInvoicePdf, downloadInvoicePdf, downloadSuratJalanPdf } =
+    useInvoicePdfDownload();
 
   function waMessage() {
     return `Halo ${customerNama}, berikut invoice ${nomor} dari CV HORECA JAYA.\nTotal: ${rupiah(
       grandTotal
     )}\nTerima kasih!`;
-  }
-
-  /**
-   * PDF generation itself, pulled out of downloadInvoicePdf so sendWA (and
-   * now downloadSuratJalanPdf, TASK-018) can reuse it (see that function's
-   * comment for why the per-page-canvas approach). `elementId` picks which
-   * hidden InvoicePrintDoc instance to capture — app/invoice/[id]/page.tsx
-   * renders two, "invoice-print-doc" (the default) and
-   * "surat-jalan-print-doc". Returns the built jsPDF instance — caller
-   * decides whether to .save() it or turn it into a File for sharing.
-   */
-  async function buildInvoicePdf(elementId: string = "invoice-print-doc") {
-    const element = document.getElementById(elementId);
-    if (!element) return null;
-
-    // Logo + product photos aren't part of this doc beyond the HOJAY
-    // logo, but the same "wait for every image to finish loading before
-    // capturing" guard as the Katalog PDF applies regardless.
-    const images = Array.from(element.querySelectorAll("img"));
-    await Promise.all(
-      images.map((img) =>
-        img.complete
-          ? Promise.resolve()
-          : new Promise<void>((resolve) => {
-              img.addEventListener("load", () => resolve(), { once: true });
-              img.addEventListener("error", () => resolve(), { once: true });
-            })
-      )
-    );
-
-    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
-    const pageEls = Array.from(element.querySelectorAll<HTMLElement>("[data-print-page]"));
-    if (pageEls.length === 0) return null;
-
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-    const pageWidthMM = pdf.internal.pageSize.getWidth();
-    const pageHeightMM = pdf.internal.pageSize.getHeight();
-
-    for (let i = 0; i < pageEls.length; i++) {
-      // Matches the Katalog PDF's own settings exactly (JPEG 0.94, scale
-      // 2, FAST compression) — per the user's explicit request
-      // 2026-08-28 ("contoh cara pengerjaan di pdf katalog"). PNG (tried
-      // first, to fix an earlier blur report) turned out both still not
-      // fully satisfying and heavy (~20MB/page at scale 3, still notably
-      // larger than JPEG even after dropping to scale 2) — Katalog's own
-      // JPEG 0.94 is the value already proven crisp+light after that
-      // PDF's own multi-round tuning earlier this session, so this
-      // stops re-deriving the same tradeoff from scratch for Invoice.
-      const canvas = await html2canvas(pageEls[i], {
-        scale: 2,
-        useCORS: true,
-        scrollY: -window.scrollY,
-        scrollX: 0,
-        logging: false,
-        imageTimeout: 0,
-      });
-      const imgData = canvas.toDataURL("image/jpeg", 0.94);
-      if (i > 0) pdf.addPage();
-      pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMM, pageHeightMM, undefined, "FAST");
-    }
-
-    return pdf;
   }
 
   /**
@@ -154,89 +95,15 @@ export default function InvoiceActions({
     }
   }
 
-  /**
-   * Downloads the invoice as a PDF — html2canvas + jsPDF, per-page capture,
-   * same approach as the Katalog PDF (components/katalog/KatalogClient.tsx).
-   * Replaces the old native window.print() flow entirely: per the user's
-   * report 2026-08-27, a long invoice's content got visibly cut off when
-   * printed — #invoice-doc sat inside a CSS grid (the 2-column layout with
-   * the status sidebar), a well-known source of print-pagination bugs
-   * across browsers. Capturing each page as its own independent image
-   * (see InvoicePrintDoc.tsx) sidesteps browser print pagination
-   * altogether, the same fix that made the Katalog PDF reliable.
-   */
-  async function downloadInvoicePdf() {
-    setDownloading(true);
-    showLoading();
-    try {
-      const pdf = await buildInvoicePdf();
-      if (!pdf) {
-        await alert("Tidak ada halaman untuk diunduh.");
-        return;
-      }
-      pdf.save(`${nomor}.pdf`);
-    } catch (err) {
-      console.error("Gagal membuat PDF invoice:", err);
-      await alert(
-        `Gagal membuat PDF invoice: ${err instanceof Error ? err.message : String(err)}\n\nCoba lagi, atau screenshot pesan ini untuk dilaporkan.`
-      );
-    } finally {
-      setDownloading(false);
-      hideLoading();
-    }
-  }
-
-  /**
-   * TASK-018 (2026-09-07) — Surat Jalan: same document, no prices,
-   * "SURAT JALAN" title, plus a driver name — per the user's explicit
-   * choice, the driver name is NEVER stored on the invoice ("driver bisa
-   * berganti tergantung kondisi di lapangan"). Prompted fresh every time
-   * this button is clicked, then patched straight into the hidden
-   * #surat-jalan-print-doc's DOM (the `data-driver-slot` element —
-   * InvoicePrintDoc.tsx) right before html2canvas captures it — a plain
-   * DOM write, not React state, since this value only ever needs to
-   * exist for the few seconds it takes to generate this one PDF.
-   */
-  async function downloadSuratJalanPdf() {
-    const driverName = await prompt("Nama driver yang mengantar barang ini:", {
-      title: "Nama Driver",
-      placeholder: "Contoh: Pak Joko",
-      confirmLabel: "Buat Surat Jalan",
-    });
-    if (driverName === null) return; // cancelled
-
-    setDownloadingSuratJalan(true);
-    showLoading();
-    try {
-      const slot = document.querySelector<HTMLElement>("#surat-jalan-print-doc [data-driver-slot]");
-      if (slot) slot.textContent = driverName.trim() || "—";
-
-      const pdf = await buildInvoicePdf("surat-jalan-print-doc");
-      if (!pdf) {
-        await alert("Tidak ada halaman untuk diunduh.");
-        return;
-      }
-      pdf.save(`SuratJalan-${nomor}.pdf`);
-    } catch (err) {
-      console.error("Gagal membuat PDF surat jalan:", err);
-      await alert(
-        `Gagal membuat PDF surat jalan: ${err instanceof Error ? err.message : String(err)}\n\nCoba lagi, atau screenshot pesan ini untuk dilaporkan.`
-      );
-    } finally {
-      setDownloadingSuratJalan(false);
-      hideLoading();
-    }
-  }
-
   return (
     <>
       <Button variant="clay" onClick={sendWA} disabled={sendingWA}>
         {sendingWA ? "Menyiapkan..." : "Kirim ke Pelanggan (WA)"}
       </Button>
-      <Button variant="ghost" onClick={downloadInvoicePdf} disabled={downloading}>
+      <Button variant="ghost" onClick={() => downloadInvoicePdf(nomor)} disabled={downloading}>
         {downloading ? "Menyiapkan PDF..." : "Unduh Invoice (PDF)"}
       </Button>
-      <Button variant="ghost" onClick={downloadSuratJalanPdf} disabled={downloadingSuratJalan}>
+      <Button variant="ghost" onClick={() => downloadSuratJalanPdf(nomor)} disabled={downloadingSuratJalan}>
         {downloadingSuratJalan ? "Menyiapkan PDF..." : "Unduh Surat Jalan (PDF)"}
       </Button>
     </>

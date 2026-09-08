@@ -12,16 +12,36 @@ import { displayDiskon, displayHarga, type InvoicePrintData } from "@/lib/invoic
  * type. NOT the paginated layout InvoicePrintDoc.tsx captures for PDF
  * export — this is the single continuous view a person actually reads on
  * screen, same as before the extraction.
+ *
+ * `mode="surat-jalan"` (2026-09-08) — an on-screen preview of the Surat
+ * Jalan document, mirroring InvoicePrintDoc.tsx's own surat-jalan mode
+ * (no Harga/Diskon/Subtotal columns, no totals/Payment Details block, a
+ * Nama Driver line instead). Added so the Invoice list's Preview drawer
+ * can show it without navigating to /invoice/[id]. This view is purely
+ * visual — it's never what gets captured for the actual PDF download
+ * (that's still the hidden, paginated InvoicePrintDoc), so its Nama Driver
+ * line just reads invoice.namaDriver statically (usually unset — the real
+ * value is typed fresh into a prompt() at download time, never stored).
  */
-export default function InvoiceDocument({ invoice, id }: { invoice: InvoicePrintData; id?: string }) {
+export default function InvoiceDocument({
+  invoice,
+  id,
+  mode = "invoice",
+}: {
+  invoice: InvoicePrintData;
+  id?: string;
+  mode?: "invoice" | "surat-jalan";
+}) {
   const totalDiskon = invoice.items.reduce((s, i) => s + displayDiskon(i) * i.qty, 0);
   const totalBelanja = invoice.items.reduce((s, i) => s + displayHarga(i) * i.qty, 0);
+  const isSuratJalan = mode === "surat-jalan";
 
   return (
     <div id={id} className="border border-line bg-panel p-5 sm:p-9">
-      {/* "INVOICE" centered above a logo+company-info / no.+tanggal row —
-          per the user's request 2026-08-25. */}
-      <h2 className="mb-5 text-center font-serif text-2xl tracking-[0.08em]">INVOICE</h2>
+      {/* "INVOICE"/"SURAT JALAN" centered above a logo+company-info /
+          no.+tanggal row — per the user's request 2026-08-25 (title itself
+          per 2026-09-07's Surat Jalan feature). */}
+      <h2 className="mb-5 text-center font-serif text-2xl tracking-[0.08em]">{isSuratJalan ? "SURAT JALAN" : "INVOICE"}</h2>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b-2 border-ink pb-6">
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -69,13 +89,19 @@ export default function InvoiceDocument({ invoice, id }: { invoice: InvoicePrint
             {invoice.kurir ? ` · ${invoice.kurir}` : ""}
           </div>
         </div>
+        {isSuratJalan && (
+          <div>
+            <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Nama Driver</div>
+            <div className="font-mono text-[0.78rem] text-muted">{invoice.namaDriver ?? "—"}</div>
+          </div>
+        )}
       </div>
 
       <TableScroll>
         <table className="w-full min-w-[480px] border-collapse">
           <thead>
             <tr>
-              {["Produk", "Qty", "Harga", "Diskon", "Subtotal"].map((h, idx) => (
+              {(isSuratJalan ? ["Produk", "Qty"] : ["Produk", "Qty", "Harga", "Diskon", "Subtotal"]).map((h, idx) => (
                 <th
                   key={h}
                   className={`border-b border-ink py-2 font-mono text-[0.68rem] uppercase text-muted ${
@@ -100,55 +126,75 @@ export default function InvoiceDocument({ invoice, id }: { invoice: InvoicePrint
                   )}
                 </td>
                 <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
-                <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayHarga(item))}</td>
-                <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
-                <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
+                {!isSuratJalan && (
+                  <>
+                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayHarga(item))}</td>
+                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
+                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </TableScroll>
 
-      <div className="ml-auto mt-5 w-full max-w-[260px] font-mono">
-        <div className="flex justify-between py-1.5 text-[0.88rem]">
-          <span>Total Belanja</span>
-          <span>{rupiah(totalBelanja)}</span>
+      {/* Surat Jalan drops the whole totals block (Total Belanja/Diskon/
+          Ongkir/Total/DP/Sisa) plus Payment Details — a delivery note has
+          no prices on it at all, per the user's request 2026-09-07. Only
+          the closing logo/"Thank you" note stays. */}
+      {!isSuratJalan && (
+        <div className="ml-auto mt-5 w-full max-w-[260px] font-mono">
+          <div className="flex justify-between py-1.5 text-[0.88rem]">
+            <span>Total Belanja</span>
+            <span>{rupiah(totalBelanja)}</span>
+          </div>
+          <div className="flex justify-between py-1.5 text-[0.88rem]">
+            <span>Total Diskon</span>
+            <span>{totalDiskon > 0 ? `− ${rupiah(totalDiskon)}` : rupiah(totalDiskon)}</span>
+          </div>
+          <div className="flex justify-between py-1.5 text-[0.88rem]">
+            <span>Ongkos Kirim</span>
+            <span>{rupiah(invoice.ongkosKirim ?? 0)}</span>
+          </div>
+          <div className="mt-2 flex justify-between border-t-2 border-ink pt-3 font-serif text-lg font-semibold">
+            <span>Total</span>
+            <span>{rupiah(invoice.grandTotal)}</span>
+          </div>
+          {invoice.dpNominal ? (
+            <>
+              <div className="flex justify-between py-1.5 text-[0.88rem]">
+                <span>DP ({formatDateShort(invoice.dpTanggal ?? invoice.tanggal)})</span>
+                <span>− {rupiah(invoice.dpNominal)}</span>
+              </div>
+              <div className="mt-1 flex justify-between border-t border-line pt-2 font-serif text-base font-semibold">
+                <span>Sisa Tagihan</span>
+                <span>{rupiah(invoice.grandTotal - invoice.dpNominal)}</span>
+              </div>
+            </>
+          ) : null}
         </div>
-        <div className="flex justify-between py-1.5 text-[0.88rem]">
-          <span>Total Diskon</span>
-          <span>{totalDiskon > 0 ? `− ${rupiah(totalDiskon)}` : rupiah(totalDiskon)}</span>
-        </div>
-        <div className="flex justify-between py-1.5 text-[0.88rem]">
-          <span>Ongkos Kirim</span>
-          <span>{rupiah(invoice.ongkosKirim ?? 0)}</span>
-        </div>
-        <div className="mt-2 flex justify-between border-t-2 border-ink pt-3 font-serif text-lg font-semibold">
-          <span>Total</span>
-          <span>{rupiah(invoice.grandTotal)}</span>
-        </div>
-        {invoice.dpNominal ? (
-          <>
-            <div className="flex justify-between py-1.5 text-[0.88rem]">
-              <span>DP ({formatDateShort(invoice.dpTanggal ?? invoice.tanggal)})</span>
-              <span>− {rupiah(invoice.dpNominal)}</span>
-            </div>
-            <div className="mt-1 flex justify-between border-t border-line pt-2 font-serif text-base font-semibold">
-              <span>Sisa Tagihan</span>
-              <span>{rupiah(invoice.grandTotal - invoice.dpNominal)}</span>
-            </div>
-          </>
-        ) : null}
-      </div>
+      )}
 
       {/* Payment Details + closing logo/thank-you note side by side, same
           row — per the user's request 2026-08-27. break-inside-avoid keeps
-          it from being split across a page boundary when printed. */}
-      <div className="mt-9 flex flex-wrap items-start justify-between gap-6 border-t-2 border-ink pt-5 [break-inside:avoid]">
-        <div className="font-mono text-[0.78rem] leading-relaxed">
-          <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Payment Details</div>
-          <div>No. Rekening: 5771370277 (BCA)</div>
-          <div>Atas Nama: Mohammad Andi Abdillah</div>
-        </div>
+          it from being split across a page boundary when printed. Surat
+          Jalan drops the Payment Details half entirely (justify-end
+          instead of justify-between once there's only one side left) —
+          same layout choice as InvoicePrintDoc.tsx's own surat-jalan
+          mode. */}
+      <div
+        className={`mt-9 flex flex-wrap items-start gap-6 border-t-2 border-ink pt-5 [break-inside:avoid] ${
+          isSuratJalan ? "justify-end" : "justify-between"
+        }`}
+      >
+        {!isSuratJalan && (
+          <div className="font-mono text-[0.78rem] leading-relaxed">
+            <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Payment Details</div>
+            <div>No. Rekening: 5771370277 (BCA)</div>
+            <div>Atas Nama: Mohammad Andi Abdillah</div>
+          </div>
+        )}
         <div className="flex flex-col items-end gap-2 text-right">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

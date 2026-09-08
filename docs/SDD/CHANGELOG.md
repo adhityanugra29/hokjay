@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-08
+
+**TASK-021 done** — Invoice list's Preview drawer gained a "Surat Jalan" tab (next to Invoice and the still-conditional Bukti Transfer), each with its own "Unduh ... (PDF)" button, so both documents can be previewed/downloaded straight from `/invoice` without opening `/invoice/[id]`. Mid-review the user asked for one more thing: a driver name typed once should actually show up in the on-screen preview (not just silently feed the PDF) — opening the tab for the first time now prompts for it immediately, shows it live in the preview, and offers an "Ubah" link to correct it; the detail page's own download still prompts fresh every click, unchanged. Extracted the shared PDF-building logic out of `InvoiceActions.tsx` into a new `useInvoicePdfDownload()` hook so the list didn't duplicate it.
+
+Tasks done: TASK-021.
+Regression: PARTIAL — clean build, lint clean on all 4 touched files; manual trace of the prop/state wiring plus an interactive HTML mockup, but no live DB-backed browser pass this time (Playwright unavailable, session-minting blocked by this sandbox's own security classifier) — flagged to the user rather than claimed.
+
+---
+
 ## 2026-09-07
 
 **TASK-020 done** — Invoice list's 4 stat cards (Perlu ditindak/Belum bayar/Sudah DP/Lunas {bulan} — each independently clickable, each showing its own fixed count regardless of which pill was active) collapsed into 2 plain, non-clickable cards: "Jumlah Invoice" and "Total Nilai Invoice", both now tracking whichever pill filter is currently active. "Total Nilai Invoice" sums the remaining sisa tagihan for "Sudah DP" and the full grandTotal for every other filter, so it never blends "already paid" and "still owed" into one misleading figure the way a single flat sum would have. Went through 3 rounds of confirmation with the user, including a genuine design correction mid-way (their first-round proposal — summing raw grandTotal always — was flagged as breaking for the "Semua" view before being redesigned).

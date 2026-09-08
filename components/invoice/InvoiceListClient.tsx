@@ -4,6 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import DeleteInvoiceButton from "./DeleteInvoiceButton";
 import InvoiceDocument from "./InvoiceDocument";
+import InvoicePrintDoc from "./InvoicePrintDoc";
+import { Button } from "@/components/ui/Button";
+import { useInvoicePdfDownload } from "./useInvoicePdfDownload";
+import { useDialog } from "@/components/ui/Dialog";
 import ZoomableImage from "@/components/katalog/ZoomableImage";
 import type { InvoicePrintData } from "./InvoicePrintDoc";
 import { rupiah, toWaPhone, formatDateShort } from "@/lib/format";
@@ -79,11 +83,61 @@ type FilterKey = "semua" | InvoiceRowStatus;
 export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
   const [filter, setFilter] = useState<FilterKey>("semua");
   const [previewId, setPreviewId] = useState<string | null>(null);
-  // Preview drawer's "Invoice"/"Bukti Transfer" tabs — TASK-016
-  // (2026-09-07), per the user's request. Always starts on "invoice"
-  // (reset alongside setPreviewId, not via a separate effect) so opening
-  // a different row's preview never lands on the previous row's tab.
-  const [previewTab, setPreviewTab] = useState<"invoice" | "bukti">("invoice");
+  // Preview drawer's "Invoice"/"Surat Jalan"/"Bukti Transfer" tabs —
+  // TASK-016 (2026-09-07) added Invoice/Bukti Transfer; "Surat Jalan"
+  // added 2026-09-08 per the user's request, so a Surat Jalan can be
+  // previewed and downloaded straight from the list without opening
+  // /invoice/[id]. Always starts on "invoice" (reset alongside
+  // setPreviewId, not via a separate effect) so opening a different
+  // row's preview never lands on the previous row's tab.
+  const [previewTab, setPreviewTab] = useState<"invoice" | "surat-jalan" | "bukti">("invoice");
+  // Surat Jalan's driver name for the CURRENTLY open preview only — never
+  // sent to the server, never persisted (see useInvoicePdfDownload.ts's own
+  // comment on why it's never stored). null = not captured yet for this
+  // preview. Reset to null alongside previewId/previewTab so a different
+  // invoice (or reopening the same one later) always starts fresh — per
+  // the user's request 2026-09-08, captured once when the tab opens so the
+  // on-screen preview can show it too, not just the downloaded PDF.
+  const [driverName, setDriverName] = useState<string | null>(null);
+  // Shared with InvoiceActions.tsx (the /invoice/[id] detail page) — see
+  // useInvoicePdfDownload.ts for why the html2canvas/jsPDF logic lives
+  // there instead of being duplicated here.
+  const { downloading, downloadingSuratJalan, downloadInvoicePdf, downloadSuratJalanPdf } = useInvoicePdfDownload();
+  const { prompt } = useDialog();
+
+  /** Always re-asks, even if a name is already set — used by the "Ubah" link. */
+  async function promptDriverName(): Promise<string | null> {
+    const typed = await prompt("Nama driver yang mengantar barang ini:", {
+      title: "Nama Driver",
+      placeholder: "Contoh: Pak Joko",
+      confirmLabel: "Simpan",
+    });
+    if (typed === null) return null; // cancelled
+    const value = typed.trim() || "—";
+    setDriverName(value);
+    return value;
+  }
+
+  /** Only asks the first time — reuses whatever's already captured for this preview otherwise. */
+  async function ensureDriverName(): Promise<string | null> {
+    if (driverName !== null) return driverName;
+    return promptDriverName();
+  }
+
+  /** Opens the Preview drawer on a specific invoice, always starting on the "Invoice" tab with no driver name carried over from whatever was previewed before. */
+  function openPreview(id: string) {
+    setPreviewId(id);
+    setPreviewTab("invoice");
+    setDriverName(null);
+  }
+
+  /** Switching TO "Surat Jalan" the first time for this preview immediately asks for the driver name, per the user's request 2026-09-08 — so the preview never sits there showing a placeholder the person has to guess is editable. */
+  async function handleTabClick(key: "invoice" | "surat-jalan" | "bukti") {
+    setPreviewTab(key);
+    if (key === "surat-jalan" && driverName === null) {
+      await ensureDriverName();
+    }
+  }
 
   const unpaidCount = rows.filter((r) => r.status === "unpaid").length;
   const dpCount = rows.filter((r) => r.status === "dp").length;
@@ -192,10 +246,7 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
               <div className="flex flex-wrap justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setPreviewId(r.id);
-                    setPreviewTab("invoice");
-                  }}
+                  onClick={() => openPreview(r.id)}
                   className="cursor-pointer border border-accent-600 bg-accent-100 px-3 py-1.5 font-sans text-[0.72rem] font-bold text-accent-700 hover:bg-accent-100/70"
                 >
                   Preview
@@ -267,41 +318,103 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
                 ✕
               </button>
             </div>
-            {(previewRow.printData.dpBuktiUrl || previewRow.printData.paymentBuktiUrl) && (
-              // Only rendered when there's actually something to switch to
-              // — a cash-paid invoice has neither buktiUrl (PaymentForm.tsx
-              // clears it for "tunai/cash"), so there's nothing to tab
-              // between and this row is skipped entirely rather than
-              // showing a dead second tab. Same pill styling the status
-              // filter row above already uses, for visual consistency.
-              <div className="flex flex-wrap gap-1.5 border-b border-line bg-panel px-5 py-3">
-                {(
-                  [
-                    ["invoice", "Invoice"],
-                    ["bukti", "Bukti Transfer"],
-                  ] as const
-                ).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setPreviewTab(key)}
-                    className={`cursor-pointer rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[0.72rem] font-bold ${
-                      previewTab === key ? "border-accent bg-accent text-ink" : "border-line text-ink hover:border-accent-600"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* "Invoice"/"Surat Jalan" always available; "Bukti Transfer"
+                only joins when there's actually something to switch to — a
+                cash-paid invoice has neither buktiUrl (PaymentForm.tsx
+                clears it for "tunai/cash"). Same pill styling the status
+                filter row above already uses, for visual consistency. */}
+            <div className="flex flex-wrap gap-1.5 border-b border-line bg-panel px-5 py-3">
+              {(
+                [
+                  ["invoice", "Invoice"],
+                  ["surat-jalan", "Surat Jalan"],
+                  ...(previewRow.printData.dpBuktiUrl || previewRow.printData.paymentBuktiUrl
+                    ? ([["bukti", "Bukti Transfer"]] as const)
+                    : []),
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleTabClick(key)}
+                  className={`cursor-pointer rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[0.72rem] font-bold ${
+                    previewTab === key ? "border-accent bg-accent text-ink" : "border-line text-ink hover:border-accent-600"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div className="p-5">
-              {previewTab === "bukti" ? (
-                <BuktiTransferView invoice={previewRow.printData} />
-              ) : (
-                <InvoiceDocument invoice={previewRow.printData} />
+              {previewTab === "bukti" && <BuktiTransferView invoice={previewRow.printData} />}
+              {previewTab === "invoice" && (
+                <>
+                  <div className="mb-4 flex justify-end">
+                    <Button
+                      variant="ghost"
+                      onClick={() => downloadInvoicePdf(previewRow.nomor, "list-invoice-print-doc")}
+                      disabled={downloading}
+                    >
+                      {downloading ? "Menyiapkan PDF..." : "Unduh Invoice (PDF)"}
+                    </Button>
+                  </div>
+                  <InvoiceDocument invoice={previewRow.printData} />
+                </>
+              )}
+              {previewTab === "surat-jalan" && (
+                <>
+                  {/* Driver name is asked as soon as this tab opens
+                      (handleTabClick above) — this row just shows what
+                      was captured plus a way to correct it before
+                      downloading. Per the user's request 2026-09-08: once
+                      set, it must actually show in the preview document
+                      below, not just silently feed the PDF. */}
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="font-mono text-[0.72rem] text-muted">
+                      Nama Driver:{" "}
+                      <span className="font-bold text-ink">{driverName ?? "belum diisi"}</span>{" "}
+                      <button
+                        type="button"
+                        onClick={() => promptDriverName()}
+                        className="cursor-pointer text-accent-700 underline underline-offset-2 hover:text-accent-800"
+                      >
+                        {driverName ? "Ubah" : "Isi sekarang"}
+                      </button>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      onClick={async () => {
+                        const name = await ensureDriverName();
+                        if (name === null) return;
+                        downloadSuratJalanPdf(previewRow.nomor, "list-surat-jalan-print-doc", name);
+                      }}
+                      disabled={downloadingSuratJalan}
+                    >
+                      {downloadingSuratJalan ? "Menyiapkan PDF..." : "Unduh Surat Jalan (PDF)"}
+                    </Button>
+                  </div>
+                  <InvoiceDocument
+                    invoice={{ ...previewRow.printData, namaDriver: driverName ?? undefined }}
+                    mode="surat-jalan"
+                  />
+                </>
               )}
             </div>
           </div>
+          {/* Hidden, hidden-from-view paginated layouts the download
+              buttons above actually capture (html2canvas + jsPDF) — same
+              approach as app/invoice/[id]/page.tsx's own two instances.
+              Keyed on the row id so switching preview rows always starts
+              each instance's adaptive page-packing fresh instead of
+              carrying over a previous invoice's measured header/footer
+              heights. Mounted only while a row is being previewed. */}
+          <InvoicePrintDoc key={`inv-${previewRow.id}`} invoice={previewRow.printData} id="list-invoice-print-doc" />
+          <InvoicePrintDoc
+            key={`sj-${previewRow.id}`}
+            invoice={previewRow.printData}
+            mode="surat-jalan"
+            id="list-surat-jalan-print-doc"
+          />
         </div>
       )}
     </>
