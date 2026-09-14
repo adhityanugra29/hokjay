@@ -6,10 +6,10 @@
 
 ## 2026-09-14
 
-**TASK-022 done** — Katalog photo watermark moved from a small (18% width, fully opaque) bottom-right badge to a centered, translucent one (55% width, 10% opacity — "Opsi C" of 4 real candidates generated with the actual sharp pipeline and shown to the user for sign-off before coding). Only affects newly-uploaded photos going forward — existing photos already have the old corner watermark permanently baked in, with no original kept to reprocess from.
+**TASK-022 done (+ same-day retrofit)** — Katalog photo watermark moved from a small (18% width, fully opaque) bottom-right badge to a centered, translucent one (55% width, 10% opacity — "Opsi C" of 4 real candidates generated with the actual sharp pipeline and shown to the user for sign-off before coding). The user then asked for existing photos to get it too ("yang lama harus ikut berubah") — since the pre-watermark originals were never kept, the old corner mark can't be cleanly replaced, only added-to; the user explicitly accepted the resulting double-watermark look ("2 watermark juga oke kok"), so a one-off migration script retrofitted all 187 existing product photos (new Blob upload + `fotoUrl` repoint per product, old Blob objects kept as a rollback path, script deleted after use).
 
 Tasks done: TASK-022.
-Regression: PASS — clean build, lint clean; ran the exact new logic against a real Katalog photo and confirmed the output watermark dimensions match the approved mockup exactly.
+Regression: PASS — clean build, lint clean; ran the exact new logic against a real Katalog photo and confirmed the output watermark dimensions match the approved mockup exactly. Retrofit: verified a 2-item dry run visually (real downloaded output) before running the remaining 185 — all 187 succeeded, 0 failures.
 
 ---
 
