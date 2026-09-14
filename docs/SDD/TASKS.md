@@ -441,3 +441,26 @@ Mid-review the user added a second requirement: a driver name typed once should 
 
 **Files affected:** `components/invoice/useInvoicePdfDownload.ts` (new), `components/invoice/InvoiceActions.tsx`, `components/invoice/InvoiceDocument.tsx`, `components/invoice/InvoiceListClient.tsx`.
 **Regression test:** Clean build, lint clean on all four files. Live DB-backed verification (Playwright/minted session) was blocked in this environment (no Playwright installed; minting a session hit this sandbox's own security classifier) — relied on a careful manual trace of the prop/state wiring plus the interactive HTML mockup instead, and told the user this gap plainly rather than claiming a live pass.
+
+---
+
+## TASK-022 — Katalog photo watermark: centered + translucent instead of a small opaque corner badge
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** DONE (2026-09-14)
+**Dependency:** None
+**Created:** 2026-09-14 · **Last updated:** 2026-09-14
+
+**Description:** Per the user's request ("watermark itu terlalu kecil, coba kamu buat itu di tengah, tapi tidak menghilangkan visual dari foto tersebut"). The upload-time HOJAY watermark (`watermarkImage()`, `app/api/upload/route.ts`, 2026-08-25) stamped a small (18% width), fully-opaque badge in the bottom-right corner — legible enough as a corner mark but too small/easy-to-crop to read as a real brand mark. Centering a mark that size while keeping it fully opaque would have blocked the product photo itself, so this needed both a larger mark AND real transparency, not just a reposition.
+
+Before touching the real pipeline, generated 4 real candidate outputs (not a CSS mockup — the actual `sharp` compositing code, run against a real Katalog product photo) at different width/opacity combinations and published them as a side-by-side comparison artifact. The user picked **"Opsi C"**: 55% width, 10% opacity, centered.
+
+**Fix:** `watermarkImage()`: `wmWidth` now `55%` of the base image's width (was 18%), positioned centered (`left/top` = `(base − wm) / 2`, was bottom-right + margin). Real transparency added via sharp's standard fade-an-overlay recipe — `ensureAlpha()` then `.linear([1,1,1,0.1], [0,0,0,0])` on the resized watermark before compositing (scales only the alpha band, leaves RGB untouched) — needed because the source PNG (`public/logo/hojay-2b-positif.png`) has a fully opaque background with no alpha to reduce otherwise. The crisp lanczos3 resize kernel (2026-08-25's blur fix) is untouched.
+
+**Verified directly:** ran the exact new function's logic against a real Katalog photo (`Working Table w/backsplash w/double undershelf`) and confirmed the output watermark dimensions (528×294 on a 960×1280 source) exactly match "Opsi C" from the comparison artifact.
+
+**Important limitation, disclosed to the user before building:** this only affects photos uploaded from this point forward. Every photo already in Blob storage has the OLD corner watermark permanently baked in — the pre-watermark original was never kept, only the already-composited result, so there is no way to batch-reprocess existing photos into the new style. The only path for an existing product's photo to get the new watermark is re-uploading it.
+
+**Files affected:** `app/api/upload/route.ts` (`watermarkImage()` only — `compressImage()` and the rest of the route untouched).
+**Regression test:** Clean build, lint clean. `download-photo` route (dimension-footnote overlay, unrelated) and `CatalogPrintDoc.tsx` (Katalog PDF, reads whatever watermark is already baked into each stored photo) needed no changes — this only affects the watermark baked in at upload time.

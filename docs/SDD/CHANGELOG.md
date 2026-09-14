@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-14
+
+**TASK-022 done** — Katalog photo watermark moved from a small (18% width, fully opaque) bottom-right badge to a centered, translucent one (55% width, 10% opacity — "Opsi C" of 4 real candidates generated with the actual sharp pipeline and shown to the user for sign-off before coding). Only affects newly-uploaded photos going forward — existing photos already have the old corner watermark permanently baked in, with no original kept to reprocess from.
+
+Tasks done: TASK-022.
+Regression: PASS — clean build, lint clean; ran the exact new logic against a real Katalog photo and confirmed the output watermark dimensions match the approved mockup exactly.
+
+---
+
 ## 2026-09-08
 
 **BUG-019 fixed** — Right after TASK-021 deployed, the Invoice list's Preview drawer rendered docked to the LEFT instead of the right. The two hidden `InvoicePrintDoc` instances TASK-021 added (for PDF capture only) were nested inside the drawer overlay's own `flex justify-end` container — each is `h-0 overflow-hidden` so it paints as invisible, but its un-clipped 794px-wide content still counted toward the row's flex sizing, so `justify-end` packed the whole row (real panel + 2 invisible spacers) flush right, shoving the actually-visible panel to the left in the process. Moved both hidden instances out of that flex container entirely.

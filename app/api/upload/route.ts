@@ -59,17 +59,36 @@ async function compressImage(buffer: Buffer, mimeType: string): Promise<Buffer> 
   return resized.jpeg({ quality: JPEG_QUALITY, mozjpeg: true }).toBuffer();
 }
 
-// Product photos only (not payment proofs/receipts/etc.) get a small
-// bottom-right watermark on upload — per the user's request 2026-08-25.
-// Uses the existing boxed HOJAY mark (the same file the sidebar/login page
+// Product photos only (not payment proofs/receipts/etc.) get a HOJAY
+// watermark on upload — per the user's original request 2026-08-25. Uses
+// the existing boxed HOJAY mark (the same file the sidebar/login page
 // render) rather than a new asset, per the user's confirmation the same
-// day. That file's background is fully opaque (not transparent — checked
-// via sharp metadata), so this reads as a small branded badge stamped in
-// the corner, not a translucent overlay.
+// day.
+//
+// Repositioned + enlarged 2026-09-14, per the user's report that the
+// original small bottom-right badge ("18% width, fully opaque") was too
+// small to actually read ("watermark itu terlalu kecil"). Centering a
+// mark that size while keeping it fully opaque would have blocked the
+// product itself, so this is now BOTH bigger AND translucent — the
+// combination is what makes a large, centered mark tolerable at all.
+// Chose "Opsi C" (55% width, 10% opacity) out of 4 candidates after
+// generating real side-by-side samples (this exact function, run against
+// a real Katalog photo) and getting the user's sign-off on that one.
+// `ensureAlpha()` + `.linear([1,1,1,WM_OPACITY], [0,0,0,0])` is sharp's
+// standard recipe for fading an otherwise-opaque overlay before
+// compositing — it only scales the alpha band, RGB is untouched.
+//
+// IMPORTANT: this only affects photos uploaded from this point forward.
+// Every photo already in Blob storage has the OLD corner watermark baked
+// in permanently — the pre-watermark original was never kept, only the
+// already-composited result, so there's no way to reprocess existing
+// photos into the new style short of re-uploading each one by hand.
 const WATERMARK_PATH = path.join(process.cwd(), "public/logo/hojay-2b-positif.png");
+const WM_WIDTH_PCT = 0.55;
+const WM_OPACITY = 0.1;
 let watermarkBuffer: Buffer | null = null;
 
-/** Takes an already-compressed buffer (see compressImage above) and stamps the watermark on top of it. */
+/** Takes an already-compressed buffer (see compressImage above) and stamps the watermark on top of it, centered. */
 async function watermarkImage(compressed: Buffer, mimeType: string): Promise<Buffer> {
   if (!watermarkBuffer) watermarkBuffer = await fs.readFile(WATERMARK_PATH);
 
@@ -78,19 +97,25 @@ async function watermarkImage(compressed: Buffer, mimeType: string): Promise<Buf
   const baseWidth = meta.width ?? 1200;
   const baseHeight = meta.height ?? 1200;
 
-  const wmWidth = Math.round(baseWidth * 0.18);
-  const margin = Math.round(baseWidth * 0.025);
-  // Explicit lanczos3 kernel + PNG output for the resize step (rather than
-  // whatever format sharp infers) keeps the badge's edges crisp — the
-  // source file (public/logo/hojay-2b-positif.png) is a high-res 3900x2169
-  // PNG, so this is a pure downscale, never an upscale. Per the user's
-  // report 2026-08-25 that the watermark looked blurry in the Katalog PDF.
-  const wm = await sharp(watermarkBuffer).resize({ width: wmWidth, kernel: sharp.kernel.lanczos3 }).png().toBuffer();
+  const wmWidth = Math.round(baseWidth * WM_WIDTH_PCT);
+  // Explicit lanczos3 kernel for the resize step (rather than whatever
+  // sharp infers) keeps the badge's edges crisp — the source file
+  // (public/logo/hojay-2b-positif.png) is a high-res 3900x2169 PNG, so
+  // this is a pure downscale, never an upscale. Per the user's report
+  // 2026-08-25 that the watermark looked blurry in the Katalog PDF.
+  // ensureAlpha() first so the following linear() has an alpha band to
+  // scale even though the source PNG's own background is fully opaque.
+  const wm = await sharp(watermarkBuffer)
+    .resize({ width: wmWidth, kernel: sharp.kernel.lanczos3 })
+    .ensureAlpha()
+    .linear([1, 1, 1, WM_OPACITY], [0, 0, 0, 0])
+    .png()
+    .toBuffer();
   const wmMeta = await sharp(wm).metadata();
   const wmHeight = wmMeta.height ?? wmWidth;
 
   let composited = base.composite([
-    { input: wm, left: Math.max(0, baseWidth - wmWidth - margin), top: Math.max(0, baseHeight - wmHeight - margin) },
+    { input: wm, left: Math.round((baseWidth - wmWidth) / 2), top: Math.round((baseHeight - wmHeight) / 2) },
   ]);
   composited =
     mimeType === "image/png"
