@@ -174,6 +174,12 @@ export default function InvoicePrintDoc({
                 <span>DP ({formatDateShort(invoice.dpTanggal ?? invoice.tanggal)})</span>
                 <span>− {rupiah(invoice.dpNominal)}</span>
               </div>
+              {invoice.isPaid && (
+                <div className="flex justify-between py-1.5 text-[0.88rem]">
+                  <span>Pelunasan ({formatDateShort(invoice.paymentTanggalBayar ?? invoice.tanggal)})</span>
+                  <span>− {rupiah(invoice.paymentNominalDiterima ?? invoice.grandTotal - invoice.dpNominal)}</span>
+                </div>
+              )}
               <div className="mt-1 flex justify-between border-t border-line pt-2 font-serif text-base font-semibold">
                 <span>Sisa Tagihan</span>
                 <span>{rupiah(invoice.isPaid ? 0 : invoice.grandTotal - invoice.dpNominal)}</span>

@@ -64,6 +64,8 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     dpNominal: invoice.dp?.nominal ?? undefined,
     dpTanggal: invoice.dp?.tanggal ? invoice.dp.tanggal.toISOString() : undefined,
     isPaid: invoice.status === "paid",
+    paymentTanggalBayar: invoice.payment?.tanggalBayar ? invoice.payment.tanggalBayar.toISOString() : undefined,
+    paymentNominalDiterima: invoice.payment?.nominalDiterima ?? undefined,
   };
 
   return (

@@ -367,3 +367,5 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `lib/invoiceDisplay.ts`, `app/invoice/page.tsx`, `app/invoice/[id]/page.tsx`, `components/invoice/InvoicePrintDoc.tsx`, `components/invoice/InvoiceDocument.tsx`.
 **Regression test:** `npx tsc --noEmit` clean. No live-session verification available in this environment (same gap noted on prior invoice-doc bugs) — reasoned through both render paths (PDF capture and on-screen preview both read the same `InvoicePrintData.isPaid`/`dpNominal` fields, so an unpaid or never-DP'd invoice's rendering is untouched by this change).
+
+**Follow-up (same day):** User asked for a "Pelunasan (Tanggal)" row directly under the DP row, shown once `isPaid`, with the amount paid to settle (`paymentNominalDiterima`, falling back to `grandTotal − dpNominal` if not recorded) and the settlement date (`paymentTanggalBayar`). `app/invoice/[id]/page.tsx` previously never populated `paymentTanggalBayar`/`paymentNominalDiterima` at all (only the list page did) — added there too so the detail page's own PDF/preview shows it, not just the list's.
