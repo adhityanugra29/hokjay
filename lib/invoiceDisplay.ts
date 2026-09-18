@@ -44,6 +44,8 @@ export interface InvoicePrintData {
   grandTotal: number;
   dpNominal?: number;
   dpTanggal?: string;
+  /** True once the invoice is fully settled (models/Invoice.ts status === "paid") — drives the "LUNAS" badge and zeroes out "Sisa Tagihan" for invoices that started as DP. */
+  isPaid?: boolean;
   /**
    * Proof-of-transfer for the DP and the full settlement, respectively —
    * both already captured today (DpForm.tsx/PaymentForm.tsx's own "Bukti

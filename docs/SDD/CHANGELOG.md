@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-18
+
+**BUG-020 fixed** — Invoice PDF/preview never marked a DP invoice as "LUNAS" once fully paid, and kept showing "Sisa Tagihan" with the old unpaid balance forever after — not a caching bug (both are generated live), but two real gaps: no "LUNAS" label logic existed anywhere, and the DP/"Sisa Tagihan" row was keyed off the permanent `dpNominal` history field rather than current payment status (`payInvoice.ts` never clears `dp` when it flips `status` to `"paid"`). Added an `isPaid` flag to `InvoicePrintData`, populated at both places it's built (list/Preview-drawer path and detail path). Both templates now show a small "LUNAS" badge next to the invoice number when paid, and "Sisa Tagihan" shows Rp 0 instead of the stale remainder.
+
+Bugs fixed: BUG-020.
+Regression: PARTIAL — `npx tsc --noEmit` clean; reasoned through both render paths (PDF capture + on-screen preview share the same data field), no live-session verification available in this environment.
+
+---
+
 ## 2026-09-14
 
 **TASK-022 done (+ same-day retrofit)** — Katalog photo watermark moved from a small (18% width, fully opaque) bottom-right badge to a centered, translucent one (55% width, 10% opacity — "Opsi C" of 4 real candidates generated with the actual sharp pipeline and shown to the user for sign-off before coding). The user then asked for existing photos to get it too ("yang lama harus ikut berubah") — since the pre-watermark originals were never kept, the old corner mark can't be cleanly replaced, only added-to; the user explicitly accepted the resulting double-watermark look ("2 watermark juga oke kok"), so a one-off migration script retrofitted all 187 existing product photos (new Blob upload + `fotoUrl` repoint per product, old Blob objects kept as a rollback path, script deleted after use).

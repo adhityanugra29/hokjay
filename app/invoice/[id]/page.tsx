@@ -63,6 +63,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     grandTotal: invoice.grandTotal,
     dpNominal: invoice.dp?.nominal ?? undefined,
     dpTanggal: invoice.dp?.tanggal ? invoice.dp.tanggal.toISOString() : undefined,
+    isPaid: invoice.status === "paid",
   };
 
   return (

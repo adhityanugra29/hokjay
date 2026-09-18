@@ -350,3 +350,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `components/invoice/InvoiceListClient.tsx`.
 **Regression test:** Clean build, lint clean. Reasoned through the fix directly (the two hidden docs are now outside the only flex container on the page that could be affected) — same live-verification gap flagged for the rest of TASK-021 applies here too (no Playwright/session-minting available in this environment this session).
+
+---
+
+## BUG-020 — Invoice PDF/preview never showed "LUNAS" and kept displaying "Sisa Tagihan" forever after a DP invoice was fully paid
+
+**Severity:** B2
+**Status:** FIXED (2026-09-18)
+**Source:** User report ("customer yang DP, ketika dia lunas, Invoice PDF nya tidak terupdate, seharusnya di update dong kalau lunas, dan berikan mark 'LUNAS'").
+
+**Description:** The Invoice PDF (`InvoicePrintDoc.tsx`) and on-screen preview (`InvoiceDocument.tsx`) are both generated live from current invoice data each time (no cache/stored PDF to invalidate), so this was not a caching bug. Two real gaps: (1) neither template ever had any "LUNAS" label/badge logic — the feature had simply never been built; (2) the totals block's DP/"Sisa Tagihan" row rendered purely off `invoice.dpNominal` being present (a permanent historical record set once when a DP is received), not off current payment status. `lib/services/payInvoice.ts` flips `invoice.status` to `"paid"` but never clears `invoice.dp`, so any invoice that ever had a DP kept showing a nonzero "Sisa Tagihan" in its PDF/preview indefinitely, even long after full settlement.
+
+**Root cause:** `InvoicePrintData` (`lib/invoiceDisplay.ts`) had no `status`/`isPaid` field at all — the templates had no current-payment-status signal to key off, only the frozen DP snapshot.
+
+**Fix:** Added `isPaid?: boolean` to `InvoicePrintData`; populated it (`invoice.status === "paid"`) at both places that build the object (`app/invoice/page.tsx`'s list/Preview-drawer path, `app/invoice/[id]/page.tsx`'s detail path — both already had `status` in scope). Both templates now show a small "LUNAS" badge (reusing the list page's existing `border-moss-deep text-moss-deep` pill style) next to "No. {nomor}" when `isPaid`, and "Sisa Tagihan" renders as Rp 0 instead of the stale computed remainder when `isPaid` is true.
+
+**Files:** `lib/invoiceDisplay.ts`, `app/invoice/page.tsx`, `app/invoice/[id]/page.tsx`, `components/invoice/InvoicePrintDoc.tsx`, `components/invoice/InvoiceDocument.tsx`.
+**Regression test:** `npx tsc --noEmit` clean. No live-session verification available in this environment (same gap noted on prior invoice-doc bugs) — reasoned through both render paths (PDF capture and on-screen preview both read the same `InvoicePrintData.isPaid`/`dpNominal` fields, so an unpaid or never-DP'd invoice's rendering is untouched by this change).

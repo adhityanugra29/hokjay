@@ -58,6 +58,11 @@ export default function InvoiceDocument({
         </div>
         <div className="text-right font-mono text-[0.75rem] leading-relaxed text-muted">
           No. {invoice.nomor}
+          {!isSuratJalan && invoice.isPaid && (
+            <span className="ml-2 rounded-full border border-moss-deep px-2 py-0.5 font-mono text-[0.62rem] font-bold text-moss-deep">
+              LUNAS
+            </span>
+          )}
           <br />
           Tanggal: {formatDateLong(invoice.tanggal)}
           <div className="mt-2 border-t border-line pt-2">
@@ -169,7 +174,7 @@ export default function InvoiceDocument({
               </div>
               <div className="mt-1 flex justify-between border-t border-line pt-2 font-serif text-base font-semibold">
                 <span>Sisa Tagihan</span>
-                <span>{rupiah(invoice.grandTotal - invoice.dpNominal)}</span>
+                <span>{rupiah(invoice.isPaid ? 0 : invoice.grandTotal - invoice.dpNominal)}</span>
               </div>
             </>
           ) : null}
