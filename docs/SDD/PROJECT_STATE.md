@@ -2,27 +2,27 @@
 
 > Single "catch up" file — read this first before starting any session or major task. See `TASKS.md`, `BUGS.md`, `KNOWN_ISSUES.md`, `CHANGELOG.md` for detail.
 
-**Last updated:** 2026-09-08
+**Last updated:** 2026-09-14
 
 ---
 
 ## CURRENT TASK
 
-None active — TASK-021 just closed. TASK-002's Purchasing/Payroll/Admin sweep (see IN PROGRESS below) is still the last known open thread from the Foundry rework if the user wants to resume it.
+None active — TASK-022 (+ its same-day retrofit) just closed. TASK-002's Purchasing/Payroll/Admin sweep (see IN PROGRESS below) is still the last known open thread from the Foundry rework if the user wants to resume it.
 
 ## CURRENT STATUS
 
 Katalog, Pelanggan, Inventory (Produk), Invoice (list/detail/forms/bayar/dp), Dashboard, Keuangan, Akuntansi, the shared shell, and the Insentif leaderboard's yellow-accent contrast are done and deployed (TASK-001/002, partial). Purchasing, Payroll, and Admin have not yet been swept for the same hard-border / bare-`rounded` / hidden-contrast issues — status unconfirmed as of this update, no evidence either way since 2026-08-30.
 
-A large amount of feature/bugfix work has landed since the last full rewrite of this section (2026-09-03) — see `TASKS.md`/`BUGS.md`/`CHANGELOG.md` for the complete trail through TASK-021/BUG-018, this file only tracks the pointers below.
+A large amount of feature/bugfix work has landed since the last full rewrite of this section (2026-09-03) — see `TASKS.md`/`BUGS.md`/`CHANGELOG.md` for the complete trail through TASK-022, this file only tracks the pointers below.
 
 ## LAST COMPLETED
 
+- **TASK-022** (+ same-day retrofit) — Katalog photo watermark moved from a small (18% width, fully opaque) bottom-right badge to a centered, translucent one (55% width, 10% opacity, "Opsi C" of 4 real candidates the user picked from). Only affects new uploads by design — but the user then asked existing photos to get it too, so a one-off migration script retrofitted all 187 existing product photos (composited the new mark ON TOP of the already-watermarked photo, since no pre-watermark original was ever kept; user explicitly accepted the resulting double-watermark look). Script deleted after use, old Blob files kept as a rollback path.
+- **BUG-019** — Right after TASK-021 deployed, the Invoice list's Preview drawer rendered docked LEFT instead of right — two hidden `InvoicePrintDoc` PDF-capture instances had been nested inside the drawer's own `flex justify-end` overlay, and even at `h-0` their un-clipped content width still counted toward the flex row's sizing. Moved them outside that flex container.
 - **TASK-021** — Invoice list's Preview drawer gained a "Surat Jalan" tab (preview + its own "Unduh Surat Jalan (PDF)"), alongside the existing Invoice/Bukti Transfer tabs — no more detour to `/invoice/[id]` needed. Driver name is now captured once when the tab opens and shown live in the preview (with an "Ubah" link to correct it), instead of only being asked at download time; still never stored anywhere.
 - **TASK-020** — Invoice list's 4 fixed-bucket stat cards collapsed into 2 dynamic ones ("Jumlah Invoice"/"Total Nilai Invoice") that track whichever status pill is active.
 - **TASK-019** (+ **BUG-018**) — Product delete now Owner-only (Katalog + Inventory); Ukuran added to Inventory's list; Beranda's "Produk baru" notification now links to Katalog instead of the edit page.
-- **TASK-018** — "Surat Jalan" (price-free delivery note PDF) on the invoice detail page, driver name typed fresh each download, never stored.
-- **TASK-017** — Katalog Filter's Harga Rekomendasi/Harga Bottom toggle now resets every card's displayed price app-wide, not just the range-filter basis.
 
 ## IN PROGRESS
 
