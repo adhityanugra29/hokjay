@@ -5,7 +5,7 @@ import Logo from "@/components/layout/Logo";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { dbConnect } from "@/lib/db";
 import { currentPeriod, getSalesRanking, getMyCommissionSummary } from "@/lib/insentif";
-import { getFollowUpInvoices, getLowStockProducts, shippingUrgency } from "@/lib/dashboard";
+import { getFollowUpInvoices, shippingUrgency } from "@/lib/dashboard";
 import { getMyDormantCustomers } from "@/lib/pelanggan";
 import { getKeuanganSummary, getCurrentCashBalance } from "@/lib/keuangan";
 import { getActivityLog } from "@/lib/activity";
@@ -37,7 +37,6 @@ export default async function DashboardPage() {
   const [
     followUpAll,
     ranking,
-    lowStock,
     keuangan,
     activity,
     kasSekarang,
@@ -49,7 +48,6 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     getFollowUpInvoices(session),
     getSalesRanking(currentPeriod()),
-    getLowStockProducts(3),
     getKeuanganSummary(thisMonthRange),
     getActivityLog(50),
     getCurrentCashBalance(),
@@ -73,8 +71,8 @@ export default async function DashboardPage() {
   const byShippingUrgency = [...followUpAll].sort(
     (a, b) => shippingUrgency(a.tanggalKirim).sortKey - shippingUrgency(b.tanggalKirim).sortKey
   );
-  const needsAction = byShippingUrgency.slice(0, lowStock.length > 0 ? 5 : 6);
-  const totalNeedsAction = followUpAll.length + (lowStock.length > 0 ? 1 : 0);
+  const needsAction = byShippingUrgency.slice(0, 6);
+  const totalNeedsAction = followUpAll.length;
 
   const penjualanBulanIni = ranking.reduce((s, r) => s + r.totalPenjualan, 0);
   const belumTertagih = followUpAll.filter((i) => i.status === "unpaid").reduce((s, i) => s + i.sisaTagihan, 0);
@@ -504,39 +502,13 @@ export default async function DashboardPage() {
                 </div>
               ))}
 
-          {/* Stok tipis — not shown to Sales, who has no Inventory access. */}
-          {!isSales && lowStock.length > 0 && (
-            <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-line py-3.5">
-              <div className="flex items-center gap-3">
-                <span className="rounded-full border border-line px-2 py-0.5 font-sans text-[10px] font-bold uppercase tracking-wide text-muted">
-                  Stok
-                </span>
-                <div>
-                  <div className="font-sans text-[0.95rem] font-bold">
-                    {lowStock.length} produk stoknya menipis
-                  </div>
-                  <div className="mt-0.5 font-sans text-[0.75rem] text-muted">
-                    {lowStock.map((p) => p.name).join(" · ")}
-                  </div>
-                </div>
-              </div>
-              <Link
-                href="/produk"
-                className="rounded-full border border-line px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent-700"
-              >
-                Lihat inventory
-              </Link>
-            </div>
-          )}
-
           {isSales
             ? salesNeedsAction.length === 0 && (
                 <div className="border-b border-line py-8 text-center font-sans text-sm text-muted">
                   Tidak ada yang perlu ditindak. 🎉
                 </div>
               )
-            : needsAction.length === 0 &&
-              lowStock.length === 0 && (
+            : needsAction.length === 0 && (
                 <div className="border-b border-line py-8 text-center font-sans text-sm text-muted">
                   Tidak ada yang perlu ditindak. 🎉
                 </div>

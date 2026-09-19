@@ -6,7 +6,7 @@
 
 ## 2026-09-19
 
-**TASK-026 done** — Invoice gained a free-text "Catatan" field, shown on both the Invoice/Bukti Transfer and Surat Jalan PDFs/previews. Beranda's "Perlu Ditindak" widget reframed as "Perlu Dikirim" — sorted and labeled by shipping due date (Terlambat/Kirim Hari Ini/Besok/tanggal/Belum Dijadwalkan) instead of days-unpaid, applied consistently across all 4 admin/sales × desktop/mobile surfaces. Invoice's "Tanggal Pengiriman" no longer defaults to H+3 — starts empty.
+**TASK-026 done (+ same-day follow-up)** — Invoice gained a free-text "Catatan" field, shown on both the Invoice/Bukti Transfer and Surat Jalan PDFs/previews. Beranda's "Perlu Ditindak" widget reframed as "Perlu Dikirim" — sorted and labeled by shipping due date (Terlambat/Kirim Hari Ini/Besok/tanggal/Belum Dijadwalkan) instead of days-unpaid, applied consistently across all 4 admin/sales × desktop/mobile surfaces. Invoice's "Tanggal Pengiriman" no longer defaults to H+3 — starts empty. Follow-up same day: the shipping-urgency label now always shows the actual date too (not just "Terlambat 2 hari" on its own), and the "Stok tipis" row was removed from the reframed desktop widget (didn't fit the shipping-only framing).
 
 Tasks: TASK-026.
 Regression: `tsc --noEmit` clean, `eslint` clean (one pre-existing unrelated error confirmed via `git stash`), `next build` clean. No live browser click-through — recommended before treating as fully verified.

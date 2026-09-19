@@ -121,11 +121,15 @@ export function shippingUrgency(tanggalKirim?: Date | string | null): ShippingUr
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const kirimDay = new Date(kirim.getFullYear(), kirim.getMonth(), kirim.getDate());
   const diffDays = Math.round((kirimDay.getTime() - today.getTime()) / 86_400_000);
+  // The actual date always shows alongside the relative label from here on
+  // — per the user's request 2026-09-19 ("kamu tampilkan juga tanggal
+  // kirimnya ya"), not just "Terlambat 2 hari" on its own.
+  const tanggal = formatDateShort(kirimDay);
 
-  if (diffDays < 0) return { label: `Terlambat ${-diffDays} hari`, tone: "overdue", sortKey: diffDays };
-  if (diffDays === 0) return { label: "Kirim Hari Ini", tone: "today", sortKey: 0 };
-  if (diffDays === 1) return { label: "Besok", tone: "soon", sortKey: 1 };
-  return { label: `Kirim ${formatDateShort(kirimDay)}`, tone: "later", sortKey: diffDays };
+  if (diffDays < 0) return { label: `Terlambat ${-diffDays} hari (${tanggal})`, tone: "overdue", sortKey: diffDays };
+  if (diffDays === 0) return { label: `Kirim Hari Ini (${tanggal})`, tone: "today", sortKey: 0 };
+  if (diffDays === 1) return { label: `Besok (${tanggal})`, tone: "soon", sortKey: 1 };
+  return { label: `Kirim ${tanggal}`, tone: "later", sortKey: diffDays };
 }
 
 export interface FollowUpSalesSummary {
