@@ -122,8 +122,24 @@ export default function SalesBoard({ board, periodLabel }: { board: SalesBoardDa
               <span className="col-start-2 font-sans text-[1.1rem] font-extrabold tracking-tight sm:col-auto sm:text-right sm:text-[1.35rem]">
                 {hasTarget ? `${r.percent}%` : "—"}
               </span>
-              <span className="col-start-2 font-sans text-[1.05rem] font-extrabold tracking-tight sm:col-auto sm:text-right sm:whitespace-nowrap sm:text-[1.45rem]">
-                {rupiah(r.totalPenjualan)}
+              <span className="col-start-2 sm:col-auto sm:text-right">
+                <span className="block font-sans text-[1.05rem] font-extrabold tracking-tight whitespace-nowrap sm:text-[1.45rem]">
+                  {rupiah(r.totalPenjualan)}
+                </span>
+                {/* Estimasi Sales — from this period's DP'd/belum lunas
+                    invoices, never part of the ranking/highlight above
+                    (that stays Lunas-only). Per the user's request
+                    2026-09-19. Deliberately no komisi figure alongside
+                    this — "saya lupa itu privasi". */}
+                {r.estimasiSales > 0 && (
+                  <span
+                    className={`mt-1 block border-t pt-1 font-mono text-[0.68rem] ${
+                      isTop ? "border-ink/20 text-ink/65" : "border-ink/14 text-muted"
+                    }`}
+                  >
+                    + Estimasi {rupiahCompact(r.estimasiSales)}
+                  </span>
+                )}
               </span>
             </div>
           );

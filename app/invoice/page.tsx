@@ -8,6 +8,7 @@ import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
 import { Courier } from "@/models/Courier";
+import { Pengaturan } from "@/models/Pengaturan";
 import { formatDateShort } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
 import { getSession } from "@/lib/auth/session";
@@ -104,6 +105,10 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   // Feeds TandaiKirimButton's Kurir select (see components/invoice/TandaiKirimButton.tsx).
   const couriers = (await Courier.find().sort({ name: 1 }).lean()).map((c) => ({ _id: String(c._id), name: c.name }));
 
+  // Feeds the Preview drawer's Syarat & Ketentuan block — see
+  // models/Pengaturan.ts's syaratKetentuan doc comment.
+  const pengaturan = await Pengaturan.findById("singleton").lean();
+
   // Live phone-number lookup for the Preview drawer's document footer —
   // same reasoning as /invoice/[id]'s own salesNomorHp (a number changing
   // should show up on invoices viewed afterward, unlike the snapshot
@@ -147,6 +152,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       dpTanggal: inv.dp?.tanggal ? inv.dp.tanggal.toISOString() : undefined,
       isPaid: inv.status === "paid",
       catatan: inv.catatan ?? undefined,
+      syaratKetentuan: pengaturan?.syaratKetentuan ?? undefined,
       // Feeds the Preview drawer's "Bukti Transfer" tab (TASK-016) — see
       // InvoicePrintData's own doc comment for why this is only populated
       // here, not on /invoice/[id].

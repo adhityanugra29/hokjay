@@ -76,6 +76,13 @@ export interface InvoicePrintData {
    * server-built `printData` object.
    */
   namaDriver?: string;
+  /**
+   * Syarat & Ketentuan — free text from Pengaturan (models/Pengaturan.ts's
+   * syaratKetentuan), one point per line, rendered as a numbered list at
+   * the bottom of the Invoice/Bukti Transfer and Surat Jalan printouts.
+   * Per the user's request 2026-09-19.
+   */
+  syaratKetentuan?: string;
 }
 
 /**

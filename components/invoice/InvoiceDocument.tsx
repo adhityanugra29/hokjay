@@ -35,9 +35,28 @@ export default function InvoiceDocument({
   const totalDiskon = invoice.items.reduce((s, i) => s + displayDiskon(i) * i.qty, 0);
   const totalBelanja = invoice.items.reduce((s, i) => s + displayHarga(i) * i.qty, 0);
   const isSuratJalan = mode === "surat-jalan";
+  const syaratKetentuanPoints = (invoice.syaratKetentuan ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   return (
-    <div id={id} className="border border-line bg-panel p-5 sm:p-9">
+    <div id={id} className="relative overflow-hidden border border-line bg-panel p-5 sm:p-9">
+      {/* Big diagonal "LUNAS" watermark, replacing the old small badge
+          next to the invoice number — per the user's request 2026-09-19.
+          Single continuous view here (not paginated like InvoicePrintDoc),
+          so one centered overlay is enough. Translucent — content stays
+          readable underneath. */}
+      {!isSuratJalan && invoice.isPaid && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+          <div
+            className="whitespace-nowrap font-serif font-semibold tracking-wide text-moss-deep"
+            style={{ transform: "rotate(-30deg)", fontSize: 150, opacity: 0.13 }}
+          >
+            LUNAS
+          </div>
+        </div>
+      )}
       {/* "INVOICE"/"SURAT JALAN" centered above a logo+company-info /
           no.+tanggal row — per the user's request 2026-08-25 (title itself
           per 2026-09-07's Surat Jalan feature). */}
@@ -58,11 +77,6 @@ export default function InvoiceDocument({
         </div>
         <div className="text-right font-mono text-[0.75rem] leading-relaxed text-muted">
           No. {invoice.nomor}
-          {!isSuratJalan && invoice.isPaid && (
-            <span className="ml-2 rounded-full border border-moss-deep px-2 py-0.5 font-mono text-[0.62rem] font-bold text-moss-deep">
-              LUNAS
-            </span>
-          )}
           <br />
           Tanggal: {formatDateLong(invoice.tanggal)}
           <div className="mt-2 border-t border-line pt-2">
@@ -240,6 +254,24 @@ export default function InvoiceDocument({
           </div>
         </div>
       </div>
+      {/* Syarat & Ketentuan — free text from Pengaturan, one point per
+          line rendered as a numbered list. Justified + generous
+          line-height per the user's explicit request 2026-09-19 ("align
+          justify supaya rapih dan diberikan jarak antar baris"). */}
+      {syaratKetentuanPoints.length > 0 && (
+        <div className="mt-7 border-t border-line pt-4 [break-inside:avoid]">
+          <div className="mb-2.5 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">
+            Syarat &amp; Ketentuan
+          </div>
+          <ol className="list-decimal space-y-1.5 pl-4 text-justify font-mono text-[0.75rem] leading-[1.9] text-muted">
+            {syaratKetentuanPoints.map((point, i) => (
+              <li key={i} className="pl-0.5">
+                {point}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   );
 }

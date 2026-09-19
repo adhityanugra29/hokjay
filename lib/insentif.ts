@@ -72,6 +72,17 @@ export interface SalesBoardRow {
   percent: number;
   lewatTarget: boolean;
   selisih: number;
+  /**
+   * Sum of item subtotals from this period's DP'd or plain-unpaid invoices
+   * (status "unpaid", either way — not yet fully paid) for this sales,
+   * shown as a small "+ Estimasi" line under the confirmed totalPenjualan.
+   * Never affects ranking/sort/target-progress — those stay Lunas-only.
+   * Deliberately does NOT include a commission figure (komisi) alongside
+   * this — per the user's explicit correction 2026-09-19 ("saya lupa itu
+   * privasi"): a sales rep's commission is private, not something to show
+   * on a leaderboard every other sales can see.
+   */
+  estimasiSales: number;
 }
 
 export interface SalesBoard {
@@ -84,15 +95,41 @@ export interface SalesBoard {
 }
 
 /**
+ * This period's DP'd or plain-unpaid invoices (status "unpaid" either
+ * way — not yet fully paid), bucketed by tanggalInvoice since they have
+ * no payment.tanggalBayar yet to bucket by. Feeds getSalesBoard's
+ * "Estimasi Sales" line — per the user's request 2026-09-19 ("estimasi
+ * sales dan insentif, angkanya dari yang sudah DP dan yang belum
+ * lunas").
+ */
+async function getUnpaidInvoicesForPeriod(period: string) {
+  await dbConnect();
+  const { start, end } = periodRange(period);
+  return Invoice.find({
+    status: "unpaid",
+    tanggalInvoice: { $gte: start, $lt: end },
+  });
+}
+
+/**
  * Powers the Leaderboard Sales board (design "5a" from the mockup doc the
  * user supplied 2026-08-24) — team-wide target progress + a countdown, then
  * each sales's own achievement against their individual target. Target is
  * Sales.targetBulanan (0 = not set, admin fills it in via Kelola User).
+ *
+ * "Estimasi Sales" (2026-09-19) — a second, smaller figure per row from
+ * this period's DP'd/unpaid invoices, previewed with the user as an HTML
+ * mockup before building. Deliberately does NOT affect ranking, the
+ * target-progress bar, or which sales sorts to the highlighted #1 spot —
+ * all of that stays exactly as before, Lunas-only. A sales with unpaid
+ * invoices but zero Lunas ones yet still gets a row (totalPenjualan 0,
+ * estimasiSales > 0) rather than being left off the board entirely.
  */
 export async function getSalesBoard(period: string): Promise<SalesBoard> {
   await dbConnect();
-  const [invoices, salesDocs] = await Promise.all([
+  const [invoices, unpaidInvoices, salesDocs] = await Promise.all([
     getPaidInvoicesForPeriod(period),
+    getUnpaidInvoicesForPeriod(period),
     Sales.find({ aktif: true }).lean(),
   ]);
   const targetByNama = new Map(salesDocs.map((s) => [s.nama, s.targetBulanan ?? 0]));
@@ -106,8 +143,21 @@ export async function getSalesBoard(period: string): Promise<SalesBoard> {
     map.set(nama, row);
   }
 
-  const rows: SalesBoardRow[] = [...map.entries()]
-    .map(([salesNama, r]) => {
+  const estimasiByNama = new Map<string, number>();
+  for (const inv of unpaidInvoices) {
+    const nama = inv.sales?.nama ?? "—";
+    const subtotal = inv.items.reduce((s, i) => s + i.subtotal, 0);
+    estimasiByNama.set(nama, (estimasiByNama.get(nama) ?? 0) + subtotal);
+  }
+
+  // Union of both sets of names — a sales with only unpaid invoices this
+  // period (no Lunas yet) still gets a row, per the user's confirmed
+  // default while planning this feature.
+  const allNama = new Set([...map.keys(), ...estimasiByNama.keys()]);
+
+  const rows: SalesBoardRow[] = [...allNama]
+    .map((salesNama) => {
+      const r = map.get(salesNama) ?? { totalPenjualan: 0, orderCount: 0 };
       const target = targetByNama.get(salesNama) ?? 0;
       return {
         salesNama,
@@ -117,6 +167,7 @@ export async function getSalesBoard(period: string): Promise<SalesBoard> {
         percent: target > 0 ? Math.round((r.totalPenjualan / target) * 100) : 0,
         lewatTarget: target > 0 && r.totalPenjualan >= target,
         selisih: Math.abs(r.totalPenjualan - target),
+        estimasiSales: estimasiByNama.get(salesNama) ?? 0,
       };
     })
     .sort((a, b) => b.totalPenjualan - a.totalPenjualan);

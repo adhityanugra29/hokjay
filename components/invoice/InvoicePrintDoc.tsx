@@ -98,6 +98,11 @@ export default function InvoicePrintDoc({
     ...invoice.items.filter((it) => !it.isFlashSale),
   ];
 
+  const syaratKetentuanPoints = (invoice.syaratKetentuan ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
   // Pass 1: pack item rows into pages by remaining height.
   const rowPages: InvoicePrintItem[][] = [];
   {
@@ -247,6 +252,27 @@ export default function InvoicePrintDoc({
           </div>
         </div>
       </div>
+      {/* Syarat & Ketentuan — free text from Pengaturan, one point per
+          line rendered as a numbered list. Shown on both Invoice/Bukti
+          Transfer and Surat Jalan, same as Catatan above. Justified +
+          generous line-height per the user's explicit request 2026-09-19
+          ("align justify supaya rapih dan diberikan jarak antar baris").
+          Inside footerRef (same as everything else here) so its height is
+          measured and counted toward the adaptive page-packing math. */}
+      {syaratKetentuanPoints.length > 0 && (
+        <div className="mt-7 border-t border-line pt-4">
+          <div className="mb-2.5 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">
+            Syarat &amp; Ketentuan
+          </div>
+          <ol className="list-decimal space-y-1.5 pl-4 text-justify font-mono text-[0.68rem] leading-[1.9] text-muted">
+            {syaratKetentuanPoints.map((point, i) => (
+              <li key={i} className="pl-0.5">
+                {point}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   );
 
@@ -277,11 +303,6 @@ export default function InvoicePrintDoc({
         </div>
         <div className="text-right font-mono text-[0.75rem] leading-relaxed text-muted">
           No. {invoice.nomor}
-          {mode !== "surat-jalan" && invoice.isPaid && (
-            <span className="ml-2 rounded-full border border-moss-deep px-2 py-0.5 font-mono text-[0.62rem] font-bold text-moss-deep">
-              LUNAS
-            </span>
-          )}
           <br />
           Tanggal: {formatDateLong(invoice.tanggal)}
           {/* Sales moved up here, level with the CV. Horeca Jaya block on
@@ -351,9 +372,27 @@ export default function InvoicePrintDoc({
             <div
               key={pi}
               data-print-page={pi}
-              className="flex flex-col bg-panel"
+              className="relative flex flex-col bg-panel"
               style={{ width: PAGE_WIDTH_PX, height: PAGE_HEIGHT_PX, overflow: "hidden" }}
             >
+              {/* Big diagonal "LUNAS" watermark, replacing the old small
+                  badge next to the invoice number — per the user's request
+                  2026-09-19 ("jangan ada badge lunas, tapi diberikan lunas
+                  watermark yang besar, menutupi invoice... center, dan 1
+                  halaman full"). Repeats on EVERY page (not just the
+                  first) since a multi-page invoice can be printed/viewed
+                  from any page. Translucent, not opaque — content stays
+                  readable underneath, same as a real paid stamp. */}
+              {mode !== "surat-jalan" && invoice.isPaid && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+                  <div
+                    className="whitespace-nowrap font-serif font-semibold tracking-wide text-moss-deep"
+                    style={{ transform: "rotate(-30deg)", fontSize: 150, opacity: 0.13 }}
+                  >
+                    LUNAS
+                  </div>
+                </div>
+              )}
               <div className="p-9">
                 {isFirstPage && headerBlock}
                 <table className="w-full border-collapse">

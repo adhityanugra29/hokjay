@@ -10,6 +10,7 @@ import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
 import { Courier } from "@/models/Courier";
+import { Pengaturan } from "@/models/Pengaturan";
 import { rupiah, formatDateLong, formatDateShort } from "@/lib/format";
 import { getSession } from "@/lib/auth/session";
 import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
@@ -27,6 +28,10 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
   if (isInvoiceBlockedForSession(session, invoice.sales?.nama)) notFound();
 
   const couriers = (await Courier.find().sort({ name: 1 }).lean()).map((c) => ({ _id: String(c._id), name: c.name }));
+
+  // Feeds the Syarat & Ketentuan block — see models/Pengaturan.ts's
+  // syaratKetentuan doc comment.
+  const pengaturan = await Pengaturan.findById("singleton").lean();
 
   // Live lookup rather than a snapshot on the invoice itself — a phone
   // number changing should show up on invoices printed afterward, unlike
@@ -51,6 +56,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     tanggalKirim: invoice.tanggalKirim ? invoice.tanggalKirim.toISOString() : undefined,
     kurir: invoice.kurir ?? undefined,
     catatan: invoice.catatan ?? undefined,
+    syaratKetentuan: pengaturan?.syaratKetentuan ?? undefined,
     salesNama: invoice.sales!.nama,
     salesNomorHp,
     items: invoice.items.map((item) => ({

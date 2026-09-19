@@ -80,6 +80,13 @@ export default function MobileSalesBoard({
               )}
             </div>
             <div className="mt-3.5 font-sans text-[1.05rem] font-extrabold tracking-tight">{rupiah(top.totalPenjualan)}</div>
+            {/* Estimasi Sales — from DP'd/belum lunas invoices, never part
+                of the ranking/rank-#1 highlight above. Per the user's
+                request 2026-09-19 (no komisi figure alongside this —
+                "saya lupa itu privasi"). */}
+            {top.estimasiSales > 0 && (
+              <div className="mt-1 font-mono text-[0.68rem] text-ink/65">+ Estimasi {rupiahCompact(top.estimasiSales)}</div>
+            )}
             {top.target > 0 && (
               <div className="relative mt-2.5 h-2 bg-ink/15">
                 <div className="absolute inset-y-0 left-0 bg-ink" style={{ width: `${Math.min(top.percent, 100)}%` }} />
@@ -109,6 +116,11 @@ export default function MobileSalesBoard({
               <span className="text-right">
                 <b className="block whitespace-nowrap font-sans text-[0.8rem] tracking-tight">{rupiahCompact(r.totalPenjualan)}</b>
                 <span className="mt-0.5 block font-sans text-[10.5px] text-muted">{r.target > 0 ? `${r.percent}%` : "—"}</span>
+                {r.estimasiSales > 0 && (
+                  <span className="mt-0.5 block font-mono text-[9.5px] text-muted/80">
+                    + Est. {rupiahCompact(r.estimasiSales)}
+                  </span>
+                )}
               </span>
             </div>
           ))}
