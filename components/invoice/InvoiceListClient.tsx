@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import DeleteInvoiceButton from "./DeleteInvoiceButton";
+import TandaiKirimButton from "./TandaiKirimButton";
 import InvoiceDocument from "./InvoiceDocument";
 import InvoicePrintDoc from "./InvoicePrintDoc";
 import { Button } from "@/components/ui/Button";
@@ -32,6 +33,9 @@ export interface InvoiceRow {
   komisi: number;
   dpPercent?: number;
   sisaTagihan?: number;
+  /** Real "sudah dikirim" flag, independent of payment status — see /api/invoices/[id]/kirim. */
+  dikirim: boolean;
+  tanggalDikirimAktual?: string;
   /** Feeds the Preview drawer — same shape InvoicePrintDoc.tsx/InvoiceDocument.tsx already use. */
   printData: InvoicePrintData;
 }
@@ -225,6 +229,11 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
                     {r.hariBerjalan} hari
                   </span>
                 )}
+                {r.dikirim && (
+                  <span className="rounded-full border border-emerald-500 bg-emerald-50 px-2 py-0.5 font-mono text-[0.62rem] font-bold text-emerald-700">
+                    ✓ Sudah Dikirim{r.tanggalDikirimAktual ? ` · ${formatDateShort(r.tanggalDikirimAktual)}` : ""}
+                  </span>
+                )}
               </div>
               <div className="mt-0.5 font-mono text-[0.72rem] text-muted">
                 {r.nomor} · sales {r.salesNama} · {r.itemCount} item{r.kurir ? ` · kirim via ${r.kurir}` : ""}
@@ -251,6 +260,7 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
                 >
                   Preview
                 </button>
+                {r.status !== "draft" && !r.dikirim && <TandaiKirimButton invoiceId={r.id} nomor={r.nomor} />}
                 {(r.status === "unpaid" || r.status === "dp") && (
                   <>
                     <a

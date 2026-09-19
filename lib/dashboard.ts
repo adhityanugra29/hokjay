@@ -95,6 +95,10 @@ export interface FollowUpInvoiceRow {
   hariBerjalan: number;
   /** Invoice.tanggalKirim, unformatted — feeds shippingUrgency() below. Undefined when never set. */
   tanggalKirim?: Date;
+  /** Real "sudah dikirim" flag, independent of payment status — see /api/invoices/[id]/kirim. */
+  dikirim: boolean;
+  tanggalDikirimAktual?: Date;
+  dikirimOleh?: string;
 }
 
 export type ShippingTone = "overdue" | "today" | "soon" | "later" | "none";
@@ -176,6 +180,9 @@ export async function getFollowUpInvoices(session?: SessionPayload | null): Prom
       komisiPotensial,
       hariBerjalan,
       tanggalKirim: inv.tanggalKirim ?? undefined,
+      dikirim: !!inv.dikirim,
+      tanggalDikirimAktual: inv.tanggalDikirimAktual ?? undefined,
+      dikirimOleh: inv.dikirimOleh ?? undefined,
     };
   });
 }
@@ -217,6 +224,7 @@ export async function getShippingPriorityInvoices(session?: SessionPayload | nul
     getFollowUpInvoices(session),
     Invoice.find({
       status: "paid",
+      dikirim: { $ne: true },
       ...invoiceVisibilityFilter(session),
       $or: [
         { tanggalKirim: { $exists: false } },
@@ -242,10 +250,17 @@ export async function getShippingPriorityInvoices(session?: SessionPayload | nul
       komisiPotensial,
       hariBerjalan,
       tanggalKirim: inv.tanggalKirim ?? undefined,
+      dikirim: false,
     };
   });
 
-  return [...followUp, ...paidRows].sort((a, b) => {
+  // getFollowUpInvoices doesn't filter by dikirim (payment follow-up still
+  // applies regardless of shipped status) — this list specifically excludes
+  // anything already marked shipped, draft/unpaid/DP included, since
+  // shipping can be marked before full payment.
+  const shippableFollowUp = followUp.filter((r) => !r.dikirim);
+
+  return [...shippableFollowUp, ...paidRows].sort((a, b) => {
     const tierDiff = shippingPaymentTier(a) - shippingPaymentTier(b);
     if (tierDiff !== 0) return tierDiff;
     return shippingUrgency(a.tanggalKirim).sortKey - shippingUrgency(b.tanggalKirim).sortKey;

@@ -168,6 +168,8 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       komisi,
       dpPercent: inv.dp?.nominal ? Math.round((inv.dp.nominal / inv.grandTotal) * 100) : undefined,
       sisaTagihan: inv.dp?.nominal ? inv.grandTotal - inv.dp.nominal : undefined,
+      dikirim: !!inv.dikirim,
+      tanggalDikirimAktual: inv.tanggalDikirimAktual ? inv.tanggalDikirimAktual.toISOString() : undefined,
       printData,
     };
   });

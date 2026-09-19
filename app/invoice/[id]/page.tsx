@@ -4,6 +4,7 @@ import InvoiceActions from "@/components/invoice/InvoiceActions";
 import InvoicePrintDoc, { type InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
 import InvoiceDocument from "@/components/invoice/InvoiceDocument";
 import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
+import TandaiKirimButton from "@/components/invoice/TandaiKirimButton";
 import { LinkButton } from "@/components/ui/Button";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
@@ -155,6 +156,36 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                 </div>
               )}
             </div>
+            {/* Status pengiriman — independen dari status bayar, per the
+                user's request 2026-09-19 ("Tandai Sudah Kirim"). Not shown
+                for draft (see TandaiKirimButton's own server-side guard,
+                app/api/invoices/[id]/kirim/route.ts). */}
+            {invoice.status !== "draft" && (
+              <div className="mb-3.5 rounded-2xl bg-panel p-5 shadow-sm">
+                <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Status Pengiriman</h3>
+                {invoice.dikirim ? (
+                  <div className="flex items-center gap-2 font-mono text-[0.8rem]">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    Sudah dikirim ({formatDateShort(invoice.tanggalDikirimAktual ?? invoice.createdAt!)}
+                    {invoice.dikirimOleh ? ` · ${invoice.dikirimOleh}` : ""})
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 font-mono text-[0.8rem]">
+                      <span className="h-2 w-2 rounded-full bg-gold" />
+                      Belum dikirim
+                    </div>
+                    <div className="mt-3.5">
+                      <TandaiKirimButton
+                        invoiceId={String(invoice._id)}
+                        nomor={invoice.nomor}
+                        className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-ink bg-ink px-4.5 py-2.5 font-sans text-[0.85rem] font-extrabold text-accent transition hover:bg-ink/85 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <div className="rounded-2xl bg-panel p-5 shadow-sm">
               <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Riwayat</h3>
               <div className="font-mono text-[0.75rem] leading-loose text-muted">

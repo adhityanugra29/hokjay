@@ -120,6 +120,16 @@ const InvoiceSchema = new Schema(
     komisiCairBuktiUrl: { type: String },
     komisiCairCatatan: { type: String },
 
+    // Real "sudah dikirim" tracking, independent of payment status — per
+    // the user's request 2026-09-19 ("buat triggernya"), closing the gap
+    // that made Beranda's "Perlu Dikirim" widget fill up with old, already-
+    // shipped paid invoices (see lib/dashboard.ts's getShippingPriorityInvoices).
+    // Settable at any payment status except draft (see /api/invoices/[id]/kirim) —
+    // shipping can happen before full payment (e.g. once DP'd).
+    dikirim: { type: Boolean, default: false },
+    tanggalDikirimAktual: { type: Date },
+    dikirimOleh: { type: String },
+
     riwayat: { type: [RiwayatEntrySchema], default: [] },
   },
   { timestamps: true }

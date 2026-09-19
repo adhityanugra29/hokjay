@@ -5,6 +5,7 @@ import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { MobileFollowUpBySales, MobileFollowUpRows } from "@/components/dashboard/MobileFollowUp";
 import MobileShippingRows from "@/components/dashboard/MobileShippingRows";
+import TandaiKirimButton from "@/components/invoice/TandaiKirimButton";
 import { getFollowUpInvoices, getShippingPriorityInvoices, summarizeFollowUpBySales, shippingUrgency } from "@/lib/dashboard";
 import { rupiah, rupiahCompact } from "@/lib/format";
 import { getSession } from "@/lib/auth/session";
@@ -137,7 +138,14 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
                   <tr key={r.invoiceId} className="hover:bg-[#fbfaf5]">
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{r.nomor}</td>
                     <td className="border-b border-line px-5 py-4.5">
-                      <FollowUpStatusBadge status={r.hasDp ? "dp" : r.status} />
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <FollowUpStatusBadge status={r.hasDp ? "dp" : r.status} />
+                        {r.dikirim && (
+                          <span className="whitespace-nowrap rounded-full border border-emerald-500 bg-emerald-50 px-2 py-0.5 font-mono text-[0.62rem] font-bold text-emerald-700">
+                            ✓ Dikirim
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="border-b border-line px-5 py-4.5 font-medium">{r.customerNama}</td>
                     <td className="border-b border-line px-5 py-4.5">{r.salesNama}</td>
@@ -154,12 +162,17 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
                       {r.hariBerjalan} hari
                     </td>
                     <td className="border-b border-line px-5 py-4.5">
-                      <Link
-                        href={r.status === "draft" ? `/invoice/${r.invoiceId}/ubah` : `/invoice/${r.invoiceId}`}
-                        className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
-                      >
-                        {r.status === "draft" ? "Lanjutkan" : "Lihat"}
-                      </Link>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {r.status !== "draft" && !r.dikirim && (
+                          <TandaiKirimButton invoiceId={r.invoiceId} nomor={r.nomor} />
+                        )}
+                        <Link
+                          href={r.status === "draft" ? `/invoice/${r.invoiceId}/ubah` : `/invoice/${r.invoiceId}`}
+                          className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
+                        >
+                          {r.status === "draft" ? "Lanjutkan" : "Lihat"}
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -253,12 +266,15 @@ async function PerluDikirimView({ session }: { session: Awaited<ReturnType<typeo
                           {r.status === "paid" ? "Lunas" : rupiah(r.sisaTagihan)}
                         </td>
                         <td className="border-b border-line px-5 py-4.5">
-                          <Link
-                            href={r.status === "draft" ? `/invoice/${r.invoiceId}/ubah` : `/invoice/${r.invoiceId}`}
-                            className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
-                          >
-                            {r.status === "draft" ? "Lanjutkan" : "Lihat"}
-                          </Link>
+                          <div className="flex flex-wrap justify-end gap-2">
+                            {r.status !== "draft" && <TandaiKirimButton invoiceId={r.invoiceId} nomor={r.nomor} />}
+                            <Link
+                              href={r.status === "draft" ? `/invoice/${r.invoiceId}/ubah` : `/invoice/${r.invoiceId}`}
+                              className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
+                            >
+                              {r.status === "draft" ? "Lanjutkan" : "Lihat"}
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     );
