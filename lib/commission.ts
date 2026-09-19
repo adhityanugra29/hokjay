@@ -38,6 +38,42 @@ export function resolveKomisiBekasPercent(
   return DEFAULT_KOMISI_BEKAS_PERCENT;
 }
 
+export interface KomisiInfo {
+  percent: number;
+  /** Which rule actually produced `percent` — powers the "% Komisi" column's small explanatory sub-label on Inventory's Semua Produk / Riwayat Stok tables. */
+  source: "flat-baru" | "override-produk" | "default-kategori" | "default-global";
+}
+
+/**
+ * Same resolution order as resolveKomisiBekasPercent (product override ->
+ * category override -> global 10%), but also reports WHICH one won — per
+ * the user's request 2026-09-19 ("tambahkan tabel % Komisi") after a real
+ * support question ("kenapa komisinya 300.000") turned out to hinge on a
+ * silent per-product override with no visibility anywhere in the UI.
+ */
+export function getEffectiveKomisiInfo(
+  kondisi: "baru" | "bekas" | undefined,
+  productOverride?: number | null,
+  categoryOverride?: number | null
+): KomisiInfo {
+  if (kondisi !== "bekas") return { percent: DEFAULT_KOMISI_BARU_PERCENT, source: "flat-baru" };
+  if (productOverride !== undefined && productOverride !== null) {
+    return { percent: productOverride, source: "override-produk" };
+  }
+  if (categoryOverride !== undefined && categoryOverride !== null) {
+    return { percent: categoryOverride, source: "default-kategori" };
+  }
+  return { percent: DEFAULT_KOMISI_BEKAS_PERCENT, source: "default-global" };
+}
+
+/** Indonesian sub-label for KomisiInfo.source — shown under the % in the Inventory "% Komisi" column. */
+export const KOMISI_SOURCE_LABEL: Record<KomisiInfo["source"], string> = {
+  "flat-baru": "flat — barang baru",
+  "override-produk": "override produk",
+  "default-kategori": "default kategori",
+  "default-global": "default global",
+};
+
 export function computeLineCommission({
   isCustom,
   kondisi,

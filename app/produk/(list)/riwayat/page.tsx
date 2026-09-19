@@ -6,6 +6,8 @@ import { StockMovement } from "@/models/StockMovement";
 import { Product } from "@/models/Product";
 import { formatDateShort } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
+import { getEffectiveKomisiInfo, KOMISI_SOURCE_LABEL } from "@/lib/commission";
+import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 
 export const dynamic = "force-dynamic";
 
@@ -22,13 +24,19 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
 
   const movements = await StockMovement.find(filter).sort(mongoSort(field, dir)).limit(200);
 
-  // Baru/Bekas label next to Tipe — per the user's request 2026-09-19
-  // ("supaya terlihat"). Read live off Product.kondisi (not snapshotted on
-  // StockMovement) since it's a slow-changing product attribute, same
-  // reasoning as app/invoice/page.tsx's live salesPhoneByNama lookup.
+  // Baru/Bekas label + % Komisi next to Tipe — per the user's requests
+  // 2026-09-19 ("supaya terlihat" / "tambahkan tabel % Komisi"). Both read
+  // live off Product (not snapshotted on StockMovement) since kondisi and
+  // the komisi-bekas override are slow-changing product attributes, same
+  // reasoning as app/invoice/page.tsx's live salesPhoneByNama lookup — the
+  // % shown here is CURRENT, not necessarily what applied at the time of
+  // that movement if the product's commission settings changed since.
   const productIds = [...new Set(movements.map((m) => String(m.product)))];
-  const products = await Product.find({ _id: { $in: productIds } }).select("kondisi").lean();
-  const kondisiByProductId = new Map(products.map((p) => [String(p._id), p.kondisi]));
+  const [products, kategoriKomisiBekasMap] = await Promise.all([
+    Product.find({ _id: { $in: productIds } }).select("kondisi komisiBekasPercent category").lean(),
+    getKategoriKomisiBekasMap(),
+  ]);
+  const productById = new Map(products.map((p) => [String(p._id), p]));
 
   const basePath = "/produk/riwayat";
   const headers: { label: string; key: (typeof SORT_FIELDS)[number]; align?: "right" }[] = [
@@ -54,7 +62,23 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              {headers.map((h) => (
+              {headers.slice(0, 3).map((h) => (
+                <SortableHeader
+                  key={h.key}
+                  label={h.label}
+                  sortKey={h.key}
+                  currentSort={field}
+                  currentDir={dir}
+                  basePath={basePath}
+                  searchParams={sp}
+                  align={h.align}
+                />
+              ))}
+              {/* Not sortable — derived from Product, not a real StockMovement field. */}
+              <th className="border-b border-line bg-accent-100 px-5 py-4 text-left font-mono text-[0.68rem] uppercase tracking-wide text-accent-700">
+                % Komisi
+              </th>
+              {headers.slice(3).map((h) => (
                 <SortableHeader
                   key={h.key}
                   label={h.label}
@@ -79,7 +103,7 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
                   <div className="flex flex-wrap items-center gap-1.5">
                     {m.tipe === "masuk" ? <Pill variant="ok">Masuk</Pill> : <Pill variant="out">Keluar</Pill>}
                     {(() => {
-                      const kondisi = kondisiByProductId.get(String(m.product));
+                      const kondisi = productById.get(String(m.product))?.kondisi;
                       if (!kondisi) return null;
                       return (
                         <span
@@ -91,6 +115,23 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
                       );
                     })()}
                   </div>
+                </td>
+                <td className="border-b border-line bg-accent-100/40 px-5 py-4.5">
+                  {(() => {
+                    const product = productById.get(String(m.product));
+                    if (!product) return <span className="font-mono text-[0.8rem] text-muted">—</span>;
+                    const komisiInfo = getEffectiveKomisiInfo(
+                      product.kondisi as "baru" | "bekas" | undefined,
+                      product.komisiBekasPercent,
+                      kategoriKomisiBekasMap.get(product.category)
+                    );
+                    return (
+                      <>
+                        <div className="font-semibold">{komisiInfo.percent}%</div>
+                        <div className="font-mono text-[0.62rem] text-muted">{KOMISI_SOURCE_LABEL[komisiInfo.source]}</div>
+                      </>
+                    );
+                  })()}
                 </td>
                 <td className="border-b border-line px-5 py-4.5 text-right font-mono text-[0.8rem]">
                   {m.tipe === "masuk" ? "+" : "-"}
@@ -109,7 +150,7 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
             ))}
             {movements.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                <td colSpan={10} className="px-5 py-8 text-center font-mono text-sm text-muted">
                   Belum ada riwayat stok.
                 </td>
               </tr>

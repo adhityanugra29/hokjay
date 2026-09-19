@@ -494,3 +494,25 @@ Verified a 2-item dry run first (visually confirmed via the actual downloaded ou
 **Regression test:** Clean `tsc --noEmit`, clean `eslint` on every changed file, clean `next build` (all routes compiled, including the new `/payroll/riwayat`). Could not exercise either new page against real logged-in session data in a browser this session (no test credentials available here) — build-time compilation is the verification on record; **manual click-through in the browser with a real admin/owner login is still recommended before calling this fully verified.**
 
 **Mobile:** Both new/changed tables reuse `TableScroll` (`overflow-x-auto`) and the existing `PanelHead`/filter-row flex-wrap patterns already proven responsive elsewhere (e.g. `/produk/riwayat`) — not verified live on an actual small viewport this session.
+
+---
+
+## TASK-024 — Inventory: "% Komisi" column on Semua Produk + Riwayat Stok
+
+**Type:** Feature
+**Priority:** P2
+**Status:** DONE (2026-09-19)
+**Dependency:** None
+**Created:** 2026-09-19 · **Last updated:** 2026-09-19
+
+**Description:** Triggered by a real support question the same day ("di invoice bu erlin, kenapa komisinya 300.000") that took a manual DB query to answer — the commission % a product actually earns was invisible anywhere in the UI, only derivable by reading `lib/commission.ts`'s resolution order (flat 6% for barang baru; for bekas: product-level `komisiBekasPercent` override → category-level override → global 10% default). The user asked to surface it directly on Inventory's two tables, previewed as an HTML mockup first ("kita buat plan dulu ya" → "perlihatkan htmlnya" → "Okee deploy").
+
+**Fix:** New `getEffectiveKomisiInfo()` in `lib/commission.ts` — same resolution order as the existing `resolveKomisiBekasPercent()`, but also tags which rule won (`flat-baru` / `override-produk` / `default-kategori` / `default-global`) via a new `KomisiInfo` type, plus a `KOMISI_SOURCE_LABEL` map for the Indonesian sub-label. Both `app/produk/(list)/page.tsx` (Semua Produk) and `app/produk/(list)/riwayat/page.tsx` (Riwayat Stok, already doing a live Product lookup for TASK-023's Baru/Bekas badge — extended to also select `komisiBekasPercent`/`category`) now render a highlighted "% Komisi" column: the resolved percent plus a small muted sub-label explaining why (e.g. "override produk"), reusing `getKategoriKomisiBekasMap()` (`lib/katalog.ts`) for the category-level lookup, same helper Katalog already uses. `MobileProdukList.tsx`'s card got a compact "Komisi N%" text (no sub-label, space-constrained) alongside its existing Stok/Umur Stok line.
+
+Deliberately **live, not a historical snapshot** — Riwayat Stok's % reflects the product's CURRENT commission settings, which may differ from what actually applied at the time of an old movement if the product/category rate changed since (explicitly disclosed to the user in the mockup and accepted). Visibility is not Owner-restricted — only *editing* the override is Owner-only (`isKomisiSettingAllowed`, TASK-015); viewing the resolved rate is no more sensitive than the commission Rupiah amount already shown on the Invoice list to anyone who can see it.
+
+**Files affected:** `lib/commission.ts` (`getEffectiveKomisiInfo`, `KomisiInfo`, `KOMISI_SOURCE_LABEL`), `app/produk/(list)/page.tsx`, `app/produk/(list)/riwayat/page.tsx`, `components/produk/MobileProdukList.tsx`.
+
+**Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. No live browser click-through (no test credentials in this environment) — recommended before treating as fully verified, same caveat as TASK-023.
+
+**Mobile:** `MobileProdukList.tsx` card updated (compact "Komisi N%" line); Riwayat Stok's mobile behavior unchanged from TASK-023 (`TableScroll` horizontal-scroll fallback, no dedicated mobile card list exists for that table) — not verified live on an actual small viewport.

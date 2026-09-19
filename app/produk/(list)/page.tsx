@@ -11,6 +11,8 @@ import { rupiah, formatDimensi } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
 import { getSession } from "@/lib/auth/session";
 import { isProductDeleteAllowed } from "@/lib/auth/access";
+import { getEffectiveKomisiInfo, KOMISI_SOURCE_LABEL } from "@/lib/commission";
+import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 import type { HydratedDocument } from "mongoose";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +71,10 @@ export default async function ProdukListPage({
       { merk: { $regex: search, $options: "i" } },
     ];
   }
-  const products = (await Product.find(filter).sort(mongoSort(field, dir))) as HydratedDocument<ProductDoc>[];
+  const [products, kategoriKomisiBekasMap] = await Promise.all([
+    Product.find(filter).sort(mongoSort(field, dir)) as Promise<HydratedDocument<ProductDoc>[]>,
+    getKategoriKomisiBekasMap(),
+  ]);
 
   // Summary strip — "extreme"/"Soft Trade" rework (2026-08-30), same
   // treatment as app/pelanggan/page.tsx: a quick-glance stat row above
@@ -119,6 +124,11 @@ export default async function ProdukListPage({
         isOwner={isOwner}
         products={products.map((p) => {
           const { label, variant } = stockAgeInfo(p.tanggalBarangMasuk ?? p.createdAt!, p.alertHariTidakTerjual ?? 45);
+          const komisiInfo = getEffectiveKomisiInfo(
+            p.kondisi as "baru" | "bekas" | undefined,
+            p.komisiBekasPercent,
+            kategoriKomisiBekasMap.get(p.category)
+          );
           return {
             id: String(p._id),
             name: p.name,
@@ -131,6 +141,7 @@ export default async function ProdukListPage({
             kondisi: p.kondisi ?? "baru",
             umurStokLabel: label,
             umurStokVariant: variant,
+            komisiPercent: komisiInfo.percent,
           };
         })}
       />
@@ -144,6 +155,9 @@ export default async function ProdukListPage({
                 <SortableHeader label="Harga Rekomendasi" sortKey="hargaRekomendasi" currentSort={field} currentDir={dir} basePath="/produk" searchParams={sp} align="right" />
                 <SortableHeader label="Stok" sortKey="stok" currentSort={field} currentDir={dir} basePath="/produk" searchParams={sp} align="right" />
                 <SortableHeader label="Umur Stok" sortKey="tanggalBarangMasuk" currentSort={field} currentDir={dir} basePath="/produk" searchParams={sp} />
+                <th className="border-b border-line bg-accent-100 px-5 py-4 text-left font-mono text-[0.68rem] uppercase tracking-wide text-accent-700">
+                  % Komisi
+                </th>
                 <th className="border-b border-line px-5 py-4" />
               </tr>
             </thead>
@@ -186,6 +200,23 @@ export default async function ProdukListPage({
                   <td className="border-b border-line px-5 py-4.5">
                     {stockAgePill(p.tanggalBarangMasuk ?? p.createdAt!, p.alertHariTidakTerjual ?? 45)}
                   </td>
+                  <td className="border-b border-line bg-accent-100/40 px-5 py-4.5">
+                    {(() => {
+                      const komisiInfo = getEffectiveKomisiInfo(
+                        p.kondisi as "baru" | "bekas" | undefined,
+                        p.komisiBekasPercent,
+                        kategoriKomisiBekasMap.get(p.category)
+                      );
+                      return (
+                        <>
+                          <div className="font-semibold">{komisiInfo.percent}%</div>
+                          <div className="font-mono text-[0.62rem] text-muted">
+                            {KOMISI_SOURCE_LABEL[komisiInfo.source]}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </td>
                   <td className="border-b border-line px-5 py-4.5">
                     <div className="flex flex-wrap gap-2">
                       <RowActionLink href={`/produk/${p._id}/edit`}>Ubah</RowActionLink>
@@ -196,7 +227,7 @@ export default async function ProdukListPage({
               ))}
               {products.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center font-mono text-sm text-muted">
+                  <td colSpan={7} className="px-5 py-8 text-center font-mono text-sm text-muted">
                     Belum ada produk.{" "}
                     <Link href="/produk/baru" className="text-moss-deep underline">
                       Tambah produk pertama

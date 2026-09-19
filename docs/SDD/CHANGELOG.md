@@ -6,6 +6,13 @@
 
 ## 2026-09-19
 
+**TASK-024 done** — Inventory's "Semua Produk" and "Riwayat Stok" tables gained a highlighted "% Komisi" column (resolved rate + a sub-label explaining why: flat barang baru / override produk / default kategori / default global), triggered by a real support question that needed a manual DB query to answer ("kenapa komisinya 300.000" — turned out to be a silent per-product commission override with no UI visibility anywhere). `MobileProdukList.tsx` card got a compact version too. Live values, not historical snapshots.
+
+Tasks: TASK-024.
+Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live browser click-through — recommended before treating as fully verified.
+
+---
+
 **TASK-023 done** — Payroll gained a "Riwayat" tab (`/payroll/riwayat`) combining Gaji payment history (`GajiPayment`) with Komisi payouts re-grouped from `Invoice.komisiCair` batches (no dedicated payment record existed for Komisi before this — invoice-level detail drawer added to see which invoices a payout covered). Invoice list gained a server-side Sales filter (hidden for `role:"sales"` sessions, already locked to their own name). Inventory's Riwayat Stok masuk/keluar table gained a Baru/Bekas label next to Tipe, read live off `Product.kondisi`.
 
 Tasks: TASK-023.

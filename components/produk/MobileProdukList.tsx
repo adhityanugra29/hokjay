@@ -15,6 +15,7 @@ export interface MobileProdukRow {
   kondisi: string;
   umurStokLabel: string;
   umurStokVariant: "ok" | "low" | "out";
+  komisiPercent: number;
 }
 
 const UMUR_DOT: Record<MobileProdukRow["umurStokVariant"], string> = {
@@ -74,6 +75,7 @@ export default function MobileProdukList({
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: UMUR_DOT[p.umurStokVariant] }} />
               {p.umurStokLabel}
             </span>
+            <span className="text-accent-700">Komisi {p.komisiPercent}%</span>
           </div>
 
           <div className="mt-2.5 flex flex-wrap gap-2">
