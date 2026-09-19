@@ -265,10 +265,13 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                   overflow menu (2026-09-20 correction — "mana 3 titiknya
                   untuk button yang lain?": these were meant to stay
                   reachable from the list itself via a menu, not dropped
-                  to the detail page entirely). Draft is a separate
-                  lifecycle stage this rule doesn't cover (no "Tandai
-                  Lunas" for something not even finalized yet) — kept
-                  as-is. */}
+                  to the detail page entirely). Preview also added to
+                  this menu (2026-09-20 follow-up — "tambahkan button
+                  preview di titik tiga") so unpaid/DP rows can preview
+                  without leaving the list, same as paid rows already
+                  could. Draft is a separate lifecycle stage this rule
+                  doesn't cover (no "Tandai Lunas" for something not
+                  even finalized yet) — kept as-is. */}
               <div className="relative flex flex-wrap items-center justify-end gap-2">
                 {r.status === "draft" && (
                   <>
@@ -319,6 +322,16 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                           >
                             Kirim WA
                           </a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              openPreview(r.id);
+                            }}
+                            className="block w-full cursor-pointer border-b border-line px-3.5 py-2.5 text-left font-sans text-[0.78rem] font-semibold text-ink hover:bg-surface"
+                          >
+                            Preview
+                          </button>
                           <Link
                             href={`/invoice/${r.id}/ubah`}
                             className="block border-b border-line px-3.5 py-2.5 font-sans text-[0.78rem] font-semibold text-ink no-underline hover:bg-surface"

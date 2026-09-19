@@ -727,3 +727,19 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Files affected:** `components/invoice/InvoicePrintDoc.tsx`.
 
 **Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. Not yet click-tested live against a real long invoice (long Catatan + long S&K forcing the 3rd tier) — recommended before treating as fully verified.
+
+---
+
+## TASK-033 — Invoice list: add Preview to the "⋯" overflow menu
+
+**Type:** UX
+**Priority:** P3
+**Status:** DONE (2026-09-20)
+**Dependency:** TASK-030 (added the "⋯" menu)
+**Created:** 2026-09-20 · **Last updated:** 2026-09-20
+
+**Description:** "tambahkan button preview di titik tiga" — unpaid/DP invoice rows (Tandai Lunas + Tandai Sudah Kirim + "⋯") couldn't preview without opening the detail page first, unlike paid rows which already had a dedicated Preview button. Added a "Preview" item to the top of the "⋯" menu (above Edit), reusing the same `openPreview()` handler paid rows already call — closes the menu on click.
+
+**Files affected:** `components/invoice/InvoiceListClient.tsx`.
+
+**Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. Not yet click-tested live.
