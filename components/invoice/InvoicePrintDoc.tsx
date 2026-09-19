@@ -31,6 +31,7 @@ const ITEM_ROW_PX = 55; // safety-padded above the real ~44px single-line row, r
 // number arrives.
 const DEFAULT_HEADER_HEIGHT_PX = 260;
 const DEFAULT_FOOTER_HEIGHT_PX = 300; // bumped after adding the closing logo + thank-you line, 2026-08-27
+const DEFAULT_SK_HEIGHT_PX = 160; // Syarat & Ketentuan's own pre-measurement estimate, see its own placement logic below.
 
 /**
  * Off-screen multi-page invoice layout, captured page-by-page by
@@ -74,12 +75,28 @@ export default function InvoicePrintDoc({
 }) {
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
+  // Syarat & Ketentuan measured SEPARATELY from the rest of the footer —
+  // per the user's report 2026-09-20 ("masih belum berimpact untuk pdf
+  // yang sudah dibuat"). Every page here has a FIXED height with
+  // `overflow: hidden` (needed for the per-page html2canvas capture this
+  // whole component exists for) — before this, S&K lived inside the same
+  // measured footerRef block as Total/Catatan/Payment Details/logo, so if
+  // that WHOLE block grew taller than a single page (an invoice with DP +
+  // a long Catatan + a long custom S&K, all stacked), the excess got
+  // silently clipped by that overflow:hidden — and since S&K sits LAST in
+  // that block, it's exactly what would disappear first, with no error
+  // anywhere. Splitting it into its own measured block lets it fall back
+  // to its own additional page when it doesn't fit alongside the rest,
+  // instead of ever being silently cut off.
+  const skRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState<number | null>(null);
   const [footerHeight, setFooterHeight] = useState<number | null>(null);
+  const [skHeight, setSkHeight] = useState<number | null>(null);
 
   useEffect(() => {
     if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
     if (footerRef.current) setFooterHeight(footerRef.current.offsetHeight);
+    if (skRef.current) setSkHeight(skRef.current.offsetHeight);
     // Depends on the actual invoice content (item count changes the total
     // document height but not header/footer height directly — kept for
     // safety since dp/shipAddress presence can change between renders of
@@ -102,6 +119,7 @@ export default function InvoicePrintDoc({
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+  const sk = syaratKetentuanPoints.length === 0 ? 0 : (skHeight ?? DEFAULT_SK_HEIGHT_PX);
 
   // Pass 1: pack item rows into pages by remaining height.
   const rowPages: InvoicePrintItem[][] = [];
@@ -123,15 +141,45 @@ export default function InvoicePrintDoc({
   }
   if (rowPages.length === 0) rowPages.push([]); // no items (shouldn't happen, but never emit zero pages)
 
-  // Pass 2: does the totals/payment-details footer fit on the last page
-  // alongside its rows? If not, it gets a page of its own.
+  // Pass 2: does the totals/payment-details footer (and Syarat &
+  // Ketentuan alongside it) fit on the last page with its rows? Three
+  // tiers, checked in order, so S&K only ever spills onto a page of its
+  // OWN when it genuinely doesn't fit anywhere else — never silently
+  // clipped. See skRef's doc comment for why footer and S&K are measured
+  // (and placed) separately now.
   const lastPageIsFirst = rowPages.length === 1;
   const lastPageRowCount = rowPages[rowPages.length - 1].length;
   const lastPageBudget =
     PAGE_HEIGHT_PX - PAGE_VPAD_PX - TABLE_HEADER_PX - (lastPageIsFirst ? header : 0) - lastPageRowCount * ITEM_ROW_PX;
-  const footerJoinsLastPage = footer <= lastPageBudget;
+  const fullPageBudget = PAGE_HEIGHT_PX - PAGE_VPAD_PX;
 
-  const totalPages = rowPages.length + (footerJoinsLastPage ? 0 : 1);
+  let footerJoinsLastPage: boolean;
+  let skJoinsFooter: boolean; // true = same page as the footer, wherever that ends up
+  let skOwnPage: boolean;
+
+  if (footer + sk <= lastPageBudget) {
+    // Everything fits alongside the item rows on the last page.
+    footerJoinsLastPage = true;
+    skJoinsFooter = true;
+    skOwnPage = false;
+  } else if (footer <= lastPageBudget) {
+    // Footer fits with the rows, but S&K doesn't fit alongside it there.
+    footerJoinsLastPage = true;
+    skJoinsFooter = false;
+    skOwnPage = sk > 0;
+  } else if (footer + sk <= fullPageBudget) {
+    // Footer needs its own page, and S&K fits alongside it on that page.
+    footerJoinsLastPage = false;
+    skJoinsFooter = true;
+    skOwnPage = false;
+  } else {
+    // Footer alone fills (or nearly fills) a whole page — S&K gets its own.
+    footerJoinsLastPage = false;
+    skJoinsFooter = false;
+    skOwnPage = sk > 0;
+  }
+
+  const totalPages = rowPages.length + (footerJoinsLastPage ? 0 : 1) + (skOwnPage ? 1 : 0);
 
   // Per the user's request 2026-08-29 ("tambahkan total diskon di
   // invoice pdf maupun preview"). Uses displayDiskon so a Flash Sale
@@ -252,29 +300,31 @@ export default function InvoicePrintDoc({
           </div>
         </div>
       </div>
-      {/* Syarat & Ketentuan — free text from Pengaturan, one point per
-          line rendered as a numbered list. Shown on both Invoice/Bukti
-          Transfer and Surat Jalan, same as Catatan above. Justified +
-          generous line-height per the user's explicit request 2026-09-19
-          ("align justify supaya rapih dan diberikan jarak antar baris").
-          Inside footerRef (same as everything else here) so its height is
-          measured and counted toward the adaptive page-packing math. */}
-      {syaratKetentuanPoints.length > 0 && (
-        <div className="mt-7 border-t border-line pt-4">
-          <div className="mb-2.5 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">
-            Syarat &amp; Ketentuan
-          </div>
-          <ol className="list-decimal space-y-1.5 pl-4 text-justify font-mono text-[0.68rem] leading-[1.9] text-muted">
-            {syaratKetentuanPoints.map((point, i) => (
-              <li key={i} className="pl-0.5">
-                {point}
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
     </div>
   );
+
+  // Syarat & Ketentuan — free text from Pengaturan, one point per line
+  // rendered as a numbered list. Shown on both Invoice/Bukti Transfer and
+  // Surat Jalan, same as Catatan above. Justified + generous line-height
+  // per the user's explicit request 2026-09-19 ("align justify supaya
+  // rapih dan diberikan jarak antar baris"). Measured via its OWN ref
+  // (skRef) — see that ref's doc comment for why this is separate from
+  // totalsBlock/footerRef now.
+  const syaratKetentuanBlock =
+    syaratKetentuanPoints.length > 0 ? (
+      <div ref={skRef} className="border-t border-line pt-4">
+        <div className="mb-2.5 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">
+          Syarat &amp; Ketentuan
+        </div>
+        <ol className="list-decimal space-y-1.5 pl-4 text-justify font-mono text-[0.68rem] leading-[1.9] text-muted">
+          {syaratKetentuanPoints.map((point, i) => (
+            <li key={i} className="pl-0.5">
+              {point}
+            </li>
+          ))}
+        </ol>
+      </div>
+    ) : null;
 
   const headerBlock = (
     <div ref={headerRef}>
@@ -441,7 +491,12 @@ export default function InvoicePrintDoc({
                     ))}
                   </tbody>
                 </table>
-                {isLastRowPage && footerJoinsLastPage && totalsBlock}
+                {isLastRowPage && footerJoinsLastPage && (
+                  <>
+                    {totalsBlock}
+                    {skJoinsFooter && syaratKetentuanBlock && <div className="mt-7">{syaratKetentuanBlock}</div>}
+                  </>
+                )}
               </div>
             </div>
           );
@@ -449,10 +504,42 @@ export default function InvoicePrintDoc({
         {!footerJoinsLastPage && (
           <div
             data-print-page={rowPages.length}
-            className="flex flex-col bg-panel"
+            className="relative flex flex-col bg-panel"
             style={{ width: PAGE_WIDTH_PX, height: PAGE_HEIGHT_PX, overflow: "hidden" }}
           >
-            <div className="p-9">{totalsBlock}</div>
+            {mode !== "surat-jalan" && invoice.isPaid && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+                <div
+                  className="whitespace-nowrap font-serif font-semibold tracking-wide text-moss-deep"
+                  style={{ transform: "rotate(-30deg)", fontSize: 150, opacity: 0.13 }}
+                >
+                  LUNAS
+                </div>
+              </div>
+            )}
+            <div className="p-9">
+              {totalsBlock}
+              {skJoinsFooter && syaratKetentuanBlock && <div className="mt-7">{syaratKetentuanBlock}</div>}
+            </div>
+          </div>
+        )}
+        {skOwnPage && (
+          <div
+            data-print-page={rowPages.length + (footerJoinsLastPage ? 0 : 1)}
+            className="relative flex flex-col bg-panel"
+            style={{ width: PAGE_WIDTH_PX, height: PAGE_HEIGHT_PX, overflow: "hidden" }}
+          >
+            {mode !== "surat-jalan" && invoice.isPaid && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+                <div
+                  className="whitespace-nowrap font-serif font-semibold tracking-wide text-moss-deep"
+                  style={{ transform: "rotate(-30deg)", fontSize: 150, opacity: 0.13 }}
+                >
+                  LUNAS
+                </div>
+              </div>
+            )}
+            <div className="p-9">{syaratKetentuanBlock}</div>
           </div>
         )}
       </div>

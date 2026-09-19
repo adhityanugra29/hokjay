@@ -2,13 +2,13 @@
 
 > Single "catch up" file — read this first before starting any session or major task. See `TASKS.md`, `BUGS.md`, `KNOWN_ISSUES.md`, `CHANGELOG.md` for detail.
 
-**Last updated:** 2026-09-19
+**Last updated:** 2026-09-20
 
 ---
 
 ## CURRENT TASK
 
-None active — TASK-027 through TASK-031 are all DONE, build/lint/typecheck clean. TASK-031's Syarat & Ketentuan backfill was verified directly against the database (confirmed missing, then confirmed set) — everything else in this run is still only build/lint-verified, not click-tested live in a browser.
+None active — TASK-027 through TASK-032 are all DONE, build/lint/typecheck clean. TASK-031's Syarat & Ketentuan backfill was verified directly against the database (confirmed missing, then confirmed set); TASK-032 (the page-overflow clipping fix on top of it) is build/lint-verified only, not yet click-tested live against a real long invoice.
 
 Known gap left open: "Tandai Sudah Kirim" is NOT yet on Beranda's Sales "Dikejar hari ini" card — that array's row shape doesn't carry `invoiceId`/`kurir` cleanly (mixes invoice + dormant-customer rows), needs a small restructure. Not yet asked for explicitly, but worth expecting.
 
@@ -22,6 +22,7 @@ A large amount of feature/bugfix work has landed since the last full rewrite of 
 
 ## LAST COMPLETED
 
+- **TASK-032** — After TASK-031's DB backfill, S&K still didn't show on generated PDFs ("masih belum berimpact untuk pdf yang sudah dibuat"). Real cause: `InvoicePrintDoc.tsx` packs each PDF page into a fixed-height `overflow:hidden` container, and S&K shared its height measurement/placement with the rest of the footer block (Total/Catatan/Payment Details/logo) — if that combined block ever exceeded one page's remaining room, S&K (positioned last) was silently clipped with no error. Fixed by giving S&K its own measured ref and its own 3-tier placement decision (joins the footer's page if there's room, else gets pushed to its own dedicated page) — it can now only ever be pushed forward, never dropped. LUNAS watermark also added to the two new standalone page types for consistency. Not yet click-tested live against a real long invoice.
 - **TASK-031** — Syarat & Ketentuan moved from Keuangan to its own new "Invoice" tab under Admin; rebuilt as one input per line ("Baris 1", "Baris 2"...) instead of a freeform textarea. Real bug fixed: it never actually appeared on any Invoice PDF, because the `Pengaturan` singleton doc predates that field and Mongoose defaults don't retroactively backfill an existing document — fixed with a one-off DB backfill (confirmed before/after against the actual database) plus a permanent self-heal in `GET /api/pengaturan`.
 - **TASK-030** (+ same-day correction — Kirim WA/Edit/Hapus brought back onto the Invoice list itself behind a "⋯" overflow menu, not left on the detail page as first shipped) — Invoice list's per-row buttons simplified from up to 6 to max 2 (Tandai Lunas + Tandai Sudah Kirim for unpaid/DP not-shipped; just one of those otherwise; just Preview once paid). Kirim WA/Edit/Hapus dropped from the list, still reachable on the detail page. Not yet click-tested live.
 - **TASK-029** — Leaderboard "Estimasi Sales" per sales (from DP'd/belum lunas invoices, ranking stays Lunas-only, deliberately no komisi figure — privacy). Invoice PDF/preview's small LUNAS badge replaced with a big centered translucent watermark (every page on multi-page PDFs). Invoice "Syarat & Ketentuan" section, editable from Pengaturan, justified with generous line spacing. Not yet click-tested live.

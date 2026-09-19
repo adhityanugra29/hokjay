@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-20
+
+**TASK-032 done** — Fixed a real bug reported right after TASK-031's deploy ("masih belum berimpact untuk pdf yang sudah dibuat" — S&K still missing on generated PDFs even after the DB backfill). Root cause: `InvoicePrintDoc.tsx` packs PDF pages into fixed-height `overflow:hidden` containers, and S&K shared its height measurement and page placement with the rest of the footer (Total/Catatan/Payment Details/logo) — if that combined block exceeded a page's remaining space, S&K (last in the block) was silently clipped, no error. Gave S&K its own measured ref and its own 3-tier placement decision so it only ever gets pushed to a later page, never dropped. Also added the LUNAS watermark to the two new standalone page types for consistency.
+
+Tasks: TASK-032.
+Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. Not yet click-tested live against a real long invoice.
+
+---
+
 ## 2026-09-19
 
 **TASK-027 done** — Pelanggan's "Semua Pelanggan" list gained a search box (nama/kode) and a Kota dropdown filter; `/pelanggan/[id]`'s invoice history table gained a status pill filter (Semua/Draft/Belum Bayar/Lunas). Also fixed a latent bug: an empty search result used to wrongly show "Belum ada pelanggan — Tambah pelanggan pertama" even with customers in the account.

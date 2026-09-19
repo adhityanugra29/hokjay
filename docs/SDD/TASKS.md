@@ -709,3 +709,21 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Files affected:** `app/admin/layout.tsx`, `app/admin/keuangan/page.tsx`, `app/admin/invoice/page.tsx` (new), `lib/auth/access.ts`, `components/admin/PengaturanSyaratKetentuan.tsx`, `app/api/pengaturan/route.ts`.
 
 **Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. Backfill verified directly against the database (queried the singleton doc before and after — confirmed the field was genuinely missing, then confirmed it was set). No live browser click-through of the actual PDF output — recommended before treating as fully verified.
+
+---
+
+## TASK-032 — Syarat & Ketentuan could still be silently clipped from the generated PDF
+
+**Type:** Bug fix
+**Priority:** P1
+**Status:** DONE (2026-09-20)
+**Dependency:** TASK-031 (fixed the data-layer half of the same symptom)
+**Created:** 2026-09-20 · **Last updated:** 2026-09-20
+
+**Description:** "masih belum berimpact untuk pdf yang sudah dibuat" — after TASK-031's database backfill was deployed, S&K still didn't show up on generated invoice PDFs. Ruled out a full-document-replace bug in `PUT /api/pengaturan` first (empirically tested with a temporary script — `findByIdAndUpdate` with a plain object does a correct partial update, sibling fields untouched). The real cause: `InvoicePrintDoc.tsx` renders each PDF page as a fixed-height (`PAGE_HEIGHT_PX`) container with `overflow: hidden` (required for the per-page `html2canvas` capture this component is built around). S&K lived inside the same measured block as Total/Catatan/Payment Details/logo (`footerRef`) — if that whole block grew taller than one page's remaining space (e.g. DP + a long Catatan + several S&K lines, all stacked), the excess was silently clipped with no error, and since S&K sat last in that block it was the first thing to disappear.
+
+**Fix:** Split S&K into its own separately-measured block (`skRef`/`skHeight`, mirroring the existing `headerRef`/`footerRef` pattern) and its own placement decision, independent of the footer's. Pass 2 pagination is now a 3-tier check: (1) footer + S&K both fit alongside the last page's item rows → same page; (2) footer fits there but S&K doesn't → footer stays, S&K gets pushed to a dedicated page; (3) footer itself needs its own page → S&K joins it there if there's room, otherwise gets a further dedicated page of its own. S&K is now never dropped, only ever pushed forward onto a later page. The LUNAS watermark (previously only on item-row pages) now also renders on the standalone footer-only page and the new standalone S&K-only page, for visual consistency on a paid invoice regardless of how many pages it spans.
+
+**Files affected:** `components/invoice/InvoicePrintDoc.tsx`.
+
+**Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. Not yet click-tested live against a real long invoice (long Catatan + long S&K forcing the 3rd tier) — recommended before treating as fully verified.
