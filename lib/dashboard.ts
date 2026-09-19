@@ -99,6 +99,8 @@ export interface FollowUpInvoiceRow {
   dikirim: boolean;
   tanggalDikirimAktual?: Date;
   dikirimOleh?: string;
+  /** Invoice.kurir — feeds TandaiKirimButton's Kurir select default. */
+  kurir?: string;
 }
 
 export type ShippingTone = "overdue" | "today" | "soon" | "later" | "none";
@@ -183,6 +185,7 @@ export async function getFollowUpInvoices(session?: SessionPayload | null): Prom
       dikirim: !!inv.dikirim,
       tanggalDikirimAktual: inv.tanggalDikirimAktual ?? undefined,
       dikirimOleh: inv.dikirimOleh ?? undefined,
+      kurir: inv.kurir ?? undefined,
     };
   });
 }
@@ -251,6 +254,7 @@ export async function getShippingPriorityInvoices(session?: SessionPayload | nul
       hariBerjalan,
       tanggalKirim: inv.tanggalKirim ?? undefined,
       dikirim: false,
+      kurir: inv.kurir ?? undefined,
     };
   });
 

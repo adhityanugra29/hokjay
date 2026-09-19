@@ -9,6 +9,7 @@ import { LinkButton } from "@/components/ui/Button";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
+import { Courier } from "@/models/Courier";
 import { rupiah, formatDateLong, formatDateShort } from "@/lib/format";
 import { getSession } from "@/lib/auth/session";
 import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
@@ -24,6 +25,8 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
   // pattern as Pelanggan's own per-sales guard.
   const session = await getSession();
   if (isInvoiceBlockedForSession(session, invoice.sales?.nama)) notFound();
+
+  const couriers = (await Courier.find().sort({ name: 1 }).lean()).map((c) => ({ _id: String(c._id), name: c.name }));
 
   // Live lookup rather than a snapshot on the invoice itself — a phone
   // number changing should show up on invoices printed afterward, unlike
@@ -179,6 +182,9 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                       <TandaiKirimButton
                         invoiceId={String(invoice._id)}
                         nomor={invoice.nomor}
+                        customerNama={invoice.customer?.nama}
+                        couriers={couriers}
+                        currentKurir={invoice.kurir ?? undefined}
                         className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-ink bg-ink px-4.5 py-2.5 font-sans text-[0.85rem] font-extrabold text-accent transition hover:bg-ink/85 disabled:cursor-not-allowed disabled:opacity-50"
                       />
                     </div>

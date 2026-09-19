@@ -5,10 +5,17 @@ import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { MobileFollowUpBySales, MobileFollowUpRows } from "@/components/dashboard/MobileFollowUp";
 import MobileShippingRows from "@/components/dashboard/MobileShippingRows";
-import TandaiKirimButton from "@/components/invoice/TandaiKirimButton";
+import TandaiKirimButton, { type CourierOption } from "@/components/invoice/TandaiKirimButton";
 import { getFollowUpInvoices, getShippingPriorityInvoices, summarizeFollowUpBySales, shippingUrgency } from "@/lib/dashboard";
 import { rupiah, rupiahCompact } from "@/lib/format";
 import { getSession } from "@/lib/auth/session";
+import { Courier } from "@/models/Courier";
+import { dbConnect } from "@/lib/db";
+
+async function getCouriers(): Promise<CourierOption[]> {
+  await dbConnect();
+  return (await Courier.find().sort({ name: 1 }).lean()).map((c) => ({ _id: String(c._id), name: c.name }));
+}
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +42,7 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
 
   const rows = await getFollowUpInvoices(session);
   const bySales = summarizeFollowUpBySales(rows);
+  const couriers = await getCouriers();
 
   const totalNilai = rows.reduce((s, r) => s + r.sisaTagihan, 0);
   const totalKomisi = rows.reduce((s, r) => s + r.komisiPotensial, 0);
@@ -164,7 +172,13 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
                     <td className="border-b border-line px-5 py-4.5">
                       <div className="flex flex-wrap justify-end gap-2">
                         {r.status !== "draft" && !r.dikirim && (
-                          <TandaiKirimButton invoiceId={r.invoiceId} nomor={r.nomor} />
+                          <TandaiKirimButton
+                            invoiceId={r.invoiceId}
+                            nomor={r.nomor}
+                            customerNama={r.customerNama}
+                            couriers={couriers}
+                            currentKurir={r.kurir}
+                          />
                         )}
                         <Link
                           href={r.status === "draft" ? `/invoice/${r.invoiceId}/ubah` : `/invoice/${r.invoiceId}`}
@@ -196,6 +210,7 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
 /** The "lihat semua" destination for Beranda's "Perlu Dikirim" widget — see the `?view=kirim` doc comment above. Same source/sort as the widget (getShippingPriorityInvoices: Lunas → Sudah DP → Belum Bayar/Draft, then shipping urgency within each tier), just the full list instead of a 6-row teaser. */
 async function PerluDikirimView({ session }: { session: Awaited<ReturnType<typeof getSession>> }) {
   const rows = await getShippingPriorityInvoices(session);
+  const couriers = await getCouriers();
   const overdueCount = rows.filter((r) => shippingUrgency(r.tanggalKirim).tone === "overdue").length;
   const todayCount = rows.filter((r) => shippingUrgency(r.tanggalKirim).tone === "today").length;
   const lunasCount = rows.filter((r) => r.status === "paid").length;
@@ -267,7 +282,15 @@ async function PerluDikirimView({ session }: { session: Awaited<ReturnType<typeo
                         </td>
                         <td className="border-b border-line px-5 py-4.5">
                           <div className="flex flex-wrap justify-end gap-2">
-                            {r.status !== "draft" && <TandaiKirimButton invoiceId={r.invoiceId} nomor={r.nomor} />}
+                            {r.status !== "draft" && (
+                              <TandaiKirimButton
+                                invoiceId={r.invoiceId}
+                                nomor={r.nomor}
+                                customerNama={r.customerNama}
+                                couriers={couriers}
+                                currentKurir={r.kurir}
+                              />
+                            )}
                             <Link
                               href={r.status === "draft" ? `/invoice/${r.invoiceId}/ubah` : `/invoice/${r.invoiceId}`}
                               className="border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"

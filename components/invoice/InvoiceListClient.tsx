@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import DeleteInvoiceButton from "./DeleteInvoiceButton";
-import TandaiKirimButton from "./TandaiKirimButton";
+import TandaiKirimButton, { type CourierOption } from "./TandaiKirimButton";
 import InvoiceDocument from "./InvoiceDocument";
 import InvoicePrintDoc from "./InvoicePrintDoc";
 import { Button } from "@/components/ui/Button";
@@ -84,7 +84,7 @@ type FilterKey = "semua" | InvoiceRowStatus;
  * "Perlu ditindak", had no pill of its own and is gone with no
  * replacement).
  */
-export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
+export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow[]; couriers: CourierOption[] }) {
   const [filter, setFilter] = useState<FilterKey>("semua");
   const [previewId, setPreviewId] = useState<string | null>(null);
   // Preview drawer's "Invoice"/"Surat Jalan"/"Bukti Transfer" tabs —
@@ -260,7 +260,15 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
                 >
                   Preview
                 </button>
-                {r.status !== "draft" && !r.dikirim && <TandaiKirimButton invoiceId={r.id} nomor={r.nomor} />}
+                {r.status !== "draft" && !r.dikirim && (
+                  <TandaiKirimButton
+                    invoiceId={r.id}
+                    nomor={r.nomor}
+                    customerNama={r.custNama}
+                    couriers={couriers}
+                    currentKurir={r.kurir}
+                  />
+                )}
                 {(r.status === "unpaid" || r.status === "dp") && (
                   <>
                     <a

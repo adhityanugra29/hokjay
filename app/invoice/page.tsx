@@ -7,6 +7,7 @@ import type { InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
+import { Courier } from "@/models/Courier";
 import { formatDateShort } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
 import { getSession } from "@/lib/auth/session";
@@ -99,6 +100,9 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       : [];
 
   const invoices = await Invoice.find(filter).sort({ createdAt: -1 });
+
+  // Feeds TandaiKirimButton's Kurir select (see components/invoice/TandaiKirimButton.tsx).
+  const couriers = (await Courier.find().sort({ name: 1 }).lean()).map((c) => ({ _id: String(c._id), name: c.name }));
 
   // Live phone-number lookup for the Preview drawer's document footer —
   // same reasoning as /invoice/[id]'s own salesNomorHp (a number changing
@@ -203,7 +207,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
           />
         </div>
 
-        <InvoiceListClient rows={rows} />
+        <InvoiceListClient rows={rows} couriers={couriers} />
       </div>
     </>
   );
