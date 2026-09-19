@@ -214,3 +214,90 @@ export async function getSlipGaji(salesNama: string): Promise<SlipGaji | null> {
     totalKomisiDiterima,
   };
 }
+
+export interface PayrollHistoryInvoiceRow {
+  invoiceId: string;
+  nomor: string;
+  customerNama: string;
+  tanggalLunas: Date;
+  komisi: number;
+}
+
+export interface PayrollHistoryRow {
+  key: string;
+  tipe: "gaji-sales" | "gaji-karyawan" | "komisi";
+  nama: string;
+  periode: string;
+  total: number;
+  tanggalBayar: Date;
+  dibayarOleh?: string;
+  buktiUrl?: string;
+  catatan?: string;
+  /** Komisi rows only — the invoices whose commission was disbursed in this same payout. */
+  invoices?: PayrollHistoryInvoiceRow[];
+}
+
+/**
+ * Every payroll payment ever made, newest first — Gaji (from GajiPayment,
+ * one row per period) and Komisi (grouped from Invoice's per-invoice
+ * komisiCair flags — there's no dedicated payment record for komisi, so
+ * invoices paid together in the same /api/insentif/bayar batch are grouped
+ * back into one row by sharing sales.nama + komisiCairTanggal +
+ * komisiCairBuktiUrl, the same three values that batch call stamps
+ * identically across every invoice it pays). Backs /payroll/riwayat.
+ */
+export async function getPayrollHistory(): Promise<PayrollHistoryRow[]> {
+  await dbConnect();
+  const [gajiPayments, komisiInvoices] = await Promise.all([
+    GajiPayment.find().sort({ tanggalBayar: -1 }).lean(),
+    Invoice.find({ komisiCair: true }).sort({ komisiCairTanggal: -1 }).lean(),
+  ]);
+
+  const gajiRows: PayrollHistoryRow[] = gajiPayments.map((p) => ({
+    key: String(p._id),
+    tipe: p.tipe as "gaji-sales" | "gaji-karyawan",
+    nama: p.penerimaNama,
+    periode: p.periode,
+    total: p.totalGaji,
+    tanggalBayar: p.tanggalBayar,
+    dibayarOleh: p.dibayarOleh ?? undefined,
+    buktiUrl: p.buktiTransferUrl ?? undefined,
+    catatan: p.catatan ?? undefined,
+  }));
+
+  const batches = new Map<string, PayrollHistoryRow>();
+  for (const inv of komisiInvoices) {
+    const nama = inv.sales?.nama ?? "—";
+    const tanggal = inv.komisiCairTanggal!;
+    const key = `komisi|${nama}|${tanggal.getTime()}|${inv.komisiCairBuktiUrl ?? ""}`;
+    const komisi = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
+
+    let row = batches.get(key);
+    if (!row) {
+      row = {
+        key,
+        tipe: "komisi",
+        nama,
+        periode: `${tanggal.getFullYear()}-${String(tanggal.getMonth() + 1).padStart(2, "0")}`,
+        total: 0,
+        tanggalBayar: tanggal,
+        buktiUrl: inv.komisiCairBuktiUrl ?? undefined,
+        catatan: inv.komisiCairCatatan ?? undefined,
+        invoices: [],
+      };
+      batches.set(key, row);
+    }
+    row.total += komisi;
+    row.invoices!.push({
+      invoiceId: String(inv._id),
+      nomor: inv.nomor,
+      customerNama: inv.customer?.nama ?? "—",
+      tanggalLunas: inv.payment?.tanggalBayar ?? tanggal,
+      komisi,
+    });
+  }
+
+  return [...gajiRows, ...batches.values()].sort(
+    (a, b) => b.tanggalBayar.getTime() - a.tanggalBayar.getTime()
+  );
+}

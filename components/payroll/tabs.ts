@@ -6,4 +6,5 @@ export const PAYROLL_TABS = [
   { href: "/payroll/gaji", label: "Gaji" },
   { href: "/payroll/karyawan", label: "Karyawan" },
   { href: "/payroll/absensi", label: "Absensi" },
+  { href: "/payroll/riwayat", label: "Riwayat" },
 ];

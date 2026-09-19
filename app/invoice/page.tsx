@@ -43,6 +43,12 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
     ];
   }
 
+  // Sales filter — only meaningful for a non-"sales" session; a "sales"
+  // session is already pinned to their own name by invoiceVisibilityFilter
+  // above, so the dropdown isn't even rendered for them (see below).
+  const salesFilter = session?.role !== "sales" && typeof sp.sales === "string" ? sp.sales : undefined;
+  if (salesFilter) filter["sales.nama"] = salesFilter;
+
   const nowJakarta = currentJakartaMonthYear();
 
   // Periode filter — per the user's request 2026-09-04 ("tambahkan di
@@ -83,6 +89,14 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   ]);
   const availableMonths = (periodeAgg[0]?.months ?? []).sort((a, b) => a - b);
   const availableYears = (periodeAgg[0]?.years ?? []).sort((a, b) => b - a);
+
+  // Sales dropdown options — only fetched/shown for non-"sales" sessions
+  // (see salesFilter above); the roster, not just names appearing on
+  // invoices, so a sales rep with zero invoices yet still shows up.
+  const availableSales =
+    session?.role !== "sales"
+      ? (await Sales.find({ aktif: true }).sort({ nama: 1 }).lean()).map((s) => s.nama)
+      : [];
 
   const invoices = await Invoice.find(filter).sort({ createdAt: -1 });
 
@@ -173,9 +187,17 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
                 other URL param otherwise. */}
             {bulan ? <input type="hidden" name="bulan" value={bulan} /> : null}
             {tahun ? <input type="hidden" name="tahun" value={tahun} /> : null}
+            {salesFilter ? <input type="hidden" name="sales" value={salesFilter} /> : null}
             <SearchInput name="search" defaultValue={search as string} placeholder="Cari no. invoice atau pelanggan..." />
           </form>
-          <InvoicePeriodFilter bulan={bulan} tahun={tahun} availableMonths={availableMonths} availableYears={availableYears} />
+          <InvoicePeriodFilter
+            bulan={bulan}
+            tahun={tahun}
+            availableMonths={availableMonths}
+            availableYears={availableYears}
+            sales={salesFilter}
+            availableSales={availableSales}
+          />
         </div>
 
         <InvoiceListClient rows={rows} />

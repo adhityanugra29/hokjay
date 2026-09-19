@@ -470,3 +470,27 @@ Before touching the real pipeline, generated 4 real candidate outputs (not a CSS
 Verified a 2-item dry run first (visually confirmed via the actual downloaded output: large translucent centered mark, product fully visible through it, old small corner mark still present, no collision between the two since they don't overlap spatially) before running the remaining 185. All 187 succeeded, 0 failures.
 
 **Files:** None (data migration only, no application code changed) — `app/api/upload/route.ts` from the main fix above is what every NEW upload already used; this follow-up only touched already-stored `Product.fotoUrl` values.
+
+---
+
+## TASK-023 — Payroll Riwayat Pembayaran + Invoice Sales filter + Riwayat Stok Baru/Bekas label
+
+**Type:** Feature
+**Priority:** P2
+**Status:** DONE (2026-09-19)
+**Dependency:** None
+**Created:** 2026-09-19 · **Last updated:** 2026-09-19
+
+**Description:** Three small, independent asks from the same session, previewed as an HTML mockup artifact before coding ("kita buat plan untuk payroll... munculkan history yang sudah dibayar" + "lalu di invoice, tambahkan filter sales", followed mid-build by "di bagian inventory, riwayat stock masuk / keluar, tolong tambahkan lagi di sebelah tipe, yaitu label barang Baru / Bekas").
+
+**1. Payroll → new "Riwayat" tab (`/payroll/riwayat`, admin-only).** Research surfaced that Payroll actually has two separate payment concepts with no shared history: **Gaji** (base salary, one `GajiPayment` row per period — already had "sudah dibayar" tracking, just no cross-period list view) and **Komisi** (no dedicated payment record at all — `/api/insentif/bayar` just flips `komisiCair: true` on each selected Invoice, sharing the same `komisiCairTanggal`/`komisiCairBuktiUrl` across the batch). The new page combines both: `getPayrollHistory()` (`lib/payroll.ts`) lists every `GajiPayment` plus Komisi payouts re-grouped from `Invoice.find({komisiCair:true})` by `(sales.nama, komisiCairTanggal, komisiCairBuktiUrl)` back into one row per batch. Komisi rows get a "N invoice ›" Detail action opening a right-docked drawer (Nomor/Customer/Tgl Lunas/Komisi per invoice) — same drawer pattern already used by `BayarKomisiSheet.tsx`'s own unpaid-commission Detail pop-up, just built from paid data instead. Gaji rows show "—" for Detail (not invoice-backed) and "—" for Dibayar Oleh on Komisi rows (that actor isn't tracked on `Invoice.komisiCair*` today — a real data-model gap, not a UI oversight, left out-of-scope for this task).
+
+**2. Invoice list → Sales filter.** New `sales` URL param, server-side (same pattern as the existing `bulan`/`tahun` filter, not the client-side status-pill filter) — `InvoicePeriodFilter.tsx` gained an optional third `<Select>` sourced from the active `Sales` roster (`Sales.find({aktif:true})`, not just names already appearing on invoices, so a rep with zero invoices yet still shows up). Dropdown is entirely omitted for a `role:"sales"` session — `invoiceVisibilityFilter` already pins them to their own `sales.nama` server-side, so the filter would have nothing to do.
+
+**3. Inventory → Riwayat Stok "Baru/Bekas" label.** `StockMovement` doesn't snapshot `Product.kondisi`, so `app/produk/(list)/riwayat/page.tsx` now does a small batch lookup (`Product.find({_id:{$in:...}}).select("kondisi")`) and renders a green "Baru"/amber "Bekas" badge next to the existing Masuk/Keluar Tipe pill — read live off the product (not snapshotted), matching the same green `#16A34A`/amber `#D97706` colors already used for this exact label everywhere else (`ProductCard.tsx`, `AddProductSidebar.tsx`, `MobileProdukList.tsx`).
+
+**Files affected:** `lib/payroll.ts` (`getPayrollHistory`), `app/payroll/riwayat/page.tsx` (new), `components/payroll/RiwayatPembayaranClient.tsx` (new), `components/payroll/tabs.ts`, `components/ui/Pill.tsx` (`komisi`/`gaji` variants), `app/invoice/page.tsx`, `components/invoice/InvoicePeriodFilter.tsx`, `app/produk/(list)/riwayat/page.tsx`.
+
+**Regression test:** Clean `tsc --noEmit`, clean `eslint` on every changed file, clean `next build` (all routes compiled, including the new `/payroll/riwayat`). Could not exercise either new page against real logged-in session data in a browser this session (no test credentials available here) — build-time compilation is the verification on record; **manual click-through in the browser with a real admin/owner login is still recommended before calling this fully verified.**
+
+**Mobile:** Both new/changed tables reuse `TableScroll` (`overflow-x-auto`) and the existing `PanelHead`/filter-row flex-wrap patterns already proven responsive elsewhere (e.g. `/produk/riwayat`) — not verified live on an actual small viewport this session.

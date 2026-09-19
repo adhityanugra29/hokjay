@@ -5,6 +5,8 @@ const CLASS: Record<string, string> = {
   paid: "bg-[#d7f2e6] text-[#087a52]",
   unpaid: "bg-[#fdead0] text-[#a5620a]",
   draft: "bg-[#e9e5f5] text-[#4a3d8f]",
+  komisi: "bg-accent text-ink",
+  gaji: "bg-accent-100 text-accent-700",
 };
 
 export type PillVariant = keyof typeof CLASS;

@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-19
+
+**TASK-023 done** — Payroll gained a "Riwayat" tab (`/payroll/riwayat`) combining Gaji payment history (`GajiPayment`) with Komisi payouts re-grouped from `Invoice.komisiCair` batches (no dedicated payment record existed for Komisi before this — invoice-level detail drawer added to see which invoices a payout covered). Invoice list gained a server-side Sales filter (hidden for `role:"sales"` sessions, already locked to their own name). Inventory's Riwayat Stok masuk/keluar table gained a Baru/Bekas label next to Tipe, read live off `Product.kondisi`.
+
+Tasks: TASK-023.
+Regression: `tsc --noEmit` clean, `eslint` clean on all changed files, `next build` clean (all routes compiled). No live browser click-through with a real session — recommended before treating as fully verified.
+
+---
+
 ## 2026-09-18
 
 **BUG-020 fixed** — Invoice PDF/preview never marked a DP invoice as "LUNAS" once fully paid, and kept showing "Sisa Tagihan" with the old unpaid balance forever after — not a caching bug (both are generated live), but two real gaps: no "LUNAS" label logic existed anywhere, and the DP/"Sisa Tagihan" row was keyed off the permanent `dpNominal` history field rather than current payment status (`payInvoice.ts` never clears `dp` when it flips `status` to `"paid"`). Added an `isPaid` flag to `InvoicePrintData`, populated at both places it's built (list/Preview-drawer path and detail path). Both templates now show a small "LUNAS" badge next to the invoice number when paid, and "Sisa Tagihan" shows Rp 0 instead of the stale remainder.

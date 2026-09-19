@@ -34,6 +34,8 @@ export default function InvoicePeriodFilter({
   tahun,
   availableMonths,
   availableYears,
+  sales,
+  availableSales,
 }: {
   bulan?: number;
   tahun?: number;
@@ -41,17 +43,22 @@ export default function InvoicePeriodFilter({
   availableMonths: number[];
   /** Years that actually have at least one invoice, already sorted newest-first. */
   availableYears: number[];
+  /** Currently selected sales.nama, or undefined for "Semua Sales". Omitted entirely (no dropdown rendered) for a "sales" session — invoiceVisibilityFilter already pins their own invoices, so the filter has nothing left to do. */
+  sales?: string;
+  availableSales?: string[];
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  function update(nextBulan?: number, nextTahun?: number) {
+  function update(nextBulan?: number, nextTahun?: number, nextSales?: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (nextBulan) params.set("bulan", String(nextBulan));
     else params.delete("bulan");
     if (nextTahun) params.set("tahun", String(nextTahun));
     else params.delete("tahun");
+    if (nextSales) params.set("sales", nextSales);
+    else params.delete("sales");
     router.push(`${pathname}?${params.toString()}`);
   }
 
@@ -72,7 +79,7 @@ export default function InvoicePeriodFilter({
     <Fragment>
       <Select
         value={bulan ?? ""}
-        onChange={(e) => update(e.target.value ? Number(e.target.value) : undefined, tahun)}
+        onChange={(e) => update(e.target.value ? Number(e.target.value) : undefined, tahun, sales)}
         className={selectCls}
       >
         <option value="">Semua Bulan</option>
@@ -86,7 +93,7 @@ export default function InvoicePeriodFilter({
       </Select>
       <Select
         value={tahun ?? ""}
-        onChange={(e) => update(bulan, e.target.value ? Number(e.target.value) : undefined)}
+        onChange={(e) => update(bulan, e.target.value ? Number(e.target.value) : undefined, sales)}
         className={selectCls}
       >
         <option value="">Semua Tahun</option>
@@ -96,6 +103,20 @@ export default function InvoicePeriodFilter({
           </option>
         ))}
       </Select>
+      {availableSales && availableSales.length > 0 && (
+        <Select
+          value={sales ?? ""}
+          onChange={(e) => update(bulan, tahun, e.target.value || undefined)}
+          className={selectCls}
+        >
+          <option value="">Semua Sales</option>
+          {availableSales.map((nama) => (
+            <option key={nama} value={nama}>
+              {nama}
+            </option>
+          ))}
+        </Select>
+      )}
     </Fragment>
   );
 }

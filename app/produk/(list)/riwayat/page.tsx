@@ -3,6 +3,7 @@ import Pill from "@/components/ui/Pill";
 import SortableHeader from "@/components/ui/SortableHeader";
 import { dbConnect } from "@/lib/db";
 import { StockMovement } from "@/models/StockMovement";
+import { Product } from "@/models/Product";
 import { formatDateShort } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
 
@@ -20,6 +21,14 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
   if (search) filter.productNameSnapshot = { $regex: search, $options: "i" };
 
   const movements = await StockMovement.find(filter).sort(mongoSort(field, dir)).limit(200);
+
+  // Baru/Bekas label next to Tipe — per the user's request 2026-09-19
+  // ("supaya terlihat"). Read live off Product.kondisi (not snapshotted on
+  // StockMovement) since it's a slow-changing product attribute, same
+  // reasoning as app/invoice/page.tsx's live salesPhoneByNama lookup.
+  const productIds = [...new Set(movements.map((m) => String(m.product)))];
+  const products = await Product.find({ _id: { $in: productIds } }).select("kondisi").lean();
+  const kondisiByProductId = new Map(products.map((p) => [String(p._id), p.kondisi]));
 
   const basePath = "/produk/riwayat";
   const headers: { label: string; key: (typeof SORT_FIELDS)[number]; align?: "right" }[] = [
@@ -67,7 +76,21 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
                 </td>
                 <td className="border-b border-line px-5 py-4.5">{m.productNameSnapshot}</td>
                 <td className="border-b border-line px-5 py-4.5">
-                  {m.tipe === "masuk" ? <Pill variant="ok">Masuk</Pill> : <Pill variant="out">Keluar</Pill>}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {m.tipe === "masuk" ? <Pill variant="ok">Masuk</Pill> : <Pill variant="out">Keluar</Pill>}
+                    {(() => {
+                      const kondisi = kondisiByProductId.get(String(m.product));
+                      if (!kondisi) return null;
+                      return (
+                        <span
+                          className="inline-block px-2.5 py-1 font-sans text-[0.68rem] font-semibold text-white"
+                          style={{ background: kondisi === "bekas" ? "#D97706" : "#16A34A" }}
+                        >
+                          {kondisi === "bekas" ? "Bekas" : "Baru"}
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </td>
                 <td className="border-b border-line px-5 py-4.5 text-right font-mono text-[0.8rem]">
                   {m.tipe === "masuk" ? "+" : "-"}
