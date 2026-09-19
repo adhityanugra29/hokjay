@@ -15,6 +15,8 @@ import { isAllowedPage } from "@/lib/auth/access";
 import { rupiah, rupiahCompact } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
 import { MONTH_NAMES } from "@/lib/constants";
+import { Courier } from "@/models/Courier";
+import TandaiKirimButton from "@/components/invoice/TandaiKirimButton";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +48,7 @@ export default async function DashboardPage() {
     lowStockSuggestions,
     mySummary,
     myDormant,
+    couriersRaw,
   ] = await Promise.all([
     getFollowUpInvoices(session),
     getShippingPriorityInvoices(session),
@@ -58,7 +61,12 @@ export default async function DashboardPage() {
     getLowStockSuggestions(),
     isSales && session ? getMyCommissionSummary(session.nama, currentPeriod()) : null,
     isSales && session ? getMyDormantCustomers(session.nama, 3) : [],
+    // Feeds TandaiKirimButton's Kurir select — per the user's request
+    // 2026-09-19 ("di dashboard, kenapa ga ada tandai sudah dikirim?"),
+    // added to the "Perlu Dikirim" widget alongside "Lihat".
+    Courier.find().sort({ name: 1 }).lean(),
   ]);
+  const couriers = couriersRaw.map((c) => ({ _id: String(c._id), name: c.name }));
   const recentActivityCount = activity.filter((a) => Date.now() - a.tanggal.getTime() < 24 * 60 * 60 * 1000).length;
 
   const draftCount = followUpAll.filter((i) => i.status === "draft").length;
@@ -501,12 +509,24 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                   </div>
-                  <Link
-                    href={inv.status === "draft" ? `/invoice/${inv.invoiceId}/ubah` : `/invoice/${inv.invoiceId}`}
-                    className="rounded-full border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
-                  >
-                    {inv.status === "draft" ? "Lanjutkan" : "Lihat"}
-                  </Link>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {inv.status !== "draft" && (
+                      <TandaiKirimButton
+                        invoiceId={inv.invoiceId}
+                        nomor={inv.nomor}
+                        customerNama={inv.customerNama}
+                        couriers={couriers}
+                        currentKurir={inv.kurir}
+                        className="cursor-pointer rounded-full border border-ink bg-ink px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent no-underline hover:bg-ink/85"
+                      />
+                    )}
+                    <Link
+                      href={inv.status === "draft" ? `/invoice/${inv.invoiceId}/ubah` : `/invoice/${inv.invoiceId}`}
+                      className="rounded-full border border-accent px-3 py-1.5 font-sans text-[0.7rem] font-semibold text-accent-700 no-underline hover:bg-accent hover:text-ink"
+                    >
+                      {inv.status === "draft" ? "Lanjutkan" : "Lihat"}
+                    </Link>
+                  </div>
                 </div>
               ))}
 

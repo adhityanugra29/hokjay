@@ -34,7 +34,7 @@ export default function FollowUpStatusBadge({ status }: { status: "draft" | "unp
             ? "Lunas"
             : "Sepi";
   return (
-    <span className={`border px-2 py-0.5 font-sans text-[0.62rem] font-semibold uppercase tracking-wide ${style}`}>
+    <span className={`whitespace-nowrap border px-2 py-0.5 font-sans text-[0.62rem] font-semibold uppercase tracking-wide ${style}`}>
       {label}
     </span>
   );

@@ -13,6 +13,8 @@ Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live br
 
 **TASK-026 follow-up 5** — "Tandai Sudah Kirim" rebuilt as a modal form (Tanggal Dikirim + Kurir, both defaulted) instead of a bare confirm() click, matching the HTML mockup the user had approved (the deployed version didn't match — reported via screenshot). A changed Kurir here replaces `Invoice.kurir` itself, so it flows through to the PDF/preview automatically.
 
+**TASK-026 follow-up 6** — Added the "Tandai Sudah Kirim" button to Beranda's desktop "Perlu Dikirim" widget too (deliberately left off before, never actually confirmed). Fixed a real pre-existing bug the user spotted in a screenshot: `FollowUpStatusBadge` ("Belum Bayar" etc.) had no `whitespace-nowrap`, so it wrapped onto two lines in narrow table columns.
+
 Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live browser click-through.
 
 ---

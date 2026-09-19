@@ -8,7 +8,9 @@
 
 ## CURRENT TASK
 
-None active — TASK-027 (Pelanggan: search+Kota filter on the list, status pill on the per-customer invoice history) and TASK-026's follow-up 5 ("Tandai Sudah Kirim" rebuilt as a Tanggal+Kurir modal, matching the approved mockup) are both DONE, build/lint/typecheck clean, not yet click-tested live.
+None active — TASK-027 (Pelanggan filters) and TASK-026's follow-ups 5-6 ("Tandai Sudah Kirim" modal + added to Beranda's admin widget + a real `whitespace-nowrap` badge-wrap bugfix) are all DONE, build/lint/typecheck clean, not yet click-tested live.
+
+Known gap left open: "Tandai Sudah Kirim" is NOT yet on Beranda's Sales "Dikejar hari ini" card — that array's row shape doesn't carry `invoiceId`/`kurir` cleanly (mixes invoice + dormant-customer rows), needs a small restructure. Not yet asked for explicitly, but worth expecting.
 
 TASK-002's Purchasing/Payroll/Admin sweep (see IN PROGRESS below) is still the last known open thread from the Foundry rework if the user wants to resume it.
 
@@ -20,6 +22,7 @@ A large amount of feature/bugfix work has landed since the last full rewrite of 
 
 ## LAST COMPLETED
 
+- **TASK-026 follow-up 6** — Added "Tandai Sudah Kirim" to Beranda's desktop admin "Perlu Dikirim" widget (was deliberately left off, never actually confirmed). Fixed a real pre-existing bug: `FollowUpStatusBadge` wrapped onto two lines ("BELUM"/"BAYAR") in narrow columns — missing `whitespace-nowrap`. Not yet click-tested live.
 - **TASK-026 follow-up 5** — "Tandai Sudah Kirim" rebuilt as a modal (Tanggal Dikirim + Kurir, both defaulted) — the deployed single-click confirm() version didn't match the approved mockup. Changing Kurir here replaces `Invoice.kurir`, flowing into the PDF/preview automatically. Not yet click-tested live.
 - **TASK-027** — Pelanggan list gained search (nama/kode) + Kota filter; per-customer invoice history gained a status pill filter (Draft/Belum Bayar/Lunas). Fixed a latent bug where an empty search result wrongly showed the "add your first customer" empty state. Not yet click-tested live.
 - **TASK-026** (+ 4 same-day follow-ups) — Invoice "Catatan" free-text field, shown on Invoice/Bukti Transfer AND Surat Jalan PDFs/previews. Beranda's "Perlu Ditindak" widget reframed as "Perlu Dikirim" — sorted first by payment tier (Lunas → Sudah DP → Belum Bayar/Draft), then by `tanggalKirim` shipping urgency within each tier, applied to all 4 admin/sales × desktop/mobile surfaces. Tanggal Pengiriman no longer defaults to H+3. "Stok tipis" row removed from the reframed desktop widget. "Lihat semua" leads to the full list (`/follow-up?view=kirim`) — `/follow-up`'s default view untouched (still needed by Komisi Saya's "Tagih yang tertahan"). **Real "Tandai Sudah Kirim" trigger added** (follow-up 4) — new `dikirim`/`tanggalDikirimAktual`/`dikirimOleh` fields on Invoice + `PATCH /api/invoices/[id]/kirim` + a shared `TandaiKirimButton` wired into the Invoice list, both `/follow-up` views, and the invoice detail page; once clicked, an invoice actually drops out of "Perlu Dikirim" everywhere (the 14-day paid-invoice lookback from follow-up 2 is kept as a second signal, not replaced — lets the historical backlog age out on its own without a risky bulk migration). Earlier parts screenshot-confirmed live by the user; the Tandai Sudah Kirim trigger itself has not yet been click-tested live.
