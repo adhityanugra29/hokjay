@@ -3,6 +3,7 @@ import { Invoice } from "@/models/Invoice";
 import { Product } from "@/models/Product";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { invoiceVisibilityFilter } from "@/lib/invoice-visibility";
+import { formatDateShort } from "@/lib/format";
 import type { SessionPayload } from "@/lib/auth/jwt";
 
 export type HotBadge = "terlaris" | "stok" | "insentif";
@@ -92,6 +93,39 @@ export interface FollowUpInvoiceRow {
   sisaTagihan: number;
   komisiPotensial: number;
   hariBerjalan: number;
+  /** Invoice.tanggalKirim, unformatted — feeds shippingUrgency() below. Undefined when never set. */
+  tanggalKirim?: Date;
+}
+
+export type ShippingTone = "overdue" | "today" | "soon" | "later" | "none";
+
+export interface ShippingUrgency {
+  label: string;
+  tone: ShippingTone;
+  /** Ascending sort key — overdue first (more negative = more overdue), then soonest upcoming, "none" (no date set) always last. */
+  sortKey: number;
+}
+
+/**
+ * Reframes Beranda's "Perlu Ditindak" widget around WHEN an invoice needs to
+ * ship, not how long it's been unpaid — per the user's request 2026-09-19
+ * ("itu datanya perlu diganti menjadi kapan harus dikirim?"), confirmed via
+ * an HTML mockup before building. Shared by every Beranda surface (desktop
+ * admin/sales cards, mobile rows) so the four render paths can't drift out
+ * of sync on what counts as "besok" vs "terlambat".
+ */
+export function shippingUrgency(tanggalKirim?: Date | string | null): ShippingUrgency {
+  if (!tanggalKirim) return { label: "Belum Dijadwalkan", tone: "none", sortKey: Number.MAX_SAFE_INTEGER };
+  const kirim = new Date(tanggalKirim);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const kirimDay = new Date(kirim.getFullYear(), kirim.getMonth(), kirim.getDate());
+  const diffDays = Math.round((kirimDay.getTime() - today.getTime()) / 86_400_000);
+
+  if (diffDays < 0) return { label: `Terlambat ${-diffDays} hari`, tone: "overdue", sortKey: diffDays };
+  if (diffDays === 0) return { label: "Kirim Hari Ini", tone: "today", sortKey: 0 };
+  if (diffDays === 1) return { label: "Besok", tone: "soon", sortKey: 1 };
+  return { label: `Kirim ${formatDateShort(kirimDay)}`, tone: "later", sortKey: diffDays };
 }
 
 export interface FollowUpSalesSummary {
@@ -137,6 +171,7 @@ export async function getFollowUpInvoices(session?: SessionPayload | null): Prom
       sisaTagihan: inv.grandTotal - (inv.dp?.nominal ?? 0),
       komisiPotensial,
       hariBerjalan,
+      tanggalKirim: inv.tanggalKirim ?? undefined,
     };
   });
 }

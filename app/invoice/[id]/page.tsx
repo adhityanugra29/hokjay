@@ -46,6 +46,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     shipAddress: invoice.shipAddress ?? undefined,
     tanggalKirim: invoice.tanggalKirim ? invoice.tanggalKirim.toISOString() : undefined,
     kurir: invoice.kurir ?? undefined,
+    catatan: invoice.catatan ?? undefined,
     salesNama: invoice.sales!.nama,
     salesNomorHp,
     items: invoice.items.map((item) => ({

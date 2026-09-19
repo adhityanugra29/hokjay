@@ -142,6 +142,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       dpNominal: inv.dp?.nominal ?? undefined,
       dpTanggal: inv.dp?.tanggal ? inv.dp.tanggal.toISOString() : undefined,
       isPaid: inv.status === "paid",
+      catatan: inv.catatan ?? undefined,
       // Feeds the Preview drawer's "Bukti Transfer" tab (TASK-016) — see
       // InvoicePrintData's own doc comment for why this is only populated
       // here, not on /invoice/[id].

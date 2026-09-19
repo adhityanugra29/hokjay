@@ -8,9 +8,9 @@
 
 ## CURRENT TASK
 
-None active — TASK-025 (Pelanggan optional fields, Invoice Provinsi/Kota unlocked + persisted, Katalog edit-drawer stale-cache fix) just finished, build/lint/typecheck clean, not yet click-tested live in a browser. TASK-002's Purchasing/Payroll/Admin sweep (see IN PROGRESS below) is still the last known open thread from the Foundry rework if the user wants to resume it.
+None active — TASK-026 (Invoice Catatan field + PDF, Beranda "Perlu Dikirim" reframe across all 4 surfaces, Tanggal Pengiriman no longer defaults) just finished, build/lint/typecheck clean, not yet click-tested live in a browser. TASK-002's Purchasing/Payroll/Admin sweep (see IN PROGRESS below) is still the last known open thread from the Foundry rework if the user wants to resume it.
 
-Queued from the same session, not yet built: (1) Invoice "Note" field + shown on PDF — plan requested by the user, not yet presented. (2) Beranda's "Perlu Ditindak" section — user wants it changed to "kapan harus dikirim?" (shipping-due framing); HTML mockup requested before coding. (3) Invoice's "Tanggal Pengiriman" should no longer default to H+3 — straightforward, no mockup needed.
+Open question left unresolved from TASK-026: a "Tandai Kirim" (mark-as-shipped) action was floated in the Beranda mockup but deliberately not built — there's no shipped/not-shipped status on Invoice separate from payment status today, so this would be a real new feature (new schema field + endpoint), not a relabel. Flagged to the user, not yet answered.
 
 ## CURRENT STATUS
 
@@ -20,6 +20,7 @@ A large amount of feature/bugfix work has landed since the last full rewrite of 
 
 ## LAST COMPLETED
 
+- **TASK-026** — Invoice "Catatan" free-text field, shown on Invoice/Bukti Transfer AND Surat Jalan PDFs/previews. Beranda's "Perlu Ditindak" widget reframed as "Perlu Dikirim" — sorted/labeled by `tanggalKirim` shipping urgency (new `shippingUrgency()` helper, `lib/dashboard.ts`) instead of days-unpaid, applied to all 4 admin/sales × desktop/mobile surfaces per the user's "diterapkan di keduanya" confirmation. Tanggal Pengiriman no longer defaults to H+3. Not yet click-tested live.
 - **TASK-025** — Pelanggan's Nama Toko/Usaha + Jenis Usaha are now optional (were required). Invoice's Provinsi/Kota unlocked (were disabled/auto-fill-only, never even saved) — now editable and persisted as real fields on Invoice. Katalog pencil-edit drawer no longer needs a manual page reload to show updated fields — fixed the actual root cause (KatalogClient's infinite-scroll list living in client state that router.refresh() never reached), not a workaround. Not yet click-tested live.
 - **TASK-024** — Inventory "% Komisi" column on Semua Produk + Riwayat Stok (resolved rate + sub-label explaining why: flat barang baru / override produk / default kategori / default global), triggered by a real support question that needed a manual DB query to answer (silent per-product commission override, no UI visibility before this). `getEffectiveKomisiInfo()` in `lib/commission.ts`. Live values, not historical snapshots. Not yet click-tested live.
 - **TASK-023** — Payroll "Riwayat" tab (Gaji `GajiPayment` history + Komisi payouts re-grouped from `Invoice.komisiCair` batches, with an invoice-level Detail drawer for Komisi rows — Komisi had no payment-history view of any kind before this). Invoice list's Sales filter (server-side URL param, hidden for `role:"sales"` sessions since they're already locked to their own invoices). Riwayat Stok's Tipe column gained a Baru/Bekas label read live off `Product.kondisi`. Previewed as an HTML mockup artifact first. Not yet click-tested with a real login in a browser — build/typecheck/lint clean only.

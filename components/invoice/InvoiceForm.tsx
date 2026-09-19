@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FormCard, FormSection, FormCardActions } from "@/components/ui/FormSection";
-import { Field, FormGrid, Input, Select, CurrencyInput } from "@/components/ui/Form";
+import { Field, FormGrid, Input, Select, CurrencyInput, Textarea } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/components/cart/CartProvider";
 import { useDialog } from "@/components/ui/Dialog";
@@ -31,14 +31,6 @@ interface CourierOption {
   name: string;
 }
 
-// Tanggal Pengiriman defaults to H+3 (today + 3 days) on a fresh invoice —
-// per the user's request 2026-08-25.
-function defaultTanggalKirim(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 3);
-  return d.toISOString().slice(0, 10);
-}
-
 export interface InvoiceFormInitial {
   customerId?: string;
   salesId?: string;
@@ -49,6 +41,7 @@ export interface InvoiceFormInitial {
   shipAddress?: string;
   provinsi?: string;
   kota?: string;
+  catatan?: string;
 }
 
 export default function InvoiceForm({
@@ -119,13 +112,16 @@ export default function InvoiceForm({
   // typed value is what actually gets saved on the invoice from here on.
   const [provinsi, setProvinsi] = useState(initial?.provinsi ?? "");
   const [kota, setKota] = useState(initial?.kota ?? "");
+  // Free-text note, shown on the printed Invoice/Bukti Transfer AND Surat
+  // Jalan — per the user's request 2026-09-19.
+  const [catatan, setCatatan] = useState(initial?.catatan ?? "");
   const [salesId, setSalesId] = useState(initial?.salesId ?? "");
   const [tanggalInvoice, setTanggalInvoice] = useState(
     initial?.tanggalInvoice ?? new Date().toISOString().slice(0, 10)
   );
-  const [tanggalKirim, setTanggalKirim] = useState(
-    initial?.tanggalKirim ?? (mode === "create" ? defaultTanggalKirim() : "")
-  );
+  // No longer defaults to H+3 — per the user's request 2026-09-19
+  // ("jangan lagi dibuat default"), reversing the 2026-08-25 default.
+  const [tanggalKirim, setTanggalKirim] = useState(initial?.tanggalKirim ?? "");
   const [kurirId, setKurirId] = useState(initial?.kurirId ?? "");
   const [ongkosKirim, setOngkosKirim] = useState(initial?.ongkosKirim ?? 0);
   const [saving, setSaving] = useState(false);
@@ -156,6 +152,7 @@ export default function InvoiceForm({
         shipAddress: string;
         provinsi: string;
         kota: string;
+        catatan: string;
         salesId: string;
         tanggalInvoice: string;
         tanggalKirim: string;
@@ -166,6 +163,7 @@ export default function InvoiceForm({
       if (draft.shipAddress) setShipAddress(draft.shipAddress);
       if (draft.provinsi) setProvinsi(draft.provinsi);
       if (draft.kota) setKota(draft.kota);
+      if (draft.catatan) setCatatan(draft.catatan);
       if (draft.salesId) setSalesId(draft.salesId);
       if (draft.tanggalInvoice) setTanggalInvoice(draft.tanggalInvoice);
       if (draft.tanggalKirim) setTanggalKirim(draft.tanggalKirim);
@@ -188,6 +186,7 @@ export default function InvoiceForm({
           shipAddress,
           provinsi,
           kota,
+          catatan,
           salesId,
           tanggalInvoice,
           tanggalKirim,
@@ -198,7 +197,19 @@ export default function InvoiceForm({
     } catch {
       // storage full/unavailable — this is a convenience, not critical
     }
-  }, [draftKey, customerId, shipAddress, provinsi, kota, salesId, tanggalInvoice, tanggalKirim, kurirId, ongkosKirim]);
+  }, [
+    draftKey,
+    customerId,
+    shipAddress,
+    provinsi,
+    kota,
+    catatan,
+    salesId,
+    tanggalInvoice,
+    tanggalKirim,
+    kurirId,
+    ongkosKirim,
+  ]);
 
   // Logged in as sales (or manager — manager is treated as a sales rep
   // with extra authority, same as the Katalog/Leaderboard/Komisi Saya
@@ -405,6 +416,7 @@ export default function InvoiceForm({
           shipAddress,
           provinsi: provinsi || undefined,
           kota: kota || undefined,
+          catatan: catatan || undefined,
           salesId: sales._id,
           salesNama: sales.nama,
           tanggalInvoice: tanggalInvoice || undefined,
@@ -637,6 +649,16 @@ export default function InvoiceForm({
             value={String(ongkosKirim)}
             onChange={(v) => setOngkosKirim(v ? Number(v) : 0)}
             placeholder="0"
+          />
+        </Field>
+        {/* Shown on the printed Invoice/Bukti Transfer AND Surat Jalan —
+            per the user's request 2026-09-19. */}
+        <Field label="Catatan (opsional)" span2>
+          <Textarea
+            value={catatan}
+            onChange={(e) => setCatatan(e.target.value)}
+            placeholder="Instruksi khusus, catatan pengiriman, dll."
+            rows={2}
           />
         </Field>
       </FormGrid>

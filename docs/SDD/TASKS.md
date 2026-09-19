@@ -540,3 +540,27 @@ Deliberately **live, not a historical snapshot** — Riwayat Stok's % reflects t
 **Regression test:** Clean `tsc --noEmit` (one pre-existing type error fixed as a side effect of making `namaToko`/`jenisUsaha` optional), clean `eslint` on every changed file (two `react-hooks/set-state-in-effect` errors surfaced in `InvoiceForm.tsx` during lint — confirmed via `git stash` to be pre-existing on unrelated lines, not introduced by this change, left as-is/out of scope), clean `next build`. No live browser click-through — recommended before treating as fully verified, same caveat as TASK-023/024.
 
 **Mobile:** No new UI surfaces added (Provinsi/Kota were already in the existing invoice form grid, Nama Toko/Jenis Usaha labels unchanged in layout) — existing responsive behavior untouched.
+
+---
+
+## TASK-026 — Invoice Catatan field (+ PDF), Beranda "Perlu Dikirim" reframe, Tanggal Pengiriman no longer defaults
+
+**Type:** Feature
+**Priority:** P2
+**Status:** DONE (2026-09-19)
+**Dependency:** None
+**Created:** 2026-09-19 · **Last updated:** 2026-09-19
+
+**Description:** Three more asks from the same long session. The Beranda reframe was previewed as an HTML mockup (before/after comparison) before coding, per the user's explicit request; the Catatan field got a written plan (no visual mockup needed — no new UI shape, just a field). Confirmed to proceed with "oke proses" + "diterapkan di keduanya" (both Invoice/Surat Jalan for Catatan, and both mobile/desktop + admin/sales for the Beranda reframe).
+
+**1. Invoice "Catatan" field, shown on Invoice/Bukti Transfer AND Surat Jalan.** New top-level `catatan` field on `models/Invoice.ts` (distinct from the existing `dp.catatan`/`payment.catatan`, which are specific to one payment event, not a general note) — free-text `Textarea` in `InvoiceForm.tsx`, threaded through `CreateInvoiceInput`/`createInvoice.ts`/`updateInvoice.ts`, added to the shared `InvoicePrintData` type (`lib/invoiceDisplay.ts`) and rendered identically in both print/preview components (`InvoicePrintDoc.tsx` for the actual PDF capture, `InvoiceDocument.tsx` for the on-screen preview/Preview-drawer view) — same insertion point in both (between the totals block and the Payment Details/closing-logo row), shown for every mode including `surat-jalan`. Absent entirely (no empty box) when blank.
+
+**2. Beranda "Perlu Ditindak" → "Perlu Dikirim".** Was sorted/labeled by how long an invoice had been unpaid (days since created, sisa tagihan shown); `Invoice.tanggalKirim` existed on the schema but was never surfaced anywhere on Beranda. New shared `shippingUrgency()` helper (`lib/dashboard.ts`) buckets every draft/unpaid invoice into Terlambat N hari (overdue, red) / Kirim Hari Ini / Besok / Kirim {date} / Belum Dijadwalkan (no `tanggalKirim` set — sorts last), applied consistently across all four Beranda render paths so they can't drift: desktop admin card (title renamed "Perlu Dikirim", `needsAction` now sorted by shipping urgency instead of a `followUpAll` slice), desktop Sales card ("Dikejar hari ini", `myUnpaid` re-sorted + subtitle relabeled), mobile admin aggregate row (title "N invoice perlu dikirim", customer names in the subtitle now the two most shipping-urgent instead of arbitrary order, its red-border `urgent` flag now reflects actual overdue/today shipping status instead of always true), mobile Sales rows (same relabel + urgency-based `urgent` flag). `getFollowUpInvoices()`'s own return order is left untouched (still createdAt-ascending) since it also powers `/follow-up`, which wasn't in scope — the re-sort happens only in `app/page.tsx` on a local copy. **Deliberately scoped out:** a new "Tandai Kirim" (mark-as-shipped) action floated in the mockup — there's no shipped/not-shipped status separate from payment status anywhere in the data model today, and adding one is a real feature, not a relabel; existing "Lihat"/"Lanjutkan" actions kept as-is. Flagged to the user as an open question, not silently dropped.
+
+**3. Invoice's "Tanggal Pengiriman" no longer defaults to H+3.** Reverses the 2026-08-25 default (`defaultTanggalKirim()`, now deleted) — the field starts empty on a new invoice, per the user's explicit request 2026-09-19 ("jangan lagi dibuat default").
+
+**Files affected:** `models/Invoice.ts`, `lib/invoiceDisplay.ts`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`, `components/invoice/InvoiceForm.tsx`, `components/invoice/InvoicePrintDoc.tsx`, `components/invoice/InvoiceDocument.tsx`, `app/invoice/page.tsx`, `app/invoice/[id]/page.tsx`, `app/invoice/[id]/ubah/page.tsx`, `lib/dashboard.ts`, `app/page.tsx`.
+
+**Regression test:** Clean `tsc --noEmit`, clean `eslint` on every changed file (one new `react-hooks/purity` error surfaced in `app/page.tsx` — confirmed via `git stash` to be pre-existing on an unrelated line, `Date.now()` in `recentActivityCount`, not introduced by this change), clean `next build`. No live browser click-through — recommended before treating as fully verified, same caveat as every task earlier this session.
+
+**Mobile:** All 4 Beranda urgency rows (2 mobile, 2 desktop) updated together, not just desktop — per the user's explicit "diterapkan di keduanya" confirmation. Not verified live on an actual small viewport.

@@ -187,6 +187,15 @@ export default function InvoiceDocument({
         </div>
       )}
 
+      {/* Free-text invoice note — shown on both Invoice AND Surat Jalan
+          previews, per the user's request 2026-09-19. */}
+      {invoice.catatan && (
+        <div className="mt-5 border-t border-line pt-4 font-mono text-[0.8rem] leading-relaxed whitespace-pre-line">
+          <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Catatan</div>
+          {invoice.catatan}
+        </div>
+      )}
+
       {/* Payment Details + closing logo/thank-you note side by side, same
           row — per the user's request 2026-08-27. break-inside-avoid keeps
           it from being split across a page boundary when printed. Surat

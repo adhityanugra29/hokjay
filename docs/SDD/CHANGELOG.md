@@ -6,6 +6,13 @@
 
 ## 2026-09-19
 
+**TASK-026 done** — Invoice gained a free-text "Catatan" field, shown on both the Invoice/Bukti Transfer and Surat Jalan PDFs/previews. Beranda's "Perlu Ditindak" widget reframed as "Perlu Dikirim" — sorted and labeled by shipping due date (Terlambat/Kirim Hari Ini/Besok/tanggal/Belum Dijadwalkan) instead of days-unpaid, applied consistently across all 4 admin/sales × desktop/mobile surfaces. Invoice's "Tanggal Pengiriman" no longer defaults to H+3 — starts empty.
+
+Tasks: TASK-026.
+Regression: `tsc --noEmit` clean, `eslint` clean (one pre-existing unrelated error confirmed via `git stash`), `next build` clean. No live browser click-through — recommended before treating as fully verified.
+
+---
+
 **TASK-025 done** — Three fixes: (1) Pelanggan's "Nama Toko/Usaha" and "Jenis Usaha" are now optional, not required. (2) Invoice's Provinsi/Kota fields are editable again (were locked/auto-filled-only since 2026-08-25) and now actually persist on the invoice (new `provinsi`/`kota` fields on `Invoice`, previously these were display-only and discarded). (3) Fixed a real bug: editing a product via Katalog's pencil-icon drawer didn't update its price/fields on the grid until a manual page reload — root cause was `KatalogClient.tsx`'s infinite-scroll product list living in client state that `router.refresh()` never reached; now patches the edited card in place via a new `GET /api/katalog?id=...` lookup.
 
 Tasks: TASK-025.

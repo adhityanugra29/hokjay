@@ -36,6 +36,8 @@ export interface InvoicePrintData {
   shipAddress?: string;
   tanggalKirim?: string;
   kurir?: string;
+  /** Free-text invoice note — shown on both Invoice/Bukti Transfer and Surat Jalan printouts. Per the user's request 2026-09-19. */
+  catatan?: string;
   salesNama: string;
   salesNomorHp?: string;
   items: InvoicePrintItem[];

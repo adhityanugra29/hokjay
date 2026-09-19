@@ -67,6 +67,11 @@ const InvoiceSchema = new Schema(
     // time but saved independently, same pattern as shipAddress above.
     provinsi: { type: String },
     kota: { type: String },
+    // Free-text note, shown on the printed Invoice/Bukti Transfer AND Surat
+    // Jalan — per the user's request 2026-09-19. Distinct from
+    // dp.catatan/payment.catatan above, which are specific to one payment
+    // event, not a general invoice-level note.
+    catatan: { type: String },
 
     sales: {
       ref: { type: Schema.Types.ObjectId, ref: "Sales" },

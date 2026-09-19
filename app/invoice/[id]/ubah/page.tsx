@@ -123,6 +123,7 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
             shipAddress: invoice.shipAddress ?? undefined,
             provinsi: invoice.provinsi ?? invoiceCustomer?.provinsi ?? undefined,
             kota: invoice.kota ?? invoiceCustomer?.kota ?? undefined,
+            catatan: invoice.catatan ?? undefined,
           }}
           customers={customers.map((c) => ({
             _id: String(c._id),

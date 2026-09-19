@@ -5,7 +5,7 @@ import Logo from "@/components/layout/Logo";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { dbConnect } from "@/lib/db";
 import { currentPeriod, getSalesRanking, getMyCommissionSummary } from "@/lib/insentif";
-import { getFollowUpInvoices, getLowStockProducts } from "@/lib/dashboard";
+import { getFollowUpInvoices, getLowStockProducts, shippingUrgency } from "@/lib/dashboard";
 import { getMyDormantCustomers } from "@/lib/pelanggan";
 import { getKeuanganSummary, getCurrentCashBalance } from "@/lib/keuangan";
 import { getActivityLog } from "@/lib/activity";
@@ -63,7 +63,17 @@ export default async function DashboardPage() {
 
   const draftCount = followUpAll.filter((i) => i.status === "draft").length;
   const unpaidCount = followUpAll.filter((i) => i.status === "unpaid").length;
-  const needsAction = followUpAll.slice(0, lowStock.length > 0 ? 5 : 6);
+  // "Perlu Ditindak" reframed around WHEN an invoice needs to ship, not how
+  // long it's been unpaid — per the user's request 2026-09-19 ("itu
+  // datanya perlu diganti menjadi kapan harus dikirim?"), applied to every
+  // Beranda surface (desktop admin/sales, mobile rows — confirmed
+  // "diterapkan di keduanya" 2026-09-19). Overdue-shipping invoices sort
+  // first, then soonest-upcoming, undated ones last — see
+  // lib/dashboard.ts's shippingUrgency.
+  const byShippingUrgency = [...followUpAll].sort(
+    (a, b) => shippingUrgency(a.tanggalKirim).sortKey - shippingUrgency(b.tanggalKirim).sortKey
+  );
+  const needsAction = byShippingUrgency.slice(0, lowStock.length > 0 ? 5 : 6);
   const totalNeedsAction = followUpAll.length + (lowStock.length > 0 ? 1 : 0);
 
   const penjualanBulanIni = ranking.reduce((s, r) => s + r.totalPenjualan, 0);
@@ -75,7 +85,10 @@ export default async function DashboardPage() {
   // Sales rep's own numbers, derived from data already fetched above — no
   // extra queries needed. "Peringkat saya" reuses the same getSalesRanking
   // call the desktop leaderboard-adjacent stats use.
-  const myUnpaid = followUpAll.filter((i) => i.status === "unpaid" && i.salesNama === session?.nama);
+  // Shipping-urgency-sorted (see byShippingUrgency above) — own unpaid
+  // invoices need to surface the same "what ships next" priority the admin
+  // widget does.
+  const myUnpaid = byShippingUrgency.filter((i) => i.status === "unpaid" && i.salesNama === session?.nama);
   const myDraft = followUpAll.filter((i) => i.status === "draft" && i.salesNama === session?.nama);
   const myRankIndex = ranking.findIndex((r) => r.salesNama === session?.nama);
   const myPenjualanBulanIni = ranking.find((r) => r.salesNama === session?.nama)?.totalPenjualan ?? 0;
@@ -98,7 +111,7 @@ export default async function DashboardPage() {
       key: `inv-${inv.invoiceId}`,
       badgeStatus: inv.hasDp ? ("dp" as const) : ("unpaid" as const),
       title: inv.customerNama,
-      subtitle: `${inv.nomor} · ${rupiah(inv.sisaTagihan)} · ${inv.hariBerjalan} hari`,
+      subtitle: `${inv.nomor} · ${rupiah(inv.sisaTagihan)} · ${shippingUrgency(inv.tanggalKirim).label}`,
       actionLabel: "Lihat",
       actionHref: `/invoice/${inv.invoiceId}`,
     })),
@@ -126,16 +139,17 @@ export default async function DashboardPage() {
   // the data model yet, skipped per the user's explicit confirmation
   // 2026-08-26 rather than inventing placeholder data.
   const salesUrgentRows: { key: string; title: string; subtitle: string; nilai?: number; href: string; urgent: boolean }[] = [
-    ...myUnpaid.slice(0, 3).map((inv) => ({
-      key: `inv-${inv.invoiceId}`,
-      title: inv.hasDp
-        ? `${inv.customerNama} · sudah DP · ${inv.hariBerjalan} hari`
-        : `${inv.customerNama} · ${inv.hariBerjalan} hari belum bayar`,
-      subtitle: `${inv.nomor} · komisi ${rupiahCompact(inv.komisiPotensial)}`,
-      nilai: inv.sisaTagihan,
-      href: `/invoice/${inv.invoiceId}`,
-      urgent: true,
-    })),
+    ...myUnpaid.slice(0, 3).map((inv) => {
+      const urgency = shippingUrgency(inv.tanggalKirim);
+      return {
+        key: `inv-${inv.invoiceId}`,
+        title: inv.hasDp ? `${inv.customerNama} · sudah DP · ${urgency.label}` : `${inv.customerNama} · ${urgency.label}`,
+        subtitle: `${inv.nomor} · komisi ${rupiahCompact(inv.komisiPotensial)}`,
+        nilai: inv.sisaTagihan,
+        href: `/invoice/${inv.invoiceId}`,
+        urgent: urgency.tone === "overdue" || urgency.tone === "today",
+      };
+    }),
     ...myDraft.slice(0, 2).map((inv) => ({
       key: `draft-${inv.invoiceId}`,
       title: `Draft ${inv.customerNama}`,
@@ -155,15 +169,18 @@ export default async function DashboardPage() {
 
   // "7a" mobile — up to 4 urgency rows, worst (red border) first, matching
   // the mockup's category set where the app actually has the data for it.
+  // The "invoice" row reframed around shipping urgency (byShippingUrgency),
+  // same as the desktop widgets above — per the user's request 2026-09-19.
+  const unpaidByShippingUrgency = byShippingUrgency.filter((i) => i.status === "unpaid");
   const genericUrgentRows = [
     unpaidCount > 0
       ? {
           key: "invoice",
-          title: `${unpaidCount} invoice menunggu dibayar`,
-          subtitle: followUpAll.filter((i) => i.status === "unpaid").slice(0, 2).map((i) => i.customerNama).join(", ") + (unpaidCount > 2 ? `, +${unpaidCount - 2}` : ""),
+          title: `${unpaidCount} invoice perlu dikirim`,
+          subtitle: unpaidByShippingUrgency.slice(0, 2).map((i) => i.customerNama).join(", ") + (unpaidCount > 2 ? `, +${unpaidCount - 2}` : ""),
           nilai: belumTertagih,
           href: "/follow-up",
-          urgent: true,
+          urgent: ["overdue", "today"].includes(shippingUrgency(unpaidByShippingUrgency[0]?.tanggalKirim).tone),
         }
       : null,
     canSeePurchasing && purchasingSummary && purchasingSummary.poTelatCount > 0
@@ -437,7 +454,7 @@ export default async function DashboardPage() {
         <div className="px-6 pt-8 pb-6 md:px-9">
           <div className="flex items-baseline justify-between gap-2.5 border-b border-line pb-2.5">
             <div className="font-sans text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
-              {isSales ? "Dikejar hari ini" : "Perlu ditindak"} — {isSales ? salesNeedsAction.length : totalNeedsAction} hal
+              {isSales ? "Dikejar hari ini" : "Perlu Dikirim"} — {isSales ? salesNeedsAction.length : totalNeedsAction} hal
             </div>
             {!isSales && (
               <Link href="/follow-up" className="font-sans text-[0.75rem] text-accent-700 no-underline hover:underline">
@@ -474,7 +491,7 @@ export default async function DashboardPage() {
                     <div>
                       <div className="font-sans text-[0.95rem] font-bold">{inv.customerNama}</div>
                       <div className="mt-0.5 font-sans text-[0.75rem] text-muted">
-                        {inv.nomor} · {rupiah(inv.sisaTagihan)} · sales {inv.salesNama}
+                        {inv.nomor} · {shippingUrgency(inv.tanggalKirim).label} · sales {inv.salesNama}
                       </div>
                     </div>
                   </div>
