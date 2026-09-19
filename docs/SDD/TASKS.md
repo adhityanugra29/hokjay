@@ -683,3 +683,29 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Files affected:** `components/invoice/InvoiceListClient.tsx` (removed the unused `toWaPhone` import along with the Kirim WA link).
 
 **Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. No live browser click-through — recommended before treating as fully verified.
+
+**Follow-up (2026-09-20, same day) — the "dropped entirely" reading was wrong.** The user immediately corrected it: "tandai lunas dan tandai sudah dikirim itu betul, tapi mana 3 titiknya untuk button yang lain? tolong cepat perbaiki" — Kirim WA/Edit/Hapus were meant to stay reachable from the list via a "⋯" overflow menu, not be dropped to the detail page entirely. Added back: a per-row `openMenuId` state in `InvoiceListClient.tsx`, a small "⋯" icon button next to Tandai Lunas/Tandai Sudah Kirim (unpaid/DP rows only — draft and paid rows are unaffected, their button sets didn't have this problem), opening an absolutely-positioned dropdown (Kirim WA / Edit / Hapus, Hapus still gated on `sisaTagihan == null` exactly as before) with a full-screen invisible backdrop `<div>` to close on outside click. `toWaPhone` re-imported.
+
+**Files (this follow-up):** `components/invoice/InvoiceListClient.tsx`.
+
+---
+
+## TASK-031 — Syarat & Ketentuan moved to its own Admin tab; per-line form; real backfill bug fixed
+
+**Type:** Bug fix / UX
+**Priority:** P2
+**Status:** DONE (2026-09-20)
+**Dependency:** TASK-029 (added the field originally, under Keuangan)
+**Created:** 2026-09-20 · **Last updated:** 2026-09-20
+
+**Description:** Three related requests in quick succession.
+
+**1. Moved out of Keuangan.** "modul syarat dan ketentuan jangan taro di keuangan, taro saja di invoice" — new `/admin/invoice` tab (added to `ADMIN_TABS`, `app/admin/layout.tsx`) now hosts `PengaturanSyaratKetentuan`; `/admin/keuangan` goes back to just `PengaturanKeuangan`. Kept under the same `MANAGER_BLOCKED_ADMIN_PREFIXES` restriction it already had on Keuangan (`lib/auth/access.ts`) — not widened or narrowed without being asked.
+
+**2. Per-line form.** "dibuat rapih, baris 1, baris 2, baris 3 dst, supaya lebih mudah dan bisa lebih rapih nanti untuk pengaplikasian ke invoicenya" — `PengaturanSyaratKetentuan.tsx` rebuilt from one freeform `<Textarea>` into a list of individual `<Input>`s, one per point, each labeled "Baris N" with its own remove (✕) button, plus "+ Tambah Baris". Still saved/loaded as the same one newline-joined string on the API/model side (`Pengaturan.syaratKetentuan` unchanged) — only this form's own presentation changed, so each editable row now maps 1:1 to the numbered point that actually prints on the invoice.
+
+**3. Real bug: S&K wasn't appearing on the PDF at all.** "syarat dan ketentuan belum ada di pdf, kamu bohong" — investigated and confirmed a genuine bug, not a deploy-timing issue: the `Pengaturan` singleton document has existed since 2026-08-20 (Kas Awal only), predating `syaratKetentuan`'s addition in TASK-029. A Mongoose schema `default` only applies when a document is newly **created** — it never retroactively appears on a document already sitting in the database (same class of gap as `Customer.kota`/`provinsi`, see that model's own doc comment). So every read of the singleton (`app/api/pengaturan/route.ts`'s `GET`, and both `app/invoice/page.tsx`/`app/invoice/[id]/page.tsx` querying it directly) got `syaratKetentuan: undefined` — the settings form looked empty and no invoice ever printed a Syarat & Ketentuan section. Fixed at the data source with a one-off backfill (`db.collection("pengaturans").updateOne({_id:"singleton", syaratKetentuan:{$exists:false}}, {$set:{syaratKetentuan: DEFAULT_SYARAT_KETENTUAN}})`, run directly, not left as a script in the repo — same one-off-script convention as TASK-022's watermark retrofit) so every existing read path picks it up immediately, **plus** a permanent self-heal in `GET /api/pengaturan` (backfills `syaratKetentuan` on-the-fly if a fetched doc is still missing it) as a safety net against the same class of bug recurring for a future field added the same way.
+
+**Files affected:** `app/admin/layout.tsx`, `app/admin/keuangan/page.tsx`, `app/admin/invoice/page.tsx` (new), `lib/auth/access.ts`, `components/admin/PengaturanSyaratKetentuan.tsx`, `app/api/pengaturan/route.ts`.
+
+**Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. Backfill verified directly against the database (queried the singleton doc before and after — confirmed the field was genuinely missing, then confirmed it was set). No live browser click-through of the actual PDF output — recommended before treating as fully verified.

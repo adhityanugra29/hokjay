@@ -11,7 +11,7 @@ import { useInvoicePdfDownload } from "./useInvoicePdfDownload";
 import { useDialog } from "@/components/ui/Dialog";
 import ZoomableImage from "@/components/katalog/ZoomableImage";
 import type { InvoicePrintData } from "./InvoicePrintDoc";
-import { rupiah, formatDateShort } from "@/lib/format";
+import { rupiah, toWaPhone, formatDateShort } from "@/lib/format";
 
 export type InvoiceRowStatus = "unpaid" | "dp" | "draft" | "paid";
 
@@ -87,6 +87,11 @@ type FilterKey = "semua" | InvoiceRowStatus;
 export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow[]; couriers: CourierOption[] }) {
   const [filter, setFilter] = useState<FilterKey>("semua");
   const [previewId, setPreviewId] = useState<string | null>(null);
+  // "⋯" overflow menu (Kirim WA / Edit / Hapus) — per the user's request
+  // 2026-09-20 ("mana 3 titiknya untuk button yang lain?"): the 2 main
+  // buttons (Tandai Lunas / Tandai Sudah Kirim) stay directly visible,
+  // everything else that used to sit alongside them moves behind this.
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   // Preview drawer's "Invoice"/"Surat Jalan"/"Bukti Transfer" tabs —
   // TASK-016 (2026-09-07) added Invoice/Bukti Transfer; "Surat Jalan"
   // added 2026-09-08 per the user's request, so a Surat Jalan can be
@@ -252,19 +257,19 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                         : ""}
                 </div>
               </div>
-              {/* Simplified to a max of 2 buttons per row — per the user's
-                  request 2026-09-19 ("terlalu banyak button sampai ada 6
-                  maximal, boleh kah kamu buat 2 button saja"), refined to
-                  an exact rule the same session: belum lunas & belum
+              {/* Max 2 main buttons per row — per the user's request
+                  2026-09-19 ("terlalu banyak button sampai ada 6 maximal,
+                  boleh kah kamu buat 2 button saja"): belum lunas & belum
                   dikirim -> Tandai Lunas + Tandai Sudah Kirim; sudah lunas
-                  -> Preview only. Kirim WA/Edit/Hapus dropped from the list
-                  entirely, not lost — all three are still on the invoice
-                  detail page (InvoiceActions.tsx / "Ubah Invoice" /
-                  DeleteInvoiceButton in app/invoice/[id]/page.tsx). Draft
-                  is a separate lifecycle stage this rule doesn't cover
-                  (there's no "Tandai Lunas" for something not even
-                  finalized yet) — kept as-is. */}
-              <div className="flex flex-wrap justify-end gap-2">
+                  -> Preview only. Kirim WA/Edit/Hapus moved behind a "⋯"
+                  overflow menu (2026-09-20 correction — "mana 3 titiknya
+                  untuk button yang lain?": these were meant to stay
+                  reachable from the list itself via a menu, not dropped
+                  to the detail page entirely). Draft is a separate
+                  lifecycle stage this rule doesn't cover (no "Tandai
+                  Lunas" for something not even finalized yet) — kept
+                  as-is. */}
+              <div className="relative flex flex-wrap items-center justify-end gap-2">
                 {r.status === "draft" && (
                   <>
                     <DeleteInvoiceButton invoiceId={r.id} nomor={r.nomor} />
@@ -292,6 +297,43 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                         couriers={couriers}
                         currentKurir={r.kurir}
                       />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setOpenMenuId(openMenuId === r.id ? null : r.id)}
+                      aria-label="Aksi lainnya"
+                      className="flex h-[30px] w-[30px] cursor-pointer items-center justify-center border border-line text-[0.9rem] text-ink hover:border-accent hover:text-accent-700"
+                    >
+                      ⋯
+                    </button>
+                    {openMenuId === r.id && (
+                      <>
+                        {/* Backdrop — closes the menu on outside click, sits below the menu itself. */}
+                        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+                        <div className="absolute top-full right-0 z-20 mt-1.5 w-44 border border-line bg-panel shadow-lg">
+                          <a
+                            href={`https://wa.me/${toWaPhone(r.custWhatsapp)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block border-b border-line px-3.5 py-2.5 font-sans text-[0.78rem] font-semibold text-ink no-underline hover:bg-surface"
+                          >
+                            Kirim WA
+                          </a>
+                          <Link
+                            href={`/invoice/${r.id}/ubah`}
+                            className="block border-b border-line px-3.5 py-2.5 font-sans text-[0.78rem] font-semibold text-ink no-underline hover:bg-surface"
+                          >
+                            Edit
+                          </Link>
+                          {r.sisaTagihan == null && (
+                            <DeleteInvoiceButton
+                              invoiceId={r.id}
+                              nomor={r.nomor}
+                              className="block w-full cursor-pointer px-3.5 py-2.5 text-left font-sans text-[0.78rem] font-semibold text-danger hover:bg-surface"
+                            />
+                          )}
+                        </div>
+                      </>
                     )}
                   </>
                 )}

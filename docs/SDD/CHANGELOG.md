@@ -15,9 +15,11 @@ Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live br
 
 **TASK-026 follow-up 6** — Added the "Tandai Sudah Kirim" button to Beranda's desktop "Perlu Dikirim" widget too (deliberately left off before, never actually confirmed). Fixed a real pre-existing bug the user spotted in a screenshot: `FollowUpStatusBadge` ("Belum Bayar" etc.) had no `whitespace-nowrap`, so it wrapped onto two lines in narrow table columns.
 
-**TASK-030 done** — Invoice list's per-row action buttons simplified from up to 6 down to a max of 2: unpaid/DP not-yet-shipped shows Tandai Lunas + Tandai Sudah Kirim, already-shipped shows just Tandai Lunas, paid shows just Preview. Kirim WA/Edit/Hapus dropped from the list (still reachable on the invoice detail page).
+**TASK-031 done** — Fixed a real bug: Syarat & Ketentuan never actually appeared on any Invoice PDF, because the `Pengaturan` singleton document predates that field and Mongoose schema defaults don't retroactively backfill an existing document. Fixed at the data source (one-off backfill) plus a permanent self-heal in `GET /api/pengaturan`. Also moved the Syarat & Ketentuan settings out of the Keuangan tab into its own new "Invoice" tab under Admin, and rebuilt the form from one freeform textarea into one input per line ("Baris 1", "Baris 2", ...) so it maps directly to what prints on the invoice.
 
-Tasks: TASK-030.
+**TASK-030 done (+ same-day correction)** — Invoice list's per-row action buttons simplified from up to 6 down to a max of 2 main buttons: unpaid/DP not-yet-shipped shows Tandai Lunas + Tandai Sudah Kirim, already-shipped shows just Tandai Lunas, paid shows just Preview. Correction same day: Kirim WA/Edit/Hapus were first dropped to the detail page entirely, then brought back onto the list itself behind a "⋯" overflow menu per the user's immediate feedback ("mana 3 titiknya untuk button yang lain?").
+
+Tasks: TASK-030, TASK-031.
 Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live browser click-through.
 
 **TASK-029 done** — Leaderboard Sales gained a small "Estimasi Sales" line per sales (from this period's DP'd/belum lunas invoices — never affects ranking, which stays Lunas-only; no commission figure alongside it, dropped for privacy after the user caught it mid-review). Invoice PDF/preview's small "LUNAS" badge replaced with a big, centered, translucent diagonal watermark (repeats on every page for multi-page invoices). Invoice gained a "Syarat & Ketentuan" section, editable from Pengaturan (`/admin/keuangan`), justified text with generous line spacing, shown on both Invoice and Surat Jalan.

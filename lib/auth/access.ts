@@ -88,7 +88,12 @@ export const MANAGER_BLOCKED_PREFIXES = ["/akuntansi", "/payroll", "/bayar-tagih
 // the tab list this maps to. Checked as its own list rather than folded
 // into MANAGER_BLOCKED_PREFIXES since "/admin" itself needs to stay ALLOWED
 // while only these sub-tabs are blocked.
-export const MANAGER_BLOCKED_ADMIN_PREFIXES = ["/admin/user", "/admin/keuangan", "/admin/akun"];
+// "/admin/invoice" (2026-09-20) — Syarat & Ketentuan settings, moved out
+// of "/admin/keuangan" into its own tab per the user's request ("jangan
+// taro di keuangan, taro saja di invoice"); kept under the same
+// Manager-blocked restriction it already had there, not widened or
+// narrowed without being asked.
+export const MANAGER_BLOCKED_ADMIN_PREFIXES = ["/admin/user", "/admin/keuangan", "/admin/akun", "/admin/invoice"];
 
 // Akun Login (2026-09-04): Owner/Super Admin only, enforced at the API
 // layer too (app/api/admin/users/**), not just the UI tab above — a raw

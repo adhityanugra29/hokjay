@@ -10,6 +10,7 @@ const ADMIN_TABS = [
   { href: "/admin/kurir", label: "Kurir" },
   { href: "/admin/pembayaran", label: "Metode Pembayaran" },
   { href: "/admin/keuangan", label: "Keuangan" },
+  { href: "/admin/invoice", label: "Invoice" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

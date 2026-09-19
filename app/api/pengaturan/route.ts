@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
-import { Pengaturan } from "@/models/Pengaturan";
+import { Pengaturan, DEFAULT_SYARAT_KETENTUAN } from "@/models/Pengaturan";
 import { postKasAwal } from "@/lib/services/journal";
 
 export async function GET() {
   await dbConnect();
   const doc = (await Pengaturan.findById("singleton")) ?? (await Pengaturan.create({ _id: "singleton" }));
+  // Backfill for the singleton doc that already existed (since 2026-08-20,
+  // Kas Awal only) before `syaratKetentuan` was added — a Mongoose schema
+  // `default` only applies when a document is newly CREATED, never
+  // retroactively to one already sitting in the database (same class of
+  // gap as Customer's kota/provinsi, see models/Customer.ts's own doc
+  // comment). Without this, both this settings form and every Invoice PDF
+  // silently saw an empty Syarat & Ketentuan forever. Self-heals once,
+  // here, rather than needing a one-off migration script.
+  if (doc.syaratKetentuan === undefined) {
+    doc.syaratKetentuan = DEFAULT_SYARAT_KETENTUAN;
+    await doc.save();
+  }
   return NextResponse.json(doc);
 }
 
