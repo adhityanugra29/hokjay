@@ -185,7 +185,7 @@ export default async function DashboardPage() {
             shippingNonDraft.slice(0, 2).map((i) => i.customerNama).join(", ") +
             (shippingNonDraft.length > 2 ? `, +${shippingNonDraft.length - 2}` : ""),
           nilai: shippingNonDraft.reduce((s, i) => s + i.sisaTagihan, 0),
-          href: "/follow-up",
+          href: "/follow-up?view=kirim",
           urgent: ["overdue", "today"].includes(shippingUrgency(shippingNonDraft[0]?.tanggalKirim).tone),
         }
       : null,
@@ -463,7 +463,7 @@ export default async function DashboardPage() {
               {isSales ? "Dikejar hari ini" : "Perlu Dikirim"} — {isSales ? salesNeedsAction.length : totalNeedsAction} hal
             </div>
             {!isSales && (
-              <Link href="/follow-up" className="font-sans text-[0.75rem] text-accent-700 no-underline hover:underline">
+              <Link href="/follow-up?view=kirim" className="font-sans text-[0.75rem] text-accent-700 no-underline hover:underline">
                 lihat semua →
               </Link>
             )}
