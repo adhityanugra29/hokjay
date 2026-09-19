@@ -8,7 +8,11 @@
 // status DP nya jangan belum bayar"). Same blue already used for this exact
 // state on Katalog's product badges (ProductCard.tsx's "Sudah DP" pill),
 // so the color means the same thing everywhere in the app.
-export default function FollowUpStatusBadge({ status }: { status: "draft" | "unpaid" | "dp" | "sepi" }) {
+//
+// "paid" (2026-09-19) — a fully-paid invoice that still shows up on
+// Beranda's "Perlu Dikirim" widget (see getShippingPriorityInvoices) reads
+// as "Lunas", same green already used for "paid" everywhere else (Pill.tsx).
+export default function FollowUpStatusBadge({ status }: { status: "draft" | "unpaid" | "dp" | "paid" | "sepi" }) {
   const style =
     status === "draft"
       ? "border-yellow-400 bg-yellow-50 text-yellow-700"
@@ -16,8 +20,19 @@ export default function FollowUpStatusBadge({ status }: { status: "draft" | "unp
         ? "border-red-400 bg-red-50 text-red-700"
         : status === "dp"
           ? "border-[#0369A1]/40 bg-[#0369A1]/10 text-[#0369A1]"
-          : "border-line bg-surface text-muted";
-  const label = status === "draft" ? "Draft" : status === "unpaid" ? "Belum Bayar" : status === "dp" ? "Sudah DP" : "Sepi";
+          : status === "paid"
+            ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+            : "border-line bg-surface text-muted";
+  const label =
+    status === "draft"
+      ? "Draft"
+      : status === "unpaid"
+        ? "Belum Bayar"
+        : status === "dp"
+          ? "Sudah DP"
+          : status === "paid"
+            ? "Lunas"
+            : "Sepi";
   return (
     <span className={`border px-2 py-0.5 font-sans text-[0.62rem] font-semibold uppercase tracking-wide ${style}`}>
       {label}

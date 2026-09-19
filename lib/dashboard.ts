@@ -180,6 +180,78 @@ export async function getFollowUpInvoices(session?: SessionPayload | null): Prom
   });
 }
 
+export interface ShippingRow extends Omit<FollowUpInvoiceRow, "status"> {
+  status: "draft" | "unpaid" | "paid";
+}
+
+/** How many days overdue on tanggalKirim a PAID invoice can still be and count as "still needs shipping" — beyond this it's assumed already shipped and dropped, since there's no real shipped/not-shipped flag to check (see getShippingPriorityInvoices's own doc comment). Draft/unpaid invoices aren't capped this way — an unpaid invoice staying unpaid for a long time is still genuinely something to act on. */
+const SHIPPING_PAID_LOOKBACK_DAYS = 14;
+
+function shippingPaymentTier(row: { status: string; hasDp: boolean }): number {
+  if (row.status === "paid") return 0;
+  if (row.hasDp) return 1;
+  return 2;
+}
+
+/**
+ * Beranda's "Perlu Dikirim" widget's real source — getFollowUpInvoices's
+ * draft/unpaid rows PLUS paid invoices that still look like they need
+ * shipping, merged and sorted Lunas-first, then Sudah DP, then Belum Bayar/
+ * Draft (per the user's request 2026-09-19: "utamakan yang sudah lunas
+ * dulu setelah itu yang sudah DP"), with shippingUrgency as the tiebreaker
+ * within each payment tier.
+ *
+ * Paid invoices are excluded from getFollowUpInvoices entirely (payment
+ * follow-up is done once paid), and this app has no separate "sudah
+ * dikirim" flag — once paid, there's no signal left for whether it has
+ * physically shipped yet or not. Confirmed with the user: include a paid
+ * invoice here only while its tanggalKirim is still "relevant" (unset, due
+ * today/soon, or overdue by at most SHIPPING_PAID_LOOKBACK_DAYS) — a paid
+ * invoice overdue by more than that is assumed to have already shipped
+ * long ago and is left out, so this list can't silently fill up with old,
+ * already-completed orders forever.
+ */
+export async function getShippingPriorityInvoices(session?: SessionPayload | null): Promise<ShippingRow[]> {
+  await dbConnect();
+  const [followUp, paidInvoices] = await Promise.all([
+    getFollowUpInvoices(session),
+    Invoice.find({
+      status: "paid",
+      ...invoiceVisibilityFilter(session),
+      $or: [
+        { tanggalKirim: { $exists: false } },
+        { tanggalKirim: null },
+        { tanggalKirim: { $gte: new Date(Date.now() - SHIPPING_PAID_LOOKBACK_DAYS * 86_400_000) } },
+      ],
+    }),
+  ]);
+
+  const paidRows: ShippingRow[] = paidInvoices.map((inv) => {
+    const komisiPotensial = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
+    const baseDate = inv.tanggalInvoice ?? inv.get("createdAt");
+    const hariBerjalan = Math.max(0, Math.floor((Date.now() - new Date(baseDate).getTime()) / 86_400_000));
+    return {
+      invoiceId: String(inv._id),
+      nomor: inv.nomor,
+      status: "paid",
+      hasDp: false,
+      customerNama: inv.customer?.nama || "—",
+      salesNama: inv.sales?.nama ?? "—",
+      grandTotal: inv.grandTotal,
+      sisaTagihan: 0,
+      komisiPotensial,
+      hariBerjalan,
+      tanggalKirim: inv.tanggalKirim ?? undefined,
+    };
+  });
+
+  return [...followUp, ...paidRows].sort((a, b) => {
+    const tierDiff = shippingPaymentTier(a) - shippingPaymentTier(b);
+    if (tierDiff !== 0) return tierDiff;
+    return shippingUrgency(a.tanggalKirim).sortKey - shippingUrgency(b.tanggalKirim).sortKey;
+  });
+}
+
 export interface LowStockProduct {
   _id: string;
   name: string;

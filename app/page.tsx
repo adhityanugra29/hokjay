@@ -5,7 +5,7 @@ import Logo from "@/components/layout/Logo";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { dbConnect } from "@/lib/db";
 import { currentPeriod, getSalesRanking, getMyCommissionSummary } from "@/lib/insentif";
-import { getFollowUpInvoices, shippingUrgency } from "@/lib/dashboard";
+import { getFollowUpInvoices, getShippingPriorityInvoices, shippingUrgency } from "@/lib/dashboard";
 import { getMyDormantCustomers } from "@/lib/pelanggan";
 import { getKeuanganSummary, getCurrentCashBalance } from "@/lib/keuangan";
 import { getActivityLog } from "@/lib/activity";
@@ -36,6 +36,7 @@ export default async function DashboardPage() {
 
   const [
     followUpAll,
+    shippingRows,
     ranking,
     keuangan,
     activity,
@@ -47,6 +48,7 @@ export default async function DashboardPage() {
     myDormant,
   ] = await Promise.all([
     getFollowUpInvoices(session),
+    getShippingPriorityInvoices(session),
     getSalesRanking(currentPeriod()),
     getKeuanganSummary(thisMonthRange),
     getActivityLog(50),
@@ -65,14 +67,12 @@ export default async function DashboardPage() {
   // long it's been unpaid — per the user's request 2026-09-19 ("itu
   // datanya perlu diganti menjadi kapan harus dikirim?"), applied to every
   // Beranda surface (desktop admin/sales, mobile rows — confirmed
-  // "diterapkan di keduanya" 2026-09-19). Overdue-shipping invoices sort
-  // first, then soonest-upcoming, undated ones last — see
-  // lib/dashboard.ts's shippingUrgency.
-  const byShippingUrgency = [...followUpAll].sort(
-    (a, b) => shippingUrgency(a.tanggalKirim).sortKey - shippingUrgency(b.tanggalKirim).sortKey
-  );
-  const needsAction = byShippingUrgency.slice(0, 6);
-  const totalNeedsAction = followUpAll.length;
+  // "diterapkan di keduanya" 2026-09-19), then further prioritized
+  // Lunas-first, then Sudah DP, then Belum Bayar/Draft ("utamakan yang
+  // sudah lunas dulu setelah itu yang sudah DP", 2026-09-19) — see
+  // lib/dashboard.ts's getShippingPriorityInvoices, already sorted.
+  const needsAction = shippingRows.slice(0, 6);
+  const totalNeedsAction = shippingRows.length;
 
   const penjualanBulanIni = ranking.reduce((s, r) => s + r.totalPenjualan, 0);
   const belumTertagih = followUpAll.filter((i) => i.status === "unpaid").reduce((s, i) => s + i.sisaTagihan, 0);
@@ -83,11 +83,15 @@ export default async function DashboardPage() {
   // Sales rep's own numbers, derived from data already fetched above — no
   // extra queries needed. "Peringkat saya" reuses the same getSalesRanking
   // call the desktop leaderboard-adjacent stats use.
-  // Shipping-urgency-sorted (see byShippingUrgency above) — own unpaid
-  // invoices need to surface the same "what ships next" priority the admin
-  // widget does.
-  const myUnpaid = byShippingUrgency.filter((i) => i.status === "unpaid" && i.salesNama === session?.nama);
+  const myUnpaid = followUpAll.filter((i) => i.status === "unpaid" && i.salesNama === session?.nama);
   const myDraft = followUpAll.filter((i) => i.status === "draft" && i.salesNama === session?.nama);
+  // Own portion of shippingRows, Lunas/DP/Belum-Bayar prioritized then
+  // shipping-urgency-sorted — powers the Sales "Dikejar hari ini" widgets
+  // below (replacing myUnpaid there; myUnpaid itself stays a plain unpaid
+  // count for the unrelated commission/"Order jalan" stats further down).
+  // Draft excluded — myDraft below already renders those with their own
+  // "Lanjutkan" action, would otherwise double up.
+  const myShipping = shippingRows.filter((r) => r.status !== "draft" && r.salesNama === session?.nama);
   const myRankIndex = ranking.findIndex((r) => r.salesNama === session?.nama);
   const myPenjualanBulanIni = ranking.find((r) => r.salesNama === session?.nama)?.totalPenjualan ?? 0;
   const myBelumTertagih = myUnpaid.reduce((s, i) => s + i.sisaTagihan, 0);
@@ -99,17 +103,17 @@ export default async function DashboardPage() {
   // has the room to show all of it.
   const salesNeedsAction: {
     key: string;
-    badgeStatus: "draft" | "unpaid" | "dp" | "sepi";
+    badgeStatus: "draft" | "unpaid" | "dp" | "paid" | "sepi";
     title: string;
     subtitle: string;
     actionLabel: string;
     actionHref: string;
   }[] = [
-    ...myUnpaid.map((inv) => ({
+    ...myShipping.map((inv) => ({
       key: `inv-${inv.invoiceId}`,
-      badgeStatus: inv.hasDp ? ("dp" as const) : ("unpaid" as const),
+      badgeStatus: inv.status === "paid" ? ("paid" as const) : inv.hasDp ? ("dp" as const) : ("unpaid" as const),
       title: inv.customerNama,
-      subtitle: `${inv.nomor} · ${rupiah(inv.sisaTagihan)} · ${shippingUrgency(inv.tanggalKirim).label}`,
+      subtitle: `${inv.nomor} · ${inv.status === "paid" ? "Lunas" : rupiah(inv.sisaTagihan)} · ${shippingUrgency(inv.tanggalKirim).label}`,
       actionLabel: "Lihat",
       actionHref: `/invoice/${inv.invoiceId}`,
     })),
@@ -137,11 +141,12 @@ export default async function DashboardPage() {
   // the data model yet, skipped per the user's explicit confirmation
   // 2026-08-26 rather than inventing placeholder data.
   const salesUrgentRows: { key: string; title: string; subtitle: string; nilai?: number; href: string; urgent: boolean }[] = [
-    ...myUnpaid.slice(0, 3).map((inv) => {
+    ...myShipping.slice(0, 3).map((inv) => {
       const urgency = shippingUrgency(inv.tanggalKirim);
+      const statusLabel = inv.status === "paid" ? "lunas" : inv.hasDp ? "sudah DP" : null;
       return {
         key: `inv-${inv.invoiceId}`,
-        title: inv.hasDp ? `${inv.customerNama} · sudah DP · ${urgency.label}` : `${inv.customerNama} · ${urgency.label}`,
+        title: statusLabel ? `${inv.customerNama} · ${statusLabel} · ${urgency.label}` : `${inv.customerNama} · ${urgency.label}`,
         subtitle: `${inv.nomor} · komisi ${rupiahCompact(inv.komisiPotensial)}`,
         nilai: inv.sisaTagihan,
         href: `/invoice/${inv.invoiceId}`,
@@ -167,18 +172,21 @@ export default async function DashboardPage() {
 
   // "7a" mobile — up to 4 urgency rows, worst (red border) first, matching
   // the mockup's category set where the app actually has the data for it.
-  // The "invoice" row reframed around shipping urgency (byShippingUrgency),
-  // same as the desktop widgets above — per the user's request 2026-09-19.
-  const unpaidByShippingUrgency = byShippingUrgency.filter((i) => i.status === "unpaid");
+  // The "invoice" row reframed around shipping urgency + payment-tier
+  // priority (Lunas/DP/Belum Bayar), same as the desktop widgets above —
+  // per the user's request 2026-09-19. Draft excluded (not yet sent).
+  const shippingNonDraft = shippingRows.filter((r) => r.status !== "draft");
   const genericUrgentRows = [
-    unpaidCount > 0
+    shippingNonDraft.length > 0
       ? {
           key: "invoice",
-          title: `${unpaidCount} invoice perlu dikirim`,
-          subtitle: unpaidByShippingUrgency.slice(0, 2).map((i) => i.customerNama).join(", ") + (unpaidCount > 2 ? `, +${unpaidCount - 2}` : ""),
-          nilai: belumTertagih,
+          title: `${shippingNonDraft.length} invoice perlu dikirim`,
+          subtitle:
+            shippingNonDraft.slice(0, 2).map((i) => i.customerNama).join(", ") +
+            (shippingNonDraft.length > 2 ? `, +${shippingNonDraft.length - 2}` : ""),
+          nilai: shippingNonDraft.reduce((s, i) => s + i.sisaTagihan, 0),
           href: "/follow-up",
-          urgent: ["overdue", "today"].includes(shippingUrgency(unpaidByShippingUrgency[0]?.tanggalKirim).tone),
+          urgent: ["overdue", "today"].includes(shippingUrgency(shippingNonDraft[0]?.tanggalKirim).tone),
         }
       : null,
     canSeePurchasing && purchasingSummary && purchasingSummary.poTelatCount > 0
@@ -485,7 +493,7 @@ export default async function DashboardPage() {
                   className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-line py-3.5"
                 >
                   <div className="flex items-center gap-3">
-                    <FollowUpStatusBadge status={inv.hasDp ? "dp" : inv.status} />
+                    <FollowUpStatusBadge status={inv.status === "paid" ? "paid" : inv.hasDp ? "dp" : inv.status} />
                     <div>
                       <div className="font-sans text-[0.95rem] font-bold">{inv.customerNama}</div>
                       <div className="mt-0.5 font-sans text-[0.75rem] text-muted">
