@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth/session";
 import {
   queryKatalogProducts,
   queryKatalogAvailableIds,
+  getKatalogProductById,
   CAN_EDIT_PRODUCT_ROLES,
   CAN_FLASH_SALE_ROLES,
   type KatalogFiltersInput,
@@ -28,6 +29,17 @@ export async function GET(req: NextRequest) {
   const canFlashSale = !!session && CAN_FLASH_SALE_ROLES.includes(session.role);
 
   const { searchParams } = new URL(req.url);
+
+  // One already-shaped product, by id — powers EditProductDrawer.tsx's
+  // post-save refresh (see getKatalogProductById's own doc comment for the
+  // bug this fixes). Bypasses every filter/pagination below.
+  const id = searchParams.get("id");
+  if (id) {
+    const product = await getKatalogProductById(id, { canEditProduct, canFlashSale });
+    if (!product) return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 404 });
+    return NextResponse.json({ product });
+  }
+
   const filters: KatalogFiltersInput = {
     search: searchParams.get("search") ?? undefined,
     categories: searchParams.getAll("category"),

@@ -4,8 +4,11 @@ const CustomerSchema = new Schema(
   {
     kode: { type: String, required: true, unique: true },
     nama: { type: String, required: true, trim: true },
-    namaToko: { type: String, required: true, trim: true },
-    jenisUsaha: { type: String, required: true, trim: true },
+    // Optional per the user's request 2026-09-19 ("Optional bukan wajib
+    // ya") — reversing the original required:true from when these fields
+    // were added.
+    namaToko: { type: String, trim: true },
+    jenisUsaha: { type: String, trim: true },
     whatsapp: { type: String, required: true, trim: true },
     email: { type: String, trim: true },
     alamat: { type: String, required: true },

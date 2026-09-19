@@ -28,8 +28,8 @@ export default async function PelangganEditPage({ params }: PageProps<"/pelangga
           customerId={id}
           initial={{
             nama: customer.nama,
-            namaToko: customer.namaToko,
-            jenisUsaha: customer.jenisUsaha,
+            namaToko: customer.namaToko ?? "",
+            jenisUsaha: customer.jenisUsaha ?? "",
             whatsapp: customer.whatsapp,
             email: customer.email ?? "",
             alamat: customer.alamat,

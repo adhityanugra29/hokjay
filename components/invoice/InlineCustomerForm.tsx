@@ -95,15 +95,14 @@ export default function InlineCustomerForm({
             placeholder="Contoh: Ibu Sari"
           />
         </Field>
-        <Field label="Nama Toko / Usaha">
+        <Field label="Nama Toko / Usaha (opsional)">
           <Input
-            required
             value={values.namaToko}
             onChange={(e) => setValues((v) => ({ ...v, namaToko: e.target.value }))}
             placeholder="Contoh: Toko Kelontong Sari"
           />
         </Field>
-        <Field label="Jenis Usaha">
+        <Field label="Jenis Usaha (opsional)">
           <SearchableSelect
             value={values.jenisUsaha}
             onChange={(v) => setValues((prev) => ({ ...prev, jenisUsaha: v }))}

@@ -99,6 +99,10 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
   ]);
 
   const selectedCourier = couriers.find((c) => c.name === invoice.kurir);
+  // Fallback to the customer's own provinsi/kota for an invoice saved
+  // before this field existed on Invoice itself (2026-09-19) — new saves
+  // always have their own value from here on.
+  const invoiceCustomer = customers.find((c) => String(c._id) === String(invoice.customer?.ref));
 
   return (
     <>
@@ -117,6 +121,8 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
             tanggalInvoice: invoice.tanggalInvoice ? invoice.tanggalInvoice.toISOString().slice(0, 10) : undefined,
             tanggalKirim: invoice.tanggalKirim ? invoice.tanggalKirim.toISOString().slice(0, 10) : undefined,
             shipAddress: invoice.shipAddress ?? undefined,
+            provinsi: invoice.provinsi ?? invoiceCustomer?.provinsi ?? undefined,
+            kota: invoice.kota ?? invoiceCustomer?.kota ?? undefined,
           }}
           customers={customers.map((c) => ({
             _id: String(c._id),

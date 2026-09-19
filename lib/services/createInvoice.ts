@@ -23,6 +23,8 @@ export interface CreateInvoiceInput {
   customerNama: string;
   customerWhatsapp?: string;
   shipAddress?: string;
+  provinsi?: string;
+  kota?: string;
   salesId?: string;
   salesNama: string;
   tanggalInvoice?: Date | string;
@@ -200,6 +202,8 @@ export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?:
       whatsapp: input.customerWhatsapp,
     },
     shipAddress: input.shipAddress,
+    provinsi: input.provinsi,
+    kota: input.kota,
     sales: { ref: input.salesId || undefined, nama: input.salesNama },
     // Undefined falls back to the schema's Date.now default — lets the
     // create form pre-fill today's date but still allows backdating.

@@ -151,6 +151,8 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       whatsapp: input.customerWhatsapp,
     },
     shipAddress: input.shipAddress,
+    provinsi: input.provinsi,
+    kota: input.kota,
     sales: { ref: input.salesId || undefined, nama: input.salesNama },
     tanggalInvoice: input.tanggalInvoice ? new Date(input.tanggalInvoice) : existing.tanggalInvoice,
     tanggalKirim: input.tanggalKirim ? new Date(input.tanggalKirim) : undefined,

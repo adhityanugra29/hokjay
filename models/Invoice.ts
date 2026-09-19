@@ -61,6 +61,12 @@ const InvoiceSchema = new Schema(
       whatsapp: { type: String },
     },
     shipAddress: { type: String },
+    // Editable per-invoice, no longer locked to the customer's own
+    // provinsi/kota — per the user's request 2026-09-19 ("bisa di ganti ya
+    // jangan di lock"). Pre-filled from the selected customer at creation
+    // time but saved independently, same pattern as shipAddress above.
+    provinsi: { type: String },
+    kota: { type: String },
 
     sales: {
       ref: { type: Schema.Types.ObjectId, ref: "Sales" },

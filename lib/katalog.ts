@@ -338,6 +338,39 @@ function toKatalogProduct(
   };
 }
 
+/**
+ * One product, shaped exactly like a Katalog grid card — powers
+ * EditProductDrawer.tsx's post-save refresh (TASK-025, 2026-09-19). Fixes a
+ * real bug: KatalogClient.tsx keeps its product list in client-side state
+ * (`items`, seeded once from the server's initial page for infinite
+ * scroll), so the drawer's old `router.refresh()` never actually reached
+ * it — a server refresh reruns app/katalog/page.tsx, but that just hands
+ * KatalogClient a new `initialProducts` prop it was never watching, so the
+ * edited price/fields stayed stale until a full page reload. This lets the
+ * drawer fetch just the one edited product, already shaped, and patch it
+ * into that state directly instead of trying to reconcile the whole list.
+ */
+export async function getKatalogProductById(
+  id: string,
+  opts: { canEditProduct?: boolean; canFlashSale?: boolean }
+): Promise<KatalogProduct | null> {
+  await dbConnect();
+  const [product, statusMap, produkBaruIds, kategoriKomisiBekasMap] = await Promise.all([
+    Product.findById(id).lean(),
+    getProductInvoiceStatusMap(),
+    getProdukBaruIds(),
+    getKategoriKomisiBekasMap(),
+  ]);
+  if (!product) return null;
+  return toKatalogProduct(product, {
+    statusMap,
+    produkBaruIds,
+    kategoriKomisiBekasMap,
+    canEditProduct: opts.canEditProduct,
+    canFlashSale: opts.canFlashSale,
+  });
+}
+
 export interface KatalogQueryResult {
   products: KatalogProduct[];
   nextCursor: number | null;

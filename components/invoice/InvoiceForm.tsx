@@ -47,6 +47,8 @@ export interface InvoiceFormInitial {
   tanggalInvoice?: string;
   tanggalKirim?: string;
   shipAddress?: string;
+  provinsi?: string;
+  kota?: string;
 }
 
 export default function InvoiceForm({
@@ -110,6 +112,13 @@ export default function InvoiceForm({
   const [addingCustomer, setAddingCustomer] = useState(false);
   const [addingProduct, setAddingProduct] = useState(false);
   const [shipAddress, setShipAddress] = useState(initial?.shipAddress ?? "");
+  // Editable, not locked to the selected customer's own record — per the
+  // user's request 2026-09-19 ("bisa di ganti ya jangan di lock"). Still
+  // pre-filled from the customer on pick (selectCustomer/
+  // handleCustomerCreated below), same convenience as shipAddress, but the
+  // typed value is what actually gets saved on the invoice from here on.
+  const [provinsi, setProvinsi] = useState(initial?.provinsi ?? "");
+  const [kota, setKota] = useState(initial?.kota ?? "");
   const [salesId, setSalesId] = useState(initial?.salesId ?? "");
   const [tanggalInvoice, setTanggalInvoice] = useState(
     initial?.tanggalInvoice ?? new Date().toISOString().slice(0, 10)
@@ -145,6 +154,8 @@ export default function InvoiceForm({
       const draft = JSON.parse(raw) as Partial<{
         customerId: string;
         shipAddress: string;
+        provinsi: string;
+        kota: string;
         salesId: string;
         tanggalInvoice: string;
         tanggalKirim: string;
@@ -153,6 +164,8 @@ export default function InvoiceForm({
       }>;
       if (draft.customerId) setCustomerId(draft.customerId);
       if (draft.shipAddress) setShipAddress(draft.shipAddress);
+      if (draft.provinsi) setProvinsi(draft.provinsi);
+      if (draft.kota) setKota(draft.kota);
       if (draft.salesId) setSalesId(draft.salesId);
       if (draft.tanggalInvoice) setTanggalInvoice(draft.tanggalInvoice);
       if (draft.tanggalKirim) setTanggalKirim(draft.tanggalKirim);
@@ -170,12 +183,22 @@ export default function InvoiceForm({
     try {
       sessionStorage.setItem(
         draftKey,
-        JSON.stringify({ customerId, shipAddress, salesId, tanggalInvoice, tanggalKirim, kurirId, ongkosKirim })
+        JSON.stringify({
+          customerId,
+          shipAddress,
+          provinsi,
+          kota,
+          salesId,
+          tanggalInvoice,
+          tanggalKirim,
+          kurirId,
+          ongkosKirim,
+        })
       );
     } catch {
       // storage full/unavailable — this is a convenience, not critical
     }
-  }, [draftKey, customerId, shipAddress, salesId, tanggalInvoice, tanggalKirim, kurirId, ongkosKirim]);
+  }, [draftKey, customerId, shipAddress, provinsi, kota, salesId, tanggalInvoice, tanggalKirim, kurirId, ongkosKirim]);
 
   // Logged in as sales (or manager — manager is treated as a sales rep
   // with extra authority, same as the Katalog/Leaderboard/Komisi Saya
@@ -331,6 +354,8 @@ export default function InvoiceForm({
     const c = customerList.find((c) => c._id === id);
     if (c) {
       setShipAddress(c.alamat);
+      setProvinsi(c.provinsi);
+      setKota(c.kota);
       setEditingCustomer(false); // collapse back to the read-only view once a real pick is made
     }
   }
@@ -347,6 +372,8 @@ export default function InvoiceForm({
     setCustomerList((prev) => [...prev, option].sort((a, b) => a.nama.localeCompare(b.nama)));
     setCustomerId(c._id);
     setShipAddress(c.alamat);
+    setProvinsi(c.provinsi);
+    setKota(c.kota);
     setAddingCustomer(false);
     setEditingCustomer(false);
   }
@@ -376,6 +403,8 @@ export default function InvoiceForm({
           customerNama: customer.nama,
           customerWhatsapp: customer.whatsapp,
           shipAddress,
+          provinsi: provinsi || undefined,
+          kota: kota || undefined,
           salesId: sales._id,
           salesNama: sales.nama,
           tanggalInvoice: tanggalInvoice || undefined,
@@ -575,14 +604,23 @@ export default function InvoiceForm({
             placeholder="Otomatis terisi setelah pilih pelanggan"
           />
         </Field>
-        {/* Provinsi/Kota — read-only, auto-filled from the selected
-            pelanggan's own data (not editable, not saved separately onto
-            the invoice). Per the user's request 2026-08-25. */}
+        {/* Provinsi/Kota — pre-filled from the selected pelanggan but
+            editable and saved onto the invoice itself, per the user's
+            request 2026-09-19 ("bisa di ganti ya jangan di lock"),
+            reversing the original 2026-08-25 lock. */}
         <Field label="Provinsi">
-          <Input disabled value={selectedCustomer?.provinsi ?? ""} placeholder="Otomatis terisi setelah pilih pelanggan" />
+          <Input
+            value={provinsi}
+            onChange={(e) => setProvinsi(e.target.value)}
+            placeholder="Otomatis terisi setelah pilih pelanggan"
+          />
         </Field>
         <Field label="Kota / Kabupaten">
-          <Input disabled value={selectedCustomer?.kota ?? ""} placeholder="Otomatis terisi setelah pilih pelanggan" />
+          <Input
+            value={kota}
+            onChange={(e) => setKota(e.target.value)}
+            placeholder="Otomatis terisi setelah pilih pelanggan"
+          />
         </Field>
         <Field label="Pilih Kurir">
           <Select value={kurirId} onChange={(e) => setKurirId(e.target.value)}>

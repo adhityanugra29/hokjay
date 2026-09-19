@@ -516,3 +516,27 @@ Deliberately **live, not a historical snapshot** — Riwayat Stok's % reflects t
 **Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. No live browser click-through (no test credentials in this environment) — recommended before treating as fully verified, same caveat as TASK-023.
 
 **Mobile:** `MobileProdukList.tsx` card updated (compact "Komisi N%" line); Riwayat Stok's mobile behavior unchanged from TASK-023 (`TableScroll` horizontal-scroll fallback, no dedicated mobile card list exists for that table) — not verified live on an actual small viewport.
+
+---
+
+## TASK-025 — Pelanggan optional fields, Invoice Provinsi/Kota unlocked, Katalog edit-drawer stale-cache fix
+
+**Type:** Bug fix / Feature
+**Priority:** P2
+**Status:** DONE (2026-09-19)
+**Dependency:** None
+**Created:** 2026-09-19 · **Last updated:** 2026-09-19
+
+**Description:** Three independent asks from the same session, previewed as a plan (not a visual mockup — no UI shape changed) before coding: "Nama Toko Usaha dan Jenis Usaha Optional bukan wajib ya" + "di Invoice Provinsi dan Kota / Kabupaten bisa di ganti ya jangan di lock" + "di katalog, setelah di edit menggunakan pensil, secara otomatis di katalog harus berubah harganya, karena saat ini harus di refresh dulu".
+
+**1. Customer `namaToko`/`jenisUsaha` → optional.** Was `required: true` in `models/Customer.ts` since these fields were added, enforced with a `required` attribute on both `CustomerForm.tsx` (standalone /pelanggan flow) and `InlineCustomerForm.tsx` (inline during invoice creation). Both dropped to plain optional fields, labels updated to say "(opsional)". "Sebutkan Jenis Usaha" (the free-text sub-field shown only when "Lainnya" is picked) stays conditionally required — unrelated to this change, that logic was already correct.
+
+**2. Invoice Provinsi/Kota → editable, not locked to the customer.** These were `disabled` inputs auto-filled from the selected customer and, on inspection, **never actually saved anywhere** (not on the Invoice model, not used for any ongkir calculation — purely a read-only display). Explicitly locked per the user's own 2026-08-25 request, now reversed. Since an editable-but-discarded field would be pointless, added real `provinsi`/`kota` fields to `models/Invoice.ts` (optional, same pattern as the existing `shipAddress`) — pre-filled from the selected customer on pick but independently editable and saved from here on. Threaded through `CreateInvoiceInput`/`createInvoice.ts`/`updateInvoice.ts` (API routes needed no changes — they already forward the whole typed body). `app/invoice/[id]/ubah/page.tsx` falls back to the customer's own provinsi/kota for an invoice saved before this field existed.
+
+**3. Katalog: price not updating after pencil-icon edit without a manual refresh — real bug, root-caused.** `KatalogClient.tsx` (TASK-012's server-paginated infinite scroll) keeps its grid in client-side state (`items`), seeded once from `initialProducts` on mount and never resynced. `EditProductDrawer.tsx`'s old `handleSaved()` only called `router.refresh()`, which re-renders the *server* component (`app/katalog/page.tsx`) with fresh data — but that just hands `KatalogClient` a new `initialProducts` prop it was never watching, so the edited fields stayed stale until a full page reload remounted the component fresh. Fix: new `getKatalogProductById()` (`lib/katalog.ts`, reuses the exact same `toKatalogProduct()` shaping the grid itself uses) + `GET /api/katalog?id=...` branch; `EditProductDrawer` fetches the freshly-shaped product after a successful save and calls a new `onSaved` callback; `KatalogClient` patches that one card in `items` directly by id — no full refetch, doesn't disturb whatever's already been scroll-loaded beyond page 1. `router.refresh()` kept alongside it (covers a later full navigation/reload).
+
+**Files affected:** `models/Customer.ts`, `components/pelanggan/CustomerForm.tsx`, `components/invoice/InlineCustomerForm.tsx`, `app/pelanggan/[id]/edit/page.tsx` (type fix — `namaToko`/`jenisUsaha` now possibly `null` from the DB), `models/Invoice.ts`, `components/invoice/InvoiceForm.tsx`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`, `app/invoice/[id]/ubah/page.tsx`, `lib/katalog.ts`, `app/api/katalog/route.ts`, `components/katalog/EditProductDrawer.tsx`, `components/katalog/KatalogClient.tsx`.
+
+**Regression test:** Clean `tsc --noEmit` (one pre-existing type error fixed as a side effect of making `namaToko`/`jenisUsaha` optional), clean `eslint` on every changed file (two `react-hooks/set-state-in-effect` errors surfaced in `InvoiceForm.tsx` during lint — confirmed via `git stash` to be pre-existing on unrelated lines, not introduced by this change, left as-is/out of scope), clean `next build`. No live browser click-through — recommended before treating as fully verified, same caveat as TASK-023/024.
+
+**Mobile:** No new UI surfaces added (Provinsi/Kota were already in the existing invoice form grid, Nama Toko/Jenis Usaha labels unchanged in layout) — existing responsive behavior untouched.

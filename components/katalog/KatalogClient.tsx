@@ -98,6 +98,15 @@ export default function KatalogClient({
   // infinite scroll, gets replaced wholesale on a search/filter/sort
   // change. `cursor === null` means there's nothing left to load.
   const [items, setItems] = useState<KatalogProduct[]>(initialProducts);
+  // Patches one already-loaded card in place after EditProductDrawer saves
+  // — see its onSaved doc comment / lib/katalog.ts's getKatalogProductById
+  // for the stale-until-reload bug this replaces. A no-op if the edited
+  // product had already scrolled out of `items` (nothing to patch), which
+  // is fine — router.refresh() (still called alongside this) covers that
+  // case on the next full navigation.
+  function handleProductSaved(updated: KatalogProduct) {
+    setItems((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
+  }
   const [cursor, setCursor] = useState<number | null>(initialNextCursor);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingFilters, setLoadingFilters] = useState(false);
@@ -505,6 +514,7 @@ export default function KatalogClient({
 
       <EditProductDrawer
         product={editingProduct}
+        onSaved={handleProductSaved}
         categories={categories}
         // Was `canFlashSale` (Owner+Super Admin) until 2026-09-05 — per
         // the user's request ("yang hanya boleh akses setting komisi

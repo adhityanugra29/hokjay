@@ -6,6 +6,13 @@
 
 ## 2026-09-19
 
+**TASK-025 done** — Three fixes: (1) Pelanggan's "Nama Toko/Usaha" and "Jenis Usaha" are now optional, not required. (2) Invoice's Provinsi/Kota fields are editable again (were locked/auto-filled-only since 2026-08-25) and now actually persist on the invoice (new `provinsi`/`kota` fields on `Invoice`, previously these were display-only and discarded). (3) Fixed a real bug: editing a product via Katalog's pencil-icon drawer didn't update its price/fields on the grid until a manual page reload — root cause was `KatalogClient.tsx`'s infinite-scroll product list living in client state that `router.refresh()` never reached; now patches the edited card in place via a new `GET /api/katalog?id=...` lookup.
+
+Tasks: TASK-025.
+Regression: `tsc --noEmit` clean, `eslint` clean (two pre-existing errors in `InvoiceForm.tsx` confirmed unrelated via `git stash`), `next build` clean. No live browser click-through — recommended before treating as fully verified.
+
+---
+
 **TASK-024 done** — Inventory's "Semua Produk" and "Riwayat Stok" tables gained a highlighted "% Komisi" column (resolved rate + a sub-label explaining why: flat barang baru / override produk / default kategori / default global), triggered by a real support question that needed a manual DB query to answer ("kenapa komisinya 300.000" — turned out to be a silent per-product commission override with no UI visibility anywhere). `MobileProdukList.tsx` card got a compact version too. Live values, not historical snapshots.
 
 Tasks: TASK-024.

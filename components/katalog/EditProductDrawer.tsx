@@ -29,12 +29,15 @@ export default function EditProductDrawer({
   categories,
   isOwner,
   onClose,
+  onSaved,
 }: {
   product: KatalogProduct | null;
   categories: string[];
   /** Owner role only (not Super Admin) — shows the Komisi Bekas override field (2026-09-03) and, as of 2026-09-07, the "Hapus" button. Narrowed from the original "Owner/Super Admin" comment here when TASK-015 (2026-09-05) made every commission setting Owner-exclusive; this component's own wiring already followed that (app/katalog/page.tsx's real isOwner, not canFlashSale), the comment had just gone stale. */
   isOwner?: boolean;
   onClose: () => void;
+  /** Fired with the freshly-saved, already katalog-shaped product — lets KatalogClient.tsx patch its own list in place instead of relying on router.refresh(), which never reached that client-side state (see lib/katalog.ts's getKatalogProductById doc comment). */
+  onSaved?: (product: KatalogProduct) => void;
 }) {
   const router = useRouter();
 
@@ -75,9 +78,22 @@ export default function EditProductDrawer({
     deskripsi: product.deskripsi ?? "",
   };
 
-  function handleSaved() {
+  async function handleSaved() {
     onClose();
-    router.refresh(); // Katalog's product list is server-fetched — refresh so the edited fields show immediately.
+    router.refresh(); // Keeps the server-rendered first page in sync for a later full reload/navigation.
+    // The actual immediate UI update — see onSaved's doc comment above for
+    // why router.refresh() alone doesn't reach KatalogClient's list.
+    if (onSaved && product) {
+      try {
+        const res = await fetch(`/api/katalog?id=${product._id}`);
+        if (res.ok) {
+          const { product: updated } = await res.json();
+          onSaved(updated);
+        }
+      } catch {
+        // Best-effort — router.refresh() above still catches it on next full navigation.
+      }
+    }
   }
 
   return (
