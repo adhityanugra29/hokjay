@@ -11,7 +11,7 @@ import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 
 export const dynamic = "force-dynamic";
 
-const SORT_FIELDS = ["tanggal", "productNameSnapshot", "tipe", "qty", "alasan", "invoiceNomorSnapshot", "salesSnapshot", "tanggalKirim", "kurir"] as const;
+const SORT_FIELDS = ["tanggal", "productNameSnapshot", "tipe", "komisiPercent", "qty", "alasan", "invoiceNomorSnapshot", "salesSnapshot", "tanggalKirim", "kurir"] as const;
 
 export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/produk/riwayat">) {
   const sp = await searchParams;
@@ -22,7 +22,16 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
   const filter: Record<string, unknown> = {};
   if (search) filter.productNameSnapshot = { $regex: search, $options: "i" };
 
-  const movements = await StockMovement.find(filter).sort(mongoSort(field, dir)).limit(200);
+  // "% Komisi" isn't a real StockMovement field — resolved per movement
+  // from its product's kondisi/override/category, so it can't go through
+  // mongoSort() like the others. Fetched with the default (tanggal desc)
+  // order, then sorted in-memory below once komisiPercent is computed —
+  // per the user's request 2026-09-19 ("kamu harus berikan button untuk
+  // sort, di setiap header tablenya").
+  const isKomisiSort = field === "komisiPercent";
+  const movementsRaw = await StockMovement.find(filter)
+    .sort(isKomisiSort ? { tanggal: -1 } : mongoSort(field, dir))
+    .limit(200);
 
   // Baru/Bekas label + % Komisi next to Tipe — per the user's requests
   // 2026-09-19 ("supaya terlihat" / "tambahkan tabel % Komisi"). Both read
@@ -31,18 +40,41 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
   // reasoning as app/invoice/page.tsx's live salesPhoneByNama lookup — the
   // % shown here is CURRENT, not necessarily what applied at the time of
   // that movement if the product's commission settings changed since.
-  const productIds = [...new Set(movements.map((m) => String(m.product)))];
+  const productIds = [...new Set(movementsRaw.map((m) => String(m.product)))];
   const [products, kategoriKomisiBekasMap] = await Promise.all([
     Product.find({ _id: { $in: productIds } }).select("kondisi komisiBekasPercent category").lean(),
     getKategoriKomisiBekasMap(),
   ]);
   const productById = new Map(products.map((p) => [String(p._id), p]));
 
+  const komisiPercentByMovementId = new Map(
+    movementsRaw.map((m) => {
+      const product = productById.get(String(m.product));
+      const percent = product
+        ? getEffectiveKomisiInfo(
+            product.kondisi as "baru" | "bekas" | undefined,
+            product.komisiBekasPercent,
+            kategoriKomisiBekasMap.get(product.category)
+          ).percent
+        : -1; // no matching product — sorts to the bottom (ascending) either way
+      return [String(m._id), percent];
+    })
+  );
+
+  const movements = isKomisiSort
+    ? [...movementsRaw].sort((a, b) => {
+        const av = komisiPercentByMovementId.get(String(a._id))!;
+        const bv = komisiPercentByMovementId.get(String(b._id))!;
+        return dir === "asc" ? av - bv : bv - av;
+      })
+    : movementsRaw;
+
   const basePath = "/produk/riwayat";
-  const headers: { label: string; key: (typeof SORT_FIELDS)[number]; align?: "right" }[] = [
+  const headers: { label: string; key: (typeof SORT_FIELDS)[number]; align?: "right"; className?: string }[] = [
     { label: "Tanggal", key: "tanggal" },
     { label: "Produk", key: "productNameSnapshot" },
     { label: "Tipe", key: "tipe" },
+    { label: "% Komisi", key: "komisiPercent", className: "bg-accent-100 text-accent-700" },
     { label: "Jumlah", key: "qty", align: "right" },
     { label: "Alasan", key: "alasan" },
     { label: "Referensi", key: "invoiceNomorSnapshot" },
@@ -62,7 +94,7 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              {headers.slice(0, 3).map((h) => (
+              {headers.map((h) => (
                 <SortableHeader
                   key={h.key}
                   label={h.label}
@@ -72,22 +104,7 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
                   basePath={basePath}
                   searchParams={sp}
                   align={h.align}
-                />
-              ))}
-              {/* Not sortable — derived from Product, not a real StockMovement field. */}
-              <th className="border-b border-line bg-accent-100 px-5 py-4 text-left font-mono text-[0.68rem] uppercase tracking-wide text-accent-700">
-                % Komisi
-              </th>
-              {headers.slice(3).map((h) => (
-                <SortableHeader
-                  key={h.key}
-                  label={h.label}
-                  sortKey={h.key}
-                  currentSort={field}
-                  currentDir={dir}
-                  basePath={basePath}
-                  searchParams={sp}
-                  align={h.align}
+                  className={h.className}
                 />
               ))}
             </tr>

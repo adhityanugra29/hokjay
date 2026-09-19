@@ -15,6 +15,8 @@ Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live br
 
 **TASK-026 follow-up 6** — Added the "Tandai Sudah Kirim" button to Beranda's desktop "Perlu Dikirim" widget too (deliberately left off before, never actually confirmed). Fixed a real pre-existing bug the user spotted in a screenshot: `FollowUpStatusBadge` ("Belum Bayar" etc.) had no `whitespace-nowrap`, so it wrapped onto two lines in narrow table columns.
 
+**TASK-028 done** — Sortable column headers everywhere they were missing: `/pelanggan`'s "Semua Pelanggan" list (Kode/Pelanggan/Frekuensi/Nilai belanja/Piutang — had no sort at all before), and the "% Komisi" column on both `/produk` and `/produk/riwayat` (every other column there was already sortable).
+
 Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live browser click-through.
 
 ---

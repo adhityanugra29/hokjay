@@ -17,7 +17,7 @@ import type { HydratedDocument } from "mongoose";
 
 export const dynamic = "force-dynamic";
 
-const SORT_FIELDS = ["name", "sku", "hargaRekomendasi", "stok", "tanggalBarangMasuk"] as const;
+const SORT_FIELDS = ["name", "sku", "hargaRekomendasi", "stok", "tanggalBarangMasuk", "komisiPercent"] as const;
 
 /**
  * "Umur Stok" (stock age) — replaces the old quantity-based Stok
@@ -71,10 +71,34 @@ export default async function ProdukListPage({
       { merk: { $regex: search, $options: "i" } },
     ];
   }
-  const [products, kategoriKomisiBekasMap] = await Promise.all([
-    Product.find(filter).sort(mongoSort(field, dir)) as Promise<HydratedDocument<ProductDoc>[]>,
+  // "% Komisi" isn't a raw Product field — it's resolved per product from
+  // kondisi + komisiBekasPercent + the category map (getEffectiveKomisiInfo
+  // below), so it can't go through mongoSort() like the others. Sorted
+  // in-memory after computing it for every row instead — per the user's
+  // request 2026-09-19 ("kamu harus berikan button untuk sort, di setiap
+  // header tablenya").
+  const isKomisiSort = field === "komisiPercent";
+  const [productsRaw, kategoriKomisiBekasMap] = await Promise.all([
+    Product.find(filter).sort(isKomisiSort ? { name: 1 } : mongoSort(field, dir)) as Promise<
+      HydratedDocument<ProductDoc>[]
+    >,
     getKategoriKomisiBekasMap(),
   ]);
+
+  const komisiInfoByProductId = new Map(
+    productsRaw.map((p) => [
+      String(p._id),
+      getEffectiveKomisiInfo(p.kondisi as "baru" | "bekas" | undefined, p.komisiBekasPercent, kategoriKomisiBekasMap.get(p.category)),
+    ])
+  );
+
+  const products = isKomisiSort
+    ? [...productsRaw].sort((a, b) => {
+        const av = komisiInfoByProductId.get(String(a._id))!.percent;
+        const bv = komisiInfoByProductId.get(String(b._id))!.percent;
+        return dir === "asc" ? av - bv : bv - av;
+      })
+    : productsRaw;
 
   // Summary strip — "extreme"/"Soft Trade" rework (2026-08-30), same
   // treatment as app/pelanggan/page.tsx: a quick-glance stat row above
@@ -124,11 +148,7 @@ export default async function ProdukListPage({
         isOwner={isOwner}
         products={products.map((p) => {
           const { label, variant } = stockAgeInfo(p.tanggalBarangMasuk ?? p.createdAt!, p.alertHariTidakTerjual ?? 45);
-          const komisiInfo = getEffectiveKomisiInfo(
-            p.kondisi as "baru" | "bekas" | undefined,
-            p.komisiBekasPercent,
-            kategoriKomisiBekasMap.get(p.category)
-          );
+          const komisiInfo = komisiInfoByProductId.get(String(p._id))!;
           return {
             id: String(p._id),
             name: p.name,
@@ -155,9 +175,15 @@ export default async function ProdukListPage({
                 <SortableHeader label="Harga Rekomendasi" sortKey="hargaRekomendasi" currentSort={field} currentDir={dir} basePath="/produk" searchParams={sp} align="right" />
                 <SortableHeader label="Stok" sortKey="stok" currentSort={field} currentDir={dir} basePath="/produk" searchParams={sp} align="right" />
                 <SortableHeader label="Umur Stok" sortKey="tanggalBarangMasuk" currentSort={field} currentDir={dir} basePath="/produk" searchParams={sp} />
-                <th className="border-b border-line bg-accent-100 px-5 py-4 text-left font-mono text-[0.68rem] uppercase tracking-wide text-accent-700">
-                  % Komisi
-                </th>
+                <SortableHeader
+                  label="% Komisi"
+                  sortKey="komisiPercent"
+                  currentSort={field}
+                  currentDir={dir}
+                  basePath="/produk"
+                  searchParams={sp}
+                  className="bg-accent-100 text-accent-700"
+                />
                 <th className="border-b border-line px-5 py-4" />
               </tr>
             </thead>
@@ -202,11 +228,7 @@ export default async function ProdukListPage({
                   </td>
                   <td className="border-b border-line bg-accent-100/40 px-5 py-4.5">
                     {(() => {
-                      const komisiInfo = getEffectiveKomisiInfo(
-                        p.kondisi as "baru" | "bekas" | undefined,
-                        p.komisiBekasPercent,
-                        kategoriKomisiBekasMap.get(p.category)
-                      );
+                      const komisiInfo = komisiInfoByProductId.get(String(p._id))!;
                       return (
                         <>
                           <div className="font-semibold">{komisiInfo.percent}%</div>

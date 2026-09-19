@@ -618,3 +618,23 @@ Every one of the 4 call sites now needs a Courier list + the invoice's current `
 **Follow-up 2 (2026-09-19, same day) — two more real bugs found from screenshots.** (1) "di dashboard, kenapa ga ada tandai sudah dikirim?" — the button was deliberately left off Beranda's widget per the plan's own proposal ("ruang sempit"), which was never actually confirmed either way before building. Added it to the desktop admin "Perlu Dikirim" card's rows (next to "Lihat"/"Lanjutkan"), fetching the Courier list alongside the widget's other data. **Not yet added to the Sales "Dikejar hari ini" card** — its `salesNeedsAction` array mixes invoice rows with dormant-customer rows in one loosely-typed shape (`badgeStatus`/`title`/`subtitle`/`actionLabel`/`actionHref`) that doesn't carry `invoiceId`/`kurir`, so wiring it in cleanly needs a small restructure, deferred. (2) "di status Belum Bayar masih eror" — a real, unrelated pre-existing bug the screenshot incidentally exposed: `FollowUpStatusBadge.tsx`'s badge had no `whitespace-nowrap`, so "Belum Bayar" wrapped onto two lines ("BELUM"/"BAYAR" stacked) in a narrow table column. One-line fix.
 
 **Files (follow-up 2):** `app/page.tsx`, `components/dashboard/FollowUpStatusBadge.tsx`.
+
+---
+
+## TASK-028 — Sortable column headers: Pelanggan + Inventory
+
+**Type:** Feature
+**Priority:** P2
+**Status:** DONE (2026-09-19)
+**Dependency:** None
+**Created:** 2026-09-19 · **Last updated:** 2026-09-19
+
+**Description:** "sepertinya untuk di pelanggan, kamu harus berikan button untuk sort, di setiap header tablenya, begitu juga di inventory."
+
+**1. `/pelanggan` "Semua Pelanggan"** — had NO sort at all (a plain div-grid header, not a real `<table>`, so `components/ui/SortableHeader.tsx` — which renders a real `<th>` — couldn't be reused directly). New local `SortCol` component in `app/pelanggan/page.tsx` replicates its exact behavior (toggle asc/desc, preserve every other query param) as a plain `Link`/`span` pair instead. Sortable on Kode, Pelanggan (nama), Frekuensi (orderCount), Nilai belanja, Piutang — applied in-memory via the existing `sortRows()` helper (`lib/sort.ts`) on top of the already-filtered rows (TASK-027's search/kota/piutang filter). No explicit `sort` param keeps `getPelangganSummary()`'s own default order (nilaiBelanja desc) rather than snapping to `parseSort`'s normal "asc" fallback, which would have visibly reversed the page's existing default ordering on first load.
+
+**2. `/produk` "Semua Produk" + `/produk/riwayat` "Riwayat Stok"** — both already had `SortableHeader` on every real field; the one gap in each was the "% Komisi" column added by TASK-024, left explicitly non-sortable at the time ("Not sortable — derived from Product, not a real...field"). Both now sort on it too. Since the effective percent is resolved per row (kondisi + product/category override, via `getEffectiveKomisiInfo`) rather than stored as a raw field, it can't go through `mongoSort()` like the others — when `sort=komisiPercent`, the query instead falls back to its normal default order (`name asc` / `tanggal desc`), and the already-fetched rows are sorted in-memory afterward using a percent computed once per row and cached in a `Map` (also reused to de-duplicate the existing double `getEffectiveKomisiInfo` call on `/produk` — was computed once for `MobileProdukList`'s rows and again per table cell). `/produk/riwayat`'s header row, which used to be hand-split around a bare `<th>` (`headers.slice(0,3)` + raw `<th>` + `headers.slice(3)`), collapsed back into one plain `.map()` now that every column goes through `SortableHeader`.
+
+**Files affected:** `app/pelanggan/page.tsx` (`SortCol`, new `SORT_FIELDS`), `app/produk/(list)/page.tsx`, `app/produk/(list)/riwayat/page.tsx`.
+
+**Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. No live browser click-through — recommended before treating as fully verified.

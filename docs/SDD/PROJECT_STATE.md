@@ -8,7 +8,7 @@
 
 ## CURRENT TASK
 
-None active — TASK-027 (Pelanggan filters) and TASK-026's follow-ups 5-6 ("Tandai Sudah Kirim" modal + added to Beranda's admin widget + a real `whitespace-nowrap` badge-wrap bugfix) are all DONE, build/lint/typecheck clean, not yet click-tested live.
+None active — TASK-027 (Pelanggan filters), TASK-026's follow-ups 5-6 ("Tandai Sudah Kirim" modal + Beranda widget + badge-wrap bugfix), and TASK-028 (sortable column headers on Pelanggan + Inventory's % Komisi column) are all DONE, build/lint/typecheck clean, not yet click-tested live.
 
 Known gap left open: "Tandai Sudah Kirim" is NOT yet on Beranda's Sales "Dikejar hari ini" card — that array's row shape doesn't carry `invoiceId`/`kurir` cleanly (mixes invoice + dormant-customer rows), needs a small restructure. Not yet asked for explicitly, but worth expecting.
 
@@ -22,6 +22,7 @@ A large amount of feature/bugfix work has landed since the last full rewrite of 
 
 ## LAST COMPLETED
 
+- **TASK-028** — Sortable column headers added where missing: `/pelanggan`'s list (had none at all — new local `SortCol` component since that page isn't a real `<table>`) and the "% Komisi" column on `/produk` + `/produk/riwayat` (every other column there was already sortable). Not yet click-tested live.
 - **TASK-026 follow-up 6** — Added "Tandai Sudah Kirim" to Beranda's desktop admin "Perlu Dikirim" widget (was deliberately left off, never actually confirmed). Fixed a real pre-existing bug: `FollowUpStatusBadge` wrapped onto two lines ("BELUM"/"BAYAR") in narrow columns — missing `whitespace-nowrap`. Not yet click-tested live.
 - **TASK-026 follow-up 5** — "Tandai Sudah Kirim" rebuilt as a modal (Tanggal Dikirim + Kurir, both defaulted) — the deployed single-click confirm() version didn't match the approved mockup. Changing Kurir here replaces `Invoice.kurir`, flowing into the PDF/preview automatically. Not yet click-tested live.
 - **TASK-027** — Pelanggan list gained search (nama/kode) + Kota filter; per-customer invoice history gained a status pill filter (Draft/Belum Bayar/Lunas). Fixed a latent bug where an empty search result wrongly showed the "add your first customer" empty state. Not yet click-tested live.

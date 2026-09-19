@@ -8,8 +8,12 @@ import PelangganKotaFilter from "@/components/pelanggan/PelangganKotaFilter";
 import { getPelangganSummary } from "@/lib/pelanggan";
 import { getSession } from "@/lib/auth/session";
 import { rupiah, rupiahCompact } from "@/lib/format";
+import { parseSort, sortRows, type SortDir } from "@/lib/sort";
 
 export const dynamic = "force-dynamic";
+
+const SORT_FIELDS = ["kode", "nama", "orderCount", "nilaiBelanja", "piutang"] as const;
+type PelangganSortField = (typeof SORT_FIELDS)[number];
 
 /** Pelanggan — "daftar prioritas" per the 2026-08-22 redesign ("3b"): piutang, kebiasaan bayar, dan siapa mulai jarang pesan, bukan buku alamat datar. */
 export default async function PelangganPage({ searchParams }: PageProps<"/pelanggan">) {
@@ -25,17 +29,25 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
   // full scan per page load is cheap) — no new query needed.
   const search = typeof sp.search === "string" ? sp.search.trim().toLowerCase() : "";
   const kota = typeof sp.kota === "string" ? sp.kota : "";
+  // Sortable column headers — per the user's request 2026-09-19 ("kamu
+  // harus berikan button untuk sort, di setiap header tablenya"). No
+  // explicit sort param = keep getPelangganSummary's own default order
+  // (nilaiBelanja desc) rather than forcing "asc" like parseSort's normal
+  // fallback would.
+  const hasSort = typeof sp.sort === "string" && (SORT_FIELDS as readonly string[]).includes(sp.sort);
+  const { field: sortField, dir: sortDir } = parseSort(sp, SORT_FIELDS, "nilaiBelanja");
   const session = await getSession();
   // Per-sales customer privacy (2026-08-27) — see customerVisibilityFilter
   // in lib/pelanggan.ts for the exact rule.
   const summary = await getPelangganSummary(session);
 
-  const filteredRows = summary.rows.filter((r) => {
+  const matchedRows = summary.rows.filter((r) => {
     if (filter === "piutang" && !(r.piutang > 0)) return false;
     if (search && !r.nama.toLowerCase().includes(search) && !r.kode.toLowerCase().includes(search)) return false;
     if (kota && r.kota !== kota) return false;
     return true;
   });
+  const filteredRows = hasSort ? sortRows(matchedRows, sortField, sortDir) : matchedRows;
 
   const emptyMessage =
     // Only the true empty-account state gets the "add first customer" nudge
@@ -133,11 +145,21 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
               {/* "Kebiasaan bayar" column removed per the user's request
                   2026-08-25. */}
               <div className="grid grid-cols-[100px_1.5fr_70px_105px_100px_60px] gap-3.5 border-b border-line px-5 py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted">
-                <span>Kode</span>
-                <span>Pelanggan</span>
-                <span>Frekuensi</span>
-                <span className="text-right">Nilai belanja</span>
-                <span className="text-right">Piutang</span>
+                <SortCol sp={sp} activeField={hasSort ? sortField : ""} dir={sortDir} column="kode">
+                  Kode
+                </SortCol>
+                <SortCol sp={sp} activeField={hasSort ? sortField : ""} dir={sortDir} column="nama">
+                  Pelanggan
+                </SortCol>
+                <SortCol sp={sp} activeField={hasSort ? sortField : ""} dir={sortDir} column="orderCount">
+                  Frekuensi
+                </SortCol>
+                <SortCol sp={sp} activeField={hasSort ? sortField : ""} dir={sortDir} column="nilaiBelanja" align="right">
+                  Nilai belanja
+                </SortCol>
+                <SortCol sp={sp} activeField={hasSort ? sortField : ""} dir={sortDir} column="piutang" align="right">
+                  Piutang
+                </SortCol>
                 <span />
               </div>
               {filteredRows.map((r) => (
@@ -214,4 +236,52 @@ function buildPelangganHref(current: { kota?: string; search?: string }, filter:
   if (filter === "piutang") params.set("filter", "piutang");
   const qs = params.toString();
   return qs ? `/pelanggan?${qs}` : "/pelanggan";
+}
+
+/**
+ * A sortable column label for /pelanggan's div-grid "table" — same
+ * preserve-every-other-param + toggle-asc/desc behavior as
+ * components/ui/SortableHeader.tsx, just rendered as a plain span/Link
+ * pair instead of a real `<th>` since this page isn't a `<table>`. Per
+ * the user's request 2026-09-19 ("kamu harus berikan button untuk sort,
+ * di setiap header tablenya").
+ */
+function SortCol({
+  sp,
+  activeField,
+  dir,
+  column,
+  align = "left",
+  children,
+}: {
+  sp: Record<string, string | string[] | undefined>;
+  activeField: string;
+  dir: SortDir;
+  column: PelangganSortField;
+  align?: "left" | "right";
+  children: React.ReactNode;
+}) {
+  const active = activeField === column;
+  const nextDir: SortDir = active && dir === "asc" ? "desc" : "asc";
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(sp)) {
+    if (k === "sort" || k === "dir") continue;
+    if (typeof v === "string") params.set(k, v);
+  }
+  params.set("sort", column);
+  params.set("dir", nextDir);
+
+  return (
+    <Link
+      href={`/pelanggan?${params.toString()}`}
+      className={`inline-flex select-none items-center gap-1 hover:text-ink ${active ? "text-ink" : ""} ${
+        align === "right" ? "justify-end text-right" : ""
+      }`}
+    >
+      {children}
+      <span className={`text-[0.6rem] ${active ? "opacity-100" : "opacity-35"}`}>
+        {active ? (dir === "asc" ? "▲" : "▼") : "⇅"}
+      </span>
+    </Link>
+  );
 }
