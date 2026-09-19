@@ -660,3 +660,26 @@ Every one of the 4 call sites now needs a Courier list + the invoice's current `
 **Files affected:** `lib/insentif.ts` (`getUnpaidInvoicesForPeriod`, `SalesBoardRow.estimasiSales`), `components/insentif/SalesBoard.tsx`, `components/insentif/MobileSalesBoard.tsx`, `components/invoice/InvoicePrintDoc.tsx`, `components/invoice/InvoiceDocument.tsx`, `lib/invoiceDisplay.ts` (`InvoicePrintData.syaratKetentuan`), `models/Pengaturan.ts` (`syaratKetentuan`, `DEFAULT_SYARAT_KETENTUAN`), `app/api/pengaturan/route.ts`, `components/admin/PengaturanSyaratKetentuan.tsx` (new), `app/admin/keuangan/page.tsx`, `app/invoice/page.tsx`, `app/invoice/[id]/page.tsx`.
 
 **Regression test:** Clean `tsc --noEmit`, clean `eslint` (one pre-existing unrelated warning in `MobileSalesBoard.tsx`, confirmed via `git diff` to predate this change), clean `next build`. No live browser click-through — recommended before treating as fully verified, especially the watermark's visual centering and the S&K text on an actual multi-page PDF.
+
+---
+
+## TASK-030 — Invoice list: simplify per-row action buttons (max 6 → max 2)
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** DONE (2026-09-19)
+**Dependency:** None
+**Created:** 2026-09-19 · **Last updated:** 2026-09-19
+
+**Description:** "di invoice, terlalu banyak button sampai ada 6 maximal, boleh kah kamu buat 2 button saja?" — a plain unpaid (no DP) row had up to 6: Preview, Tandai Sudah Kirim, Kirim WA, Edit, Hapus, Tandai Lunas. Planned first (written plan, then an HTML mockup showing a "Preview + primary action, rest in a '⋯' overflow menu" design, confirmed via AskUserQuestion) — then the user refined the rule further, past what the mockup showed, in two follow-up messages: "jika belum lunas dan belum dikirim, maka munculkan 2 button itu, jika sudah lunas, munculkan preview saja" + "button tandai lunas dan tandai sudah dikirim itu maksud saya". The shipped rule ended up simpler than the mockup — no "⋯" overflow menu at all:
+
+- **Draft** — unchanged (Hapus + Lanjutkan). Not covered by the belum-lunas/sudah-dikirim framing — a draft isn't finalized yet, "Tandai Lunas" doesn't apply to it.
+- **Unpaid or DP, not yet marked shipped** — exactly 2 buttons: **Tandai Lunas** + **Tandai Sudah Kirim**. No Preview here (a deliberate reading of the literal instruction, not an oversight).
+- **Unpaid or DP, already marked shipped** — just **Tandai Lunas** (the one remaining action).
+- **Paid** — just **Preview**.
+
+Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all three were already reachable from the invoice detail page (`InvoiceActions.tsx`'s "Kirim ke Pelanggan (WA)", the "Ubah Invoice" link, and `DeleteInvoiceButton`, all in `app/invoice/[id]/page.tsx`), confirmed by reading that file before making the cut.
+
+**Files affected:** `components/invoice/InvoiceListClient.tsx` (removed the unused `toWaPhone` import along with the Kirim WA link).
+
+**Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. No live browser click-through — recommended before treating as fully verified.

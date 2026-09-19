@@ -11,7 +11,7 @@ import { useInvoicePdfDownload } from "./useInvoicePdfDownload";
 import { useDialog } from "@/components/ui/Dialog";
 import ZoomableImage from "@/components/katalog/ZoomableImage";
 import type { InvoicePrintData } from "./InvoicePrintDoc";
-import { rupiah, toWaPhone, formatDateShort } from "@/lib/format";
+import { rupiah, formatDateShort } from "@/lib/format";
 
 export type InvoiceRowStatus = "unpaid" | "dp" | "draft" | "paid";
 
@@ -252,48 +252,19 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                         : ""}
                 </div>
               </div>
+              {/* Simplified to a max of 2 buttons per row — per the user's
+                  request 2026-09-19 ("terlalu banyak button sampai ada 6
+                  maximal, boleh kah kamu buat 2 button saja"), refined to
+                  an exact rule the same session: belum lunas & belum
+                  dikirim -> Tandai Lunas + Tandai Sudah Kirim; sudah lunas
+                  -> Preview only. Kirim WA/Edit/Hapus dropped from the list
+                  entirely, not lost — all three are still on the invoice
+                  detail page (InvoiceActions.tsx / "Ubah Invoice" /
+                  DeleteInvoiceButton in app/invoice/[id]/page.tsx). Draft
+                  is a separate lifecycle stage this rule doesn't cover
+                  (there's no "Tandai Lunas" for something not even
+                  finalized yet) — kept as-is. */}
               <div className="flex flex-wrap justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => openPreview(r.id)}
-                  className="cursor-pointer border border-accent-600 bg-accent-100 px-3 py-1.5 font-sans text-[0.72rem] font-bold text-accent-700 hover:bg-accent-100/70"
-                >
-                  Preview
-                </button>
-                {r.status !== "draft" && !r.dikirim && (
-                  <TandaiKirimButton
-                    invoiceId={r.id}
-                    nomor={r.nomor}
-                    customerNama={r.custNama}
-                    couriers={couriers}
-                    currentKurir={r.kurir}
-                  />
-                )}
-                {(r.status === "unpaid" || r.status === "dp") && (
-                  <>
-                    <a
-                      href={`https://wa.me/${toWaPhone(r.custWhatsapp)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="border border-line px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent-700"
-                    >
-                      Kirim WA
-                    </a>
-                    <Link
-                      href={`/invoice/${r.id}/ubah`}
-                      className="border border-line px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-ink no-underline hover:border-accent hover:text-accent-700"
-                    >
-                      Edit
-                    </Link>
-                    {r.sisaTagihan == null && <DeleteInvoiceButton invoiceId={r.id} nomor={r.nomor} />}
-                    <Link
-                      href={`/invoice/${r.id}`}
-                      className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600"
-                    >
-                      Tandai lunas
-                    </Link>
-                  </>
-                )}
                 {r.status === "draft" && (
                   <>
                     <DeleteInvoiceButton invoiceId={r.id} nomor={r.nomor} />
@@ -304,6 +275,34 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                       Lanjutkan
                     </Link>
                   </>
+                )}
+                {(r.status === "unpaid" || r.status === "dp") && (
+                  <>
+                    <Link
+                      href={`/invoice/${r.id}`}
+                      className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600"
+                    >
+                      Tandai Lunas
+                    </Link>
+                    {!r.dikirim && (
+                      <TandaiKirimButton
+                        invoiceId={r.id}
+                        nomor={r.nomor}
+                        customerNama={r.custNama}
+                        couriers={couriers}
+                        currentKurir={r.kurir}
+                      />
+                    )}
+                  </>
+                )}
+                {r.status === "paid" && (
+                  <button
+                    type="button"
+                    onClick={() => openPreview(r.id)}
+                    className="cursor-pointer border border-accent-600 bg-accent-100 px-3 py-1.5 font-sans text-[0.72rem] font-bold text-accent-700 hover:bg-accent-100/70"
+                  >
+                    Preview
+                  </button>
                 )}
               </div>
             </div>

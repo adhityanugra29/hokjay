@@ -8,9 +8,7 @@
 
 ## CURRENT TASK
 
-TASK-030 planned, not yet built: simplify Invoice list's per-row action buttons (currently up to 6 — Preview/Tandai Sudah Kirim/Kirim WA/Edit/Hapus/Tandai Lunas) down to 2. User explicitly asked for a plan first, not yet presented.
-
-TASK-027 through TASK-029 (Pelanggan filters, sortable headers, Leaderboard Estimasi Sales + Invoice LUNAS watermark + Syarat & Ketentuan) are all DONE, build/lint/typecheck clean, not yet click-tested live.
+None active — TASK-027 through TASK-030 (Pelanggan filters, sortable headers, Leaderboard Estimasi Sales + Invoice LUNAS watermark + Syarat & Ketentuan, Invoice list button simplification) are all DONE, build/lint/typecheck clean, not yet click-tested live.
 
 Known gap left open: "Tandai Sudah Kirim" is NOT yet on Beranda's Sales "Dikejar hari ini" card — that array's row shape doesn't carry `invoiceId`/`kurir` cleanly (mixes invoice + dormant-customer rows), needs a small restructure. Not yet asked for explicitly, but worth expecting.
 
@@ -24,6 +22,7 @@ A large amount of feature/bugfix work has landed since the last full rewrite of 
 
 ## LAST COMPLETED
 
+- **TASK-030** — Invoice list's per-row buttons simplified from up to 6 to max 2 (Tandai Lunas + Tandai Sudah Kirim for unpaid/DP not-shipped; just one of those otherwise; just Preview once paid). Kirim WA/Edit/Hapus dropped from the list, still reachable on the detail page. Not yet click-tested live.
 - **TASK-029** — Leaderboard "Estimasi Sales" per sales (from DP'd/belum lunas invoices, ranking stays Lunas-only, deliberately no komisi figure — privacy). Invoice PDF/preview's small LUNAS badge replaced with a big centered translucent watermark (every page on multi-page PDFs). Invoice "Syarat & Ketentuan" section, editable from Pengaturan, justified with generous line spacing. Not yet click-tested live.
 - **TASK-028** — Sortable column headers added where missing: `/pelanggan`'s list (had none at all — new local `SortCol` component since that page isn't a real `<table>`) and the "% Komisi" column on `/produk` + `/produk/riwayat` (every other column there was already sortable). Not yet click-tested live.
 - **TASK-026 follow-up 6** — Added "Tandai Sudah Kirim" to Beranda's desktop admin "Perlu Dikirim" widget (was deliberately left off, never actually confirmed). Fixed a real pre-existing bug: `FollowUpStatusBadge` wrapped onto two lines ("BELUM"/"BAYAR") in narrow columns — missing `whitespace-nowrap`. Not yet click-tested live.

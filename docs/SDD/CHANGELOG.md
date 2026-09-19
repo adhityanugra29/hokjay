@@ -15,6 +15,11 @@ Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live br
 
 **TASK-026 follow-up 6** — Added the "Tandai Sudah Kirim" button to Beranda's desktop "Perlu Dikirim" widget too (deliberately left off before, never actually confirmed). Fixed a real pre-existing bug the user spotted in a screenshot: `FollowUpStatusBadge` ("Belum Bayar" etc.) had no `whitespace-nowrap`, so it wrapped onto two lines in narrow table columns.
 
+**TASK-030 done** — Invoice list's per-row action buttons simplified from up to 6 down to a max of 2: unpaid/DP not-yet-shipped shows Tandai Lunas + Tandai Sudah Kirim, already-shipped shows just Tandai Lunas, paid shows just Preview. Kirim WA/Edit/Hapus dropped from the list (still reachable on the invoice detail page).
+
+Tasks: TASK-030.
+Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live browser click-through.
+
 **TASK-029 done** — Leaderboard Sales gained a small "Estimasi Sales" line per sales (from this period's DP'd/belum lunas invoices — never affects ranking, which stays Lunas-only; no commission figure alongside it, dropped for privacy after the user caught it mid-review). Invoice PDF/preview's small "LUNAS" badge replaced with a big, centered, translucent diagonal watermark (repeats on every page for multi-page invoices). Invoice gained a "Syarat & Ketentuan" section, editable from Pengaturan (`/admin/keuangan`), justified text with generous line spacing, shown on both Invoice and Surat Jalan.
 
 Tasks: TASK-029.
