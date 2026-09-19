@@ -6,6 +6,13 @@
 
 ## 2026-09-19
 
+**TASK-027 done** — Pelanggan's "Semua Pelanggan" list gained a search box (nama/kode) and a Kota dropdown filter; `/pelanggan/[id]`'s invoice history table gained a status pill filter (Semua/Draft/Belum Bayar/Lunas). Also fixed a latent bug: an empty search result used to wrongly show "Belum ada pelanggan — Tambah pelanggan pertama" even with customers in the account.
+
+Tasks: TASK-027.
+Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live browser click-through.
+
+---
+
 **TASK-026 done (+ 4 same-day follow-ups)** — Invoice gained a free-text "Catatan" field, shown on both the Invoice/Bukti Transfer and Surat Jalan PDFs/previews. Beranda's "Perlu Ditindak" widget reframed as "Perlu Dikirim" — sorted and labeled by shipping due date (Terlambat/Kirim Hari Ini/Besok/tanggal/Belum Dijadwalkan) instead of days-unpaid, applied consistently across all 4 admin/sales × desktop/mobile surfaces. Invoice's "Tanggal Pengiriman" no longer defaults to H+3 — starts empty. Follow-up 1: shipping-urgency label now always shows the actual date too; "Stok tipis" row removed from the reframed desktop widget. Follow-up 2: the widget now also prioritizes payment status — Lunas first, then Sudah DP, then Belum Bayar/Draft — which required reintroducing paid invoices into the widget at all (they'd been fully excluded by the underlying query); bounded to paid invoices whose shipping date still looks relevant (≤14 days overdue) so it can't fill up with old, already-shipped orders. Follow-up 3: the widget's "lihat semua" link now actually leads to the full shipping-priority list (`/follow-up?view=kirim`) instead of the old unpaid-only payment-follow-up page — kept as a query-param branch on the same page since Komisi Saya's "Tagih yang tertahan" button still needs the original payment-only view. Follow-up 4: a real "Tandai Sudah Kirim" trigger — new `dikirim`/`tanggalDikirimAktual`/`dikirimOleh` fields on Invoice, a new endpoint, and a shared button wired into the Invoice list, both `/follow-up` views, and the invoice detail page, so a shipped invoice can actually be dismissed instead of relying only on the 14-day guess (kept as a second signal alongside the button, not replaced).
 
 Tasks: TASK-026.

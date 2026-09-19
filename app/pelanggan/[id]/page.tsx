@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { RowActionLink } from "@/components/ui/RowAction";
@@ -25,11 +26,20 @@ const STATUS_LABEL: Record<string, { label: string; variant: PillVariant }> = {
 
 const SORT_FIELDS = ["nomor", "tanggalInvoice", "grandTotal", "status"] as const;
 
+const STATUS_FILTERS = ["semua", "draft", "unpaid", "paid"] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
 export default async function PelangganHistoryPage({ params, searchParams }: PageProps<"/pelanggan/[id]">) {
   const { id } = await params;
   const sp = await searchParams;
   const hasSort = typeof sp.sort === "string" && (SORT_FIELDS as readonly string[]).includes(sp.sort);
   const { field, dir } = parseSort(sp, SORT_FIELDS, "tanggalInvoice");
+  // Status pill filter — per the user's request 2026-09-19 ("tampilkan
+  // filter di setiap header tablenya").
+  const statusFilter: StatusFilter =
+    typeof sp.status === "string" && (STATUS_FILTERS as readonly string[]).includes(sp.status)
+      ? (sp.status as StatusFilter)
+      : "semua";
   await dbConnect();
 
   const customer = await Customer.findById(id).lean();
@@ -49,10 +59,12 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
   // Per-sales invoice privacy (2026-08-29) — belt-and-suspenders now that
   // a sales rep can only reach their own customer anyway: still only shows
   // invoices this rep themselves made for that customer.
-  const invoices = await Invoice.find({ "customer.ref": id, ...invoiceVisibilityFilter(session) }).sort(
+  const allInvoices = await Invoice.find({ "customer.ref": id, ...invoiceVisibilityFilter(session) }).sort(
     hasSort ? mongoSort(field, dir) : { createdAt: -1 }
   );
-  const totalBelanja = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.grandTotal, 0);
+  const totalBelanja = allInvoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.grandTotal, 0);
+  const invoices =
+    statusFilter === "semua" ? allInvoices : allInvoices.filter((i) => (i.status ?? "draft") === statusFilter);
 
   return (
     <>
@@ -70,7 +82,28 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
       />
       <div className="p-6 md:p-9">
         <Panel>
-          <PanelHead title="Semua invoice pelanggan ini" />
+          <PanelHead title="Semua invoice pelanggan ini">
+            <div className="flex gap-1.5 rounded-full bg-surface p-1">
+              {(
+                [
+                  ["semua", "Semua"],
+                  ["draft", "Draft"],
+                  ["unpaid", "Belum Bayar"],
+                  ["paid", "Lunas"],
+                ] as [StatusFilter, string][]
+              ).map(([value, label]) => (
+                <Link
+                  key={value}
+                  href={buildStatusHref(id, sp, value)}
+                  className={`rounded-full px-3 py-1.5 font-sans text-[0.72rem] font-semibold transition ${
+                    statusFilter === value ? "bg-ink text-white" : "text-muted hover:text-ink"
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </PanelHead>
           {/* Mobile card list below md; the fixed-column table takes over
               at md+. Per the user's request 2026-08-30 ("mereka mobile
               oriented"). */}
@@ -118,7 +151,9 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
                 {invoices.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                      Belum ada invoice untuk pelanggan ini.
+                      {allInvoices.length === 0
+                        ? "Belum ada invoice untuk pelanggan ini."
+                        : "Tidak ada invoice dengan status ini."}
                     </td>
                   </tr>
                 )}
@@ -130,4 +165,14 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
       </div>
     </>
   );
+}
+
+/** Builds /pelanggan/[id]'s href preserving sort/dir when switching the status pill. */
+function buildStatusHref(id: string, sp: Record<string, string | string[] | undefined>, status: StatusFilter): string {
+  const params = new URLSearchParams();
+  if (typeof sp.sort === "string") params.set("sort", sp.sort);
+  if (typeof sp.dir === "string") params.set("dir", sp.dir);
+  if (status !== "semua") params.set("status", status);
+  const qs = params.toString();
+  return qs ? `/pelanggan/${id}?${qs}` : `/pelanggan/${id}`;
 }

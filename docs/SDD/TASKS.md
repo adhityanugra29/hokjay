@@ -586,3 +586,25 @@ The 14-day lookback window (follow-up 2) is kept, not replaced — `getShippingP
 **Files (follow-up 4):** `models/Invoice.ts`, `app/api/invoices/[id]/kirim/route.ts` (new), `lib/dashboard.ts` (`FollowUpInvoiceRow`/`ShippingRow` gain `dikirim`/`tanggalDikirimAktual`/`dikirimOleh`; `getShippingPriorityInvoices`'s filter), `components/invoice/TandaiKirimButton.tsx` (new), `components/invoice/InvoiceListClient.tsx`, `app/invoice/page.tsx`, `app/invoice/[id]/page.tsx`, `app/follow-up/page.tsx`, `components/dashboard/MobileFollowUp.tsx`.
 
 **Regression test:** Clean `tsc --noEmit` (one transient error from the new typed API route not yet in the generated route manifest — resolved itself after `next build` regenerated it, unrelated to the code), clean `eslint` on every changed file, clean `next build`. No live browser click-through — recommended before treating as fully verified, same caveat as every task this session.
+
+---
+
+## TASK-027 — Pelanggan: filter on both table surfaces
+
+**Type:** Feature
+**Priority:** P2
+**Status:** DONE (2026-09-19)
+**Dependency:** None
+**Created:** 2026-09-19 · **Last updated:** 2026-09-19
+
+**Description:** "di bagian pelanggan, tampilkan filter di setiap header tablenya" — planned first (Requirement/Impact/Files, confirmed via AskUserQuestion on exactly which filters per table, no HTML mockup needed since neither change altered the page's visual shape), then built.
+
+**1. `/pelanggan` "Semua Pelanggan"** — added a `SearchInput` (nama/kode, case-insensitive `includes`) and a Kota dropdown (new `components/pelanggan/PelangganKotaFilter.tsx`, same navigate-by-URL-param client pattern as `InvoicePeriodFilter.tsx`; options sourced from `summary.kotaTerbesar`, already computed for the sidebar — no new query). Filtered in-memory alongside the existing Semua/Ada Piutang pill toggle (`getPelangganSummary`'s own doc comment already justifies this: customer count small enough that a full scan per load is cheap). Fixed a latent message bug while touching this: the "Belum ada pelanggan... Tambah pelanggan pertama" empty state used to key off `filter === "semua"` alone, so an empty *search* result on the default pill would have wrongly shown the "add your first customer" nudge even with customers in the account — now keyed off `summary.rows.length === 0` (true empty account) instead.
+
+**2. `/pelanggan/[id]` "Semua Invoice Pelanggan Ini"** — added a status pill filter (Semua/Draft/Belum Bayar/Lunas), same visual pattern as the Semua/Ada Piutang pill on the list page. Filtered in-memory from the already-fetched, already-sorted invoice list (`allInvoices` → `invoices`); `totalBelanja` (page subtitle) stays computed from the unfiltered `allInvoices` since it's meant to reflect the whole customer relationship, not just the current filter view. `SortableHeader`'s existing param-preservation (confirmed by reading its source) meant sort clicks keep the active status filter for free; a small `buildStatusHref()` helper does the reverse (status pill clicks preserve sort/dir).
+
+**Files affected:** `app/pelanggan/page.tsx`, `components/pelanggan/PelangganKotaFilter.tsx` (new), `app/pelanggan/[id]/page.tsx`.
+
+**Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. No live browser click-through — recommended before treating as fully verified.
+
+**Note:** The "Tandai Sudah Kirim" trigger (TASK-026 follow-up 4) is being extended per the user's next request 2026-09-19 — instead of a single confirm() click, it needs a small form (Tanggal Dikirim + Kurir, both defaulted) that also updates `Invoice.kurir` when changed, which then flows through to the PDF automatically (no PDF code change needed — `InvoicePrintDoc.tsx`/`InvoiceDocument.tsx` already read `invoice.kurir` live). Planned and an HTML mockup of the modal shown to the user; **not yet built** — this is queued as the next thing to implement.

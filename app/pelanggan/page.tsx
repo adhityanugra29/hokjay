@@ -2,7 +2,9 @@ import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import { RowActionLink } from "@/components/ui/RowAction";
+import { SearchInput } from "@/components/ui/Panel";
 import MobilePelangganList from "@/components/pelanggan/MobilePelangganList";
+import PelangganKotaFilter from "@/components/pelanggan/PelangganKotaFilter";
 import { getPelangganSummary } from "@/lib/pelanggan";
 import { getSession } from "@/lib/auth/session";
 import { rupiah, rupiahCompact } from "@/lib/format";
@@ -16,18 +18,33 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
   // 2026-08-25 — the "Mulai jarang pesan" stat card above stays (it's
   // informational, not a filter), only the list filter button is gone.
   const filter = sp.filter === "piutang" ? "piutang" : "semua";
+  // Search (nama/kode) + Kota — per the user's request 2026-09-19
+  // ("tampilkan filter di setiap header tablenya"). Filtered in-memory
+  // alongside the existing piutang toggle, same as getPelangganSummary's
+  // own doc comment already justifies (customer count small enough that a
+  // full scan per page load is cheap) — no new query needed.
+  const search = typeof sp.search === "string" ? sp.search.trim().toLowerCase() : "";
+  const kota = typeof sp.kota === "string" ? sp.kota : "";
   const session = await getSession();
   // Per-sales customer privacy (2026-08-27) — see customerVisibilityFilter
   // in lib/pelanggan.ts for the exact rule.
   const summary = await getPelangganSummary(session);
 
   const filteredRows = summary.rows.filter((r) => {
-    if (filter === "piutang") return r.piutang > 0;
+    if (filter === "piutang" && !(r.piutang > 0)) return false;
+    if (search && !r.nama.toLowerCase().includes(search) && !r.kode.toLowerCase().includes(search)) return false;
+    if (kota && r.kota !== kota) return false;
     return true;
   });
 
   const emptyMessage =
-    filter === "semua" ? (
+    // Only the true empty-account state gets the "add first customer" nudge
+    // — a search/kota/piutang filter that just happens to match nothing
+    // gets the generic message instead. Per the user's request 2026-09-19
+    // ("tampilkan filter di setiap header tablenya") — before this, an
+    // empty search result on the default "semua" pill would have wrongly
+    // shown "Belum ada pelanggan" even with customers in the account.
+    summary.rows.length === 0 ? (
       <>
         Belum ada pelanggan.{" "}
         <Link href="/pelanggan/baru" className="text-accent-700 underline underline-offset-2">
@@ -85,19 +102,27 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
           <div className="overflow-hidden rounded-2xl bg-panel shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
               <div className="font-sans text-[0.92rem] font-extrabold text-ink">Semua pelanggan</div>
-              <div className="flex gap-1.5 rounded-full bg-surface p-1">
-                <Link
-                  href="/pelanggan"
-                  className={`rounded-full px-3 py-1.5 font-sans text-[0.72rem] font-semibold transition ${filter === "semua" ? "bg-ink text-white" : "text-muted hover:text-ink"}`}
-                >
-                  Semua
-                </Link>
-                <Link
-                  href="/pelanggan?filter=piutang"
-                  className={`rounded-full px-3 py-1.5 font-sans text-[0.72rem] font-semibold transition ${filter === "piutang" ? "bg-ink text-white" : "text-muted hover:text-ink"}`}
-                >
-                  Ada piutang
-                </Link>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <form className="w-full sm:w-auto">
+                  {kota ? <input type="hidden" name="kota" value={kota} /> : null}
+                  {filter === "piutang" ? <input type="hidden" name="filter" value="piutang" /> : null}
+                  <SearchInput name="search" defaultValue={sp.search as string} placeholder="Cari nama atau kode..." />
+                </form>
+                <PelangganKotaFilter kota={kota} availableKota={summary.kotaTerbesar.map((k) => k.kota)} />
+                <div className="flex gap-1.5 rounded-full bg-surface p-1">
+                  <Link
+                    href={buildPelangganHref({ kota, search: sp.search as string }, "semua")}
+                    className={`rounded-full px-3 py-1.5 font-sans text-[0.72rem] font-semibold transition ${filter === "semua" ? "bg-ink text-white" : "text-muted hover:text-ink"}`}
+                  >
+                    Semua
+                  </Link>
+                  <Link
+                    href={buildPelangganHref({ kota, search: sp.search as string }, "piutang")}
+                    className={`rounded-full px-3 py-1.5 font-sans text-[0.72rem] font-semibold transition ${filter === "piutang" ? "bg-ink text-white" : "text-muted hover:text-ink"}`}
+                  >
+                    Ada piutang
+                  </Link>
+                </div>
               </div>
             </div>
 
@@ -179,4 +204,14 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
       </div>
     </>
   );
+}
+
+/** Builds /pelanggan's href preserving search/kota when switching the Semua/Ada Piutang pill. */
+function buildPelangganHref(current: { kota?: string; search?: string }, filter: "semua" | "piutang"): string {
+  const params = new URLSearchParams();
+  if (current.search) params.set("search", current.search);
+  if (current.kota) params.set("kota", current.kota);
+  if (filter === "piutang") params.set("filter", "piutang");
+  const qs = params.toString();
+  return qs ? `/pelanggan?${qs}` : "/pelanggan";
 }
