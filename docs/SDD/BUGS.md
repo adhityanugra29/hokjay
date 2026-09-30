@@ -369,3 +369,20 @@ Also applied, per the user's related request, a conservative compression tighten
 **Regression test:** `npx tsc --noEmit` clean. No live-session verification available in this environment (same gap noted on prior invoice-doc bugs) — reasoned through both render paths (PDF capture and on-screen preview both read the same `InvoicePrintData.isPaid`/`dpNominal` fields, so an unpaid or never-DP'd invoice's rendering is untouched by this change).
 
 **Follow-up (same day):** User asked for a "Pelunasan (Tanggal)" row directly under the DP row, shown once `isPaid`, with the amount paid to settle (`paymentNominalDiterima`, falling back to `grandTotal − dpNominal` if not recorded) and the settlement date (`paymentTanggalBayar`). `app/invoice/[id]/page.tsx` previously never populated `paymentTanggalBayar`/`paymentNominalDiterima` at all (only the list page did) — added there too so the detail page's own PDF/preview shows it, not just the list's.
+
+---
+
+## BUG-021 — Invoice PDF's product name silently drops the Merk that Katalog shows
+
+**Severity:** B2
+**Status:** FIXED (2026-09-23)
+**Source:** User asked to verify "apakah penamaan produk di invoice sudah sesuai dengan di katalog" — investigated via subagent, confirmed by reading the code directly.
+
+**Description:** Katalog (card + PDF) shows product names through `productDisplayName(name, merk)` (`lib/format.ts`), which appends the Merk field automatically (e.g. name "Kulkas" + merk "Hosizaki" → "Kulkas Hosizaki"). That helper's own doc-comment says it was built precisely so this shows consistently across "Katalog card + PDF, Invoice's product picker + snapshot" (TASK-005, 2026-09-02). The client side (`AddProductSidebar.tsx`, `ProductCard.tsx`) does call it correctly when adding to cart — but the server-side invoice services rebuilt `namaSnapshot` straight from the raw `product.name` field, discarding the merk and whatever the client had sent.
+
+**Root cause:** `lib/services/createInvoice.ts` and `lib/services/updateInvoice.ts` both wrote `namaSnapshot: product.name` instead of using `productDisplayName()`, so any product with a non-empty Merk lost that part of its name once it landed on an actual Invoice PDF — a regression against `productDisplayName`'s stated intent, not a caching or display bug (the PDF template itself just renders whatever `namaSnapshot` it's given).
+
+**Fix:** Both files now write `namaSnapshot: productDisplayName(product.name, product.merk)`, importing `productDisplayName` from `@/lib/format`.
+
+**Files:** `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
+**Regression test:** `npx tsc --noEmit` clean. No live-session verification available in this environment. `namaSnapshot` is a frozen snapshot by design (matches `dimensiSnapshot`/`hargaMinimumSnapshot`/etc.), so this only affects invoices created or edited from now on — existing invoices keep whatever name they were given at the time, unchanged.

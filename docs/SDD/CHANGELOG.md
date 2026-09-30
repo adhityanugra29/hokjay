@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-09-30
+
+**TASK-034 done** — Katalog ProductCard decluttered, per the user's report that the card showed "to much information" and felt too long. Design Review done as an HTML mockup artifact (approved before coding). Kondisi badge moved onto the photo; the two price-preset buttons became one sliding-switch pill; Diskon collapsed behind "+ Diskon" (auto-opens if already set); Tersedia + Komisi merged into one line; Dimensi/Ketebalan/Daya Listrik collapsed behind "Lihat Detail ▾"; Booked/Sudah DP badges shortened to a count with names moved to a tooltip. Nothing removed — all relocated/collapsed only.
+
+Tasks: TASK-034.
+Regression: `tsc --noEmit` clean, `next build` clean. Not yet click-tested live.
+
+---
+
+## 2026-09-23
+
+**BUG-021 fixed** — Invoice PDF's product name silently dropped the Merk that Katalog shows for the same product (e.g. Katalog's "Kulkas Hosizaki" printed as just "Kulkas" on the Invoice). Found while checking the user's question "apakah penamaan produk di invoice sudah sesuai dengan di katalog" — `createInvoice.ts`/`updateInvoice.ts` were writing `namaSnapshot` from the raw `product.name` instead of the existing `productDisplayName(name, merk)` helper that Katalog and the invoice product-picker already use. Now both services build `namaSnapshot` through that same helper. Existing invoices unchanged (name is a frozen snapshot by design) — only affects invoices created/edited going forward.
+
+Regression: `tsc --noEmit` clean. No live browser click-through.
+
+---
+
 ## 2026-09-20
 
 **TASK-033 done** — Added "Preview" to the Invoice list's "⋯" overflow menu (unpaid/DP rows), reusing the same handler paid rows' dedicated Preview button already calls. Per the user's request "tambahkan button preview di titik tiga".

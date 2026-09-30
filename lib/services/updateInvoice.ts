@@ -4,7 +4,7 @@ import { Invoice } from "@/models/Invoice";
 import { StockMovement } from "@/models/StockMovement";
 import { JournalEntry } from "@/models/JournalEntry";
 import { computeLineCommission, maxDiskonBekas, maxDiskonBaru, resolveKomisiBekasPercent } from "@/lib/commission";
-import { formatDimensi } from "@/lib/format";
+import { formatDimensi, productDisplayName } from "@/lib/format";
 import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
 
@@ -125,7 +125,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     return {
       product: product._id,
       isCustom: false,
-      namaSnapshot: product.name,
+      namaSnapshot: productDisplayName(product.name, product.merk),
       dimensiSnapshot: formatDimensi(product.dimensi),
       qty: i.qty,
       hargaJual,

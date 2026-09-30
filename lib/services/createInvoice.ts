@@ -3,7 +3,7 @@ import { Product } from "@/models/Product";
 import { Invoice } from "@/models/Invoice";
 import { nextInvoiceNumber } from "@/lib/counters";
 import { computeLineCommission, maxDiskonBekas, maxDiskonBaru, resolveKomisiBekasPercent } from "@/lib/commission";
-import { formatDimensi } from "@/lib/format";
+import { formatDimensi, productDisplayName } from "@/lib/format";
 import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 
 export interface CreateInvoiceItemInput {
@@ -171,7 +171,7 @@ export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?:
     return {
       product: product._id,
       isCustom: false,
-      namaSnapshot: product.name,
+      namaSnapshot: productDisplayName(product.name, product.merk),
       dimensiSnapshot: formatDimensi(product.dimensi),
       qty: i.qty,
       hargaJual,
