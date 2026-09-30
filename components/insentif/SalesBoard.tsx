@@ -1,161 +1,220 @@
 import Link from "next/link";
 import { rupiah, rupiahCompact } from "@/lib/format";
-import type { SalesBoard as SalesBoardData } from "@/lib/insentif";
+import type { SalesBoard as SalesBoardData, SalesBoardRow } from "@/lib/insentif";
+import { initials } from "./boardUtils";
 
 /**
- * "5a" — full-screen, light-ground leaderboard: the top sales becomes a red
- * band, everyone else sits white on the light ground, no tiers — just
- * achievement, remaining target, and a countdown. See the design doc the
- * user supplied 2026-08-24 (id="5a").
+ * Desktop leaderboard, "Soft Trade" podium version (replaces the hard-border
+ * "5a" layout, per the user's request 2026-09-30 — matched to the Katalog
+ * ProductCard / Pelanggan card treatment: rounded panel cards, soft shadow,
+ * pill chips, no thick borders). Team summary cards, then a top-3 podium
+ * (2-1-3, center card raised), then the rest as one list card.
+ *
+ * Ranking, the "Lewat target" numbers and Estimasi Sales all come from the
+ * same SalesBoardData as before — ranking stays Lunas-only, Estimasi Sales
+ * stays a small chip that never affects it, and there is deliberately no
+ * komisi figure anywhere ("saya lupa itu privasi", 2026-09-19).
  */
 export default function SalesBoard({ board, periodLabel }: { board: SalesBoardData; periodLabel: string }) {
   const { rows, teamTotal, teamTarget, teamPercent, teamGap, daysRemaining } = board;
   const lewatCount = rows.filter((r) => r.lewatTarget).length;
   const belumCount = rows.length - lewatCount;
 
+  const top = rows.slice(0, 3);
+  const rest = rows.slice(3);
+  // Visual order 2-1-3; missing ranks just drop out (1 sales -> only #1).
+  const podium = [top[1] && { r: top[1], rank: 2 }, top[0] && { r: top[0], rank: 1 }, top[2] && { r: top[2], rank: 3 }].filter(
+    (x): x is { r: SalesBoardRow; rank: number } => !!x,
+  );
+
   return (
-    <div className="border-2 border-ink bg-panel">
-      <div className="flex flex-wrap items-end justify-between gap-5 border-b-2 border-ink px-5 py-5 sm:gap-6 sm:px-10 sm:py-7">
-        <div>
-          <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
-            CV Horeca Jaya · Papan penjualan
-          </div>
-          <h1 className="mt-2 font-sans text-[1.7rem] font-extrabold tracking-tight sm:text-[2.4rem]">{periodLabel}</h1>
+    <div className="flex flex-col gap-4">
+      <div>
+        <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+          CV Horeca Jaya · Papan penjualan
         </div>
-        <div className="flex flex-wrap items-end gap-5 sm:gap-8">
-          <div>
-            <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
-              Penjualan tim
-            </div>
-            <div className="mt-2 font-sans text-[1.05rem] font-extrabold tracking-tight sm:whitespace-nowrap sm:text-[1.6rem]">
-              {rupiah(teamTotal)}
-            </div>
+        <h1 className="mt-1 font-sans text-[2rem] font-black tracking-tight">{periodLabel}</h1>
+      </div>
+
+      <div className="grid grid-cols-[1.6fr_1fr_1fr] gap-3.5">
+        <div className="min-w-0 rounded-2xl bg-panel p-5 shadow-sm">
+          {teamTarget > 0 ? (
+            <>
+              <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+                Target tim {rupiah(teamTarget)}
+              </div>
+              <div className="mt-1.5 font-sans text-[1.5rem] font-black tracking-tight">
+                {rupiah(teamTotal)} <span className="text-[0.9rem] font-bold text-muted">· {teamPercent}%</span>
+              </div>
+              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-surface">
+                <div className="h-full rounded-full bg-ink" style={{ width: `${Math.min(teamPercent, 100)}%` }} />
+              </div>
+              <div className="mt-2 text-[0.75rem] text-muted">
+                {teamGap > 0 ? (
+                  <>
+                    Kurang <b className="font-bold text-accent-700">{rupiahCompact(teamGap)}</b> lagi untuk tercapai
+                  </>
+                ) : (
+                  <b className="font-bold text-accent-700">Target tim tercapai 🎉</b>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Penjualan tim</div>
+              <div className="mt-1.5 font-sans text-[1.5rem] font-black tracking-tight">{rupiah(teamTotal)}</div>
+              <div className="mt-2 text-[0.75rem] text-muted">
+                Belum ada target tim —{" "}
+                <Link href="/admin" className="text-accent-700 underline underline-offset-2">
+                  atur target per sales di Admin → Kelola User
+                </Link>
+                .
+              </div>
+            </>
+          )}
+        </div>
+        <div className="min-w-0 rounded-2xl bg-panel p-5 shadow-sm">
+          <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Sisa waktu</div>
+          <div className="mt-1.5 font-sans text-[1.5rem] font-black tracking-tight text-accent-700">{daysRemaining} hari</div>
+        </div>
+        <div className="min-w-0 rounded-2xl bg-panel p-5 shadow-sm">
+          <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Lewat target</div>
+          <div className="mt-1.5 font-sans text-[1.5rem] font-black tracking-tight">
+            {lewatCount} <span className="text-[0.9rem] font-bold text-muted">dari {rows.length} sales</span>
           </div>
-          <div className="text-right">
-            <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
-              Sisa waktu
-            </div>
-            <div className="mt-2 whitespace-nowrap font-sans text-[1.6rem] font-extrabold leading-none tracking-tight text-accent-700 sm:text-[2rem]">
-              {daysRemaining} hari
-            </div>
-          </div>
+          {belumCount > 0 && <div className="mt-2 text-[0.75rem] text-muted">{belumCount} orang masih dalam jangkauan</div>}
         </div>
       </div>
 
-      {teamTarget > 0 ? (
-        <div className="border-b-2 border-ink bg-white px-5 py-5 sm:px-10">
-          <div className="flex flex-wrap items-baseline justify-between gap-4">
-            <span className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
-              Target tim {rupiah(teamTarget)}
-            </span>
-            <span className="font-mono text-[0.8rem] text-muted">
-              {teamGap > 0 ? (
-                <>
-                  Kurang <b className="text-[1rem] text-accent-700">{rupiahCompact(teamGap)}</b> lagi untuk tercapai
-                </>
-              ) : (
-                <b className="text-[1rem] text-accent-700">Target tim tercapai 🎉</b>
-              )}
-            </span>
-          </div>
-          <div className="relative mt-3 h-4 bg-ink/10">
-            <div
-              className="absolute inset-y-0 left-0 flex items-center justify-end bg-ink pr-2"
-              style={{ width: `${Math.min(teamPercent, 100)}%` }}
-            >
-              <span className="font-sans text-[11px] font-extrabold text-white">{teamPercent}%</span>
-            </div>
-            <div className="absolute -top-1 -bottom-1 left-full w-0.5 bg-accent" />
-          </div>
-        </div>
-      ) : (
-        <div className="border-b-2 border-ink bg-white px-5 py-5 font-mono text-[0.8rem] text-muted sm:px-10">
-          Belum ada target tim tercapai —{" "}
-          <Link href="/admin" className="text-accent-700 underline underline-offset-2">
-            atur target per sales di Admin → Kelola User
-          </Link>
-          .
+      {rows.length === 0 && (
+        <div className="rounded-2xl bg-panel py-14 text-center text-sm text-muted shadow-sm">
+          Belum ada penjualan lunas periode ini.
         </div>
       )}
 
-      <div className="px-5">
-        {rows.map((r) => {
-          const isTop = r === rows[0];
-          const hasTarget = r.target > 0;
-          return (
-            <div
-              key={r.salesNama}
-              className={`grid grid-cols-[40px_1fr] items-start gap-x-3 gap-y-2.5 px-4 py-4 sm:grid-cols-[58px_1fr_280px_96px_200px] sm:items-center sm:gap-6 sm:px-5 sm:py-5 ${
-                isTop ? "bg-accent text-ink" : "border-b border-ink/20 bg-white text-ink"
-              }`}
-            >
-              <span className={`font-sans text-[1.6rem] font-extrabold leading-none tracking-tight sm:text-[2.1rem] ${isTop ? "text-ink" : "text-ink/25"}`}>
-                {rows.indexOf(r) + 1}
-              </span>
-              <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 sm:block">
-                <span className="font-sans text-[1.15rem] font-extrabold tracking-tight sm:text-[1.4rem]">{r.salesNama}</span>
-                <span className={`font-mono text-[12px] sm:mt-1 sm:block ${isTop ? "text-ink/70" : "text-muted"}`}>
-                  {r.orderCount} order
+      {podium.length > 0 && (
+        <div className="flex items-end justify-center gap-4">
+          {podium.map(({ r, rank }) => {
+            const first = rank === 1;
+            const hasTarget = r.target > 0;
+            return (
+              <div
+                key={r.salesNama}
+                className={`relative min-w-0 rounded-2xl text-center ${
+                  first
+                    ? "max-w-[380px] flex-[1.12] bg-linear-to-b from-accent-100 to-panel px-5 pb-6 pt-8 shadow-lg shadow-accent-700/15"
+                    : "max-w-[340px] flex-1 bg-panel px-5 pb-5 pt-6 shadow-sm"
+                }`}
+              >
+                <span
+                  className={`absolute left-3 top-3 inline-flex h-[26px] min-w-[26px] items-center justify-center rounded-full px-2 font-sans text-[0.75rem] font-extrabold ${
+                    first ? "bg-accent" : "bg-surface"
+                  }`}
+                >
+                  {rank}
                 </span>
-              </span>
-              <span className="col-start-2 sm:col-auto">
-                {hasTarget ? (
-                  <>
-                    <div className={`relative h-3 ${isTop ? "bg-ink/15" : "bg-ink/14"}`}>
-                      <div
-                        className={`absolute inset-y-0 left-0 ${isTop ? "bg-ink" : "bg-accent"}`}
-                        style={{ width: `${Math.min(r.percent, 100)}%` }}
-                      />
-                      <div className={`absolute -top-1 -bottom-1 left-full w-0.5 ${isTop ? "bg-ink" : "bg-ink"}`} />
-                    </div>
-                    <div className={`mt-1.5 font-mono text-[11.5px] ${isTop ? "text-ink/70" : "text-muted"}`}>
-                      {r.lewatTarget ? "Lewat target " : "Kurang "}
-                      {rupiahCompact(r.selisih)} · target {rupiah(r.target)}
-                    </div>
-                  </>
-                ) : (
-                  <span className={`font-mono text-[11.5px] ${isTop ? "text-ink/70" : "text-muted"}`}>
-                    Belum ada target
+                {first && (
+                  <span className="absolute right-3 top-3 rounded-full bg-ink px-2.5 py-1 font-sans text-[0.68rem] font-bold text-white">
+                    Terbaik periode ini
                   </span>
                 )}
-              </span>
-              <span className="col-start-2 font-sans text-[1.1rem] font-extrabold tracking-tight sm:col-auto sm:text-right sm:text-[1.35rem]">
-                {hasTarget ? `${r.percent}%` : "—"}
-              </span>
-              <span className="col-start-2 sm:col-auto sm:text-right">
-                <span className="block font-sans text-[1.05rem] font-extrabold tracking-tight whitespace-nowrap sm:text-[1.45rem]">
+                <div
+                  className={`mx-auto flex items-center justify-center rounded-full font-sans font-black ${
+                    first ? "h-[76px] w-[76px] bg-accent text-[1.5rem] ring-4 ring-white" : "h-14 w-14 bg-surface text-[1.1rem]"
+                  }`}
+                >
+                  {initials(r.salesNama)}
+                </div>
+                <div className={`mt-3 font-sans font-extrabold tracking-tight wrap-anywhere ${first ? "text-[1.25rem]" : "text-[1.05rem]"}`}>
+                  {r.salesNama}
+                </div>
+                <div className="mt-0.5 text-[0.75rem] text-muted">{r.orderCount} order</div>
+                <div className={`mt-3.5 font-sans font-black tracking-tight whitespace-nowrap ${first ? "text-[1.7rem]" : "text-[1.35rem]"}`}>
                   {rupiah(r.totalPenjualan)}
-                </span>
-                {/* Estimasi Sales — from this period's DP'd/belum lunas
-                    invoices, never part of the ranking/highlight above
-                    (that stays Lunas-only). Per the user's request
-                    2026-09-19. Deliberately no komisi figure alongside
-                    this — "saya lupa itu privasi". */}
-                {r.estimasiSales > 0 && (
-                  <span
-                    className={`mt-1 block border-t pt-1 font-mono text-[0.68rem] ${
-                      isTop ? "border-ink/20 text-ink/65" : "border-ink/14 text-muted"
-                    }`}
-                  >
-                    + Estimasi {rupiahCompact(r.estimasiSales)}
-                  </span>
+                </div>
+                <div className="mt-2.5 flex min-h-6 flex-wrap justify-center gap-1.5">
+                  {hasTarget ? (
+                    r.lewatTarget ? (
+                      <span className="rounded-full bg-[#16A34A]/12 px-2.5 py-1 text-[0.68rem] font-semibold text-[#16A34A]">
+                        {r.percent}% · lewat {rupiahCompact(r.selisih)}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-surface px-2.5 py-1 text-[0.68rem] font-semibold">{r.percent}% target</span>
+                    )
+                  ) : (
+                    <span className="rounded-full bg-surface px-2.5 py-1 text-[0.68rem] font-semibold text-muted">Belum ada target</span>
+                  )}
+                  {/* Estimasi Sales — never part of the ranking (Lunas-only). Per the user's request 2026-09-19. */}
+                  {r.estimasiSales > 0 && (
+                    <span className="rounded-full bg-[#0369A1]/10 px-2.5 py-1 text-[0.68rem] font-semibold text-[#0369A1]">
+                      + Est. {rupiahCompact(r.estimasiSales)}
+                    </span>
+                  )}
+                </div>
+                {hasTarget && (
+                  <div className="mt-3.5 h-2.5 overflow-hidden rounded-full bg-surface">
+                    <div className={`h-full rounded-full ${first ? "bg-accent" : "bg-ink"}`} style={{ width: `${Math.min(r.percent, 100)}%` }} />
+                  </div>
                 )}
-              </span>
-            </div>
-          );
-        })}
-        {rows.length === 0 && (
-          <div className="py-14 text-center font-mono text-sm text-muted">Belum ada penjualan lunas periode ini.</div>
-        )}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {rest.length > 0 && (
+        <div className="overflow-hidden rounded-2xl bg-panel shadow-sm">
+          {rest.map((r, i) => {
+            const hasTarget = r.target > 0;
+            return (
+              <div
+                key={r.salesNama}
+                className={`grid grid-cols-[34px_44px_minmax(0,1.1fr)_minmax(0,1.4fr)_auto] items-center gap-3.5 px-5 py-3.5 ${
+                  i > 0 ? "border-t border-line" : ""
+                }`}
+              >
+                <span className="text-center font-sans font-extrabold text-muted">{i + 4}</span>
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface font-sans text-[0.85rem] font-extrabold">
+                  {initials(r.salesNama)}
+                </span>
+                <span className="min-w-0">
+                  <b className="block truncate font-sans font-extrabold">{r.salesNama}</b>
+                  <span className="text-[0.75rem] text-muted">{r.orderCount} order</span>
+                </span>
+                <span className="min-w-0">
+                  {hasTarget ? (
+                    <>
+                      <div className="h-2 overflow-hidden rounded-full bg-surface">
+                        <div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(r.percent, 100)}%` }} />
+                      </div>
+                      <div className="mt-1.5 text-[0.72rem] text-muted">
+                        {r.lewatTarget ? "Lewat target " : "Kurang "}
+                        {rupiahCompact(r.selisih)} · target {rupiah(r.target)} · {r.percent}%
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-[0.72rem] text-muted">Belum ada target</span>
+                  )}
+                </span>
+                <span className="text-right">
+                  <span className="block font-sans text-[1.05rem] font-black tracking-tight whitespace-nowrap">{rupiah(r.totalPenjualan)}</span>
+                  {r.estimasiSales > 0 && (
+                    <span className="mt-0.5 block text-[0.68rem] font-medium text-[#0369A1]">+ Est. {rupiahCompact(r.estimasiSales)}</span>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {rows.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-accent px-5 py-4 text-ink sm:px-10">
-          <span className="font-sans text-[0.9rem] font-extrabold">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-accent-100 px-5 py-3.5">
+          <span className="font-sans text-[0.85rem] font-semibold">
             {lewatCount > 0 ? `${lewatCount} orang sudah lewat target` : "Belum ada yang lewat target"}
             {belumCount > 0 ? ` · ${belumCount} orang masih dalam jangkauan` : ""}
           </span>
-          <span className="font-mono text-[11px] text-white/80">Diperbarui otomatis tiap invoice lunas</span>
+          <span className="text-[0.7rem] text-muted">Diperbarui otomatis tiap invoice lunas</span>
         </div>
       )}
     </div>
