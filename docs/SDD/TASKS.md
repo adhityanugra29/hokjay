@@ -743,3 +743,27 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Files affected:** `components/invoice/InvoiceListClient.tsx`.
 
 **Regression test:** Clean `tsc --noEmit`, clean `eslint`, clean `next build`. Not yet click-tested live.
+
+---
+
+## TASK-034 — Katalog ProductCard decluttered (mockup-approved)
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** DONE (2026-09-30)
+**Dependency:** None
+**Created:** 2026-09-30 · **Last updated:** 2026-09-30
+
+**Description:** User reported the card had "to much information" and felt cluttered/too long. Design Review done as an HTML mockup artifact (Before/After comparison, then a follow-up iteration for the price-preset switch) and approved before touching code, per the design-system framework. Changes, all presentational — no capability removed, only relocated/collapsed:
+- Kondisi (Baru/Bekas) badge moved from the badge row onto the photo itself (bottom-left corner overlay).
+- The two separate "Harga Rekomendasi"/"Harga Bottom" preset buttons replaced with one sliding-switch pill (animated thumb, same `setPriceMode` call underneath) — per the user's explicit follow-up request ("bentuknya seperti saklar yang menyamping ... smooth").
+- Diskon field collapsed behind a "+ Diskon" link, auto-expanded if the line already has a saved discount (so an existing value is never hidden).
+- "Tersedia: N unit" and the separate Komisi pill merged into one line.
+- Dimensi/Ketebalan/Daya Listrik specs collapsed behind a "Lihat Detail ▾" toggle, closed by default.
+- Booked/Sudah DP badges shortened to a count ("Booked ×N"); the customer names (`bookedBy`/`dpBy`) moved to the badge's `title` tooltip instead of always inline.
+
+**Acceptance criteria:** No feature removed — every element from before (checkbox, edit pencil, photo download, price input, preset switch, Diskon, Komisi, specs, booked/DP names, Add to Invoice) still reachable, just relocated/collapsed. Clean `tsc --noEmit`, clean `next build`.
+
+**Files affected:** `components/katalog/ProductCard.tsx` only.
+
+**Regression test:** `tsc --noEmit` clean, `next build` clean. Pre-existing lint errors in unrelated files (`Form.tsx`, `LoadingOverlay.tsx`, `SearchableSelect.tsx`, `server.js`) untouched by this change. Not yet click-tested live in a browser.

@@ -169,6 +169,12 @@ export default function ProductCard({
   // Diskon-exceeds-insentif warning for barang bekas — see maxDiskonBekas
   // usage below. Per the user's request 2026-08-29.
   const [discountWarning, setDiscountWarning] = useState(false);
+  // Diskon and Detail Spesifikasi both collapsed by default to declutter the
+  // card (2026-09-30, per the user's report "to much information ... card
+  // terlalu panjang"). Diskon auto-opens if this line already has a saved
+  // discount, so an existing value is never hidden from view.
+  const [diskonOpen, setDiskonOpen] = useState(() => getDiscount(product._id) > 0);
+  const [detailOpen, setDetailOpen] = useState(false);
   // Flash Sale — top-down price lock set by an owner/super_admin (server
   // enforced, see app/api/products/[id]/flash-sale/route.ts). While
   // active, this card can't offer any other price: no preset buttons, no
@@ -352,6 +358,16 @@ export default function ProductCard({
             </svg>
           </button>
         )}
+        {/* Kondisi (Baru/Bekas) — moved here from the badge row below onto
+            the photo itself (bottom-left, clear of the checkbox/pencil/
+            download corners) to shorten the card. Per the user's request
+            2026-09-30. */}
+        <span
+          className="absolute bottom-2.5 left-2.5 z-10 rounded-full px-2.5 py-1 text-[0.66rem] font-semibold text-white"
+          style={{ background: product.kondisi === "bekas" ? "#D97706" : "#16A34A" }}
+        >
+          {kondisiLabel}
+        </span>
         {product.fotoUrl ? (
           <>
             <ZoomableImage
@@ -459,20 +475,28 @@ export default function ProductCard({
                   manually-typed custom price above. Shows on every card
                   at all times (not gated to PDF pick mode) since this is
                   also the price used when adding to invoice. */}
-              <div className="flex flex-wrap gap-1.5">
+              {/* Sliding switch (2026-09-30, per the user's request "bentuknya
+                  seperti saklar yang menyamping ... smooth") — replaces the
+                  two separate preset buttons with one pill whose thumb slides
+                  between Rekomendasi/Bottom. Same setPriceMode call as before,
+                  just restyled. */}
+              <div className="relative flex h-[30px] w-[176px] items-center rounded-full bg-surface p-[3px]">
+                <div
+                  className={`absolute top-[3px] left-[3px] h-6 w-[85px] rounded-full bg-accent shadow-sm transition-transform duration-200 ease-out ${
+                    getPriceMode(product._id) === "minimum" ? "translate-x-[85px]" : "translate-x-0"
+                  }`}
+                />
                 <button
                   type="button"
                   onClick={() => {
                     setPriceMode(product._id, "rekomendasi");
                     setPriceWarning(null);
                   }}
-                  className={`cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
-                    getPriceMode(product._id) === "rekomendasi" && !hasCustomPrice
-                      ? "border-accent bg-accent text-ink"
-                      : "border-line text-ink hover:bg-[#f3f2ec]"
+                  className={`relative z-10 flex-1 cursor-pointer rounded-full py-1 text-center font-mono text-[0.62rem] font-bold ${
+                    getPriceMode(product._id) === "rekomendasi" && !hasCustomPrice ? "text-ink" : "text-muted"
                   }`}
                 >
-                  Harga Rekomendasi
+                  Rekomendasi
                 </button>
                 <button
                   type="button"
@@ -480,13 +504,11 @@ export default function ProductCard({
                     setPriceMode(product._id, "minimum");
                     setPriceWarning(null);
                   }}
-                  className={`cursor-pointer rounded-full border px-2.5 py-1 font-mono text-[0.64rem] font-semibold ${
-                    getPriceMode(product._id) === "minimum" && !hasCustomPrice
-                      ? "border-accent bg-accent text-ink"
-                      : "border-line text-ink hover:bg-[#f3f2ec]"
+                  className={`relative z-10 flex-1 cursor-pointer rounded-full py-1 text-center font-mono text-[0.62rem] font-bold ${
+                    getPriceMode(product._id) === "minimum" && !hasCustomPrice ? "text-ink" : "text-muted"
                   }`}
                 >
-                  Harga Bottom
+                  Bottom
                 </button>
               </div>
               {/* Diskon — separate field from the price above, per the
@@ -506,35 +528,60 @@ export default function ProductCard({
                   diskon kecil dan menyamping"): squeezing the label onto
                   the same row as the input left the input itself
                   cramped. */}
-              <div className="flex flex-col gap-1">
-                <span className="font-mono text-[0.64rem] uppercase tracking-[0.06em] text-muted">
-                  Diskon
-                </span>
-                <CurrencyInput
-                  value={String(discount)}
-                  onChange={(v) => {
-                    setDiscount(product._id, v ? Number(v) : 0);
-                    setDiscountWarning(false);
-                  }}
-                  onBlur={(v) => {
-                    const num = v ? Number(v) : 0;
-                    // Baru/Custom now has a real cap too (2026-09-03 — see
-                    // maxDiskonBaru's doc comment), same on-blur clamp+
-                    // warning treatment Bekas already had, so a manually
-                    // typed diskon on either kondisi gets the same feedback
-                    // instead of only being silently clamped at save time.
-                    const max =
-                      product.kondisi === "bekas"
-                        ? maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent, isOwner)
-                        : maxDiskonBaru(effectivePrice, product.hargaMinimum, isOwner);
-                    if (num > max) {
-                      setDiscount(product._id, max);
-                      setDiscountWarning(true);
-                    }
-                  }}
-                  showPrefix
-                />
-              </div>
+              {/* Collapsed behind "+ Diskon" by default (2026-09-30, per the
+                  user's decluttering request) — auto-opens via diskonOpen's
+                  initial state above when this line already has a discount,
+                  so an existing value is never hidden. */}
+              {diskonOpen ? (
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[0.64rem] uppercase tracking-[0.06em] text-muted">
+                      Diskon
+                    </span>
+                    {discount === 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setDiskonOpen(false)}
+                        className="cursor-pointer font-mono text-[0.62rem] text-muted underline hover:text-accent-700"
+                      >
+                        Tutup
+                      </button>
+                    )}
+                  </div>
+                  <CurrencyInput
+                    value={String(discount)}
+                    onChange={(v) => {
+                      setDiscount(product._id, v ? Number(v) : 0);
+                      setDiscountWarning(false);
+                    }}
+                    onBlur={(v) => {
+                      const num = v ? Number(v) : 0;
+                      // Baru/Custom now has a real cap too (2026-09-03 — see
+                      // maxDiskonBaru's doc comment), same on-blur clamp+
+                      // warning treatment Bekas already had, so a manually
+                      // typed diskon on either kondisi gets the same feedback
+                      // instead of only being silently clamped at save time.
+                      const max =
+                        product.kondisi === "bekas"
+                          ? maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent, isOwner)
+                          : maxDiskonBaru(effectivePrice, product.hargaMinimum, isOwner);
+                      if (num > max) {
+                        setDiscount(product._id, max);
+                        setDiscountWarning(true);
+                      }
+                    }}
+                    showPrefix
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setDiskonOpen(true)}
+                  className="w-fit cursor-pointer font-sans text-[0.72rem] font-semibold text-muted underline underline-offset-2 hover:text-accent-700"
+                >
+                  + Diskon
+                </button>
+              )}
               {discountWarning && (
                 <div className="text-[0.68rem] font-medium text-accent-700">
                   Diskon melebihi batas insentif, disesuaikan otomatis ke maksimal{" "}
@@ -596,12 +643,17 @@ export default function ProductCard({
             </>
           )}
         </div>
-        <div className="mt-2.5 text-[0.72rem] text-muted">
+        {/* Tersedia + Komisi combined into one line (2026-09-30, per the
+            user's decluttering request) — was two separate blocks (this
+            line, plus a standalone Komisi pill further down). */}
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.72rem] text-muted">
           {availableQty <= 0 ? (
-            <span className="text-accent-700">Tidak Tersedia</span>
+            <span className="font-semibold text-accent-700">Tidak Tersedia</span>
           ) : (
-            <>Tersedia: <span className="font-medium text-ink">{availableQty}</span> unit</>
+            <span>Tersedia <span className="font-medium text-ink">{availableQty}</span> unit</span>
           )}
+          <span className="text-line">·</span>
+          <span>Komisi <span className="font-medium text-ink">{rupiah(liveKomisi)}</span></span>
         </div>
 
         {/* Badges — soft rounded-full pills with a tinted background
@@ -619,14 +671,25 @@ export default function ProductCard({
               state across different invoices at once), per the user's
               confirmed choice 2026-08-27. Still selectable/pickable —
               these are informational, not a reservation. */}
+          {/* Booked/DP names moved to a hover/long-press tooltip (title) —
+              the badge itself is just a count now, per the user's
+              decluttering request 2026-09-30. Names aren't removed, just no
+              longer always inline (which made this row grow unbounded with
+              more names). */}
           {!!product.bookedQty && (
-            <span className="rounded-full bg-[#B45309]/10 px-2.5 py-1 text-[0.66rem] font-semibold text-[#B45309]">
-              Booked {product.bookedQty} — {(product.bookedBy ?? []).join(", ")}
+            <span
+              title={(product.bookedBy ?? []).join(", ")}
+              className="cursor-default rounded-full bg-[#B45309]/10 px-2.5 py-1 text-[0.66rem] font-semibold text-[#B45309]"
+            >
+              Booked ×{product.bookedQty}
             </span>
           )}
           {!!product.dpQty && (
-            <span className="rounded-full bg-[#0369A1]/10 px-2.5 py-1 text-[0.66rem] font-semibold text-[#0369A1]">
-              Sudah DP {product.dpQty} — {(product.dpBy ?? []).join(", ")}
+            <span
+              title={(product.dpBy ?? []).join(", ")}
+              className="cursor-default rounded-full bg-[#0369A1]/10 px-2.5 py-1 text-[0.66rem] font-semibold text-[#0369A1]"
+            >
+              Sudah DP ×{product.dpQty}
             </span>
           )}
           {!!product.soldQty && (
@@ -634,43 +697,36 @@ export default function ProductCard({
               SOLD {product.soldQty}
             </span>
           )}
-          {/* Just "Bekas"/"Baru" — the kondisiPercent number is dropped
-              from the label (still stored/editable on the product itself,
-              just not shown here). Filled with a bright color instead of
-              the usual neutral outline badge so the status reads at a
-              glance. Per the user's request 2026-08-25. */}
-          <span
-            className="rounded-full px-2.5 py-1 text-[0.66rem] font-semibold text-white"
-            style={{ background: product.kondisi === "bekas" ? "#D97706" : "#16A34A" }}
-          >
-            {kondisiLabel}
-          </span>
         </div>
 
-        {/* Small, label-styled badge (not a bold/large number) — per the
-            user's report 2026-08-26 that a big accent-colored Komisi figure
-            read as competing with the actual price above it, easy to
-            mistake for a second price. */}
-        <div className="mt-2.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-[0.66rem] text-muted">
-          <span className="uppercase tracking-[0.06em]">Komisi</span>
-          <span className="font-semibold text-ink">{rupiah(liveKomisi)}</span>
-        </div>
-
+        {/* Specs collapsed behind "Lihat Detail" by default (2026-09-30, per
+            the user's decluttering request) — was always-visible. */}
         {(dimText || product.ketebalan || product.dayaListrik) && (
-          <div className="mt-2.5 border-t border-dashed border-line pt-2.5 font-mono text-[0.7rem] leading-relaxed text-muted">
-            {dimText && (
-              <div>
-                <b className="font-medium text-ink">Dimensi:</b> {dimText}
-              </div>
-            )}
-            {product.ketebalan && (
-              <div>
-                <b className="font-medium text-ink">Ketebalan:</b> {product.ketebalan}
-              </div>
-            )}
-            {product.dayaListrik && (
-              <div>
-                <b className="font-medium text-ink">Daya Listrik:</b> {product.dayaListrik}
+          <div className="mt-2.5 border-t border-dashed border-line pt-2.5">
+            <button
+              type="button"
+              onClick={() => setDetailOpen((o) => !o)}
+              className="cursor-pointer font-mono text-[0.68rem] font-semibold text-muted hover:text-accent-700"
+            >
+              {detailOpen ? "Sembunyikan Detail ▴" : "Lihat Detail ▾"}
+            </button>
+            {detailOpen && (
+              <div className="mt-2 flex flex-col gap-1 font-mono text-[0.7rem] leading-relaxed text-muted">
+                {dimText && (
+                  <div>
+                    <b className="font-medium text-ink">Dimensi:</b> {dimText}
+                  </div>
+                )}
+                {product.ketebalan && (
+                  <div>
+                    <b className="font-medium text-ink">Ketebalan:</b> {product.ketebalan}
+                  </div>
+                )}
+                {product.dayaListrik && (
+                  <div>
+                    <b className="font-medium text-ink">Daya Listrik:</b> {product.dayaListrik}
+                  </div>
+                )}
               </div>
             )}
           </div>
