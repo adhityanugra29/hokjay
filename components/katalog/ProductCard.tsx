@@ -359,11 +359,18 @@ export default function ProductCard({
           </button>
         )}
         {/* Kondisi (Baru/Bekas) — moved here from the badge row below onto
-            the photo itself (bottom-left, clear of the checkbox/pencil/
-            download corners) to shorten the card. Per the user's request
-            2026-09-30. */}
+            the photo itself, to shorten the card. Per the user's request
+            2026-09-30. Was bottom-left, but that collided with
+            ZoomableImage's own dimension footnote (photoLabelText) at that
+            same corner — per the user's report 2026-10-01 ("label Baru
+            dengan ukuran ... bertabrakan"). Moved to top-left instead,
+            same top-8/top-2.5 flashSale offset as the checkbox/pencil, and
+            nudged right (left-11) while the pick-mode checkbox also
+            occupies that corner. */}
         <span
-          className="absolute bottom-2.5 left-2.5 z-10 rounded-full px-2.5 py-1 text-[0.66rem] font-semibold text-white"
+          className={`absolute z-10 rounded-full px-2.5 py-1 text-[0.66rem] font-semibold text-white ${
+            flashSaleActive ? "top-8" : "top-2.5"
+          } ${pickMode ? "left-11" : "left-2.5"}`}
           style={{ background: product.kondisi === "bekas" ? "#D97706" : "#16A34A" }}
         >
           {kondisiLabel}

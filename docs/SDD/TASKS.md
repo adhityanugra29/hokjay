@@ -755,7 +755,7 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Created:** 2026-09-30 · **Last updated:** 2026-09-30
 
 **Description:** User reported the card had "to much information" and felt cluttered/too long. Design Review done as an HTML mockup artifact (Before/After comparison, then a follow-up iteration for the price-preset switch) and approved before touching code, per the design-system framework. Changes, all presentational — no capability removed, only relocated/collapsed:
-- Kondisi (Baru/Bekas) badge moved from the badge row onto the photo itself (bottom-left corner overlay).
+- Kondisi (Baru/Bekas) badge moved from the badge row onto the photo itself (top-left corner overlay, nudged right when the pick-mode checkbox is also present — see 2026-10-01 follow-up below).
 - The two separate "Harga Rekomendasi"/"Harga Bottom" preset buttons replaced with one sliding-switch pill (animated thumb, same `setPriceMode` call underneath) — per the user's explicit follow-up request ("bentuknya seperti saklar yang menyamping ... smooth").
 - Diskon field collapsed behind a "+ Diskon" link, auto-expanded if the line already has a saved discount (so an existing value is never hidden).
 - "Tersedia: N unit" and the separate Komisi pill merged into one line.
@@ -767,3 +767,27 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Files affected:** `components/katalog/ProductCard.tsx` only.
 
 **Regression test:** `tsc --noEmit` clean, `next build` clean. Pre-existing lint errors in unrelated files (`Form.tsx`, `LoadingOverlay.tsx`, `SearchableSelect.tsx`, `server.js`) untouched by this change. Not yet click-tested live in a browser.
+
+**Follow-up (2026-10-01):** User reported the Kondisi badge collided with `ZoomableImage`'s own dimension footnote (`photoLabelText`, e.g. "120cm x 80cm x 60cm") — both were placed at the photo's bottom-left corner. Moved Kondisi to top-left instead (same `top-8`/`top-2.5` offset the checkbox/pencil already use for Flash Sale, plus a `left-11` nudge when the pick-mode checkbox is also showing there). Verified with a static HTML reproduction of the 3 overlapping states (pick mode off/on, Flash Sale + pick mode together) since this environment has no logged-in browser session to click through Katalog live — `tsc --noEmit` clean.
+
+---
+
+## TASK-035 — Leaderboard Sales redesigned as a Soft Trade podium (mockup-approved)
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** DONE (2026-09-30)
+**Dependency:** None
+**Created:** 2026-09-30 · **Last updated:** 2026-09-30
+
+**Description:** User asked to replace the Leaderboard Sales UI ("terlalu kaku") with a top-3 podium matching the newer Katalog/Pelanggan "Soft Trade" look. Design Review done as an HTML mockup artifact, approved before coding (podium, desktop + mobile, data unchanged).
+- Desktop: 3 rounded summary cards (team target/progress, sisa waktu, lewat target), then a 2-1-3 podium of rounded cards with initials avatars (#1 raised, yellow-tinted), then rank 4+ in one list card; the yellow footer became a soft rounded bar.
+- Mobile: header without the dark bar; top 3 as cards shrinking in emphasis (#1 yellow-tinted hero), rank 4+ in one list card, "Posisi kamu" kept as a sticky rounded ink card.
+- Fewer than 3 sales: only the filled podium cards render (1 sales = #1 alone). No sales: empty-state card. No target: "Belum ada target" chip, no bar.
+- Estimasi Sales kept as a small chip, never affects ranking, still no komisi figure anywhere.
+
+**Acceptance criteria:** Same data, ranking (Lunas-only), PeriodPicker, back button and Posisi kamu strip as before; presentation only. No API/schema change.
+
+**Files affected:** `components/insentif/SalesBoard.tsx`, `components/insentif/MobileSalesBoard.tsx`, new `components/insentif/boardUtils.ts` (initials helper).
+
+**Regression test:** `tsc --noEmit` clean, `eslint components/insentif` clean. `next build` not run, not yet click-tested live in a browser.

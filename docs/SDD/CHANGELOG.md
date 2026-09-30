@@ -4,7 +4,23 @@
 
 ---
 
+## 2026-10-01
+
+**TASK-034 follow-up** — Kondisi (Baru/Bekas) badge collided with `ZoomableImage`'s own dimension footnote — both sat at the photo's bottom-left corner. Moved Kondisi to top-left instead, nudged right when the pick-mode checkbox is also showing there. Verified via a static HTML reproduction of the 3 overlapping states (no logged-in browser session available in this environment to click through Katalog live).
+
+Tasks: TASK-034.
+Regression: `tsc --noEmit` clean.
+
+---
+
 ## 2026-09-30
+
+**TASK-035 done** — Leaderboard Sales redesigned as a Soft Trade podium (desktop + mobile), matching the Katalog/Pelanggan look, per the user's "terlalu kaku" feedback. Design Review done as an HTML mockup artifact (approved before coding). Top 3 became rounded podium cards with initials avatars (#1 raised); rank 4+ in one list card; summary cards on top. Data, ranking, Estimasi Sales chip and "Posisi kamu" unchanged; no komisi shown.
+
+Tasks: TASK-035.
+Regression: `tsc --noEmit` clean, `eslint components/insentif` clean. Not yet click-tested live.
+
+---
 
 **TASK-034 done** — Katalog ProductCard decluttered, per the user's report that the card showed "to much information" and felt too long. Design Review done as an HTML mockup artifact (approved before coding). Kondisi badge moved onto the photo; the two price-preset buttons became one sliding-switch pill; Diskon collapsed behind "+ Diskon" (auto-opens if already set); Tersedia + Komisi merged into one line; Dimensi/Ketebalan/Daya Listrik collapsed behind "Lihat Detail ▾"; Booked/Sudah DP badges shortened to a count with names moved to a tooltip. Nothing removed — all relocated/collapsed only.
 
