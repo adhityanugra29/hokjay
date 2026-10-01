@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
-import SubnavTabs from "@/components/ui/SubnavTabs";
+import PayrollNav from "@/components/payroll/PayrollNav";
+import { currentPayrollPeriode } from "@/lib/payrollPeriod";
 import KaryawanManager from "@/components/payroll/KaryawanManager";
-import { PAYROLL_TABS } from "@/components/payroll/tabs";
 import { getSession } from "@/lib/auth/session";
 import { isAdminLevel } from "@/lib/auth/access";
 
@@ -16,7 +16,7 @@ export default async function PayrollKaryawanPage() {
     <>
       <PageHeader title="Payroll" subtitle="Roster karyawan non-sales (kurir, admin gudang, dll) — tidak punya login sendiri." />
       <div className="p-6 md:p-9">
-        <SubnavTabs tabs={PAYROLL_TABS} />
+        <PayrollNav current={currentPayrollPeriode()} />
         <KaryawanManager />
       </div>
     </>

@@ -8,7 +8,7 @@
 
 ## CURRENT TASK
 
-None active — TASK-027 through TASK-036 are all DONE, build/typecheck clean. TASK-031's Syarat & Ketentuan backfill was verified directly against the database (confirmed missing, then confirmed set); TASK-032 through TASK-034 are build/typecheck-verified only, not yet click-tested live.
+None active — TASK-027 through TASK-038 are all DONE, build/typecheck clean. TASK-031's Syarat & Ketentuan backfill was verified directly against the database (confirmed missing, then confirmed set); TASK-032 through TASK-034 are build/typecheck-verified only, not yet click-tested live.
 
 Known gap left open: "Tandai Sudah Kirim" is NOT yet on Beranda's Sales "Dikejar hari ini" card — that array's row shape doesn't carry `invoiceId`/`kurir` cleanly (mixes invoice + dormant-customer rows), needs a small restructure. Not yet asked for explicitly, but worth expecting.
 
@@ -22,6 +22,7 @@ A large amount of feature/bugfix work has landed since the last full rewrite of 
 
 ## LAST COMPLETED
 
+- **TASK-038 (2026-10-01, deployed)** — Payroll (Owner) redesigned (mockup-approved, 5 versions): shared month stepper `PayrollNav` (`?periode=`; not on Komisi/Karyawan), Komisi/Gaji summary cards + pay panel (sticky bar on phones), Riwayat as cards grouped by month paid, Karyawan/Absensi restyled, invoice number → PDF preview modal (`/api/invoices/[id]/print`). `MobileGajiBulanan.tsx` is now unused (left in place). tsc/eslint/build clean; not click-tested live. Pre-existing lint error in `KaryawanManager` (setState in effect) untouched.
 - **TASK-037 (2026-10-01, deployed)** — Invoice detail's Riwayat shows "Komisi dibayarkan ke {sales}" with the payout date once the commission has been paid out (derived from `komisiCair`/`komisiCairTanggal`, no backfill, not in the PDF). `app/invoice/[id]/page.tsx` only. tsc/eslint clean.
 - **TASK-036 (2026-10-01)** — Komisi Saya redesigned (mockup-approved, 5 iterations): period stepper, headline = "Komisi Siap Cair" (invoice lunas, commission not yet transferred; the old total also counted unpaid — "menipu"), "Komisi Tertunda" (invoice not lunas yet) as a small secondary line + tab, per-invoice status badge + "Lihat invoice", payout history with bukti transfer, unpaid/untransferred invoices carry across months (BUG-022). "Tagih" buttons + mini Papan Peringkat removed on the user's instruction. `lib/insentif.ts` (`getMyKomisiOverview`), `app/komisi-saya/page.tsx`, `components/komisi/*`. tsc/eslint/build clean; data function run read-only against the real DB; not click-tested in a logged-in browser. Open question logged in `KNOWN_ISSUES.md`: Beranda's Sales card still sums unpaid commission into its total.
 - **TASK-034 follow-up (2026-10-01)** — Kondisi badge (moved onto the photo in TASK-034) collided with `ZoomableImage`'s own dimension footnote — both sat bottom-left. Moved to top-left (same offset pattern checkbox/pencil already use), nudged right when pick-mode's checkbox is also present. Verified via a static HTML reproduction of the 3 overlapping states (no logged-in browser session available here to click through Katalog live). `tsc --noEmit` clean.

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
-import SubnavTabs from "@/components/ui/SubnavTabs";
+import PayrollNav from "@/components/payroll/PayrollNav";
 import RiwayatPembayaranClient, { type RiwayatRow } from "@/components/payroll/RiwayatPembayaranClient";
-import { PAYROLL_TABS } from "@/components/payroll/tabs";
+import { currentPayrollPeriode, parsePeriode } from "@/lib/payrollPeriod";
 import { getPayrollHistory } from "@/lib/payroll";
 import { getSession } from "@/lib/auth/session";
 import { isAdminLevel } from "@/lib/auth/access";
@@ -10,9 +10,16 @@ import { isAdminLevel } from "@/lib/auth/access";
 export const dynamic = "force-dynamic";
 
 /** Gaji (GajiPayment) + Komisi (grouped from Invoice.komisiCair) payment history, newest first — see lib/payroll.ts's getPayrollHistory. */
-export default async function PayrollRiwayatPage() {
+export default async function PayrollRiwayatPage({
+  searchParams,
+}: PageProps<"/payroll/riwayat">) {
   const session = await getSession();
   if (!isAdminLevel(session?.role)) notFound();
+
+  // Shared month stepper (PayrollNav): `?periode=YYYY-MM` filters to that month; no param = all periods.
+  const sp = await searchParams;
+  const current = currentPayrollPeriode();
+  const periode = parsePeriode(typeof sp.periode === "string" ? sp.periode : undefined, current) ?? undefined;
 
   const history = await getPayrollHistory();
   const rows: RiwayatRow[] = history.map((r) => ({
@@ -37,8 +44,8 @@ export default async function PayrollRiwayatPage() {
     <>
       <PageHeader title="Payroll" subtitle="Riwayat semua pembayaran gaji dan komisi yang sudah dibayar." />
       <div className="p-6 md:p-9">
-        <SubnavTabs tabs={PAYROLL_TABS} />
-        <RiwayatPembayaranClient rows={rows} />
+        <PayrollNav current={current} />
+        <RiwayatPembayaranClient key={periode ?? "semua"} rows={rows} periode={periode} />
       </div>
     </>
   );

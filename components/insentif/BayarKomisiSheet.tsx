@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Field, Input, Textarea } from "@/components/ui/Form";
-import { Button } from "@/components/ui/Button";
+import { Input, Textarea } from "@/components/ui/Form";
 import UploadBox from "@/components/ui/UploadBox";
 import KomisiPaymentForm from "./KomisiPaymentForm";
+import { Avatar, PayCheckbox, StatusPill, bigFigureCls, chipCls, eyebrowCls, factCls, heroCls } from "@/components/payroll/ui";
 import { rupiah } from "@/lib/format";
 import type { UnpaidCommissionInvoice } from "@/lib/insentif";
 
@@ -21,7 +21,22 @@ interface SheetRow {
   rekeningTerverifikasi: boolean;
 }
 
-/** The "Daftar bayar" sheet — checkbox per sales (not per invoice; a "Detail" button pops up the invoice-level breakdown, see detailNama below), rekening + verification status, consequences panel, one-click batch pay. Lives under Payroll's Komisi tab (formerly the standalone /bayar-komisi). */
+const labelCls = "mb-1 block font-sans text-[11.5px] font-bold text-muted";
+const payBtnCls =
+  "min-h-[46px] w-full cursor-pointer items-center justify-center rounded-full border border-accent bg-accent px-5 py-2.5 font-sans text-[0.92rem] font-extrabold text-ink transition hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-45";
+
+/**
+ * The "Daftar bayar" sheet — one checkbox per sales (not per invoice; the
+ * "Detail" chip opens the invoice-level breakdown in a drawer), rekening +
+ * verification status, a pay panel with the consequences, one-click batch
+ * pay. Lives under Payroll's Komisi tab (formerly the standalone
+ * /bayar-komisi). Redesigned 2026-10-01 to match Komisi Saya's look (mockup-
+ * approved): summary card on top, rounded list, pay panel on the right from
+ * lg up; on phones the total + pay button move to a sticky bottom bar and
+ * the date/bukti/catatan fields fold behind "Detail pembayaran". Payment and
+ * CSV logic unchanged. Deliberately no month filter — unpaid commission is a
+ * running balance, a month filter could hide commission that never got paid.
+ */
 export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRow[]; saldoHariIni: number }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(
@@ -32,11 +47,13 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
   const [catatan, setCatatan] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Phones only: whether the pay panel's steps + fields are unfolded (from lg
+  // up they are always shown, see the `lg:` classes below).
+  const [detailOpen, setDetailOpen] = useState(false);
   // Which row's invoice-level detail pop-up is open — per the user's
-  // request 2026-09-04 ("detailnya angka komisi ini, detailnya mana? kamu
-  // bikin pop-up detail aja... ada basis data yang bisa dipercaya"). A
-  // pop-up rather than navigating to /payroll/komisi/[nama] so the batch
-  // checkbox selection on this page isn't lost while checking a number.
+  // request 2026-09-04. A pop-up rather than navigating to
+  // /payroll/komisi/[nama] so the batch checkbox selection on this page
+  // isn't lost while checking a number.
   const [detailNama, setDetailNama] = useState<string | null>(null);
   const detailRow = rows.find((r) => r.salesNama === detailNama) ?? null;
 
@@ -44,6 +61,9 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
   const total = selectedRows.reduce((s, r) => s + r.totalKomisi, 0);
   const tertunda = rows.filter((r) => !selected.has(r.salesNama));
   const tertundaTotal = tertunda.reduce((s, r) => s + r.totalKomisi, 0);
+  const grandTotal = rows.reduce((s, r) => s + r.totalKomisi, 0);
+  const invoiceTotal = rows.reduce((s, r) => s + r.invoiceCount, 0);
+  const sisaKas = saldoHariIni - total;
 
   function toggle(nama: string) {
     setSelected((prev) => {
@@ -52,6 +72,10 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
       else next.add(nama);
       return next;
     });
+  }
+
+  function toggleAll() {
+    setSelected((prev) => (prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.salesNama))));
   }
 
   function downloadCsv() {
@@ -96,157 +120,211 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
   }
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px]">
-      <div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-ink pb-2.5">
-          <div className="font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">Daftar bayar</div>
-          <div className="font-mono text-[0.75rem] text-muted">
-            {selectedRows.length} dari {rows.length} dipilih
-          </div>
-        </div>
-
-        <div className="hidden grid-cols-[24px_1.1fr_0.9fr_140px_200px_130px] gap-4 border-b border-line py-2.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-muted sm:grid">
-          <span />
-          <span>Sales</span>
-          <span>Rekening</span>
-          <span className="text-right">Komisi</span>
-          <span>Status</span>
-          <span>Detail Invoice</span>
-        </div>
-        {rows.map((r) => {
-          const checked = selected.has(r.salesNama);
-          return (
-            <div
-              key={r.salesNama}
-              className="grid grid-cols-[24px_1fr] items-start gap-x-3 gap-y-1.5 border-b border-line py-3.5 text-[0.85rem] sm:grid-cols-[24px_1.1fr_0.9fr_140px_200px_130px] sm:items-center sm:gap-4"
-            >
-              <input type="checkbox" checked={checked} onChange={() => toggle(r.salesNama)} className="mt-0.5 h-4 w-4 accent-accent sm:mt-0" />
-              <span className="font-semibold">{r.salesNama}</span>
-              <span className="col-start-2 font-mono text-[0.72rem] text-muted sm:col-auto">
-                {r.bank ? `${r.bank} · ${r.nomorRekening}` : "belum diisi"}
+    <>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_372px] lg:items-start lg:gap-5">
+        <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
+          <section className={heroCls}>
+            <div className={eyebrowCls}>Komisi menunggu dibayar</div>
+            <div className={bigFigureCls}>{rupiah(grandTotal)}</div>
+            <p className="mt-1 max-w-[50ch] font-sans text-[12.5px] leading-snug text-muted">
+              Semua komisi dari invoice lunas yang belum ditransfer, tanpa batas bulan supaya tidak ada yang terlewat.
+            </p>
+            <div className="mt-3.5 flex flex-wrap gap-2">
+              <span className={factCls}>
+                <b className="font-extrabold text-ink">{rows.length}</b> sales
               </span>
-              <span className="col-start-2 font-bold sm:col-auto sm:text-right">{rupiah(r.totalKomisi)}</span>
-              <span
-                className={`col-start-2 font-mono text-[0.68rem] font-bold uppercase tracking-wide whitespace-nowrap sm:col-auto ${
-                  r.rekeningTerverifikasi ? "text-muted/60" : "text-accent-700"
-                }`}
-              >
-                {r.rekeningTerverifikasi ? "Siap bayar" : "Rekening belum diverifikasi"}
+              <span className={factCls}>
+                <b className="font-extrabold text-ink">{invoiceTotal}</b> invoice lunas
               </span>
-              {/* Own column right next to Status, not squeezed into the
-                  Sales cell — per the user's request 2026-09-04. Status'
-                  column was widened (150->220) and Detail's own narrowed
-                  (110->90) so "Rekening belum diverifikasi" always fits on
-                  one line instead of wrapping and throwing the row's
-                  vertical alignment off. */}
-              <span className="col-start-2 sm:col-auto">
-                <button
-                  type="button"
-                  onClick={() => setDetailNama(r.salesNama)}
-                  className="cursor-pointer font-mono text-[0.68rem] text-accent-700 underline underline-offset-2"
-                >
-                  Detail ({r.invoiceCount})
-                </button>
+              <span className={factCls}>
+                Saldo kas hari ini <b className="font-extrabold text-ink">{rupiah(saldoHariIni)}</b>
               </span>
             </div>
-          );
-        })}
-        {rows.length === 0 && (
-          <div className="border-b border-line py-10 text-center font-mono text-sm text-muted">
-            Semua komisi sudah cair. 🎉
-          </div>
-        )}
-        {rows.length > 0 && (
-          <div className="flex flex-wrap items-baseline justify-between gap-3 border-t-2 border-ink py-3.5 font-sans text-[0.9rem] font-extrabold">
-            <span>Total dipilih</span>
-            <span className="flex items-baseline gap-3">
-              {rupiah(total)}
-              {tertunda.length > 0 && (
-                <span className="font-mono text-[0.7rem] font-medium text-muted">
-                  {tertunda.length} ditunda: {rupiah(tertundaTotal)}
-                </span>
+          </section>
+
+          <section className="min-w-0 rounded-2xl bg-panel shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-2 pt-3.5 md:px-5">
+              <div>
+                <h2 className="font-sans text-[0.98rem] font-extrabold">Daftar bayar</h2>
+                <div className="font-sans text-[12px] text-muted">
+                  {selectedRows.length} dari {rows.length} dipilih · {rupiah(total)}
+                </div>
+              </div>
+              {rows.length > 0 && (
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  className="cursor-pointer font-sans text-[0.75rem] font-bold text-accent-700 underline underline-offset-2"
+                >
+                  {selected.size === rows.length ? "Kosongkan pilihan" : "Pilih semua"}
+                </button>
               )}
+            </div>
+
+            <div className="px-4 pb-1 md:px-5">
+              {rows.map((r) => (
+                <div
+                  key={r.salesNama}
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-t border-line py-3.5 first:border-t-0 md:grid-cols-[auto_40px_minmax(0,1fr)_auto]"
+                >
+                  <PayCheckbox
+                    checked={selected.has(r.salesNama)}
+                    onChange={() => toggle(r.salesNama)}
+                    aria-label={`Pilih ${r.salesNama}`}
+                  />
+                  <div className="hidden md:block">
+                    <Avatar nama={r.salesNama} />
+                  </div>
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <b className="font-sans text-[0.92rem] font-extrabold wrap-anywhere">{r.salesNama}</b>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[11.5px] text-muted">
+                      <span>{r.bank ? `${r.bank} · ${r.nomorRekening}` : "Rekening belum diisi"}</span>
+                      <StatusPill tone={r.rekeningTerverifikasi ? "ok" : "warn"}>
+                        {r.rekeningTerverifikasi ? "Siap bayar" : "Rekening belum diverifikasi"}
+                      </StatusPill>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 text-right">
+                    <b className="whitespace-nowrap font-sans text-[0.95rem] font-extrabold">{rupiah(r.totalKomisi)}</b>
+                    <button type="button" onClick={() => setDetailNama(r.salesNama)} className={chipCls}>
+                      Detail · {r.invoiceCount} invoice
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {rows.length === 0 && (
+                <div className="py-8 text-center font-sans text-[0.85rem] text-muted">Semua komisi sudah cair. 🎉</div>
+              )}
+            </div>
+
+            {tertunda.length > 0 && (
+              <div className="mx-4 mb-4 mt-1 rounded-xl bg-accent-100 p-3.5 font-sans text-[12.5px] leading-relaxed md:mx-5">
+                <b>{tertunda.map((r) => r.salesNama).join(", ")} ditunda.</b> Komisinya {rupiah(tertundaTotal)} tetap
+                tersimpan dan bisa dibayar terpisah. Nomor rekening yang belum terverifikasi diatur di Admin → Sales,
+                atau centang manual di atas.
+              </div>
+            )}
+          </section>
+        </div>
+
+        <aside aria-label="Pembayaran" className="flex flex-col gap-3.5 rounded-2xl bg-panel p-4 shadow-sm lg:sticky lg:top-4">
+          <div className="rounded-xl bg-ink px-4 py-4 text-white">
+            <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
+              Dibayar hari ini
+            </div>
+            <div className="mt-1 font-sans text-[1.75rem] font-extrabold tracking-tight">{rupiah(total)}</div>
+            <div className="mt-2.5 border-t border-white/15 pt-2.5 font-sans text-[11.5px] text-white/60">
+              Sisa kas setelah bayar{" "}
+              <b className={`ml-1 text-[0.85rem] ${sisaKas < 0 ? "text-[#ff8a7a]" : "text-white"}`}>{rupiah(sisaKas)}</b>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setDetailOpen((v) => !v)}
+            aria-expanded={detailOpen}
+            className="flex cursor-pointer items-center justify-between rounded-xl bg-surface px-4 py-2.5 text-left font-sans text-[0.82rem] font-extrabold lg:hidden"
+          >
+            Detail pembayaran
+            <span className={`text-muted transition-transform ${detailOpen ? "rotate-180" : ""}`} aria-hidden="true">
+              ▾
             </span>
-          </div>
-        )}
+          </button>
 
-        {tertunda.length > 0 && (
-          <div className="mt-5 border-l-[3px] border-accent bg-[#f7f5ee] p-4 font-sans text-[0.8rem] leading-relaxed">
-            <b>{tertunda.map((r) => r.salesNama).join(", ")} ditunda.</b> Nomor rekening belum diverifikasi (atur di
-            Admin → Sales). Komisinya tetap tersimpan dan bisa dibayar terpisah, atau centang manual di atas.
+          <div className={`${detailOpen ? "flex" : "hidden"} flex-col gap-3.5 lg:flex`}>
+            <div className="rounded-xl bg-surface px-4 py-3 font-sans text-[12.5px] leading-relaxed text-muted">
+              <div className="mb-1 font-sans text-[12.5px] font-extrabold text-ink">Yang akan terjadi</div>
+              <ol className="m-0 list-decimal pl-4">
+                <li>
+                  Terbit <b className="text-ink">{selectedRows.length || 0}</b> bukti bayar komisi, satu per sales.
+                </li>
+                <li>
+                  Tercatat di Keuangan sebagai uang keluar <b className="text-ink">{rupiah(total)}</b> tanggal{" "}
+                  {tanggal || "hari ini"}.
+                </li>
+                <li>
+                  Masuk jurnal Akuntansi ke akun <b className="text-ink">6100 Beban Komisi Sales</b>.
+                </li>
+              </ol>
+            </div>
+            <div>
+              <label htmlFor="bayar-tanggal" className={labelCls}>
+                Tanggal pembayaran
+              </label>
+              <Input id="bayar-tanggal" type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} />
+            </div>
+            <div>
+              <span className={labelCls}>Bukti transfer (opsional)</span>
+              <UploadBox folder="komisi" value={buktiUrl} onChange={setBuktiUrl} />
+            </div>
+            <div>
+              <label htmlFor="bayar-catatan" className={labelCls}>
+                Catatan (opsional)
+              </label>
+              <Textarea id="bayar-catatan" rows={2} value={catatan} onChange={(e) => setCatatan(e.target.value)} />
+            </div>
           </div>
-        )}
+
+          {error && <div className="font-sans text-[0.78rem] text-danger">{error}</div>}
+
+          <button
+            type="button"
+            onClick={handlePay}
+            disabled={saving || selectedRows.length === 0}
+            className={`${payBtnCls} hidden lg:flex`}
+          >
+            {saving ? "Memproses..." : `Bayar ${selectedRows.length} sales sekarang`}
+          </button>
+          <button
+            type="button"
+            onClick={downloadCsv}
+            disabled={selectedRows.length === 0}
+            className="min-h-[40px] cursor-pointer rounded-full border border-line px-4 py-2 font-sans text-[0.85rem] font-bold text-ink transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Unduh daftar transfer (.csv)
+          </button>
+        </aside>
       </div>
 
-      <div className="flex flex-col border-l-2 border-ink pl-6">
-        <div className="border-b-2 border-ink pb-2.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
-          Yang akan terjadi
-        </div>
-        <div className="border-b border-line py-3 font-sans text-[0.8rem] leading-relaxed">
-          <b>1.</b> Terbit {selectedRows.length || 0} bukti bayar komisi, satu per sales.
-        </div>
-        <div className="border-b border-line py-3 font-sans text-[0.8rem] leading-relaxed">
-          <b>2.</b> Tercatat di Keuangan sebagai uang keluar <b>{rupiah(total)}</b> tanggal {tanggal || "hari ini"}.
-        </div>
-        <div className="border-b-2 border-ink py-3 font-sans text-[0.8rem] leading-relaxed">
-          <b>3.</b> Masuk jurnal Akuntansi ke akun <b>6100 Beban Komisi Sales</b>.
-        </div>
-
-        <div className="mt-4 flex flex-col gap-3">
-          <Field label="Tanggal Pembayaran">
-            <Input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} />
-          </Field>
-          <Field label="Bukti Transfer (opsional)">
-            <UploadBox folder="komisi" value={buktiUrl} onChange={setBuktiUrl} />
-          </Field>
-          <Field label="Catatan (opsional)">
-            <Textarea rows={2} value={catatan} onChange={(e) => setCatatan(e.target.value)} />
-          </Field>
-        </div>
-
-        <div className="mt-5 bg-ink px-5 py-5 text-white">
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
-            Dibayar hari ini
+      {/* Phones: total + pay button always in reach, above the bottom tab bar (58px). */}
+      {rows.length > 0 && (
+        <div className="sticky bottom-[58px] z-10 -mx-6 mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t border-line bg-panel px-4 py-3 shadow-[0_-6px_18px_rgba(36,31,25,0.08)] md:-mx-9 lg:hidden">
+          <div className="font-sans text-[11.5px] text-muted">
+            {selectedRows.length} sales dipilih
+            <b className="block font-sans text-[1.15rem] font-black tracking-tight text-ink">{rupiah(total)}</b>
           </div>
-          <div className="mt-1.5 font-sans text-[1.75rem] font-extrabold tracking-tight">{rupiah(total)}</div>
-          <div className="mt-2 font-mono text-[0.72rem] text-white/55">
-            Sisa kas setelah bayar: {rupiah(saldoHariIni - total)}
+          <button
+            type="button"
+            onClick={handlePay}
+            disabled={saving || selectedRows.length === 0}
+            className={`${payBtnCls} flex !w-auto min-w-[150px]`}
+          >
+            {saving ? "Memproses..." : `Bayar ${selectedRows.length} sales`}
+          </button>
+          <div className="col-span-2 font-sans text-[11.5px] text-muted">
+            Sisa kas setelah bayar <b className={sisaKas < 0 ? "text-danger" : "text-ink"}>{rupiah(sisaKas)}</b>
           </div>
         </div>
-
-        {error && <div className="mt-3 font-mono text-[0.75rem] text-danger">{error}</div>}
-
-        <Button onClick={handlePay} disabled={saving || selectedRows.length === 0} className="mt-3.5 justify-center">
-          {saving ? "Memproses..." : `Bayar ${selectedRows.length} sales sekarang`}
-        </Button>
-        <button
-          type="button"
-          onClick={downloadCsv}
-          disabled={selectedRows.length === 0}
-          className="mt-2 cursor-pointer border border-line px-4.5 py-2.5 font-sans text-[0.85rem] font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Unduh daftar transfer (.csv)
-        </button>
-      </div>
+      )}
 
       {/* Detail pop-up — same drawer pattern as EditProductDrawer.tsx, just
-          wider (this content is a table, not a form's worth of fields).
-          Reuses KomisiPaymentForm as-is (same table + pay button the
+          wider (this content is a list + form, not a form's worth of fields).
+          Reuses KomisiPaymentForm as-is (same list + pay button the
           standalone /payroll/komisi/[nama] page uses) so the numbers and
           the payment action are guaranteed to match exactly — no separate
           read-only view that could drift from what actually gets paid. */}
       {detailRow && (
         <div className="no-print fixed inset-0 z-50 flex justify-end bg-black/50" onClick={() => setDetailNama(null)}>
           <div
-            className="flex h-full w-full max-w-3xl flex-col overflow-y-auto bg-panel shadow-2xl"
+            className="flex h-full w-full max-w-3xl flex-col overflow-y-auto bg-paper shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-line bg-surface px-5 py-4">
-              <div>
-                <div className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">Detail Invoice</div>
-                <h2 className="font-sans text-[1rem] font-extrabold text-ink">
+            <div className="flex items-center justify-between gap-3 border-b border-line bg-panel px-5 py-4">
+              <div className="min-w-0">
+                <div className="font-sans text-[10.5px] font-bold uppercase tracking-[0.12em] text-muted">Detail invoice</div>
+                <h2 className="font-sans text-[1.02rem] font-extrabold wrap-anywhere">
                   {detailRow.salesNama}
-                  <span className="ml-2 font-mono text-[0.72rem] font-normal text-muted">
+                  <span className="ml-2 font-sans text-[0.75rem] font-medium text-muted">
                     ({detailRow.invoiceCount} invoice)
                   </span>
                 </h2>
@@ -255,12 +333,12 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
                 type="button"
                 onClick={() => setDetailNama(null)}
                 aria-label="Tutup"
-                className="flex h-9 w-9 cursor-pointer items-center justify-center border border-line text-lg text-ink hover:border-accent hover:text-accent-700"
+                className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-surface text-base text-ink hover:bg-line"
               >
                 ✕
               </button>
             </div>
-            <div className="p-5">
+            <div className="p-4 md:p-5">
               <KomisiPaymentForm
                 salesNama={detailRow.salesNama}
                 invoices={detailRow.detail}
@@ -274,6 +352,6 @@ export default function BayarKomisiSheet({ rows, saldoHariIni }: { rows: SheetRo
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

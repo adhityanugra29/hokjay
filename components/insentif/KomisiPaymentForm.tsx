@@ -1,14 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
-import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/Form";
+import { Input, Textarea } from "@/components/ui/Form";
 import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
+import InvoicePdfModal from "@/components/invoice/InvoicePdfModal";
+import { PayCheckbox } from "@/components/payroll/ui";
 import { rupiah, formatDateShort } from "@/lib/format";
 import type { UnpaidCommissionInvoice } from "@/lib/insentif";
+
+const labelCls = "mb-1 block font-sans text-[11.5px] font-bold text-muted";
 
 export default function KomisiPaymentForm({
   salesNama,
@@ -30,6 +32,10 @@ export default function KomisiPaymentForm({
   const [catatan, setCatatan] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Which invoice's PDF preview is open — tapping an invoice number opens it
+  // in place (InvoicePdfModal) instead of navigating away, so the checkbox
+  // selection here isn't lost. Per the user's request 2026-10-01.
+  const [pdfInvoice, setPdfInvoice] = useState<{ id: string; nomor: string } | null>(null);
 
   const total = useMemo(
     () => invoices.filter((i) => selected.has(i.invoiceId)).reduce((s, i) => s + i.komisiTotal, 0),
@@ -86,110 +92,106 @@ export default function KomisiPaymentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Panel className="mb-5">
-        <PanelHead title={`Invoice komisi belum cair — ${salesNama}`}>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <section className="rounded-2xl bg-panel shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-1 pt-3.5">
+          <h3 className="font-sans text-[0.95rem] font-extrabold">Invoice komisi belum cair</h3>
           <button
             type="button"
             onClick={toggleAll}
-            className="cursor-pointer font-sans text-[0.75rem] text-accent-700 underline underline-offset-2"
+            className="cursor-pointer font-sans text-[0.75rem] font-bold text-accent-700 underline underline-offset-2"
           >
             {selected.size === invoices.length ? "Batal pilih semua" : "Pilih semua"}
           </button>
-        </PanelHead>
-        <TableScroll>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr>
-                <th className="border-b border-line px-5 py-4" />
-                <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                  No. Invoice
-                </th>
-                <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                  Tanggal Lunas
-                </th>
-                <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                  Item
-                </th>
-                <th className="whitespace-nowrap border-b border-line px-5 py-4 text-left font-sans text-[0.8rem] font-medium text-muted">
-                  Komisi
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => (
-                <tr key={inv.invoiceId} className="hover:bg-[#fbfaf5]">
-                  <td className="border-b border-line px-5 py-4.5">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(inv.invoiceId)}
-                      onChange={() => toggle(inv.invoiceId)}
-                      className="h-4 w-4 accent-accent"
-                    />
-                  </td>
-                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
-                    <Link href={`/invoice/${inv.invoiceId}`} className="text-accent-700 underline underline-offset-2">
-                      {inv.nomor}
-                    </Link>
-                  </td>
-                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
-                    {formatDateShort(inv.tanggalLunas)}
-                  </td>
-                  <td className="border-b border-line px-5 py-4.5">{inv.itemLabel}</td>
-                  <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem] font-medium text-accent-700">
-                    {rupiah(inv.komisiTotal)}
-                  </td>
-                </tr>
-              ))}
-              {invoices.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center font-mono text-sm text-muted">
-                    Tidak ada komisi belum cair untuk sales ini.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </TableScroll>
-      </Panel>
+        </div>
+        <div className="px-4 pb-2">
+          {invoices.map((inv) => (
+            <div
+              key={inv.invoiceId}
+              className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-t border-line py-3 first:border-t-0"
+            >
+              <PayCheckbox
+                checked={selected.has(inv.invoiceId)}
+                onChange={() => toggle(inv.invoiceId)}
+                aria-label={`Pilih ${inv.nomor}`}
+              />
+              <div className="min-w-0">
+                <div className="font-sans text-[0.88rem] font-bold wrap-anywhere">{inv.itemLabel}</div>
+                <div className="font-sans text-[11px] text-muted">
+                  <button
+                    type="button"
+                    onClick={() => setPdfInvoice({ id: inv.invoiceId, nomor: inv.nomor })}
+                    aria-label={`Buka PDF invoice ${inv.nomor}`}
+                    className="cursor-pointer font-mono font-bold text-accent-700 underline underline-offset-2"
+                  >
+                    {inv.nomor}
+                  </button>{" "}
+                  · lunas {formatDateShort(inv.tanggalLunas)}
+                </div>
+              </div>
+              <div className="whitespace-nowrap font-sans text-[0.9rem] font-extrabold">{rupiah(inv.komisiTotal)}</div>
+            </div>
+          ))}
+          {invoices.length === 0 && (
+            <div className="py-6 text-center font-sans text-[0.85rem] text-muted">
+              Tidak ada komisi belum cair untuk {salesNama}.
+            </div>
+          )}
+        </div>
+      </section>
 
-      <Panel className="max-w-2xl p-7">
-        <div className="mb-5 border border-line bg-[#f7f5ee] p-5">
-          <div className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">
+      <section className="flex max-w-2xl flex-col gap-4 rounded-2xl bg-panel p-4 shadow-sm md:p-5">
+        <div className="rounded-xl bg-ink px-4 py-4 text-white">
+          <div className="font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">
             Total dibayar ({selected.size} invoice)
           </div>
-          <div className="mt-1 text-[1.6rem] font-extrabold text-accent-700">{rupiah(total)}</div>
+          <div className="mt-1 font-sans text-[1.6rem] font-extrabold tracking-tight">{rupiah(total)}</div>
         </div>
 
-        <FormGrid>
-          <Field label="Tanggal Pembayaran">
-            <Input required type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} />
-          </Field>
-          <Field label="Bukti Transfer (opsional)" span2>
-            <UploadBox folder="komisi" value={buktiUrl} onChange={setBuktiUrl} />
-          </Field>
-          <Field label="Catatan (opsional)" span2>
-            <Textarea rows={2} value={catatan} onChange={(e) => setCatatan(e.target.value)} placeholder="Contoh: transfer BCA a.n. ..." />
-          </Field>
-        </FormGrid>
+        <div>
+          <label htmlFor="komisi-tanggal" className={labelCls}>
+            Tanggal pembayaran
+          </label>
+          <Input id="komisi-tanggal" required type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} />
+        </div>
+        <div>
+          <span className={labelCls}>Bukti transfer (opsional)</span>
+          <UploadBox folder="komisi" value={buktiUrl} onChange={setBuktiUrl} />
+        </div>
+        <div>
+          <label htmlFor="komisi-catatan" className={labelCls}>
+            Catatan (opsional)
+          </label>
+          <Textarea
+            id="komisi-catatan"
+            rows={2}
+            value={catatan}
+            onChange={(e) => setCatatan(e.target.value)}
+            placeholder="Contoh: transfer BCA a.n. ..."
+          />
+        </div>
 
-        {error && <div className="mt-3 font-mono text-[0.75rem] text-danger">{error}</div>}
+        {error && <div className="font-sans text-[0.78rem] text-danger">{error}</div>}
 
-        <FormActions>
-          <Button type="submit" disabled={saving || selected.size === 0}>
+        <div className="flex flex-wrap gap-2.5">
+          <Button type="submit" disabled={saving || selected.size === 0} className="!rounded-full">
             {saving ? "Memproses..." : `Bayar Komisi (${rupiah(total)})`}
           </Button>
           {onCancel ? (
-            <Button type="button" variant="ghost" onClick={onCancel}>
+            <Button type="button" variant="ghost" onClick={onCancel} className="!rounded-full">
               Batal
             </Button>
           ) : (
-            <LinkButton variant="ghost" href="/payroll">
+            <LinkButton variant="ghost" href="/payroll" className="!rounded-full">
               Batal
             </LinkButton>
           )}
-        </FormActions>
-      </Panel>
+        </div>
+      </section>
+
+      {pdfInvoice && (
+        <InvoicePdfModal invoiceId={pdfInvoice.id} nomor={pdfInvoice.nomor} onClose={() => setPdfInvoice(null)} />
+      )}
     </form>
   );
 }

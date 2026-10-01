@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import PageHeader from "@/components/layout/PageHeader";
-import SubnavTabs from "@/components/ui/SubnavTabs";
+import PayrollNav from "@/components/payroll/PayrollNav";
+import { currentPayrollPeriode } from "@/lib/payrollPeriod";
 import BayarKomisiSheet from "@/components/insentif/BayarKomisiSheet";
 import SlipGajiView from "@/components/payroll/SlipGajiView";
-import { PAYROLL_TABS } from "@/components/payroll/tabs";
 import { getUnpaidCommissionBySales, getUnpaidCommissionInvoices } from "@/lib/insentif";
 import { getCurrentCashBalance } from "@/lib/keuangan";
 import { getSlipGaji } from "@/lib/payroll";
@@ -79,7 +79,7 @@ export default async function PayrollPage() {
         subtitle="Bayar komisi sales, gaji pokok sales tetap, dan gaji karyawan non-sales — semuanya di satu tempat."
       />
       <div className="p-6 md:p-9">
-        <SubnavTabs tabs={PAYROLL_TABS} />
+        <PayrollNav current={currentPayrollPeriode()} />
         <BayarKomisiSheet rows={sheetRows} saldoHariIni={saldoHariIni} />
       </div>
     </>

@@ -839,3 +839,28 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Files affected:** `app/invoice/[id]/page.tsx` only.
 
 **Regression test:** `tsc --noEmit`, `eslint` clean; data precondition checked read-only against the real DB. Not click-tested in a logged-in browser.
+
+---
+
+## TASK-038 — Payroll (Owner) redesigned: modern layout, one shared month filter
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** DONE (2026-10-01, deployed)
+**Dependency:** TASK-036 (same visual language), TASK-002 SUBTASK-007 (Payroll was still un-swept)
+**Created:** 2026-10-01 · **Last updated:** 2026-10-01
+
+**Description:** User asked to modernize the owner-side Payroll screens "seperti yang sudah berubah sekarang" (Komisi Saya's look). Design Review done as an HTML mockup artifact first (5 versions: Komisi, Gaji, Riwayat, Karyawan, Absensi, desktop + phone), approved step by step before coding. Decisions from the user: **one** month filter for the whole Payroll section, not one per page; **Komisi gets no month filter** (unpaid commission is a running balance — a filter could hide commission that never got paid); tapping an invoice number opens the invoice PDF.
+- New `PayrollNav` replaces the old subnav: tab pills + ONE month stepper (`?periode=YYYY-MM`, carried across Gaji/Absensi/Riwayat; hidden on Komisi and Karyawan; up to 6 months back via the arrow). Riwayat also has "Semua periode" (no param) because that is how it always opened.
+- Komisi: summary card (total waiting, sales/invoice counts, kas), rounded daftar bayar, pay panel (right from `lg`; sticky bottom bar + folded "Detail pembayaran" on phones). Drawer content (`KomisiPaymentForm`) restyled; invoice number → `InvoicePdfModal` (invoice preview + "Unduh PDF" + "Buka halaman invoice").
+- Gaji: one responsive tree replaces desktop sheet + `MobileGajiBulanan`; summary card with sales/karyawan split and paid progress, tipe filter pills, kas sebelum/sesudah on every screen size.
+- Riwayat: cards grouped by month paid (subtotal per group), search + tipe pills, every old column kept per row, Komisi invoice drawer with invoice-PDF links.
+- Karyawan: cards, Aktif switch, Edit/Hapus pills, add/edit forms under the row. Absensi: month from the shared stepper + a day strip, Hadir switch per row (still saves on every tap), "hadir X dari Y" card.
+
+**Acceptance criteria:** No capability removed (inventory in the mockup's "Catatan desain"); payment/CSV/CRUD/absensi logic unchanged; Slip Gaji (`/payroll` for Sales), Komisi Saya, `/payroll/komisi/[nama]` still work; clean `tsc`/`eslint`/`next build`.
+
+**Files affected:** new `lib/payrollPeriod.ts`, `components/payroll/{PayrollNav,ui}.tsx`, `components/invoice/InvoicePdfModal.tsx`, `app/api/invoices/[id]/print/route.ts`; rewritten UI in `components/insentif/{BayarKomisiSheet,KomisiPaymentForm}.tsx`, `components/payroll/{GajiBulananSheet,RiwayatPembayaranClient,KaryawanManager,AbsensiForm}.tsx`; `app/payroll/{page,gaji,karyawan,absensi,riwayat}/page.tsx`.
+
+**Behavior notes (not removals):** Gaji's mobile page no longer renders `MobileGajiBulanan` (file left in place, now unused — candidate for deletion with approval) and now also has tanggal/bukti/catatan on phones (the old mobile version sent none). Absensi's page now remounts the form per day (`key={tanggal}`) — the old form kept the previous day's hadir state when the date changed. Current month/day for Gaji/Absensi default now uses GMT+7 (was server-local).
+
+**Regression test:** `tsc --noEmit`, `eslint` (only the pre-existing `react-hooks/set-state-in-effect` error in `KaryawanManager`'s load-on-mount effect, unchanged from before), `next build` clean. Not click-tested in a logged-in browser.

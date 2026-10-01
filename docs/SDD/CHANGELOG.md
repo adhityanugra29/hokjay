@@ -6,6 +6,13 @@
 
 ## 2026-10-01
 
+**TASK-038 done** — Payroll (Owner) redesigned to match Komisi Saya's look, mockup-approved first (5 versions). One shared month stepper (`?periode=`) for Gaji, Absensi and Riwayat instead of one per page; Komisi deliberately has no month filter (unpaid commission is a running balance); Karyawan has none (a roster has no period). Komisi/Gaji get a summary card, rounded lists, a pay panel (sticky bottom bar on phones); Riwayat is cards grouped by month paid; Karyawan and Absensi restyled (switches, day strip). Tapping an invoice number in Komisi/Riwayat drawers opens an invoice PDF preview with "Unduh PDF" (new `GET /api/invoices/[id]/print`). No capability removed; payment logic untouched.
+
+Tasks: TASK-038.
+Regression: `tsc --noEmit`, `eslint`, `next build` clean (one pre-existing lint error in `KaryawanManager` left as is). Not click-tested in a logged-in browser.
+
+---
+
 **TASK-037 done** — Invoice detail's Riwayat card now also shows when that invoice's commission was paid out ("Komisi dibayarkan ke {sales}", dated `komisiCairTanggal`), per the user's request. Derived at render time (no payout-route change, no backfill; all 38 existing paid-out invoices have the date), appended last so existing lines keep their order, and not added to the customer-facing PDF.
 
 Tasks: TASK-037.
