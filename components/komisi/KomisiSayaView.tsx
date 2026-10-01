@@ -14,8 +14,10 @@ function asalLabel(asal: string): string {
 
 /**
  * Body of "Komisi Saya" (redesign 2026-10-01, mockup-approved): one hero
- * figure that is ONLY commission from lunas invoices, split into Siap cair /
- * Sudah dibayar, with still-unpaid commission demoted to a quiet footnote
+ * figure that is ONLY commission from lunas invoices, split into "Komisi
+ * Tertunda" (lunas, company hasn't transferred yet — data.siapCair) and
+ * "Komisi Siap Cair" (already transferred — data.sudahDibayar; labels
+ * renamed 2026-10-01 per the user, field names kept), with still-unpaid commission demoted to a quiet footnote
  * and a separate "Belum lunas" tab (so it never reads as money already
  * earned), plus the payout history for the selected month.
  *
@@ -48,7 +50,7 @@ export default function KomisiSayaView({ data, periodLabel }: { data: MyKomisiOv
           <div
             className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-surface"
             role="img"
-            aria-label={`Dari komisi lunas: siap cair ${rupiah(data.siapCair)}, sudah dibayar ${rupiah(data.sudahDibayar)}`}
+            aria-label={`Dari komisi lunas: komisi tertunda ${rupiah(data.siapCair)}, komisi siap cair ${rupiah(data.sudahDibayar)}`}
           >
             <span className="block h-full bg-accent" style={{ width: `${pct(data.siapCair)}%` }} />
             <span className="block h-full bg-[#087a52]" style={{ width: `${pct(data.sudahDibayar)}%` }} />
@@ -57,7 +59,7 @@ export default function KomisiSayaView({ data, periodLabel }: { data: MyKomisiOv
             <div className="min-w-0 rounded-xl bg-panel px-3 py-2.5">
               <div className="flex items-center gap-1.5 font-sans text-[10.5px] font-extrabold uppercase tracking-wide text-muted">
                 <span className="h-2 w-2 shrink-0 rounded-full bg-accent" />
-                Siap cair
+                Komisi Tertunda
               </div>
               <div className="mt-0.5 whitespace-nowrap font-sans text-[1rem] font-black tracking-tight">
                 {rupiah(data.siapCair)}
@@ -72,7 +74,7 @@ export default function KomisiSayaView({ data, periodLabel }: { data: MyKomisiOv
             <div className="min-w-0 rounded-xl bg-panel px-3 py-2.5">
               <div className="flex items-center gap-1.5 font-sans text-[10.5px] font-extrabold uppercase tracking-wide text-muted">
                 <span className="h-2 w-2 shrink-0 rounded-full bg-[#087a52]" />
-                Sudah dibayar
+                Komisi Siap Cair
               </div>
               <div className="mt-0.5 whitespace-nowrap font-sans text-[1rem] font-black tracking-tight">
                 {rupiah(data.sudahDibayar)}
@@ -99,7 +101,7 @@ export default function KomisiSayaView({ data, periodLabel }: { data: MyKomisiOv
           <div className="flex gap-1.5 px-4 pt-3" role="group" aria-label="Status invoice">
             {(
               [
-                ["siap", "Siap cair", data.siapCairInvoices.length],
+                ["siap", "Komisi Tertunda", data.siapCairInvoices.length],
                 ["belum", "Belum lunas", data.belumLunasInvoices.length],
               ] as const
             ).map(([key, label, count]) => (

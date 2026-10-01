@@ -817,3 +817,5 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Removed (explicit user decisions, not silent):** "Tagih" per-invoice button, "Tagih yang tertahan" button, mini Papan Peringkat on this page.
 
 **Regression test:** `tsc --noEmit`, `eslint`, `next build` clean; data function run read-only against the real DB. Not click-tested in a logged-in browser.
+
+**Follow-up (2026-10-01):** User renamed the two status labels — "Siap cair" (lunas, awaiting transfer) → "Komisi Tertunda", "Sudah dibayar" (already transferred) → "Komisi Siap Cair". Labels only (hero tiles, tab, aria-label in `components/komisi/KomisiSayaView.tsx`); field names (`siapCair`, `sudahDibayar`) and logic unchanged.
