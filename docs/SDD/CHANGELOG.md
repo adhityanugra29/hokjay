@@ -6,6 +6,13 @@
 
 ## 2026-10-01
 
+**BUG-023 fixed** — Leaderboard's month boundaries (and Beranda's "bulan ini" period) now use GMT+7 instead of server-local time, so an invoice paid just after midnight WIB on the 1st lands in the right month. "Sisa hari" now counts today (the 31st shows 1, not 0). Ranking basis unchanged: lunas by payment date.
+
+Tasks: BUG-023.
+Regression: `tsc --noEmit` clean. Not verified against production data.
+
+---
+
 **TASK-038 done** — Payroll (Owner) redesigned to match Komisi Saya's look, mockup-approved first (5 versions). One shared month stepper (`?periode=`) for Gaji, Absensi and Riwayat instead of one per page; Komisi deliberately has no month filter (unpaid commission is a running balance); Karyawan has none (a roster has no period). Komisi/Gaji get a summary card, rounded lists, a pay panel (sticky bottom bar on phones); Riwayat is cards grouped by month paid; Karyawan and Absensi restyled (switches, day strip). Tapping an invoice number in Komisi/Riwayat drawers opens an invoice PDF preview with "Unduh PDF" (new `GET /api/invoices/[id]/print`). No capability removed; payment logic untouched.
 
 Tasks: TASK-038.

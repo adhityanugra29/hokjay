@@ -403,3 +403,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `lib/insentif.ts`, `app/komisi-saya/page.tsx`, `components/komisi/KomisiSayaView.tsx`, `components/komisi/PeriodStepper.tsx`.
 **Regression test:** `tsc --noEmit`, `eslint`, `next build` clean. `getMyKomisiOverview` was run read-only against the real database for two sales accounts (e.g. an account with Rp 7.8jt of September DP/unpaid commission that the old page would have dropped on 1 Oct now shows it as "dari September"). Not click-tested in a logged-in browser.
+
+---
+
+## BUG-023 — Leaderboard/Beranda month boundaries used server-local time, not GMT+7
+
+**Severity:** B2
+**Status:** FIXED (2026-10-01)
+**Source:** User asked whether Leaderboard sales matched the current month.
+
+**Description:** `periodRange()` and `currentPeriod()` in `lib/insentif.ts` built month boundaries with `new Date(y, m-1, 1)` / `new Date()` — server-local time. `payment.tanggalBayar` is stored as a real instant, so on a UTC server an invoice paid 00:00–06:59 WIB on the 1st was bucketed into the previous month (and the Beranda "bulan ini" period was wrong for the same 7 hours). The Leaderboard's `daysRemaining` also used server-local time and skipped the last day (showed "0 hari" on the 31st).
+
+**Root cause:** `lib/insentif.ts` predated `lib/timezone.ts`; `getMyKomisiOverview` was already on GMT+7, so Leaderboard and Komisi Saya could disagree for edge-of-month invoices.
+
+**Fix:** `periodRange()` now uses `jakartaMonthRange`, `currentPeriod()` uses `currentJakartaMonthYear()`, and `daysRemaining` is computed from the GMT+7 month end with today counted. Bucketing basis unchanged (lunas by `payment.tanggalBayar`; Estimasi by `tanggalInvoice`).
+
+**Files:** `lib/insentif.ts`. Not touched: `lib/payroll.ts` and `gaji-karyawan/bayar/route.ts` (own `periodRange`, same pattern, outside the Leaderboard).
+**Regression test:** `tsc --noEmit` clean. Not verified against production data or a logged-in browser.

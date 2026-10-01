@@ -2,17 +2,17 @@ import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
 import { User } from "@/models/User";
-import { jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
+import { currentJakartaMonthYear, jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
 
 export function currentPeriod(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const { month, year } = currentJakartaMonthYear();
+  return `${year}-${String(month).padStart(2, "0")}`;
 }
 
+/** [start, end) of the period's month as GMT+7 boundaries, not server-local time. */
 function periodRange(period: string) {
   const [y, m] = period.split("-").map(Number);
-  const start = new Date(y, m - 1, 1);
-  const end = new Date(y, m, 1);
+  const { from: start, to: end } = jakartaMonthRange(y, m);
   return { start, end };
 }
 
@@ -178,8 +178,8 @@ export async function getSalesBoard(period: string): Promise<SalesBoard> {
   const teamPercent = teamTarget > 0 ? Math.round((teamTotal / teamTarget) * 100) : 0;
   const teamGap = Math.max(0, teamTarget - teamTotal);
 
-  const [y, m] = period.split("-").map(Number);
-  const endOfMonth = new Date(y, m, 0);
+  // Today counts as a remaining day: the last day of the month still shows 1, not 0.
+  const { end: endOfMonth } = periodRange(period);
   const daysRemaining = Math.max(0, Math.ceil((endOfMonth.getTime() - Date.now()) / 86_400_000));
 
   return { rows, teamTotal, teamTarget, teamPercent, teamGap, daysRemaining };
