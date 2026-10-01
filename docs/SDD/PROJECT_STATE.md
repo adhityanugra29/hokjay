@@ -8,7 +8,7 @@
 
 ## CURRENT TASK
 
-None active — TASK-027 through TASK-035 are all DONE, build/typecheck clean. TASK-031's Syarat & Ketentuan backfill was verified directly against the database (confirmed missing, then confirmed set); TASK-032 through TASK-034 are build/typecheck-verified only, not yet click-tested live.
+None active — TASK-027 through TASK-036 are all DONE, build/typecheck clean. TASK-031's Syarat & Ketentuan backfill was verified directly against the database (confirmed missing, then confirmed set); TASK-032 through TASK-034 are build/typecheck-verified only, not yet click-tested live.
 
 Known gap left open: "Tandai Sudah Kirim" is NOT yet on Beranda's Sales "Dikejar hari ini" card — that array's row shape doesn't carry `invoiceId`/`kurir` cleanly (mixes invoice + dormant-customer rows), needs a small restructure. Not yet asked for explicitly, but worth expecting.
 
@@ -22,6 +22,7 @@ A large amount of feature/bugfix work has landed since the last full rewrite of 
 
 ## LAST COMPLETED
 
+- **TASK-036 (2026-10-01)** — Komisi Saya redesigned (mockup-approved, 4 iterations): period stepper, headline = commission from lunas invoices only (old total also counted unpaid — "menipu"), Siap cair / Sudah dibayar split, per-invoice status badge + "Lihat invoice", payout history with bukti transfer, unpaid/untransferred invoices carry across months (BUG-022). "Tagih" buttons + mini Papan Peringkat removed on the user's instruction. `lib/insentif.ts` (`getMyKomisiOverview`), `app/komisi-saya/page.tsx`, `components/komisi/*`. tsc/eslint/build clean; data function run read-only against the real DB; not click-tested in a logged-in browser. Open question logged in `KNOWN_ISSUES.md`: Beranda's Sales card still sums unpaid commission into its total.
 - **TASK-034 follow-up (2026-10-01)** — Kondisi badge (moved onto the photo in TASK-034) collided with `ZoomableImage`'s own dimension footnote — both sat bottom-left. Moved to top-left (same offset pattern checkbox/pencil already use), nudged right when pick-mode's checkbox is also present. Verified via a static HTML reproduction of the 3 overlapping states (no logged-in browser session available here to click through Katalog live). `tsc --noEmit` clean.
 - **TASK-035** — Leaderboard Sales redesigned as a Soft Trade podium (desktop + mobile), mockup-approved first. Top 3 as rounded podium cards with initials avatars, rank 4+ in one list card, summary cards on top; data/ranking/Estimasi Sales unchanged, no komisi. `SalesBoard.tsx`, `MobileSalesBoard.tsx`, new `boardUtils.ts`. tsc/eslint clean; not yet click-tested live.
 - **TASK-034** — Katalog ProductCard decluttered (per the user's "to much information ... card terlalu panjang" report). Design Review done as an HTML mockup artifact first, approved before coding (including a follow-up iteration for the sliding price-preset switch). Kondisi badge moved onto the photo; price-preset buttons became one sliding switch; Diskon collapsed behind "+ Diskon" (auto-opens if already set); Tersedia+Komisi merged one line; specs collapsed behind "Lihat Detail ▾"; Booked/Sudah DP badges shortened to a count, names moved to tooltip. Nothing removed. `components/katalog/ProductCard.tsx` only. Not yet click-tested live.

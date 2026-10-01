@@ -6,6 +6,14 @@
 
 ## 2026-10-01
 
+**TASK-036 done** — Komisi Saya (Sales/Manager) redesigned after the user's question whether it had a period filter, a modern layout and payment history (it had none). Mockup-approved over 4 iterations. Added a ‹ month › period stepper, a lunas-only headline figure (the old total also summed unpaid invoices — "terkesan menipu"), per-invoice status (Lunas / Sudah DP / Belum Bayar) with a "Lihat invoice" link, and a payout history (per transfer, expandable, bukti transfer link). Unpaid/not-yet-transferred invoices now carry over between months instead of vanishing. Removed on the user's instruction: the "Tagih" buttons and the mini Papan Peringkat on this page only.
+
+Tasks: TASK-036. Bugs fixed: BUG-022.
+Preserved: Slip Gaji (`/payroll`), Leaderboard (`/insentif`), `/follow-up`, `getMyCommissionSummary` (Beranda still uses it).
+Regression: `tsc --noEmit`, `eslint`, `next build` clean; new data function run read-only against the real DB. Not click-tested in a logged-in browser.
+
+---
+
 **TASK-034 follow-up** — Kondisi (Baru/Bekas) badge collided with `ZoomableImage`'s own dimension footnote — both sat at the photo's bottom-left corner. Moved Kondisi to top-left instead, nudged right when the pick-mode checkbox is also showing there. Verified via a static HTML reproduction of the 3 overlapping states (no logged-in browser session available in this environment to click through Katalog live).
 
 Tasks: TASK-034.

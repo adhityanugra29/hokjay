@@ -791,3 +791,29 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Files affected:** `components/insentif/SalesBoard.tsx`, `components/insentif/MobileSalesBoard.tsx`, new `components/insentif/boardUtils.ts` (initials helper).
 
 **Regression test:** `tsc --noEmit` clean, `eslint components/insentif` clean. `next build` not run, not yet click-tested live in a browser.
+
+---
+
+## TASK-036 — Komisi Saya redesigned: period filter, lunas-only headline, invoice status, payout history (mockup-approved)
+
+**Type:** UX/UI + Feature
+**Priority:** P2
+**Status:** DONE (2026-10-01)
+**Dependency:** None
+**Created:** 2026-10-01 · **Last updated:** 2026-10-01
+
+**Description:** User asked whether Komisi Saya (Sales/Manager) has a period filter, is modern, and has a payment history — it had none of the three. Design Review done as an HTML mockup artifact (4 iterations), approved before coding. Decisions: no "Tagih" feature, no mini Papan Peringkat, headline figure only commission from lunas invoices (the old total also counted unpaid invoices), invoices must show Lunas / Sudah DP / Belum Bayar and be openable.
+- Period stepper ‹ Bulan Tahun › (`?bulan=&tahun=`, plain links, GMT+7, can't go past the running month, 24 months back).
+- Headline = commission from lunas invoices, split Siap cair / Sudah dibayar (by `komisiCair`); unpaid commission = footnote + "Belum lunas" tab, never in the headline.
+- Both waiting lists carry over from earlier months with a "dari {bulan}" chip.
+- Each invoice row: status badge (reuses `FollowUpStatusBadge`), sisa tagihan for unpaid/DP, "Lihat invoice" → `/invoice/[id]` (existing per-sales guard applies).
+- Riwayat pembayaran: transfers received in the month, grouped per batch (same grouping as `getPayrollHistory`), expandable per invoice, bukti transfer link when one exists, year total.
+- Responsive: one tree — single column on phones, two columns from `lg`.
+
+**Acceptance criteria:** Headline never includes unpaid-invoice commission; unpaid invoices from earlier months stay visible; no schema/API change; Slip Gaji (`/payroll`), `/insentif`, `/follow-up` untouched.
+
+**Files affected:** `lib/insentif.ts` (new `getMyKomisiOverview` + types; existing functions untouched), `app/komisi-saya/page.tsx`, new `components/komisi/KomisiSayaView.tsx`, new `components/komisi/PeriodStepper.tsx`.
+
+**Removed (explicit user decisions, not silent):** "Tagih" per-invoice button, "Tagih yang tertahan" button, mini Papan Peringkat on this page.
+
+**Regression test:** `tsc --noEmit`, `eslint`, `next build` clean; data function run read-only against the real DB. Not click-tested in a logged-in browser.

@@ -386,3 +386,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
 **Regression test:** `npx tsc --noEmit` clean. No live-session verification available in this environment. `namaSnapshot` is a frozen snapshot by design (matches `dimensiSnapshot`/`hargaMinimumSnapshot`/etc.), so this only affects invoices created or edited from now on — existing invoices keep whatever name they were given at the time, unchanged.
+
+---
+
+## BUG-022 — Komisi Saya's headline counted unpaid-invoice commission, and unpaid invoices vanished when the month changed
+
+**Severity:** B2
+**Status:** FIXED (2026-10-01) — by the TASK-036 redesign
+**Source:** Found while reviewing Komisi Saya for the redesign; the headline half was also called out by the user ("terkesan agak menipu ... fokuskan angka terbesarnya hanya ke angka komisi dari invoice yang sudah lunas").
+
+**Description:** (1) The big "Komisi berjalan" figure was `getMyCommissionSummary().totalBerjalan` = commission from lunas invoices + commission from still-unpaid invoices, so a sales rep could read money that might never be paid as already earned. (2) `getMyCommissionSummary` only looks at invoices whose `tanggalInvoice` falls inside the selected month, so an unpaid invoice from September disappeared from the "Tertahan" list on 1 Oct — exactly the invoices that most need attention. (3) "Sudah aman" meant "customer paid", not "company transferred the commission", so Sales couldn't tell whether money had actually arrived.
+
+**Root cause:** Summary design in `lib/insentif.ts` — month-bucketed by invoice date only, one headline total over both statuses, no `komisiCair` split.
+
+**Fix:** New `getMyKomisiOverview` (lib/insentif.ts) and a rebuilt `app/komisi-saya/page.tsx`: headline = lunas-only commission split into Siap cair (`komisiCair` false) / Sudah dibayar (true); unpaid-invoice commission is a footnote + separate "Belum lunas" tab and is never added to the headline; both waiting lists carry over from earlier months with a "dari {bulan}" chip. `getMyCommissionSummary` itself is untouched (Beranda still uses it — see KNOWN_ISSUES.md).
+
+**Files:** `lib/insentif.ts`, `app/komisi-saya/page.tsx`, `components/komisi/KomisiSayaView.tsx`, `components/komisi/PeriodStepper.tsx`.
+**Regression test:** `tsc --noEmit`, `eslint`, `next build` clean. `getMyKomisiOverview` was run read-only against the real database for two sales accounts (e.g. an account with Rp 7.8jt of September DP/unpaid commission that the old page would have dropped on 1 Oct now shows it as "dari September"). Not click-tested in a logged-in browser.

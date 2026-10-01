@@ -2,6 +2,7 @@ import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
 import { User } from "@/models/User";
+import { jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
 
 export function currentPeriod(): string {
   const now = new Date();
@@ -321,5 +322,213 @@ export async function getUnpaidCommissionInvoices(salesNama: string): Promise<Un
       };
     })
     .filter((r) => r.komisiTotal > 0);
+}
+
+/** One invoice row on Komisi Saya. Dates are ISO strings so the whole overview can cross into a client component. */
+export interface MyKomisiInvoiceRow {
+  invoiceId: string;
+  nomor: string;
+  customerNama: string;
+  komisi: number;
+  /** Payment state of the invoice itself: "dp" = still "unpaid" but a DP was already received. */
+  status: "unpaid" | "dp" | "paid";
+  /** Still owed on the invoice (grandTotal - DP). Only meaningful for unpaid/dp. */
+  sisaTagihan: number;
+  /** Days since tanggalInvoice. Only meaningful for unpaid/dp. */
+  hariBerjalan: number;
+  /** When the customer fully paid. Only for paid. */
+  tanggalLunas?: string;
+  /** "YYYY-MM" when this row belongs to an earlier month than the selected one (a carry-over). */
+  asalPeriode?: string;
+}
+
+export interface MyKomisiPayoutRow {
+  key: string;
+  tanggalBayar: string;
+  total: number;
+  catatan?: string;
+  buktiUrl?: string;
+  invoices: { invoiceId: string; nomor: string; customerNama: string; tanggalLunas: string; komisi: number }[];
+}
+
+export interface MyKomisiOverview {
+  period: string;
+  tahun: number;
+  /** Lunas this period, company hasn't transferred the commission yet. */
+  siapCair: number;
+  /** Same as siapCair but from earlier months, still waiting — kept out of siapCair so the period figure stays period-only. */
+  siapCairBulanLalu: number;
+  /** Lunas this period AND already transferred to the sales rep. */
+  sudahDibayar: number;
+  sudahDibayarCount: number;
+  /** What the hero shows: commission from invoices that are fully paid (lunas) this period. */
+  totalLunas: number;
+  /** Not counted in totalLunas — customer hasn't fully paid yet. Spans every month up to the selected one. */
+  belumLunasTotal: number;
+  siapCairInvoices: MyKomisiInvoiceRow[];
+  belumLunasInvoices: MyKomisiInvoiceRow[];
+  /** Transfers received during the selected month (by komisiCairTanggal), newest first. */
+  payouts: MyKomisiPayoutRow[];
+  /** Everything received in the selected period's calendar year. */
+  totalDiterimaTahun: number;
+}
+
+/**
+ * Komisi Saya's data (redesign 2026-10-01, mockup-approved). The headline
+ * figure is commission from invoices that are *lunas* — per the user's
+ * correction ("fokuskan angka terbesarnya hanya ke komisi dari invoice yang
+ * sudah lunas"), the old "Komisi berjalan" also summed still-unpaid
+ * invoices, which read as money already earned. Unpaid-invoice commission
+ * is returned separately (belumLunas*) and never added into totalLunas.
+ *
+ * Period basis: lunas rows by when the customer paid (payment.tanggalBayar —
+ * same basis as the Leaderboard), unpaid rows by tanggalInvoice (they have
+ * no payment date yet). Both "waiting" lists carry over from earlier months
+ * on purpose: an unpaid / not-yet-transferred invoice from September must
+ * not vanish from the October view (the old summary dropped it). Month
+ * boundaries are GMT+7 (lib/timezone.ts), not server-local time.
+ *
+ * Payouts are re-grouped from Invoice.komisiCair* the same way
+ * getPayrollHistory does (sales + komisiCairTanggal + bukti identify one
+ * batch) — there's no dedicated payout record — but scoped to one sales.
+ */
+export async function getMyKomisiOverview(salesNama: string, period: string): Promise<MyKomisiOverview> {
+  await dbConnect();
+  const [y, m] = period.split("-").map(Number);
+  const { from: start, to: end } = jakartaMonthRange(y, m);
+  const { from: yearStart, to: yearEnd } = jakartaYearRange(y);
+
+  const [dibayarInvoices, siapInvoices, belumInvoices, yearPayouts] = await Promise.all([
+    Invoice.find({
+      "sales.nama": salesNama,
+      status: "paid",
+      komisiCair: true,
+      "payment.tanggalBayar": { $gte: start, $lt: end },
+    }).lean(),
+    Invoice.find({
+      "sales.nama": salesNama,
+      status: "paid",
+      komisiCair: { $ne: true },
+      "payment.tanggalBayar": { $lt: end },
+    }).lean(),
+    Invoice.find({
+      "sales.nama": salesNama,
+      status: "unpaid",
+      tanggalInvoice: { $lt: end },
+    }).lean(),
+    Invoice.find({
+      "sales.nama": salesNama,
+      komisiCair: true,
+      komisiCairTanggal: { $gte: yearStart, $lt: yearEnd },
+    }).lean(),
+  ]);
+
+  const komisiOf = (inv: { items: { komisiSubtotal: number }[] }) =>
+    inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
+  const periodKey = (d: Date) => {
+    const j = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+    return `${j.getUTCFullYear()}-${String(j.getUTCMonth() + 1).padStart(2, "0")}`;
+  };
+  const now = Date.now();
+
+  let sudahDibayar = 0;
+  let sudahDibayarCount = 0;
+  for (const inv of dibayarInvoices) {
+    const komisi = komisiOf(inv);
+    if (komisi <= 0) continue;
+    sudahDibayar += komisi;
+    sudahDibayarCount++;
+  }
+
+  let siapCair = 0;
+  let siapCairBulanLalu = 0;
+  const siapCairInvoices: MyKomisiInvoiceRow[] = [];
+  for (const inv of siapInvoices) {
+    const komisi = komisiOf(inv);
+    if (komisi <= 0) continue;
+    const lunasAt = inv.payment?.tanggalBayar ?? inv.tanggalInvoice;
+    const carried = lunasAt < start;
+    if (carried) siapCairBulanLalu += komisi;
+    else siapCair += komisi;
+    siapCairInvoices.push({
+      invoiceId: String(inv._id),
+      nomor: inv.nomor,
+      customerNama: inv.customer?.nama ?? "—",
+      komisi,
+      status: "paid",
+      sisaTagihan: 0,
+      hariBerjalan: 0,
+      tanggalLunas: lunasAt.toISOString(),
+      asalPeriode: carried ? periodKey(lunasAt) : undefined,
+    });
+  }
+  siapCairInvoices.sort((a, b) => b.tanggalLunas!.localeCompare(a.tanggalLunas!));
+
+  let belumLunasTotal = 0;
+  const belumLunasInvoices: MyKomisiInvoiceRow[] = [];
+  for (const inv of belumInvoices) {
+    const komisi = komisiOf(inv);
+    if (komisi <= 0) continue;
+    belumLunasTotal += komisi;
+    const dp = inv.dp?.nominal ?? 0;
+    belumLunasInvoices.push({
+      invoiceId: String(inv._id),
+      nomor: inv.nomor,
+      customerNama: inv.customer?.nama ?? "—",
+      komisi,
+      status: dp > 0 ? "dp" : "unpaid",
+      sisaTagihan: Math.max(0, inv.grandTotal - dp),
+      hariBerjalan: Math.max(0, Math.floor((now - inv.tanggalInvoice.getTime()) / 86_400_000)),
+      asalPeriode: inv.tanggalInvoice < start ? periodKey(inv.tanggalInvoice) : undefined,
+    });
+  }
+  belumLunasInvoices.sort((a, b) => b.hariBerjalan - a.hariBerjalan);
+
+  const batches = new Map<string, MyKomisiPayoutRow>();
+  let totalDiterimaTahun = 0;
+  for (const inv of yearPayouts) {
+    const komisi = komisiOf(inv);
+    if (komisi <= 0) continue;
+    totalDiterimaTahun += komisi;
+    const tanggal = inv.komisiCairTanggal!;
+    if (tanggal < start || tanggal >= end) continue;
+    const key = `${tanggal.getTime()}|${inv.komisiCairBuktiUrl ?? ""}`;
+    let row = batches.get(key);
+    if (!row) {
+      row = {
+        key,
+        tanggalBayar: tanggal.toISOString(),
+        total: 0,
+        catatan: inv.komisiCairCatatan ?? undefined,
+        buktiUrl: inv.komisiCairBuktiUrl ?? undefined,
+        invoices: [],
+      };
+      batches.set(key, row);
+    }
+    row.total += komisi;
+    row.invoices.push({
+      invoiceId: String(inv._id),
+      nomor: inv.nomor,
+      customerNama: inv.customer?.nama ?? "—",
+      tanggalLunas: (inv.payment?.tanggalBayar ?? tanggal).toISOString(),
+      komisi,
+    });
+  }
+  const payouts = [...batches.values()].sort((a, b) => b.tanggalBayar.localeCompare(a.tanggalBayar));
+
+  return {
+    period,
+    tahun: y,
+    siapCair,
+    siapCairBulanLalu,
+    sudahDibayar,
+    sudahDibayarCount,
+    totalLunas: siapCair + sudahDibayar,
+    belumLunasTotal,
+    siapCairInvoices,
+    belumLunasInvoices,
+    payouts,
+    totalDiterimaTahun,
+  };
 }
 

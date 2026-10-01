@@ -35,3 +35,11 @@ See BUGS.md BUG-004 — deferred as part of TASK-003, not yet fixed.
 ## `react-hooks/set-state-in-effect` ESLint errors
 
 Long-standing, repo-wide, pre-existing pattern (setState called synchronously inside a `useEffect` in several client components — `CartProvider.tsx`, `SearchableSelect.tsx`, `Form.tsx`'s `CurrencyInput`, `LoadingOverlay.tsx`, several admin/purchasing/payroll "load on mount" components, etc.). NOT enforced by the actual build/deploy gate (Next.js build only type-checks, doesn't fail on lint). Standard handling: when this appears on a line NOT touched by the current diff (verify via `git diff`), it's non-blocking — don't fix incidentally, it's out of scope unless the current task specifically targets it.
+
+## Beranda's Sales card still totals unpaid-invoice commission
+
+`app/page.tsx` calls `getMyCommissionSummary()` for the Sales homepage, and its `totalBerjalan` still adds lunas + unpaid commission — the same pattern the user called misleading on Komisi Saya (see BUG-022). Left untouched because it is out of TASK-036's scope; needs the user's call on whether Beranda should follow Komisi Saya's "lunas only" headline. Also: `currentPeriod()` / `periodRange()` in `lib/insentif.ts` use the server's local timezone (UTC on Vercel), not GMT+7 like `lib/timezone.ts` — only matters for a few hours around a month boundary; the new `getMyKomisiOverview` uses the GMT+7 helpers.
+
+## Follow-up's default view lost its Komisi Saya entry point
+
+TASK-036 removed Komisi Saya's "Tagih" / "Tagih yang tertahan" buttons (the user decided no collection feature is needed). `/follow-up`'s default view is unchanged and still reachable from Beranda / the nav as before; it just no longer has a link from Komisi Saya.
