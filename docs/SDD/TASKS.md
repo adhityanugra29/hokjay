@@ -821,3 +821,21 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Follow-up (2026-10-01):** User renamed the two status labels — "Siap cair" (lunas, awaiting transfer) → "Komisi Tertunda", "Sudah dibayar" (already transferred) → "Komisi Siap Cair". Labels only (hero tiles, tab, aria-label in `components/komisi/KomisiSayaView.tsx`); field names (`siapCair`, `sudahDibayar`) and logic unchanged.
 
 **Follow-up 2 (2026-10-01) — concept corrected:** the label-only rename above left the numbers ambiguous (labels sat on the wrong figures). User clarified: **Komisi Tertunda** = invoice not yet lunas (waiting for the customer); **Komisi Siap Cair** = invoice lunas, commission not yet transferred to the sales rep. Re-mocked (v5) and rebuilt: the headline is now Komisi Siap Cair; Komisi Tertunda is one small line + its own tab, never added into the headline; the "already transferred" figure was dropped (lives in Riwayat pembayaran). Both figures are balances up to the end of the selected month (earlier months included, "dari {bulan}" chip). `getMyKomisiOverview` lost `siapCairBulanLalu` / `sudahDibayar*` / `totalLunas` and one DB query; files: `lib/insentif.ts`, `components/komisi/KomisiSayaView.tsx`, `app/komisi-saya/page.tsx`.
+
+---
+
+## TASK-037 — Invoice detail's Riwayat shows when the commission was paid out
+
+**Type:** UX/Feature
+**Priority:** P2
+**Status:** DONE locally (2026-10-01) — not yet pushed/deployed
+**Dependency:** TASK-036 (same commission-payout data)
+**Created:** 2026-10-01 · **Last updated:** 2026-10-01
+
+**Description:** User asked that the invoice's own "Riwayat" (timeline card on `/invoice/[id]`) also show when that invoice's commission was paid ("kapan invoice ini dibayarkan insentifnya"). Added one derived last line, "Komisi dibayarkan ke {sales}", dated `komisiCairTanggal`, when `komisiCair` is true. Derived at render time instead of pushed into `Invoice.riwayat` by the payout routes, so it covers all past payouts without a backfill (verified: all 38 invoices with `komisiCair` have a `komisiCairTanggal`) and disappears by itself if a payout is reversed via `/api/invoices/[id]/payout`. Appended last, existing entries' order untouched. Not part of `printData`, so it never reaches the customer-facing PDF.
+
+**Acceptance criteria:** Existing riwayat lines unchanged and in the same order; paid-out invoices gain one line; unpaid-out invoices unchanged; no schema/API change; PDF unchanged.
+
+**Files affected:** `app/invoice/[id]/page.tsx` only.
+
+**Regression test:** `tsc --noEmit`, `eslint` clean; data precondition checked read-only against the real DB. Not click-tested in a logged-in browser.

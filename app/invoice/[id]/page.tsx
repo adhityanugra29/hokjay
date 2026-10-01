@@ -79,6 +79,27 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     paymentNominalDiterima: invoice.payment?.nominalDiterima ?? undefined,
   };
 
+  // Riwayat card = the invoice's own stored events plus, once its commission
+  // has been paid out to the sales rep, one more line with that date —
+  // derived from komisiCair/komisiCairTanggal at render time rather than
+  // pushed into `riwayat` by the payout routes, so it also covers invoices
+  // paid out before this existed (no backfill needed) and drops off by
+  // itself if a payout is ever reversed (/api/invoices/[id]/payout). Appended
+  // last (not sorted in) so the existing entries' order is untouched — a
+  // payout can only happen after the invoice is lunas. Per the
+  // user's request 2026-10-01 ("tampilkan juga kapan invoice ini
+  // dibayarkan insentifnya"). Not part of printData, so it never reaches the
+  // customer-facing PDF.
+  const riwayatRows = [
+    ...invoice.riwayat.map((r) => ({
+      tanggal: r.tanggal ?? invoice.createdAt!,
+      keterangan: r.keterangan,
+    })),
+    ...(invoice.komisiCair && invoice.komisiCairTanggal
+      ? [{ tanggal: invoice.komisiCairTanggal, keterangan: `Komisi dibayarkan ke ${invoice.sales?.nama ?? "sales"}` }]
+      : []),
+  ];
+
   return (
     <>
       <InvoicePrintDoc invoice={printData} id="invoice-print-doc" />
@@ -201,9 +222,9 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
             <div className="rounded-2xl bg-panel p-5 shadow-sm">
               <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Riwayat</h3>
               <div className="font-mono text-[0.75rem] leading-loose text-muted">
-                {invoice.riwayat.map((r, idx) => (
+                {riwayatRows.map((r, idx) => (
                   <div key={idx}>
-                    {formatDateShort(r.tanggal ?? invoice.createdAt!)} — {r.keterangan}
+                    {formatDateShort(r.tanggal)} — {r.keterangan}
                   </div>
                 ))}
               </div>
