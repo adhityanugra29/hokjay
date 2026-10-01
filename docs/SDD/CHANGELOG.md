@@ -6,7 +6,7 @@
 
 ## 2026-10-01
 
-**TASK-037 done (not yet deployed)** — Invoice detail's Riwayat card now also shows when that invoice's commission was paid out ("Komisi dibayarkan ke {sales}", dated `komisiCairTanggal`), per the user's request. Derived at render time (no payout-route change, no backfill; all 38 existing paid-out invoices have the date), appended last so existing lines keep their order, and not added to the customer-facing PDF.
+**TASK-037 done** — Invoice detail's Riwayat card now also shows when that invoice's commission was paid out ("Komisi dibayarkan ke {sales}", dated `komisiCairTanggal`), per the user's request. Derived at render time (no payout-route change, no backfill; all 38 existing paid-out invoices have the date), appended last so existing lines keep their order, and not added to the customer-facing PDF.
 
 Tasks: TASK-037.
 Regression: `tsc --noEmit`, `eslint` clean. Not click-tested in a logged-in browser.

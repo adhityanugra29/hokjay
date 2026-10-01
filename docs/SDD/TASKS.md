@@ -828,7 +828,7 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 
 **Type:** UX/Feature
 **Priority:** P2
-**Status:** DONE locally (2026-10-01) — not yet pushed/deployed
+**Status:** DONE (2026-10-01, deployed — commit 768ab94)
 **Dependency:** TASK-036 (same commission-payout data)
 **Created:** 2026-10-01 · **Last updated:** 2026-10-01
 
