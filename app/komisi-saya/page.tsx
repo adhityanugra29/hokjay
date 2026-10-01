@@ -20,14 +20,16 @@ export const dynamic = "force-dynamic";
  * a "manager" hit a 404 here instead).
  *
  * Redesigned 2026-10-01 (TASK-036, mockup-approved): period filter
- * (?bulan=&tahun=, the same params PeriodPicker uses), headline figure =
- * commission from lunas invoices only, unpaid-invoice commission demoted to a
- * footnote + "Belum lunas" tab, per-invoice status (Lunas / Sudah DP / Belum
- * Bayar) with a link to the real invoice, and a payout history. Per the
- * user's decisions the "Tagih" buttons and the mini Papan Peringkat were
- * removed from this page (the full Leaderboard at /insentif is untouched).
- * "Siap cair" vs "Sudah dibayar" is split by komisiCair — whether the company
- * has transferred the commission, which is Payroll's own domain.
+ * (?bulan=&tahun=, the same params PeriodPicker uses), two statuses named by
+ * the user — "Komisi Siap Cair" (invoice lunas, commission not yet
+ * transferred = the headline) and "Komisi Tertunda" (invoice still unpaid =
+ * small secondary line + tab) — per-invoice status (Lunas / Sudah DP / Belum
+ * Bayar) with a link to the real invoice, and a payout history of transfers
+ * already received. Per the user's decisions the "Tagih" buttons and the mini
+ * Papan Peringkat were removed from this page (the full Leaderboard at
+ * /insentif is untouched). Siap Cair vs already-transferred is split by
+ * komisiCair — whether the company has transferred the commission, which is
+ * Payroll's own domain.
  */
 export default async function KomisiSayaPage({ searchParams }: PageProps<"/komisi-saya">) {
   const session = await getSession();
@@ -53,7 +55,7 @@ export default async function KomisiSayaPage({ searchParams }: PageProps<"/komis
     <>
       <PageHeader
         title="Komisi Saya"
-        subtitle="Komisi dari invoice milikmu yang sudah lunas, per periode."
+        subtitle="Komisi Siap Cair dan Komisi Tertunda dari invoice milikmu, plus riwayat transfer per bulan."
         actions={<PeriodStepper year={year} month={month} current={current} />}
       />
       <div className="p-4 md:p-9">

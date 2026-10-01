@@ -399,7 +399,7 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Root cause:** Summary design in `lib/insentif.ts` — month-bucketed by invoice date only, one headline total over both statuses, no `komisiCair` split.
 
-**Fix:** New `getMyKomisiOverview` (lib/insentif.ts) and a rebuilt `app/komisi-saya/page.tsx`: headline = lunas-only commission split into Siap cair (`komisiCair` false) / Sudah dibayar (true); unpaid-invoice commission is a footnote + separate "Belum lunas" tab and is never added to the headline; both waiting lists carry over from earlier months with a "dari {bulan}" chip. `getMyCommissionSummary` itself is untouched (Beranda still uses it — see KNOWN_ISSUES.md).
+**Fix:** New `getMyKomisiOverview` (lib/insentif.ts) and a rebuilt `app/komisi-saya/page.tsx`: headline = "Komisi Siap Cair" (lunas, `komisiCair` false); unpaid-invoice commission = "Komisi Tertunda", a small line + separate tab, never added to the headline; both waiting lists carry over from earlier months with a "dari {bulan}" chip. `getMyCommissionSummary` itself is untouched (Beranda still uses it — see KNOWN_ISSUES.md).
 
 **Files:** `lib/insentif.ts`, `app/komisi-saya/page.tsx`, `components/komisi/KomisiSayaView.tsx`, `components/komisi/PeriodStepper.tsx`.
 **Regression test:** `tsc --noEmit`, `eslint`, `next build` clean. `getMyKomisiOverview` was run read-only against the real database for two sales accounts (e.g. an account with Rp 7.8jt of September DP/unpaid commission that the old page would have dropped on 1 Oct now shows it as "dari September"). Not click-tested in a logged-in browser.

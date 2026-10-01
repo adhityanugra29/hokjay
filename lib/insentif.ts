@@ -354,16 +354,18 @@ export interface MyKomisiPayoutRow {
 export interface MyKomisiOverview {
   period: string;
   tahun: number;
-  /** Lunas this period, company hasn't transferred the commission yet. */
+  /**
+   * "Komisi Siap Cair" — the hero figure: invoice is lunas, but the company
+   * hasn't transferred the commission to the sales rep yet. A balance, not a
+   * per-month flow: everything lunas up to the END of the selected month
+   * (earlier months included, so nothing still owed vanishes on the 1st).
+   */
   siapCair: number;
-  /** Same as siapCair but from earlier months, still waiting — kept out of siapCair so the period figure stays period-only. */
-  siapCairBulanLalu: number;
-  /** Lunas this period AND already transferred to the sales rep. */
-  sudahDibayar: number;
-  sudahDibayarCount: number;
-  /** What the hero shows: commission from invoices that are fully paid (lunas) this period. */
-  totalLunas: number;
-  /** Not counted in totalLunas — customer hasn't fully paid yet. Spans every month up to the selected one. */
+  /**
+   * "Komisi Tertunda" — invoice not fully paid yet (customer hasn't paid).
+   * Same "up to the end of the selected month" basis. Never added to
+   * siapCair.
+   */
   belumLunasTotal: number;
   siapCairInvoices: MyKomisiInvoiceRow[];
   belumLunasInvoices: MyKomisiInvoiceRow[];
@@ -374,18 +376,20 @@ export interface MyKomisiOverview {
 }
 
 /**
- * Komisi Saya's data (redesign 2026-10-01, mockup-approved). The headline
- * figure is commission from invoices that are *lunas* — per the user's
- * correction ("fokuskan angka terbesarnya hanya ke komisi dari invoice yang
- * sudah lunas"), the old "Komisi berjalan" also summed still-unpaid
- * invoices, which read as money already earned. Unpaid-invoice commission
- * is returned separately (belumLunas*) and never added into totalLunas.
+ * Komisi Saya's data (redesign 2026-10-01, mockup-approved). Two statuses,
+ * named by the user: "Komisi Siap Cair" (invoice lunas, commission not yet
+ * transferred — the headline) and "Komisi Tertunda" (invoice not fully paid
+ * yet — a small secondary figure, never added into the headline; the old
+ * "Komisi berjalan" summed both, which read as money already earned).
+ * Commission that HAS been transferred is not a figure of its own — it lives
+ * in the payout history (payouts / totalDiterimaTahun).
  *
- * Period basis: lunas rows by when the customer paid (payment.tanggalBayar —
- * same basis as the Leaderboard), unpaid rows by tanggalInvoice (they have
- * no payment date yet). Both "waiting" lists carry over from earlier months
- * on purpose: an unpaid / not-yet-transferred invoice from September must
- * not vanish from the October view (the old summary dropped it). Month
+ * Both statuses are balances "up to the end of the selected month" (lunas by
+ * payment.tanggalBayar — same basis as the Leaderboard; unpaid by
+ * tanggalInvoice since they have no payment date yet), earlier months
+ * included on purpose: an unpaid / not-yet-transferred invoice from
+ * September must not vanish from the October view (the old summary dropped
+ * it). Rows from before the selected month carry asalPeriode. Month
  * boundaries are GMT+7 (lib/timezone.ts), not server-local time.
  *
  * Payouts are re-grouped from Invoice.komisiCair* the same way
@@ -398,13 +402,7 @@ export async function getMyKomisiOverview(salesNama: string, period: string): Pr
   const { from: start, to: end } = jakartaMonthRange(y, m);
   const { from: yearStart, to: yearEnd } = jakartaYearRange(y);
 
-  const [dibayarInvoices, siapInvoices, belumInvoices, yearPayouts] = await Promise.all([
-    Invoice.find({
-      "sales.nama": salesNama,
-      status: "paid",
-      komisiCair: true,
-      "payment.tanggalBayar": { $gte: start, $lt: end },
-    }).lean(),
+  const [siapInvoices, belumInvoices, yearPayouts] = await Promise.all([
     Invoice.find({
       "sales.nama": salesNama,
       status: "paid",
@@ -431,25 +429,14 @@ export async function getMyKomisiOverview(salesNama: string, period: string): Pr
   };
   const now = Date.now();
 
-  let sudahDibayar = 0;
-  let sudahDibayarCount = 0;
-  for (const inv of dibayarInvoices) {
-    const komisi = komisiOf(inv);
-    if (komisi <= 0) continue;
-    sudahDibayar += komisi;
-    sudahDibayarCount++;
-  }
-
   let siapCair = 0;
-  let siapCairBulanLalu = 0;
   const siapCairInvoices: MyKomisiInvoiceRow[] = [];
   for (const inv of siapInvoices) {
     const komisi = komisiOf(inv);
     if (komisi <= 0) continue;
     const lunasAt = inv.payment?.tanggalBayar ?? inv.tanggalInvoice;
     const carried = lunasAt < start;
-    if (carried) siapCairBulanLalu += komisi;
-    else siapCair += komisi;
+    siapCair += komisi;
     siapCairInvoices.push({
       invoiceId: String(inv._id),
       nomor: inv.nomor,
@@ -520,10 +507,6 @@ export async function getMyKomisiOverview(salesNama: string, period: string): Pr
     period,
     tahun: y,
     siapCair,
-    siapCairBulanLalu,
-    sudahDibayar,
-    sudahDibayarCount,
-    totalLunas: siapCair + sudahDibayar,
     belumLunasTotal,
     siapCairInvoices,
     belumLunasInvoices,

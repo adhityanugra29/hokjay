@@ -6,6 +6,13 @@
 
 ## 2026-10-01
 
+**TASK-036 follow-up (concept fix)** — Komisi Saya's numbers were ambiguous after the label rename (labels on the wrong figures). Per the user's definitions: **Komisi Siap Cair** = invoice lunas, commission not yet transferred (now the one big figure); **Komisi Tertunda** = invoice not yet lunas (small secondary line + tab, never in the headline). The "already transferred" figure was removed (it's in Riwayat pembayaran). Both are balances up to the end of the selected month. Re-mocked first (artifact v5).
+
+Tasks: TASK-036.
+Regression: `tsc --noEmit`, `eslint`, `next build` clean; data function re-run read-only against the real DB. Not click-tested in a logged-in browser.
+
+---
+
 **TASK-036 done** — Komisi Saya (Sales/Manager) redesigned after the user's question whether it had a period filter, a modern layout and payment history (it had none). Mockup-approved over 4 iterations. Added a ‹ month › period stepper, a lunas-only headline figure (the old total also summed unpaid invoices — "terkesan menipu"), per-invoice status (Lunas / Sudah DP / Belum Bayar) with a "Lihat invoice" link, and a payout history (per transfer, expandable, bukti transfer link). Unpaid/not-yet-transferred invoices now carry over between months instead of vanishing. Removed on the user's instruction: the "Tagih" buttons and the mini Papan Peringkat on this page only.
 
 Tasks: TASK-036. Bugs fixed: BUG-022.

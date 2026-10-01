@@ -13,13 +13,13 @@ function asalLabel(asal: string): string {
 }
 
 /**
- * Body of "Komisi Saya" (redesign 2026-10-01, mockup-approved): one hero
- * figure that is ONLY commission from lunas invoices, split into "Komisi
- * Tertunda" (lunas, company hasn't transferred yet — data.siapCair) and
- * "Komisi Siap Cair" (already transferred — data.sudahDibayar; labels
- * renamed 2026-10-01 per the user, field names kept), with still-unpaid commission demoted to a quiet footnote
- * and a separate "Belum lunas" tab (so it never reads as money already
- * earned), plus the payout history for the selected month.
+ * Body of "Komisi Saya" (redesign 2026-10-01, mockup-approved). Two statuses,
+ * named by the user: "Komisi Siap Cair" (invoice lunas, commission not yet
+ * transferred) is the one big figure; "Komisi Tertunda" (invoice still
+ * unpaid) is a small secondary line and its own tab, never added into the
+ * big figure so it can't read as money already earned. Commission that has
+ * already been transferred has no figure of its own — it's in the payout
+ * history for the selected month.
  *
  * Layout is one responsive tree rather than a separate Mobile* variant: a
  * single column below lg (what Sales sees on a phone), hero+invoices left /
@@ -32,9 +32,6 @@ export default function KomisiSayaView({ data, periodLabel }: { data: MyKomisiOv
     data.payouts[0] ? { [data.payouts[0].key]: true } : {}
   );
 
-  const lunasTotal = data.totalLunas;
-  const pct = (x: number) => (lunasTotal > 0 ? (x / lunasTotal) * 100 : 0);
-  const hasCarryBelum = data.belumLunasInvoices.some((i) => i.asalPeriode);
   const rows = tab === "siap" ? data.siapCairInvoices : data.belumLunasInvoices;
 
   return (
@@ -42,67 +39,32 @@ export default function KomisiSayaView({ data, periodLabel }: { data: MyKomisiOv
       <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
         <section className="rounded-2xl bg-linear-to-br from-accent-100 to-panel p-4 shadow-lg shadow-accent-700/15 md:p-5">
           <div className="font-sans text-[10.5px] font-bold uppercase tracking-[0.14em] text-accent-700">
-            Komisi dari invoice lunas · {periodLabel}
+            Komisi Siap Cair
           </div>
-          <div className="mb-3.5 mt-1 font-sans text-[clamp(1.9rem,8vw,2.5rem)] font-black leading-tight tracking-tight">
-            {rupiah(lunasTotal)}
+          <div className="mt-1 font-sans text-[clamp(1.9rem,8vw,2.5rem)] font-black leading-tight tracking-tight">
+            {rupiah(data.siapCair)}
           </div>
-          <div
-            className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-surface"
-            role="img"
-            aria-label={`Dari komisi lunas: komisi tertunda ${rupiah(data.siapCair)}, komisi siap cair ${rupiah(data.sudahDibayar)}`}
-          >
-            <span className="block h-full bg-accent" style={{ width: `${pct(data.siapCair)}%` }} />
-            <span className="block h-full bg-[#087a52]" style={{ width: `${pct(data.sudahDibayar)}%` }} />
+          <p className="mt-1 max-w-[46ch] font-sans text-[12px] leading-snug text-muted">
+            Invoice sudah lunas, komisinya belum ditransfer ke kamu. Posisi sampai akhir {periodLabel}.
+          </p>
+          <div className="mt-3.5 flex items-start gap-2 font-sans text-[11.5px] leading-snug text-muted">
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-line" />
+            <span>
+              <b className="font-bold text-ink">Komisi Tertunda {rupiah(data.belumLunasTotal)}</b> ·{" "}
+              {data.belumLunasInvoices.length > 0
+                ? `${data.belumLunasInvoices.length} invoice masih menunggu lunas`
+                : "tidak ada invoice yang menunggu lunas"}
+              . Belum dihitung di angka atas.
+            </span>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="min-w-0 rounded-xl bg-panel px-3 py-2.5">
-              <div className="flex items-center gap-1.5 font-sans text-[10.5px] font-extrabold uppercase tracking-wide text-muted">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-accent" />
-                Komisi Tertunda
-              </div>
-              <div className="mt-0.5 whitespace-nowrap font-sans text-[1rem] font-black tracking-tight">
-                {rupiah(data.siapCair)}
-              </div>
-              <div className="mt-0.5 font-sans text-[10.5px] leading-snug text-muted">
-                Invoice lunas, menunggu transfer kantor
-                {data.siapCairBulanLalu > 0 && (
-                  <b className="font-bold text-accent-700"> · + {rupiah(data.siapCairBulanLalu)} dari bulan sebelumnya</b>
-                )}
-              </div>
-            </div>
-            <div className="min-w-0 rounded-xl bg-panel px-3 py-2.5">
-              <div className="flex items-center gap-1.5 font-sans text-[10.5px] font-extrabold uppercase tracking-wide text-muted">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-[#087a52]" />
-                Komisi Siap Cair
-              </div>
-              <div className="mt-0.5 whitespace-nowrap font-sans text-[1rem] font-black tracking-tight">
-                {rupiah(data.sudahDibayar)}
-              </div>
-              <div className="mt-0.5 font-sans text-[10.5px] leading-snug text-muted">
-                {data.sudahDibayarCount > 0
-                  ? `${data.sudahDibayarCount} invoice sudah ditransfer`
-                  : "Belum ada yang ditransfer"}
-              </div>
-            </div>
-          </div>
-          {data.belumLunasTotal > 0 && (
-            <div className="mt-3 flex items-start gap-2 font-sans text-[11.5px] leading-snug text-muted">
-              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-line" />
-              <span>
-                Belum termasuk {rupiah(data.belumLunasTotal)} dari {data.belumLunasInvoices.length} invoice yang belum
-                lunas{hasCarryBelum ? " (termasuk bulan sebelumnya)" : ""}.
-              </span>
-            </div>
-          )}
         </section>
 
         <section className="min-w-0 rounded-2xl bg-panel shadow-sm">
           <div className="flex gap-1.5 px-4 pt-3" role="group" aria-label="Status invoice">
             {(
               [
-                ["siap", "Komisi Tertunda", data.siapCairInvoices.length],
-                ["belum", "Belum lunas", data.belumLunasInvoices.length],
+                ["siap", "Komisi Siap Cair", data.siapCairInvoices.length],
+                ["belum", "Komisi Tertunda", data.belumLunasInvoices.length],
               ] as const
             ).map(([key, label, count]) => (
               <button
@@ -129,20 +91,19 @@ export default function KomisiSayaView({ data, periodLabel }: { data: MyKomisiOv
           ) : (
             <div className="px-4 py-6 text-center font-sans text-[0.85rem] text-muted">
               {tab === "siap"
-                ? "Belum ada komisi yang menunggu transfer dari kantor."
+                ? "Tidak ada komisi yang menunggu transfer. Semua komisi dari invoice lunas sudah ditransfer ke kamu."
                 : "Tidak ada invoice yang menunggu pembayaran pelanggan."}
             </div>
           )}
 
           {tab === "belum" && rows.length > 0 && (
             <p className="px-4 pb-4 pt-1 font-sans text-[12px] text-muted">
-              Komisi {rupiah(data.belumLunasTotal)} ini belum dihitung di angka utama. Baru masuk setelah invoicenya
-              lunas.
+              Komisi {rupiah(data.belumLunasTotal)} ini menjadi Komisi Siap Cair setelah invoicenya lunas.
             </p>
           )}
           {tab === "siap" && rows.length > 0 && (
             <p className="px-4 pb-4 pt-1 font-sans text-[12px] text-muted">
-              Komisi ini sudah pasti, tinggal menunggu transfer dari kantor.
+              Invoice sudah lunas. Komisi ini tinggal menunggu transfer dari kantor.
             </p>
           )}
         </section>
