@@ -66,7 +66,9 @@ const DAY_NUM_CLASS: Record<InvoiceRowStatus, string> = {
 };
 
 const STEP_SOLID_CLS =
-  "rounded-lg border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600";
+  "block w-full rounded-lg border border-accent bg-accent px-3 py-1.5 text-center font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600";
+const STEP_DARK_CLS =
+  "block w-full cursor-pointer rounded-lg border border-ink bg-ink px-3 py-1.5 text-center font-sans text-[0.72rem] font-bold text-accent hover:bg-ink/85";
 const ICON_BTN_CLS =
   "group relative flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line text-ink no-underline hover:bg-black/5";
 
@@ -271,13 +273,14 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
           customerNama={r.custNama}
           couriers={couriers}
           currentKurir={r.kurir}
+          className={STEP_DARK_CLS}
         />
       );
     }
 
     return (
       <div key={r.id} className={`border-b border-line ${isOpen ? "bg-panel" : ""}`}>
-        <div className="grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2.5 py-3 md:grid-cols-[56px_minmax(0,1.5fr)_180px_150px_auto] md:gap-x-4">
+        <div className="grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2.5 py-3 md:grid-cols-[56px_minmax(0,1.5fr)_170px_150px_280px] md:gap-x-4">
           <div className={`border-l-4 pl-2.5 ${DAY_BORDER_CLASS[r.status]}`}>
             <div className={`font-sans text-[0.95rem] font-extrabold leading-none ${DAY_NUM_CLASS[r.status]}`}>
               {r.tglNum}
@@ -330,14 +333,18 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
           </div>
 
           <div className="col-span-3 flex items-center justify-end gap-1.5 md:order-5 md:col-span-1">
-            {step}
+            {/* Fixed-width slot (empty when there is no next step) so Preview/WA/chevron
+                sit at the same x on every row, whichever step the row has. */}
+            <div className="min-w-0 flex-1 md:w-[150px] md:flex-none">{step}</div>
             <IconButton label="Preview" onClick={() => openPreview(r.id)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-[17px] w-[17px]">
                 <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
             </IconButton>
-            {!isDraft && (
+            {isDraft ? (
+              <span className="h-[34px] w-[34px] shrink-0" aria-hidden="true" />
+            ) : (
               <IconButton
                 label="Kirim ke Pelanggan (WA)"
                 href={`https://wa.me/${toWaPhone(r.custWhatsapp)}`}
