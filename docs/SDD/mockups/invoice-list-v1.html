@@ -127,6 +127,39 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .card .btns .btn.solid, .card .btns .btn.dark { flex: 1; }
 .card .dt { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 2px; }
 
+/* ---------- filter bar + summary ---------- */
+.fcur { margin: 14px 28px 0; background: var(--panel); border-radius: 16px; padding: 22px; box-shadow: 0 1px 2px rgba(0,0,0,.06); display: flex; flex-wrap: wrap; gap: 16px; }
+.fcur .in { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 18px; font-size: 14px; color: var(--ink); }
+.fcur .in.s { min-width: 296px; color: var(--muted); }
+.scur { margin: 20px 28px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.scur > div { border-radius: 16px; padding: 18px 24px; background: var(--panel); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.scur > div:first-child { background: var(--ink); color: #fff; }
+.scur .k { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.scur > div:first-child .k { color: rgba(255,255,255,.6); }
+.scur .n { font-size: 1.5rem; font-weight: 800; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+.fbar { margin: 14px 28px 0; display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.search { flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1.5px solid var(--line); border-radius: 10px; padding: 0 12px; height: 40px; }
+.search:focus-within { border-color: var(--ink); }
+.search svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
+.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 13.5px; color: var(--ink); height: 100%; }
+.search input::placeholder { color: var(--muted); }
+.fbtn { height: 40px; display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--line); background: var(--panel); border-radius: 10px; padding: 0 14px; font-size: 13px; font-weight: 800; cursor: pointer; color: var(--ink); }
+.fbtn:hover { border-color: var(--accent-600); }
+.fbtn[aria-expanded="true"] { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+.fbtn .badge { background: var(--accent); color: var(--ink); border-radius: 999px; min-width: 18px; height: 18px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; padding-inline: 5px; }
+.fpanel { margin: 8px 28px 0; background: var(--panel); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(0,0,0,.06); display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
+.fpanel label { display: flex; flex-direction: column; gap: 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.fpanel select { height: 38px; min-width: 150px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--paper); font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); padding: 0 10px; }
+.chips { margin: 10px 28px 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-100); border: 1px solid var(--accent-600); color: var(--accent-700); border-radius: 999px; padding: 3px 6px 3px 12px; font-size: 12px; font-weight: 700; }
+.chip button { border: 0; background: rgba(0,0,0,.08); border-radius: 50%; width: 18px; height: 18px; line-height: 18px; font-size: 11px; cursor: pointer; padding: 0; color: inherit; }
+.linkbtn { border: 0; background: none; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; padding: 4px; }
+.sum { margin: 14px 28px 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; font-variant-numeric: tabular-nums; }
+.sum .a { font-size: 0.8rem; color: var(--muted); }
+.sum .a b { font-size: 1.2rem; color: var(--ink); font-weight: 800; letter-spacing: -0.01em; margin-right: 4px; }
+.phone .fbar, .phone .fpanel, .phone .chips, .phone .sum { margin-inline: 16px; }
+
 @media (max-width: 560px) { body { padding-inline: 16px; } }
 .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--accent); padding: 10px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 700; z-index: 50; max-width: calc(100% - 32px); box-shadow: 0 6px 20px rgba(0,0,0,.25); }
 .legend { font-size: 12px; color: var(--muted); max-width: 80ch; }
@@ -233,28 +266,59 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
     return '<div class="grp-title" style="padding-inline:16px"><span><b>Perlu tindakan</b><span class="cnt">' + a.length + "</span></span></div>" + a.map(phoneCard).join("") + '<div class="grp-title" style="padding-inline:16px"><span><b>Selesai</b><span class="cnt" style="background:var(--surface)">' + b.length + "</span></span></div>" + b.map(phoneCard).join("");
   }
 
+  var F = { open: false, bulan: "", tahun: "", sales: "" };
+  function fcount() { return (F.bulan ? 1 : 0) + (F.tahun ? 1 : 0) + (F.sales ? 1 : 0); }
+  function opt(list, val, all) { return '<option value="">' + all + "</option>" + list.map(function (x) { return "<option" + (x === val ? " selected" : "") + ">" + x + "</option>"; }).join(""); }
+  function currentFilters() {
+    return '<div class="fcur"><div class="in s">Cari no. invoice atau pelanggan...</div><div class="in">Semua Bulan ⌄</div><div class="in">Semua Tahun ⌄</div><div class="in">Semua Sales ⌄</div></div>' +
+      '<div class="scur"><div><div class="k">Jumlah Invoice</div><div class="n">86</div></div><div><div class="k">Total Nilai Invoice</div><div class="n">Rp 788.480.000</div></div></div>';
+  }
+  function newFilters() {
+    var n = fcount();
+    var h = '<div class="fbar"><label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Cari no. invoice atau pelanggan" aria-label="Cari invoice"></label>' +
+      '<button class="fbtn" type="button" data-f="toggle" aria-expanded="' + F.open + '">Filter' + (n ? ' <span class="badge">' + n + "</span>" : "") + " " + (F.open ? "▴" : "▾") + "</button></div>";
+    if (F.open) {
+      h += '<div class="fpanel"><label>Bulan<select id="fb" data-f="bulan">' + opt(["Agustus", "September", "Oktober"], F.bulan, "Semua bulan") + "</select></label>" +
+        '<label>Tahun<select id="ft" data-f="tahun">' + opt(["2026"], F.tahun, "Semua tahun") + "</select></label>" +
+        '<label>Sales<select id="fs" data-f="sales">' + opt(["Andi abdillah", "Avicenna Pangaran"], F.sales, "Semua sales") + "</select></label></div>";
+    }
+    if (n) {
+      h += '<div class="chips">' + [["bulan", "Bulan"], ["tahun", "Tahun"], ["sales", "Sales"]].filter(function (k) { return F[k[0]]; }).map(function (k) {
+        return '<span class="chip">' + k[1] + ": " + F[k[0]] + '<button type="button" data-clear="' + k[0] + '" aria-label="Hapus filter ' + k[1] + '">✕</button></span>';
+      }).join("") + '<button class="linkbtn" type="button" data-clear="all">Reset semua</button></div>';
+    }
+    return h + '<div class="sum"><span class="a"><b>86</b>invoice</span><span class="a"><b>Rp 788.480.000</b>total nilai</span></div>';
+  }
+
   function render() {
     var html;
-    if (view === "now") html = '<div class="frame-scroll"><div class="app"><div class="list-head"><h2>Invoice</h2><span>6 dari 62 invoice</span></div><div class="rows">' + DATA.map(currentRow).join("") + "</div></div></div>";
-    else if (view === "new") html = '<div class="frame-scroll"><div class="app"><div class="list-head"><h2>Invoice</h2><span>6 dari 62 invoice</span></div>' + newList() + "</div></div>";
-    else html = '<div class="phone-stage"><div class="phone"><div class="list-head"><h2>Invoice</h2><span>6 dari 62</span></div>' + phoneList() + "</div></div>";
+    if (view === "now") html = '<div class="frame-scroll"><div class="app"><div class="list-head"><h2>Invoice</h2><span>6 dari 86 invoice</span></div>' + currentFilters() + '<div class="rows">' + DATA.map(currentRow).join("") + "</div></div></div>";
+    else if (view === "new") html = '<div class="frame-scroll"><div class="app"><div class="list-head"><h2>Invoice</h2><span>6 dari 86 invoice</span></div>' + newFilters() + newList() + "</div></div>";
+    else html = '<div class="phone-stage"><div class="phone"><div class="list-head"><h2>Invoice</h2><span>6 dari 86</span></div>' + newFilters() + phoneList() + "</div></div>";
     $("stage").innerHTML = html;
     document.querySelectorAll("#viewSeg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.view === view)); });
     document.querySelectorAll("#grpSeg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.grp === grp)); });
     $("grpWrap").hidden = view === "now";
     $("note").textContent = view === "now"
-      ? "Sekarang: tiap baris punya jumlah tombol dan lebar berbeda, jadi total dan tombol bergeser dari baris ke baris. Sales, jumlah item, dan kurir menumpuk di satu baris abu-abu."
-      : "Usulan: kolom tetap (Tanggal, Pelanggan, Status, Total, Aksi) supaya semua baris sejajar. Pembayaran dan pengiriman jadi dua pil bertumpuk. Maksimal satu tombol langkah berikutnya per baris, ditambah ikon Preview dan WA. Sales, item, kurir, Ubah, Hapus, dan Unduh ada di detail yang bisa dibuka.";
+      ? "Sekarang: kolom pencarian abu-abu terbaca seperti nonaktif, tiga pilihan 'Semua' selalu memakan tempat, dan dua kartu besar hanya berisi satu angka. Di daftar, tiap baris punya jumlah tombol dan lebar berbeda, jadi total dan tombol bergeser dari baris ke baris. Sales, jumlah item, dan kurir menumpuk di satu baris abu-abu."
+      : "Usulan: pencarian jadi kolom putih dengan ikon, tiga filter disembunyikan di tombol Filter (angka = jumlah filter aktif, tiap filter bisa dihapus lewat chip), dan dua kartu besar jadi satu baris ringkasan. Daftar: kolom tetap (Tanggal, Pelanggan, Status, Total, Aksi) supaya semua baris sejajar. Pembayaran dan pengiriman jadi dua pil bertumpuk. Maksimal satu tombol langkah berikutnya per baris, ditambah ikon Preview dan WA. Sales, item, kurir, Ubah, Hapus, dan Unduh ada di detail yang bisa dibuka.";
   }
   function toast(msg) { var t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(timer); timer = setTimeout(function () { t.hidden = true; }, 1800); }
 
   document.addEventListener("click", function (e) {
     var seg = e.target.closest("#viewSeg button, #grpSeg button");
     if (seg) { if (seg.dataset.view) view = seg.dataset.view; if (seg.dataset.grp) grp = seg.dataset.grp; render(); return; }
+    if (e.target.closest("[data-f=toggle]")) { F.open = !F.open; render(); return; }
+    var cl = e.target.closest("[data-clear]");
+    if (cl) { if (cl.dataset.clear === "all") { F.bulan = ""; F.tahun = ""; F.sales = ""; } else { F[cl.dataset.clear] = ""; } render(); return; }
     var ch = e.target.closest("[data-open]");
     if (ch) { var id = ch.dataset.open; open[id] = !open[id]; render(); return; }
     var b = e.target.closest("#stage .btn");
     if (b) toast("Contoh saja: “" + (b.getAttribute("aria-label") || b.textContent).replace(/\s+/g, " ").trim() + "” belum menjalankan aksi.");
+  });
+  document.addEventListener("change", function (e) {
+    var f = e.target.dataset && e.target.dataset.f;
+    if (f && f !== "toggle") { F[f] = e.target.value; render(); }
   });
   render();
 })();
