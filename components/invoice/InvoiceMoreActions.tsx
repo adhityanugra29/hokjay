@@ -21,7 +21,9 @@ export default function InvoiceMoreActions({ peek, children }: { peek: string; c
         className="flex w-full cursor-pointer items-center justify-between border-0 bg-transparent p-0 font-sans text-[0.85rem] font-extrabold text-ink hover:text-accent-700"
       >
         <span>Aksi lainnya</span>
-        <span aria-hidden="true">{open ? "▴" : "▾"}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`h-4 w-4 ${open ? "rotate-180" : ""}`}>
+          <path d="m6 9 6 6 6-6" />
+        </svg>
       </button>
       {open ? (
         <div className="-mx-6 mt-2.5 flex flex-col">{children}</div>

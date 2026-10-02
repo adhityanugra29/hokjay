@@ -107,6 +107,14 @@ function IconButton({
   );
 }
 
+function Chevron({ up }: { up?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`h-4 w-4 ${up ? "rotate-180" : ""}`}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 function GroupTitle({ label, count, highlight }: { label: string; count: number; highlight?: boolean }) {
   return (
     <div className="mt-2 flex items-center gap-2 border-b border-line pt-3 pb-2 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
@@ -365,7 +373,7 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                 isOpen ? "border-ink bg-ink text-accent" : "border-line text-muted hover:bg-black/5"
               }`}
             >
-              {isOpen ? "▴" : "▾"}
+              <Chevron up={isOpen} />
             </button>
           </div>
         </div>
