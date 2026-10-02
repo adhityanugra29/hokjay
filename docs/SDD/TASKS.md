@@ -871,7 +871,7 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 
 **Type:** UX/UI
 **Priority:** P2
-**Status:** READY — design mockup done, waiting for the user's go-ahead to code (paused 2026-10-01 at the user's request, "nanti saya akan panggil")
+**Status:** DONE (2026-10-02, deployed) — built from mockup v7. Differences: no "Lanjutkan Edit"-style extras beyond the mockup; "Aksi lainnya" rows are Surat Jalan, Catat DP, Ubah Invoice, Hapus (WA and Unduh Invoice are the two icons on the document's top-right corner). Files changed: `app/invoice/[id]/page.tsx`, `components/invoice/InvoiceActions.tsx` (now `part="icons" | "suratJalan"`), `components/invoice/InvoiceMoreActions.tsx` (new). `tsc`, `eslint`, `next build` clean; not click-tested in a logged-in browser. (Earlier note: paused 2026-10-01 at the user's request, "nanti saya akan panggil".)
 **Dependency:** TASK-030 (same "max 2 buttons" rule on the list), TASK-037 (Riwayat card must keep the komisi line)
 **Created:** 2026-10-01 · **Last updated:** 2026-10-01
 

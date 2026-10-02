@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import InvoiceActions from "@/components/invoice/InvoiceActions";
+import InvoiceMoreActions from "@/components/invoice/InvoiceMoreActions";
 import InvoicePrintDoc, { type InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
 import InvoiceDocument from "@/components/invoice/InvoiceDocument";
 import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
@@ -16,6 +18,8 @@ import { getSession } from "@/lib/auth/session";
 import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
 
 export const dynamic = "force-dynamic";
+
+const MENU_ITEM_CLS = "block px-6 py-2.5 font-sans text-[0.82rem] font-semibold text-ink no-underline hover:bg-surface";
 
 export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/[id]">) {
   const { id } = await params;
@@ -100,6 +104,18 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
       : []),
   ];
 
+  // Visibility rules unchanged from before the TASK-039 redesign: Ubah/Hapus
+  // hidden once lunas, Hapus hidden once a DP exists, Catat DP only when
+  // unpaid with no DP. A draft's "Ubah" is the main "Lanjutkan Edit" button.
+  const isDraft = invoice.status === "draft";
+  const isPaid = invoice.status === "paid";
+  const dpNominal = invoice.dp?.nominal ?? 0;
+  const allDone = isPaid && !!invoice.dikirim;
+  const canCatatDp = invoice.status === "unpaid" && !dpNominal;
+  const canUbah = !isPaid && !isDraft;
+  const canHapus = !isPaid && !dpNominal;
+  const morePeek = ["Surat Jalan", ...(canCatatDp ? ["Catat DP"] : []), ...(canUbah ? ["Ubah"] : []), ...(canHapus ? ["Hapus"] : [])];
+
   return (
     <>
       <InvoicePrintDoc invoice={printData} id="invoice-print-doc" />
@@ -118,107 +134,161 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
       <PageHeader
         title={invoice.nomor}
         subtitle={`DIBUAT ${formatDateLong(invoice.tanggalInvoice ?? invoice.createdAt!).toUpperCase()}`}
-        actions={
-          <>
-            {invoice.status !== "paid" && (
-              <LinkButton variant="ghost" href={`/invoice/${invoice._id}/ubah`}>
-                Ubah Invoice
-              </LinkButton>
-            )}
-            {invoice.status !== "paid" && !invoice.dp?.nominal && (
-              <DeleteInvoiceButton
-                invoiceId={String(invoice._id)}
-                nomor={invoice.nomor}
-                redirectTo="/invoice"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-transparent px-4.5 py-2.5 font-sans text-[0.85rem] font-extrabold text-danger transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            )}
-            <InvoiceActions
-              nomor={invoice.nomor}
-              customerNama={invoice.customer!.nama}
-              customerWhatsapp={invoice.customer!.whatsapp ?? undefined}
-              grandTotal={invoice.grandTotal}
-            />
-          </>
-        }
       />
       </div>
       <div className="p-6 md:p-9">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
-          <InvoiceDocument invoice={printData} id="invoice-doc" />
+          {/* WA + Unduh Invoice icons ride the document's top-right corner —
+              approved mockup 2026-10-02 (TASK-039, invoice-detail-v7.html).
+              no-print so they never appear in a browser print of the page. */}
+          <div className="relative order-2 min-w-0 lg:order-1">
+            <div className="no-print absolute top-3 right-3 z-10">
+              <InvoiceActions
+                part="icons"
+                nomor={invoice.nomor}
+                customerNama={invoice.customer!.nama}
+                customerWhatsapp={invoice.customer!.whatsapp ?? undefined}
+                grandTotal={invoice.grandTotal}
+              />
+            </div>
+            <InvoiceDocument invoice={printData} id="invoice-doc" />
+          </div>
 
-          <div className="no-print">
-            <div className="mb-3.5 rounded-2xl bg-panel p-5 shadow-sm">
-              <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Status Pembayaran</h3>
-              <div className="flex items-center gap-2 font-mono text-[0.8rem]">
-                <span
-                  className={`h-2 w-2 rounded-full ${invoice.status === "paid" ? "bg-moss" : "bg-gold"}`}
-                />
-                {invoice.status === "draft" && "Draft — belum dikirim"}
-                {invoice.status === "unpaid" &&
-                  (invoice.dp?.nominal
-                    ? `Sudah DP ${Math.round((invoice.dp.nominal / invoice.grandTotal) * 100)}%`
-                    : "Belum Dibayar")}
-                {invoice.status === "paid" && "Lunas"}
+          <div className="no-print order-1 lg:order-2">
+            {/* ONE main card instead of three (TASK-039): total + status pills,
+                the next lifecycle step(s) as buttons (max 2: pembayaran,
+                pengiriman), and everything else behind "Aksi lainnya". */}
+            <div className="mb-3.5 rounded-2xl bg-panel p-6 shadow-sm">
+              <div className="font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">Total Invoice</div>
+              <div className="mt-0.5 font-sans text-[1.75rem] font-extrabold tracking-tight tabular-nums">
+                {rupiah(invoice.grandTotal)}
               </div>
-              {invoice.dp?.nominal ? (
-                <div className="mt-3.5 border-l-4 border-accent bg-[#f7f5ee] py-2 pl-3 font-mono text-[0.75rem] leading-relaxed">
-                  DP diterima <b>{rupiah(invoice.dp.nominal)}</b> ({formatDateShort(invoice.dp.tanggal ?? invoice.createdAt!)})
-                  <br />
-                  Sisa tagihan <b className="text-accent-700">{rupiah(invoice.grandTotal - invoice.dp.nominal)}</b>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <span
+                  className={`rounded-full border px-2.5 py-[3px] font-mono text-[11px] font-bold ${
+                    isPaid
+                      ? "border-ink text-ink"
+                      : isDraft
+                        ? "border-line text-muted"
+                        : dpNominal
+                          ? "border-gold bg-accent-100 text-accent-700"
+                          : "border-accent-700 text-accent-700"
+                  }`}
+                >
+                  {isDraft
+                    ? "Draft"
+                    : isPaid
+                      ? "Lunas"
+                      : dpNominal
+                        ? `Sudah DP ${Math.round((dpNominal / invoice.grandTotal) * 100)}%`
+                        : "Belum Dibayar"}
+                </span>
+                {!isDraft &&
+                  (invoice.dikirim ? (
+                    <span className="rounded-full border border-emerald-500 bg-emerald-50 px-2.5 py-[3px] font-mono text-[11px] font-bold text-emerald-700">
+                      ✓ Sudah dikirim · {formatDateShort(invoice.tanggalDikirimAktual ?? invoice.createdAt!)}
+                      {invoice.dikirimOleh ? ` · ${invoice.dikirimOleh}` : ""}
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-line px-2.5 py-[3px] font-mono text-[11px] font-bold text-muted">
+                      Belum dikirim
+                    </span>
+                  ))}
+              </div>
+              {dpNominal && !isPaid ? (
+                <div className="mt-3.5 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 font-mono text-[0.8rem] tabular-nums">
+                  <span className="text-muted">DP diterima ({formatDateShort(invoice.dp!.tanggal ?? invoice.createdAt!)})</span>
+                  <span className="text-right font-bold">{rupiah(dpNominal)}</span>
+                  <span className="text-muted">Sisa tagihan</span>
+                  <span className="text-right font-bold text-accent-700">{rupiah(invoice.grandTotal - dpNominal)}</span>
                 </div>
               ) : null}
-              {invoice.status === "unpaid" && (
-                <div className="mt-3.5 flex flex-col gap-2">
-                  <LinkButton href={`/invoice/${invoice._id}/bayar`} className="w-full">
-                    Tandai Lunas Manual
-                  </LinkButton>
-                  {!invoice.dp?.nominal && (
-                    <LinkButton variant="ghost" href={`/invoice/${invoice._id}/dp`} className="w-full">
-                      Catat DP
-                    </LinkButton>
-                  )}
-                </div>
-              )}
-              {invoice.status === "draft" && (
+              {isDraft && (
                 <div className="mt-3.5 font-mono text-[0.72rem] text-muted">
                   Invoice draft belum mengurangi stok atau menghitung komisi.
                 </div>
               )}
-            </div>
-            {/* Status pengiriman — independen dari status bayar, per the
-                user's request 2026-09-19 ("Tandai Sudah Kirim"). Not shown
-                for draft (see TandaiKirimButton's own server-side guard,
-                app/api/invoices/[id]/kirim/route.ts). */}
-            {invoice.status !== "draft" && (
-              <div className="mb-3.5 rounded-2xl bg-panel p-5 shadow-sm">
-                <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Status Pengiriman</h3>
-                {invoice.dikirim ? (
-                  <div className="flex items-center gap-2 font-mono text-[0.8rem]">
+
+              {/* Next steps. Payment and shipping are independent (an invoice can
+                  ship before it is paid), so each pending step keeps its own button. */}
+              <div className="mt-5.5 border-t border-line pt-5.5">
+                {allDone && (
+                  <div className="flex items-center gap-2 font-sans text-[0.85rem] font-bold text-emerald-700">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    Sudah dikirim ({formatDateShort(invoice.tanggalDikirimAktual ?? invoice.createdAt!)}
-                    {invoice.dikirimOleh ? ` · ${invoice.dikirimOleh}` : ""})
+                    Semua langkah selesai
                   </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 font-mono text-[0.8rem]">
-                      <span className="h-2 w-2 rounded-full bg-gold" />
-                      Belum dikirim
-                    </div>
-                    <div className="mt-3.5">
-                      <TandaiKirimButton
-                        invoiceId={String(invoice._id)}
-                        nomor={invoice.nomor}
-                        customerNama={invoice.customer?.nama}
-                        couriers={couriers}
-                        currentKurir={invoice.kurir ?? undefined}
-                        className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-ink bg-ink px-4.5 py-2.5 font-sans text-[0.85rem] font-extrabold text-accent transition hover:bg-ink/85 disabled:cursor-not-allowed disabled:opacity-50"
-                      />
-                    </div>
-                  </>
+                )}
+                {isDraft && (
+                  <LinkButton href={`/invoice/${invoice._id}/ubah`} className="w-full">
+                    Lanjutkan Edit
+                  </LinkButton>
+                )}
+                {invoice.status === "unpaid" && (
+                  <div>
+                    <div className="mb-1.5 font-sans text-[0.75rem] font-semibold text-muted">Pembayaran</div>
+                    <LinkButton href={`/invoice/${invoice._id}/bayar`} className="w-full">
+                      Tandai Lunas
+                    </LinkButton>
+                  </div>
+                )}
+                {!isDraft && !invoice.dikirim && (
+                  <div className={invoice.status === "unpaid" ? "mt-3.5" : ""}>
+                    <div className="mb-1.5 font-sans text-[0.75rem] font-semibold text-muted">Pengiriman</div>
+                    <TandaiKirimButton
+                      invoiceId={String(invoice._id)}
+                      nomor={invoice.nomor}
+                      customerNama={invoice.customer?.nama}
+                      couriers={couriers}
+                      currentKurir={invoice.kurir ?? undefined}
+                      className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-ink bg-ink px-4.5 py-2.5 font-sans text-[0.85rem] font-extrabold text-accent transition hover:bg-ink/85 disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                  </div>
                 )}
               </div>
-            )}
+
+              <InvoiceMoreActions peek={morePeek.join(" · ")}>
+                <div className="px-6 pt-2.5 pb-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                  Dokumen
+                </div>
+                <InvoiceActions
+                  part="suratJalan"
+                  nomor={invoice.nomor}
+                  customerNama={invoice.customer!.nama}
+                  customerWhatsapp={invoice.customer!.whatsapp ?? undefined}
+                  grandTotal={invoice.grandTotal}
+                />
+                {canCatatDp && (
+                  <>
+                    <div className="px-6 pt-2.5 pb-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                      Pembayaran
+                    </div>
+                    <Link href={`/invoice/${invoice._id}/dp`} className={MENU_ITEM_CLS}>
+                      Catat DP
+                    </Link>
+                  </>
+                )}
+                {(canUbah || canHapus) && (
+                  <>
+                    <div className="px-6 pt-2.5 pb-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+                      Kelola
+                    </div>
+                    {canUbah && (
+                      <Link href={`/invoice/${invoice._id}/ubah`} className={MENU_ITEM_CLS}>
+                        Ubah Invoice
+                      </Link>
+                    )}
+                    {canHapus && (
+                      <DeleteInvoiceButton
+                        invoiceId={String(invoice._id)}
+                        nomor={invoice.nomor}
+                        redirectTo="/invoice"
+                        className="block w-full cursor-pointer px-6 py-2.5 text-left font-sans text-[0.82rem] font-semibold text-danger hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    )}
+                  </>
+                )}
+              </InvoiceMoreActions>
+            </div>
             <div className="rounded-2xl bg-panel p-5 shadow-sm">
               <h3 className="mb-3 font-mono text-[0.7rem] uppercase tracking-wide text-muted">Riwayat</h3>
               <div className="font-mono text-[0.75rem] leading-loose text-muted">

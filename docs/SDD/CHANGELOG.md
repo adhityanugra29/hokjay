@@ -6,6 +6,13 @@
 
 ## 2026-10-02
 
+**TASK-039** — Detail invoice dirapikan sesuai mockup v7: satu kartu utama (total, status, maksimal 2 tombol langkah), ikon Kirim WA dan Unduh Invoice di pojok kanan atas dokumen, dan "Aksi lainnya" (Surat Jalan, Catat DP, Ubah, Hapus) di kartu yang sama. Header tidak lagi berisi tombol.
+
+Tasks: TASK-039.
+Regression: tsc, eslint, next build bersih; belum diklik di browser yang login.
+
+---
+
 **TASK-041** — Daftar Invoice dirapikan: baris berkolom tetap, panah detail (Sales/Item/Kurir/Ubah/Hapus), ikon Preview dan WA menggantikan menu ⋯, pengelompokan "Perlu tindakan" dan "Selesai" di tab Semua, tombol Filter dengan chip, dan dua kartu ringkasan jadi satu baris. Mengikuti mockup yang disetujui.
 
 Tasks: TASK-041.
