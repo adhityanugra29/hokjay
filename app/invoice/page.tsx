@@ -1,8 +1,7 @@
 import PageHeader from "@/components/layout/PageHeader";
-import { SearchInput } from "@/components/ui/Panel";
 import { LinkButton } from "@/components/ui/Button";
 import InvoiceListClient, { type InvoiceRow } from "@/components/invoice/InvoiceListClient";
-import InvoicePeriodFilter from "@/components/invoice/InvoicePeriodFilter";
+import InvoiceFilterBar from "@/components/invoice/InvoiceFilterBar";
 import type { InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
@@ -192,26 +191,15 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
         actions={<LinkButton href="/katalog">+ Belanja / Buat Invoice</LinkButton>}
       />
       <div className="p-6 md:p-9">
-        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl bg-panel px-4 py-3.5 shadow-sm">
-          <form className="flex items-center">
-            {/* Hidden bulan/tahun so submitting search (native GET) never
-                drops whatever periode is currently selected — a plain
-                <form> only sends its own named fields, dropping every
-                other URL param otherwise. */}
-            {bulan ? <input type="hidden" name="bulan" value={bulan} /> : null}
-            {tahun ? <input type="hidden" name="tahun" value={tahun} /> : null}
-            {salesFilter ? <input type="hidden" name="sales" value={salesFilter} /> : null}
-            <SearchInput name="search" defaultValue={search as string} placeholder="Cari no. invoice atau pelanggan..." />
-          </form>
-          <InvoicePeriodFilter
-            bulan={bulan}
-            tahun={tahun}
-            availableMonths={availableMonths}
-            availableYears={availableYears}
-            sales={salesFilter}
-            availableSales={availableSales}
-          />
-        </div>
+        <InvoiceFilterBar
+          search={typeof search === "string" ? search : undefined}
+          bulan={bulan}
+          tahun={tahun}
+          sales={salesFilter}
+          availableMonths={availableMonths}
+          availableYears={availableYears}
+          availableSales={availableSales}
+        />
 
         <InvoiceListClient rows={rows} couriers={couriers} />
       </div>

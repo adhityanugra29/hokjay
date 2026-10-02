@@ -6,6 +6,13 @@
 
 ## 2026-10-02
 
+**TASK-041** — Daftar Invoice dirapikan: baris berkolom tetap, panah detail (Sales/Item/Kurir/Ubah/Hapus), ikon Preview dan WA menggantikan menu ⋯, pengelompokan "Perlu tindakan" dan "Selesai" di tab Semua, tombol Filter dengan chip, dan dua kartu ringkasan jadi satu baris. Mengikuti mockup yang disetujui.
+
+Tasks: TASK-041.
+Regression: tsc, eslint, next build bersih; belum diklik di browser yang login. Ikon Unduh PDF di detail baris belum dibuat (Unduh tetap di Preview).
+
+---
+
 **TASK-040 (mockup)** — Laporan Owner: Rekomendasi tindakan dibangun ulang berbasis statistik inferensial (uji Welch, rentang Wilson 95%, regresi tren, peluang capai target, batas wajar piutang) dengan label keyakinan dan bahasa awam; tren sales di Kuartal/Tahun jadi batang per bulan. Percobaan pertama yang mengubah seluruh Ringkasan jadi inferensial dikembalikan atas koreksi user; bagian lain tetap deskriptif. Tidak ada perubahan kode app.
 
 Tasks: TASK-040.

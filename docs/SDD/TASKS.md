@@ -920,3 +920,23 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Files affected:** none in app code. Mockup: `docs/SDD/mockups/laporan-inferensial.html` (salinan lokal, bisa dibuka di browser). Published artifact (private): https://claude.ai/artifact/QzqXwcqd2nRyMEJhvtiRg6 (versi 3).
 
 **Regression test:** mockup dijalankan di Node dengan DOM stub untuk mode Bulan/Kuartal/Tahun (sintaks OK, rekomendasi dan grafik terisi). Belum dilihat di layar ponsel / mode gelap.
+
+
+---
+
+## TASK-041 — Invoice list: fixed-column rows, chevron detail, Filter button, one-line summary
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** DONE (2026-10-02, deployed)
+**Dependency:** TASK-009, TASK-020, TASK-030, TASK-033 (this replaces the "⋯" menu those built)
+**Created:** 2026-10-02 · **Last updated:** 2026-10-02
+
+**Description:** User asked for a tidier Invoice list ("lebih rapih, grouping atau hide and show"), approved via mockup `docs/SDD/mockups/invoice-list-v1.html` ("semua yang di html saya suka, tinggal di deploy").
+
+**Fix:** `InvoiceListClient.tsx` rows now use fixed columns (tanggal | pelanggan + no. | pembayaran + pengiriman pills | total | aksi). Visible actions: one next-step button (Lanjutkan / Tandai Lunas / Tandai Sudah Kirim), Preview and WA as icon buttons, and a chevron opening a detail row (Sales, Item, Pengiriman, Dibuat, Tandai Sudah Kirim when Tandai Lunas is the visible step, Ubah, Hapus). The "⋯" menu is gone; its items live in the icons and the detail. Under the "Semua" pill the list is grouped "Perlu tindakan" (not paid, or paid and not shipped) above "Selesai". The two summary cards became one line (jumlah + total nilai, still following the active pill). New `InvoiceFilterBar.tsx`: white search field, one Filter button with a count badge opening Bulan/Tahun/Sales, and a removable chip per active filter; filtering is still URL params read by `app/invoice/page.tsx`.
+
+**Differences from the mockup:** the Unduh PDF icon in the detail row was NOT built (a direct download needs the hidden PDF layout mounted and paginated first); Unduh Invoice stays inside the Preview drawer. "N hari belum bayar" badge keeps its old rule (unpaid only, not DP). Draft rows show no WA icon or "Belum dikirim" pill.
+
+**Files affected:** `components/invoice/InvoiceListClient.tsx`, `components/invoice/InvoiceFilterBar.tsx` (new), `app/invoice/page.tsx`. `InvoicePeriodFilter.tsx` is now unused (candidate for deletion with approval).
+**Regression test:** `tsc --noEmit`, `eslint` on the 3 files, `next build` clean. Not click-tested in a logged-in browser.

@@ -65,6 +65,64 @@ const DAY_NUM_CLASS: Record<InvoiceRowStatus, string> = {
   paid: "text-muted",
 };
 
+const STEP_SOLID_CLS =
+  "rounded-lg border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600";
+const ICON_BTN_CLS =
+  "group relative flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line text-ink no-underline hover:bg-black/5";
+
+/** Icon-only button/link with a hover/focus label (and an aria-label for screen readers). */
+function IconButton({
+  label,
+  onClick,
+  href,
+  className = "",
+  children,
+}: {
+  label: string;
+  onClick?: () => void;
+  href?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const tip = (
+    <span className="pointer-events-none absolute top-[calc(100%+6px)] right-0 z-30 whitespace-nowrap rounded-md bg-ink px-2 py-1 font-sans text-[11px] font-bold text-accent opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+      {label}
+    </span>
+  );
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" aria-label={label} className={`${ICON_BTN_CLS} ${className}`}>
+        {children}
+        {tip}
+      </a>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} aria-label={label} className={`${ICON_BTN_CLS} ${className}`}>
+      {children}
+      {tip}
+    </button>
+  );
+}
+
+function GroupTitle({ label, count, highlight }: { label: string; count: number; highlight?: boolean }) {
+  return (
+    <div className="mt-2 flex items-center gap-2 border-b border-line pt-3 pb-2 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-muted">
+      <span className="text-ink">{label}</span>
+      <span className={`rounded-full px-2 py-px tracking-normal text-ink ${highlight ? "bg-accent" : "bg-surface"}`}>{count}</span>
+    </div>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">{label}</div>
+      <div className="mt-0.5 truncate font-sans text-[0.8rem] font-bold">{value}</div>
+    </div>
+  );
+}
+
 type FilterKey = "semua" | InvoiceRowStatus;
 
 /**
@@ -83,15 +141,17 @@ type FilterKey = "semua" | InvoiceRowStatus;
  * (this replaced 4 independently-clickable cards, one of which,
  * "Perlu ditindak", had no pill of its own and is gone with no
  * replacement).
+ *
+ * 2026-10-02: rows rebuilt on fixed columns with a chevron detail, the 2
+ * cards became a one-line summary, and "Perlu tindakan"/"Selesai" grouping
+ * was added under "Semua" — all per the approved mockup
+ * docs/SDD/mockups/invoice-list-v1.html.
  */
 export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow[]; couriers: CourierOption[] }) {
   const [filter, setFilter] = useState<FilterKey>("semua");
   const [previewId, setPreviewId] = useState<string | null>(null);
-  // "⋯" overflow menu (Kirim WA / Edit / Hapus) — per the user's request
-  // 2026-09-20 ("mana 3 titiknya untuk button yang lain?"): the 2 main
-  // buttons (Tandai Lunas / Tandai Sudah Kirim) stay directly visible,
-  // everything else that used to sit alongside them moves behind this.
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  // Which row's detail (sales / item / kurir / Ubah / Hapus) is open — one at a time.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   // Preview drawer's "Invoice"/"Surat Jalan"/"Bukti Transfer" tabs —
   // TASK-016 (2026-09-07) added Invoice/Bukti Transfer; "Surat Jalan"
   // added 2026-09-08 per the user's request, so a Surat Jalan can be
@@ -168,24 +228,189 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
       ? filtered.reduce((s, r) => s + (r.sisaTagihan ?? r.grandTotal), 0)
       : filtered.reduce((s, r) => s + r.grandTotal, 0);
 
+  // Needs action = not paid yet, or paid but not shipped yet. Grouping applies only under "Semua".
+  const needsAction = filtered.filter((r) => r.status !== "paid" || !r.dikirim);
+  const done = filtered.filter((r) => r.status === "paid" && r.dikirim);
+  const grouped = filter === "semua";
+
+  /**
+   * One list row — fixed columns (tanggal | pelanggan | status | total | aksi)
+   * so every row lines up whatever its state, per the approved mockup
+   * 2026-10-02 (docs/SDD/mockups/invoice-list-v1.html). The visible actions
+   * are the one next-step button (Tandai Lunas / Tandai Sudah Kirim /
+   * Lanjutkan), Preview and WA as icons, and a chevron opening the detail
+   * (sales, item, kurir, Tandai Sudah Kirim, Ubah, Hapus). This replaces the
+   * old "⋯" overflow menu; every action it held is still reachable.
+   */
+  function renderRow(r: InvoiceRow) {
+    const isOpen = expandedId === r.id;
+    const isDraft = r.status === "draft";
+    const isPaid = r.status === "paid";
+    const canEdit = r.status === "unpaid" || r.status === "dp";
+    // Delete rules unchanged: draft, or unpaid without a DP (never once DP'd).
+    const canDelete = isDraft || (r.status === "unpaid" && r.sisaTagihan == null);
+
+    let step: React.ReactNode = null;
+    if (isDraft) {
+      step = (
+        <Link href={`/invoice/${r.id}/ubah`} className={STEP_SOLID_CLS}>
+          Lanjutkan
+        </Link>
+      );
+    } else if (!isPaid) {
+      step = (
+        <Link href={`/invoice/${r.id}`} className={STEP_SOLID_CLS}>
+          Tandai Lunas
+        </Link>
+      );
+    } else if (!r.dikirim) {
+      step = (
+        <TandaiKirimButton
+          invoiceId={r.id}
+          nomor={r.nomor}
+          customerNama={r.custNama}
+          couriers={couriers}
+          currentKurir={r.kurir}
+        />
+      );
+    }
+
+    return (
+      <div key={r.id} className={`border-b border-line ${isOpen ? "bg-panel" : ""}`}>
+        <div className="grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2.5 py-3 md:grid-cols-[56px_minmax(0,1.5fr)_180px_150px_auto] md:gap-x-4">
+          <div className={`border-l-4 pl-2.5 ${DAY_BORDER_CLASS[r.status]}`}>
+            <div className={`font-sans text-[0.95rem] font-extrabold leading-none ${DAY_NUM_CLASS[r.status]}`}>
+              {r.tglNum}
+            </div>
+            <div className="font-mono text-[9px] text-muted">{r.tglMon}</div>
+          </div>
+
+          <div className="min-w-0">
+            <div className="truncate font-sans text-[1rem] font-bold">{r.custNama}</div>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[0.72rem] text-muted">
+              <span>{r.nomor}</span>
+              {r.status === "unpaid" && (
+                <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[0.62rem] font-bold text-danger">
+                  {r.hariBerjalan} hari belum bayar
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile: total sits top-right; desktop: its own column further right. */}
+          <div className="text-right md:order-4">
+            <div className="font-sans text-[1rem] font-extrabold tabular-nums">{rupiah(r.grandTotal)}</div>
+            <div className="font-mono text-[0.68rem] text-muted">
+              {r.status === "dp" && r.sisaTagihan != null
+                ? `sisa ${rupiah(r.sisaTagihan)}`
+                : isDraft
+                  ? "estimasi"
+                  : !isPaid
+                    ? `komisi ${rupiah(r.komisi)}`
+                    : ""}
+            </div>
+          </div>
+
+          {/* Pembayaran + pengiriman as two stacked pills. */}
+          <div className="col-start-2 flex flex-wrap gap-1.5 md:order-3 md:col-start-auto md:flex-col md:items-start md:gap-1">
+            <span className={`rounded-full border px-2 py-0.5 font-mono text-[0.62rem] font-bold ${STATUS_TAG_CLASS[r.status]}`}>
+              {STATUS_LABEL[r.status]}
+              {r.status === "dp" && r.dpPercent != null ? ` ${r.dpPercent}%` : ""}
+            </span>
+            {!isDraft &&
+              (r.dikirim ? (
+                <span className="rounded-full border border-emerald-500 bg-emerald-50 px-2 py-0.5 font-mono text-[0.62rem] font-bold text-emerald-700">
+                  ✓ Dikirim{r.tanggalDikirimAktual ? ` · ${formatDateShort(r.tanggalDikirimAktual)}` : ""}
+                </span>
+              ) : (
+                <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[0.62rem] font-bold text-muted">
+                  Belum dikirim
+                </span>
+              ))}
+          </div>
+
+          <div className="col-span-3 flex items-center justify-end gap-1.5 md:order-5 md:col-span-1">
+            {step}
+            <IconButton label="Preview" onClick={() => openPreview(r.id)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-[17px] w-[17px]">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </IconButton>
+            {!isDraft && (
+              <IconButton
+                label="Kirim ke Pelanggan (WA)"
+                href={`https://wa.me/${toWaPhone(r.custWhatsapp)}`}
+                className="border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-[17px] w-[17px]">
+                  <path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.7-5.2A8.5 8.5 0 1 1 21 11.5Z" />
+                  <path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 .8c-.9-.4-1.7-1.2-2.1-2.1l.8-1-1-2-1.2.4Z" />
+                </svg>
+              </IconButton>
+            )}
+            <button
+              type="button"
+              onClick={() => setExpandedId(isOpen ? null : r.id)}
+              aria-expanded={isOpen}
+              aria-label={isOpen ? "Tutup detail" : "Buka detail"}
+              className={`flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-lg border text-[11px] ${
+                isOpen ? "border-ink bg-ink text-accent" : "border-line text-muted hover:bg-black/5"
+              }`}
+            >
+              {isOpen ? "▴" : "▾"}
+            </button>
+          </div>
+        </div>
+
+        {isOpen && (
+          <div className="grid grid-cols-2 items-end gap-x-6 gap-y-3 px-1 pb-4 md:grid-cols-[repeat(4,minmax(0,1fr))_auto] md:pl-[72px]">
+            <DetailItem label="Sales" value={r.salesNama} />
+            <DetailItem label="Item" value={`${r.itemCount} item`} />
+            <DetailItem label="Pengiriman" value={r.kurir ?? "—"} />
+            <DetailItem label="Dibuat" value={formatDateShort(r.printData.tanggal)} />
+            <div className="col-span-2 flex flex-wrap justify-end gap-2 md:col-span-1">
+              {/* Second lifecycle step, kept reachable here when the next-step
+                  button above is "Tandai Lunas". */}
+              {!isDraft && !isPaid && !r.dikirim && (
+                <TandaiKirimButton
+                  invoiceId={r.id}
+                  nomor={r.nomor}
+                  customerNama={r.custNama}
+                  couriers={couriers}
+                  currentKurir={r.kurir}
+                />
+              )}
+              {canEdit && (
+                <Link
+                  href={`/invoice/${r.id}/ubah`}
+                  className="rounded-lg border border-line px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-black/5"
+                >
+                  Ubah
+                </Link>
+              )}
+              {canDelete && <DeleteInvoiceButton invoiceId={r.id} nomor={r.nomor} />}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Summary cards — pure display, not clickable (the pill row below is
-          the only filter control). Both numbers track whichever pill is
-          active: per the user's request 2026-09-07, this replaces the old
-          4 independently-clickable/independently-counted cards ("Perlu
-          ditindak", "Belum bayar", "Sudah DP", "Lunas {bulan}") with 2 that
-          read together as "of what I'm looking at right now, how many and
-          how much". */}
-      <div className="mb-6 grid grid-cols-2 gap-3.5">
-        <div className="min-w-0 rounded-xl bg-ink p-4.5 text-white shadow-sm">
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">Jumlah Invoice</div>
-          <div className="mt-0.5 font-sans text-[1.25rem] font-extrabold">{filtered.length}</div>
-        </div>
-        <div className="min-w-0 rounded-xl bg-panel p-4.5 shadow-sm">
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Total Nilai Invoice</div>
-          <div className="mt-0.5 truncate font-sans text-[1.25rem] font-extrabold">{rupiah(totalNilaiInvoice)}</div>
-        </div>
+      {/* One-line summary replacing the 2 big cards — per the user's approved
+          mockup 2026-10-02 (docs/SDD/mockups/invoice-list-v1.html). Still pure
+          display and still tracks whichever status pill is active, exactly
+          as the cards did (TASK-020). */}
+      <div className="mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 tabular-nums">
+        <span className="font-sans text-[0.8rem] text-muted">
+          <b className="mr-1 text-[1.2rem] font-extrabold tracking-tight text-ink">{filtered.length}</b>invoice
+        </span>
+        <span className="font-sans text-[0.8rem] text-muted">
+          <b className="mr-1 text-[1.2rem] font-extrabold tracking-tight text-ink">{rupiah(totalNilaiInvoice)}</b>
+          total nilai
+        </span>
       </div>
 
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
@@ -213,156 +438,20 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
         </div>
       </div>
 
+      {/* "Perlu tindakan" on top, "Selesai" below — only under the "Semua"
+          pill (a status pill already narrows the list to one kind). Per the
+          approved mockup 2026-10-02. */}
       <div className="mt-3.5">
-        {filtered.map((r) => (
-          <div key={r.id} className="grid grid-cols-[56px_1fr_auto] items-center gap-4 border-b border-line py-3.5">
-            <div className={`border-l-4 pl-2.5 ${DAY_BORDER_CLASS[r.status]}`}>
-              <div className={`font-sans text-[0.95rem] font-extrabold leading-none ${DAY_NUM_CLASS[r.status]}`}>
-                {r.tglNum}
-              </div>
-              <div className="font-mono text-[9px] text-muted">{r.tglMon}</div>
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-sans text-[1rem] font-bold">{r.custNama}</span>
-                <span className={`rounded-full border px-2 py-0.5 font-mono text-[0.62rem] font-bold ${STATUS_TAG_CLASS[r.status]}`}>
-                  {STATUS_LABEL[r.status]}
-                  {r.status === "dp" && r.dpPercent != null ? ` ${r.dpPercent}%` : ""}
-                </span>
-                {r.status === "unpaid" && (
-                  <span className="rounded-full bg-danger/10 px-2 py-0.5 font-mono text-[0.62rem] font-bold text-danger">
-                    {r.hariBerjalan} hari
-                  </span>
-                )}
-                {r.dikirim && (
-                  <span className="rounded-full border border-emerald-500 bg-emerald-50 px-2 py-0.5 font-mono text-[0.62rem] font-bold text-emerald-700">
-                    ✓ Sudah Dikirim{r.tanggalDikirimAktual ? ` · ${formatDateShort(r.tanggalDikirimAktual)}` : ""}
-                  </span>
-                )}
-              </div>
-              <div className="mt-0.5 font-mono text-[0.72rem] text-muted">
-                {r.nomor} · sales {r.salesNama} · {r.itemCount} item{r.kurir ? ` · kirim via ${r.kurir}` : ""}
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="font-sans text-[1rem] font-extrabold">{rupiah(r.grandTotal)}</div>
-                <div className="font-mono text-[0.68rem] text-muted">
-                  {r.status === "dp" && r.sisaTagihan != null
-                    ? `sisa ${rupiah(r.sisaTagihan)}`
-                    : r.status === "draft"
-                      ? "estimasi"
-                      : r.status !== "paid"
-                        ? `komisi ${rupiah(r.komisi)}`
-                        : ""}
-                </div>
-              </div>
-              {/* Max 2 main buttons per row — per the user's request
-                  2026-09-19 ("terlalu banyak button sampai ada 6 maximal,
-                  boleh kah kamu buat 2 button saja"): belum lunas & belum
-                  dikirim -> Tandai Lunas + Tandai Sudah Kirim; sudah lunas
-                  -> Preview only. Kirim WA/Edit/Hapus moved behind a "⋯"
-                  overflow menu (2026-09-20 correction — "mana 3 titiknya
-                  untuk button yang lain?": these were meant to stay
-                  reachable from the list itself via a menu, not dropped
-                  to the detail page entirely). Preview also added to
-                  this menu (2026-09-20 follow-up — "tambahkan button
-                  preview di titik tiga") so unpaid/DP rows can preview
-                  without leaving the list, same as paid rows already
-                  could. Draft is a separate lifecycle stage this rule
-                  doesn't cover (no "Tandai Lunas" for something not
-                  even finalized yet) — kept as-is. */}
-              <div className="relative flex flex-wrap items-center justify-end gap-2">
-                {r.status === "draft" && (
-                  <>
-                    <DeleteInvoiceButton invoiceId={r.id} nomor={r.nomor} />
-                    <Link
-                      href={`/invoice/${r.id}/ubah`}
-                      className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600"
-                    >
-                      Lanjutkan
-                    </Link>
-                  </>
-                )}
-                {(r.status === "unpaid" || r.status === "dp") && (
-                  <>
-                    <Link
-                      href={`/invoice/${r.id}`}
-                      className="border border-accent bg-accent px-3 py-1.5 font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600"
-                    >
-                      Tandai Lunas
-                    </Link>
-                    {!r.dikirim && (
-                      <TandaiKirimButton
-                        invoiceId={r.id}
-                        nomor={r.nomor}
-                        customerNama={r.custNama}
-                        couriers={couriers}
-                        currentKurir={r.kurir}
-                      />
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setOpenMenuId(openMenuId === r.id ? null : r.id)}
-                      aria-label="Aksi lainnya"
-                      className="flex h-[30px] w-[30px] cursor-pointer items-center justify-center border border-line text-[0.9rem] text-ink hover:border-accent hover:text-accent-700"
-                    >
-                      ⋯
-                    </button>
-                    {openMenuId === r.id && (
-                      <>
-                        {/* Backdrop — closes the menu on outside click, sits below the menu itself. */}
-                        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
-                        <div className="absolute top-full right-0 z-20 mt-1.5 w-44 border border-line bg-panel shadow-lg">
-                          <a
-                            href={`https://wa.me/${toWaPhone(r.custWhatsapp)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block border-b border-line px-3.5 py-2.5 font-sans text-[0.78rem] font-semibold text-ink no-underline hover:bg-surface"
-                          >
-                            Kirim WA
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setOpenMenuId(null);
-                              openPreview(r.id);
-                            }}
-                            className="block w-full cursor-pointer border-b border-line px-3.5 py-2.5 text-left font-sans text-[0.78rem] font-semibold text-ink hover:bg-surface"
-                          >
-                            Preview
-                          </button>
-                          <Link
-                            href={`/invoice/${r.id}/ubah`}
-                            className="block border-b border-line px-3.5 py-2.5 font-sans text-[0.78rem] font-semibold text-ink no-underline hover:bg-surface"
-                          >
-                            Edit
-                          </Link>
-                          {r.sisaTagihan == null && (
-                            <DeleteInvoiceButton
-                              invoiceId={r.id}
-                              nomor={r.nomor}
-                              className="block w-full cursor-pointer px-3.5 py-2.5 text-left font-sans text-[0.78rem] font-semibold text-danger hover:bg-surface"
-                            />
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
-                {r.status === "paid" && (
-                  <button
-                    type="button"
-                    onClick={() => openPreview(r.id)}
-                    className="cursor-pointer border border-accent-600 bg-accent-100 px-3 py-1.5 font-sans text-[0.72rem] font-bold text-accent-700 hover:bg-accent-100/70"
-                  >
-                    Preview
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
+        {grouped ? (
+          <>
+            {needsAction.length > 0 && <GroupTitle label="Perlu tindakan" count={needsAction.length} highlight />}
+            {needsAction.map(renderRow)}
+            {done.length > 0 && <GroupTitle label="Selesai" count={done.length} />}
+            {done.map(renderRow)}
+          </>
+        ) : (
+          filtered.map(renderRow)
+        )}
         {filtered.length === 0 && (
           <div className="border-b border-line py-8 text-center font-mono text-[0.8rem] text-muted">
             Tidak ada invoice untuk filter ini.
