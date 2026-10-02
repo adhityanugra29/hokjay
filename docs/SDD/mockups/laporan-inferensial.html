@@ -1,0 +1,1360 @@
+<title>Laporan HOJAY Inferensial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+/* Layout: dasbor Owner gaya "Soft Trade". Empat tab: Ringkasan (scorecard 3 kelompok + rekomendasi + potensi),
+   Sales, Operasional, Produktivitas. Tiap tab muat sekitar satu layar. */
+:root {
+  --bg: #f7f1e4;
+  --panel: #fffdf8;
+  --surface: #efe9da;
+  --ink: #201e1d;
+  --muted: rgba(36, 31, 25, 0.6);
+  --line: rgba(36, 31, 25, 0.12);
+  --grid: rgba(36, 31, 25, 0.08);
+  --accent: #ffc800;
+  --accent-600: #f0b800;
+  --accent-100: #fff8e0;
+  --accent-700: #92610a;
+  --on-accent: #201e1d;
+  --good: #16a34a; --good-bg: rgba(22, 163, 74, 0.12);
+  --bad: #c0392b; --bad-bg: rgba(192, 57, 43, 0.1);
+  --amber: #b45309; --amber-bg: rgba(180, 83, 9, 0.1);
+  --info: #0369a1; --info-bg: rgba(3, 105, 161, 0.1);
+  --s1: #f6e3a0; --s2: #efc44a; --s3: #c98a0c; --s4: #8a5a0a;
+  --sh1: 0 1px 2px rgba(36, 31, 25, 0.06), 0 1px 3px rgba(36, 31, 25, 0.08);
+  --sh2: 0 4px 6px -1px rgba(36, 31, 25, 0.1), 0 2px 4px -2px rgba(36, 31, 25, 0.08);
+  --sh-hero: 0 10px 15px -3px rgba(146, 97, 10, 0.15), 0 4px 6px -4px rgba(146, 97, 10, 0.12);
+  --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171514; --panel: #211e1c; --surface: #2c2825; --ink: #f3ecdc;
+    --muted: rgba(243, 236, 220, 0.62); --line: rgba(243, 236, 220, 0.12); --grid: rgba(243, 236, 220, 0.08);
+    --accent-100: #2f2712; --accent-700: #ffc800;
+    --good: #5fbf85; --good-bg: rgba(95, 191, 133, 0.16);
+    --bad: #ef7a6c; --bad-bg: rgba(239, 122, 108, 0.16);
+    --amber: #f0b04a; --amber-bg: rgba(240, 176, 74, 0.16);
+    --info: #5cb3e6; --info-bg: rgba(92, 179, 230, 0.16);
+    --s1: #5c4a14; --s2: #9a7614; --s3: #d9a413; --s4: #ffc800;
+    --sh1: 0 1px 2px rgba(0, 0, 0, 0.4); --sh2: 0 4px 8px rgba(0, 0, 0, 0.45); --sh-hero: 0 10px 18px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171514; --panel: #211e1c; --surface: #2c2825; --ink: #f3ecdc;
+  --muted: rgba(243, 236, 220, 0.62); --line: rgba(243, 236, 220, 0.12); --grid: rgba(243, 236, 220, 0.08);
+  --accent-100: #2f2712; --accent-700: #ffc800;
+  --good: #5fbf85; --good-bg: rgba(95, 191, 133, 0.16);
+  --bad: #ef7a6c; --bad-bg: rgba(239, 122, 108, 0.16);
+  --amber: #f0b04a; --amber-bg: rgba(240, 176, 74, 0.16);
+  --info: #5cb3e6; --info-bg: rgba(92, 179, 230, 0.16);
+  --s1: #5c4a14; --s2: #9a7614; --s3: #d9a413; --s4: #ffc800;
+  --sh1: 0 1px 2px rgba(0, 0, 0, 0.4); --sh2: 0 4px 8px rgba(0, 0, 0, 0.45); --sh-hero: 0 10px 18px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font); font-size: 13px; line-height: 1.4;
+  padding-inline: 16px; padding-block: 20px 36px;
+  font-variant-numeric: tabular-nums;
+}
+.wrap { max-width: 1440px; margin-inline: auto; display: flex; flex-direction: column; gap: 14px; }
+.tab { display: flex; flex-direction: column; gap: 14px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent-700); outline-offset: 2px; }
+
+.eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: flex-end; justify-content: space-between; }
+.title { min-width: 0; }
+.title h1 { margin: 4px 0 0; font-size: 2rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1; text-wrap: balance; }
+.title p { margin: 6px 0 0; color: var(--muted); font-size: 12px; max-width: 74ch; }
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.pl { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 600; background: var(--surface); color: var(--ink); white-space: nowrap; }
+.pl.muted { color: var(--muted); }
+.pl.good { background: var(--good-bg); color: var(--good); }
+.pl.bad { background: var(--bad-bg); color: var(--bad); }
+.pl.amber { background: var(--amber-bg); color: var(--amber); }
+.pl.info { background: var(--info-bg); color: var(--info); }
+.pl.warn { background: var(--accent-100); color: var(--accent-700); }
+.pl.tiny { padding: 1px 7px; font-size: 10px; }
+
+/* sliding switch (sama dengan saklar Rekomendasi/Bottom di Katalog) */
+.switch { --n: 3; --i: 0; position: relative; display: inline-flex; background: var(--surface); border-radius: 999px; padding: 3px; }
+.switch::before {
+  content: ""; position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / var(--n));
+  border-radius: 999px; background: var(--accent); box-shadow: var(--sh1);
+  transform: translateX(calc(var(--i) * 100%)); transition: transform 0.2s ease-out;
+}
+.switch button { position: relative; z-index: 1; flex: 1 1 0; min-width: 66px; border: 0; background: transparent; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.switch button[aria-pressed="true"] { color: var(--on-accent); }
+.switch.sm button { min-width: 58px; padding: 4px 10px; font-size: 11px; }
+.switch.lg { align-self: flex-start; max-width: 100%; }
+.switch.lg button { min-width: 112px; padding: 9px 18px; font-size: 13px; }
+.nav { display: inline-flex; align-items: center; background: var(--surface); border-radius: 999px; padding: 3px; }
+.nav button { width: 30px; height: 28px; border: 0; border-radius: 999px; background: transparent; font-size: 16px; font-weight: 700; line-height: 1; }
+.nav button:hover:not(:disabled) { background: var(--panel); }
+.nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+.nav .lb { min-width: 128px; text-align: center; font-size: 13px; font-weight: 800; padding-inline: 6px; white-space: nowrap; }
+
+/* grid + cards */
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
+.c8 { grid-column: span 8; } .c7 { grid-column: span 7; } .c6 { grid-column: span 6; } .c5 { grid-column: span 5; } .c4 { grid-column: span 4; }
+.card { background: var(--panel); border-radius: 16px; box-shadow: var(--sh1); padding: 20px; min-width: 0; display: flex; flex-direction: column; gap: 12px; transition: box-shadow 0.15s; }
+.card:hover { box-shadow: var(--sh2); }
+.ph { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; }
+.ph h2 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+.ph .pl { font-size: 10.5px; font-weight: 600; color: var(--muted); padding: 3px 9px; }
+.note { background: var(--accent-100); border-radius: 12px; padding: 10px 14px; font-size: 12px; color: var(--ink); }
+.note b { font-weight: 800; }
+
+/* KPI */
+.kpis { display: grid; grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)); gap: 14px; }
+.kpi { background: var(--panel); border-radius: 16px; box-shadow: var(--sh1); padding: 18px 20px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.kpi .v { font-size: 1.5rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.15; overflow-wrap: anywhere; }
+.kpi .v small { font-size: 0.9rem; font-weight: 700; color: var(--muted); }
+.kpi .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 11.5px; color: var(--muted); }
+.kpi.hero { background: linear-gradient(to bottom, var(--accent-100), var(--panel)); box-shadow: var(--sh-hero); padding: 20px; }
+.kpi.hero .v { font-size: 1.9rem; }
+.trk { position: relative; height: 10px; border-radius: 999px; background: var(--surface); overflow: hidden; }
+.trk i { display: block; height: 100%; border-radius: 999px; background: var(--ink); }
+.kpi.hero .trk { background: var(--panel); margin-top: 6px; overflow: visible; }
+.trk.mkr { background: var(--surface); margin-top: 6px; overflow: visible; }
+.mk { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1.5px; border-radius: 3px; background: var(--accent-700); }
+.kpi .cap, .cap { font-size: 12px; color: var(--muted); }
+.kpi .cap b { color: var(--accent-700); font-weight: 800; }
+
+/* scorecard */
+.sc { display: flex; flex-direction: column; }
+.sc .m { padding: 12px 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: end; }
+.sc .m:first-child { border-top: 0; padding-top: 0; }
+.sc .m .v { font-size: 1.45rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1; }
+.sc .m .v small { font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+.sc .m .r { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.sc .m .tg { grid-column: 1 / -1; font-size: 11.5px; color: var(--muted); }
+.gdot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 8px; background: var(--accent); }
+
+/* legend + stat chips */
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 11.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.sw.line { height: 3px; width: 16px; border-radius: 999px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips .pl b { font-weight: 800; }
+
+/* svg */
+svg { display: block; width: 100%; overflow: visible; }
+svg text { font-family: var(--font); font-size: 10.5px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+svg .gl { stroke: var(--grid); stroke-width: 1; }
+svg .ax { stroke: var(--line); stroke-width: 1; }
+svg text.lbl-ink { fill: var(--ink); font-weight: 800; }
+
+/* ranked rows */
+.rows { display: flex; flex-direction: column; gap: 4px; }
+.row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 10px; margin-inline: -10px; border-radius: 12px; }
+.row:hover { background: var(--surface); }
+.rname { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 700; }
+.rname .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.rname .t small { display: block; font-weight: 400; color: var(--muted); font-size: 10.5px; }
+.rk { flex: none; min-width: 24px; height: 24px; border-radius: 999px; display: inline-grid; place-items: center; background: var(--surface); font-size: 11px; font-weight: 800; }
+.row:first-child .rk, .srow:first-child .av { background: var(--accent); color: var(--on-accent); }
+.row .trk { height: 8px; }
+.row:first-child .trk i { background: var(--accent); }
+.rval { font-weight: 800; text-align: right; white-space: nowrap; min-width: 66px; font-size: 13px; }
+.rval small { display: block; font-weight: 500; color: var(--muted); font-size: 10.5px; }
+.rows.plain .row:first-child .rk { background: var(--surface); color: var(--ink); }
+.rows.plain .row:first-child .trk i { background: var(--ink); }
+
+/* sales list */
+.srows { display: flex; flex-direction: column; }
+.srow { display: grid; grid-template-columns: 40px minmax(0, 1.25fr) minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+.srow:first-child { border-top: 0; padding-top: 0; }
+.av { width: 40px; height: 40px; border-radius: 999px; display: inline-grid; place-items: center; background: var(--surface); font-size: 13px; font-weight: 800; }
+.sn { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.sn b { font-size: 14px; font-weight: 800; }
+.sn .sub { font-size: 11.5px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+.sb { min-width: 0; }
+.sb .cap { margin-top: 6px; }
+.sv { text-align: right; font-size: 15px; font-weight: 900; letter-spacing: -0.01em; white-space: nowrap; }
+.sv small { display: block; font-size: 10.5px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+
+/* bar columns */
+.cols { display: grid; gap: 8px; align-items: end; height: 150px; }
+.cols.c4x { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cols.c6x { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.cols.c7x { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.col { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; text-align: center; }
+.col .bar { width: 100%; border-radius: 10px 10px 4px 4px; }
+.col .n { font-weight: 800; font-size: 11px; white-space: nowrap; }
+.col .c { font-size: 10px; color: var(--muted); }
+.col .b { font-size: 11px; font-weight: 700; padding-top: 6px; }
+
+/* big number block */
+.big { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.05; }
+.big small { font-size: 0.95rem; font-weight: 700; color: var(--muted); }
+.stack { display: flex; gap: 3px; height: 12px; }
+.stack i { display: block; border-radius: 999px; min-width: 6px; }
+.stg { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.stg:first-child { border-top: 0; }
+.dot { width: 10px; height: 10px; border-radius: 999px; }
+.stg b { font-weight: 800; }
+.stg .sub { font-size: 11.5px; color: var(--muted); }
+.stg .val { text-align: right; font-weight: 800; white-space: nowrap; }
+.stg .val small { display: block; font-size: 10.5px; font-weight: 500; color: var(--muted); }
+.proj { background: var(--accent-100); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.proj .trk { background: var(--panel); height: 12px; display: flex; }
+.proj .trk i { border-radius: 0; }
+.proj .trk i:first-child { border-radius: 999px 0 0 999px; }
+.proj .trk i:last-child { border-radius: 0 999px 999px 0; }
+.chase { display: flex; flex-direction: column; }
+.ch { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 0; border-top: 1px solid var(--line); align-items: center; }
+.ch:first-child { border-top: 0; }
+.ch b { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch .sub { font-size: 11.5px; color: var(--muted); }
+.ch .val { grid-row: span 2; text-align: right; font-weight: 800; white-space: nowrap; }
+.flow { display: flex; gap: 3px; height: 34px; }
+.flow i { display: flex; align-items: center; justify-content: center; border-radius: 10px; font-style: normal; font-size: 11px; font-weight: 800; min-width: 44px; color: var(--on-accent); }
+
+/* rekomendasi */
+.recs { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.rec { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 12px; padding-block: 12px; border-top: 1px solid var(--line); align-items: start; }
+.rec:first-child { border-top: 0; padding-top: 0; }
+.rec .tg { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.rec .tg small { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.rec b.tt { font-weight: 800; font-size: 13.5px; }
+.rec .ev { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.rec .ev b { color: var(--ink); font-weight: 700; }
+.rec .act { margin-top: 6px; font-size: 12.5px; background: var(--surface); border-radius: 10px; padding: 7px 10px; }
+.rec .act span { font-weight: 800; margin-right: 6px; }
+.more { align-self: flex-start; border: 0; background: var(--surface); border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
+.more:hover { background: var(--accent); color: var(--on-accent); }
+
+.banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; background: var(--accent-100); border-radius: 16px; padding: 14px 20px; }
+.banner .t { font-size: 13.5px; font-weight: 600; }
+.banner .s { font-size: 11px; color: var(--muted); }
+
+#tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--bg); padding: 8px 12px; border-radius: 10px; box-shadow: var(--sh2); font-size: 11.5px; line-height: 1.5; max-width: 250px; opacity: 0; transition: opacity 0.08s; }
+#tip.on { opacity: 1; }
+#tip b { font-weight: 800; }
+
+.foot { color: var(--muted); font-size: 11.5px; display: flex; flex-direction: column; gap: 4px; padding-inline: 4px; }
+.foot b { color: var(--ink); }
+
+@media (max-width: 1100px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis .hero { grid-column: 1 / -1; }
+  .c8, .c7, .c6, .c5, .c4 { grid-column: span 12; }
+}
+@media (max-width: 640px) {
+  .title h1 { font-size: 1.6rem; }
+  .kpi .v { font-size: 1.25rem; }
+  .kpi.hero .v { font-size: 1.6rem; }
+  .card { padding: 16px; }
+  .switch.lg { display: flex; width: 100%; }
+  .switch.lg button { min-width: 0; padding: 9px 2px; font-size: 10.5px; }
+  .row { grid-template-columns: minmax(0, 1fr) auto; }
+  .row .trk { grid-column: 1 / -1; order: 3; }
+  .srow { grid-template-columns: 40px minmax(0, 1fr) auto; gap: 8px 12px; }
+  .srow .sb { grid-column: 1 / -1; }
+  .rec { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .rec .tg { flex-direction: row; align-items: center; gap: 8px; }
+  .rec .impact { justify-self: start; }
+  .nav .lb { min-width: 104px; }
+  .cols.c7x, .cols.c6x { gap: 4px; }
+}
+.rec .basis { margin-top: 6px; font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.recnote { font-size: 11.5px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .switch::before, #tip, .card { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="title">
+      <div class="eyebrow">CV Horeca Jaya · Laporan</div>
+      <h1>Laporan Bisnis</h1>
+      <p id="sub"></p>
+    </div>
+    <div class="tools">
+      <span class="pl muted">Data contoh s.d. 24 Sep 2026</span>
+      <div class="switch" id="swMode" style="--n:3;--i:0" role="group" aria-label="Jenis periode">
+        <button type="button" data-md="bulan" aria-pressed="true">Bulan</button>
+        <button type="button" data-md="kuartal" aria-pressed="false">Kuartal</button>
+        <button type="button" data-md="tahun" aria-pressed="false">Tahun</button>
+      </div>
+      <div class="nav" role="group" aria-label="Pilih periode">
+        <button type="button" id="prev" aria-label="Periode sebelumnya">‹</button>
+        <span class="lb" id="plabel"></span>
+        <button type="button" id="next" aria-label="Periode berikutnya">›</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="switch lg" id="swTab" style="--n:4;--i:0" role="group" aria-label="Kelompok laporan">
+    <button type="button" data-t="ringkasan" aria-pressed="true">Ringkasan</button>
+    <button type="button" data-t="sales" aria-pressed="false">Sales</button>
+    <button type="button" data-t="ops" aria-pressed="false">Operasional</button>
+    <button type="button" data-t="prod" aria-pressed="false">Produktivitas</button>
+  </div>
+
+  <!-- ===================== RINGKASAN ===================== -->
+  <div class="tab" id="t-ringkasan">
+    <section class="kpis" id="kpis" aria-label="Ringkasan omzet"></section>
+    <section class="grid" id="score"></section>
+    <section class="grid">
+      <div class="card c5">
+        <div class="ph"><h2>Potensi penjualan</h2><span class="pl">Posisi saat ini · tidak ikut filter</span></div>
+        <div id="pipe" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+      <div class="card c7">
+        <div class="ph"><h2>Rekomendasi tindakan</h2><span class="pl" id="recMeta"></span></div>
+        <div class="switch sm" id="swRec" style="--n:4;--i:0;align-self:flex-start;max-width:100%" role="group" aria-label="Filter kelompok rekomendasi">
+          <button type="button" data-g="all" aria-pressed="true">Semua</button>
+          <button type="button" data-g="sales" aria-pressed="false">Sales</button>
+          <button type="button" data-g="ops" aria-pressed="false">Operasional</button>
+          <button type="button" data-g="prod" aria-pressed="false">Produktivitas</button>
+        </div>
+        <div class="recnote">Rekomendasi dihitung dengan statistik inferensial. Label <b>Yakin</b> berarti hampir pasti bukan kebetulan, <b>Cukup yakin</b> berarti kemungkinan besar nyata, <b>Belum pasti</b> berarti data masih sedikit sehingga mulai perbaiki tanpa keputusan besar, dan <b>Fakta hari ini</b> berarti dihitung langsung dari data, bukan perkiraan.</div>
+        <ul class="recs" id="recs"></ul>
+        <button type="button" class="more" id="more" hidden></button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== SALES ===================== -->
+  <div class="tab" id="t-sales" hidden>
+    <section class="grid">
+      <div class="card c8">
+        <div class="ph"><h2 id="trendTitle">Tren sales per hari</h2><span class="pl" id="trendSub">Rata-rata bergerak 7 hari · vs periode lalu</span></div>
+        <div class="legend" id="trendLegend">
+          <span><i class="sw" style="background:var(--accent)"></i>Omzet harian</span>
+          <span><i class="sw line" style="background:var(--ink)"></i>Rata-rata 7 hari</span>
+          <span><i class="sw line" style="background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 9px)"></i>Periode lalu</span>
+        </div>
+        <div id="trend"></div>
+        <div class="chips" id="trendStats"></div>
+      </div>
+      <div class="card c4">
+        <div class="ph"><h2>Pola per hari dalam seminggu</h2><span class="pl">Rata-rata omzet per hari</span></div>
+        <div class="cols c7x" id="wk"></div>
+        <div class="chips" id="wkStats"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card c8">
+        <div class="ph"><h2>Kecepatan invoice lunas</h2><span class="pl">Hari dari invoice dibuat sampai lunas</span></div>
+        <div class="chips" id="lunasStats"></div>
+        <div class="grid" style="gap:20px">
+          <div class="c6" style="min-width:0">
+            <div class="eyebrow" style="margin-bottom:6px">Sebaran waktu lunas</div>
+            <div class="cols c6x" id="lunasDist"></div>
+          </div>
+          <div class="c6" style="min-width:0">
+            <div class="eyebrow" style="margin-bottom:6px">Median per bulan, 12 bulan terakhir</div>
+            <div id="lunasTrend"></div>
+            <div class="legend" style="margin-top:6px">
+              <span><i class="sw" style="background:var(--accent)"></i>Median</span>
+              <span><i class="sw" style="background:var(--ink);border-radius:999px"></i>P90 (kasus lambat)</span>
+              <span><i class="sw line" style="background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 9px)"></i>Target 7 hari</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card c4">
+        <div class="ph"><h2>Umur piutang</h2><span class="pl">Aging · posisi saat ini</span></div>
+        <div class="cols c4x" id="aging"></div>
+        <div class="chips" id="agingStats"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card c4">
+        <div class="ph"><h2>Top produk</h2><span class="pl">Pareto</span></div>
+        <div class="switch sm" id="swMetric" style="--n:3;--i:0;align-self:flex-start" role="group" aria-label="Urutkan produk">
+          <button type="button" data-m="omzet" aria-pressed="true">Omzet</button>
+          <button type="button" data-m="qty" aria-pressed="false">Qty</button>
+          <button type="button" data-m="margin" aria-pressed="false">Margin</button>
+        </div>
+        <div class="rows" id="prod"></div>
+        <div class="chips" id="prodStats"></div>
+      </div>
+      <div class="card c8">
+        <div class="ph"><h2>Performa Sales</h2><span class="pl">Target · pace · estimasi dari DP · variasi</span></div>
+        <div class="srows" id="sales"></div>
+        <div class="chips" id="salesNote"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card c4">
+        <div class="ph"><h2>Kategori</h2><span class="pl">Share omzet · margin</span></div>
+        <div class="rows" id="cat"></div>
+      </div>
+      <div class="card c4">
+        <div class="ph"><h2>Konversi invoice</h2><span class="pl">Invoice dibuat pada periode ini</span></div>
+        <div class="rows plain" id="conv"></div>
+        <div class="chips" id="convStats"></div>
+      </div>
+      <div class="card c4">
+        <div class="ph"><h2>Sebaran nilai invoice</h2><span class="pl">Histogram</span></div>
+        <div class="chips" id="histStats"></div>
+        <div class="legend">
+          <span><i class="sw line" style="background:var(--ink)"></i>Median</span>
+          <span><i class="sw line" style="background:repeating-linear-gradient(90deg,var(--ink) 0 4px,transparent 4px 7px)"></i>Rata-rata</span>
+        </div>
+        <div id="hist"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== OPERASIONAL ===================== -->
+  <div class="tab" id="t-ops" hidden>
+    <div class="note"><b>Catatan data nyata.</b> Tanggal kirim aktual baru tercatat sejak tombol "Tandai Sudah Kirim" dibuat (19 Sep 2026), dan tanggal rencana kirim bersifat opsional. Di data sungguhan, ketepatan kirim sebelum tanggal itu kosong kecuali kita isi ulang. Angka di bawah memakai data contoh yang lengkap untuk 21 bulan.</div>
+    <section class="grid">
+      <div class="card c4">
+        <div class="ph"><h2>Ketepatan pengiriman</h2><span class="pl">Service level</span></div>
+        <div id="otdHero" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+      <div class="card c8">
+        <div class="ph"><h2>Ketepatan kirim per bulan</h2><span class="pl">12 bulan terakhir · target 90%</span></div>
+        <div id="otdTrend"></div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--accent)"></i>Kiriman tepat waktu</span>
+          <span><i class="sw line" style="background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 9px)"></i>Target 90%</span>
+        </div>
+      </div>
+    </section>
+    <section class="grid">
+      <div class="card c4">
+        <div class="ph"><h2>Seberapa telat</h2><span class="pl">Selisih dari tanggal rencana</span></div>
+        <div class="cols c4x" id="lateDist"></div>
+        <div class="chips" id="lateStats"></div>
+      </div>
+      <div class="card c4">
+        <div class="ph"><h2>Ketepatan per kurir</h2><span class="pl">Tepat waktu · jumlah kiriman</span></div>
+        <div class="rows plain" id="kurir"></div>
+      </div>
+      <div class="card c4">
+        <div class="ph"><h2>Alur order sampai kirim</h2><span class="pl">Median hari per tahap</span></div>
+        <div id="flow" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+    </section>
+    <section class="grid">
+      <div class="card c4">
+        <div class="ph"><h2>Telat kirim sekarang</h2><span class="pl">Posisi saat ini</span></div>
+        <div class="chase" id="lateNow"></div>
+      </div>
+      <div class="card c4">
+        <div class="ph"><h2>Pasokan dari supplier</h2><span class="pl">PO tepat waktu</span></div>
+        <div id="poBox" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+      <div class="card c4">
+        <div class="ph"><h2>Stok tipis, produk laris</h2><span class="pl">Perkiraan hari habis</span></div>
+        <div class="chase" id="lowStock"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== PRODUKTIVITAS ===================== -->
+  <div class="tab" id="t-prod" hidden>
+    <section class="grid">
+      <div class="card c8">
+        <div class="ph"><h2>Produktivitas Sales</h2><span class="pl">Omzet per hari kerja · konversi</span></div>
+        <div class="srows" id="prodSales"></div>
+        <div class="chips" id="prodSalesNote"></div>
+      </div>
+      <div class="card c4">
+        <div class="ph"><h2>Biaya tenaga kerja</h2><span class="pl">Terhadap omzet</span></div>
+        <div id="cost" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </section>
+    <section class="grid">
+      <div class="card c6">
+        <div class="ph"><h2>Tim operasional</h2><span class="pl">Kehadiran · output per orang-hari</span></div>
+        <div class="chips" id="teamStats"></div>
+        <div class="rows plain" id="team"></div>
+      </div>
+      <div class="card c6">
+        <div class="ph"><h2>Produktivitas modal persediaan</h2><span class="pl">Hari persediaan · perputaran · GMROI</span></div>
+        <div class="chips" id="invStats"></div>
+        <div class="rows plain" id="invCat"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="banner">
+    <span class="t" id="bannerT"></span>
+    <span class="s">Diperbarui otomatis tiap invoice lunas</span>
+  </div>
+
+  <div class="foot">
+    <span><b>Catatan Design Review.</b> Semua angka dibangkitkan dari 21 bulan data contoh dan dihitung di browser dengan rumus yang akan dipakai di server (median, persentil, rata-rata bergerak, run-rate, Pareto, rasio).</span>
+    <span>Target layanan (kirim tepat waktu 90%, lunas dalam 7 hari, PO tepat waktu 85%, hari persediaan 90, biaya tenaga kerja termasuk komisi 7% omzet), peluang lunas, target per sales, stok, kehadiran, dan data supplier adalah angka contoh yang perlu diganti dengan kebijakan dan data nyata.</span>
+  </div>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var DAY = 864e5, START = Date.UTC(2025, 0, 1), ASOF = Date.UTC(2026, 8, 24), NDAYS = Math.round((ASOF - START) / DAY) + 1;
+  var MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  var MON = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  var DOWN = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"], DOWF = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  var PROB = { dp: 0.9, unpaid: 0.7, draft: 0.25 }, STAGE_LB = { dp: "Sudah DP", unpaid: "Belum bayar", draft: "Draft" };
+  var TGT = { otd: 90, lunas: 7, po: 85, doh: 90, labor: 7, conv: 80 };
+
+  /* ---------- data contoh (seeded) ---------- */
+  function rng(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  var R = rng(20260924);
+  function pick(ws) { var s = 0, i; for (i = 0; i < ws.length; i++) s += ws[i]; var r = R() * s; for (i = 0; i < ws.length; i++) { r -= ws[i]; if (r <= 0) return i; } return ws.length - 1; }
+  function poisson(l) { var L = Math.exp(-l), k = 0, p = 1; do { k++; p *= R(); } while (p > L); return k - 1; }
+
+  var PRODS = [
+    { n: "Meja Stainless 150x70", c: "Meja & Rak", k: "baru", beli: 1850000, rek: 2650000, w: 10, stok: 60 },
+    { n: "Rak Gantung Stainless 120", c: "Meja & Rak", k: "baru", beli: 720000, rek: 1150000, w: 9, stok: 120 },
+    { n: "Meja Prep 2 Rak 180x60", c: "Meja & Rak", k: "baru", beli: 2100000, rek: 3050000, w: 7, stok: 25 },
+    { n: "Exhaust Hood 200 cm", c: "Meja & Rak", k: "baru", beli: 4300000, rek: 6200000, w: 3, stok: 12 },
+    { n: "Kompor Gas 3 Tungku", c: "Kompor & Oven", k: "baru", beli: 3400000, rek: 4900000, w: 8, stok: 4 },
+    { n: "Oven Gas 2 Deck 4 Tray", c: "Kompor & Oven", k: "baru", beli: 9800000, rek: 13500000, w: 4, stok: 2 },
+    { n: "Kompor Hot Plate 6 Burner", c: "Kompor & Oven", k: "bekas", beli: 2900000, rek: 4200000, w: 5, stok: 10 },
+    { n: "Chiller 4 Pintu", c: "Pendingin", k: "baru", beli: 14200000, rek: 19800000, w: 3, stok: 9 },
+    { n: "Freezer Box 500 L", c: "Pendingin", k: "bekas", beli: 3800000, rek: 5600000, w: 4, stok: 14 },
+    { n: "Showcase Cake 3 Rak", c: "Pendingin", k: "baru", beli: 6100000, rek: 8700000, w: 4, stok: 18 },
+    { n: "Deep Fryer 2 Tank", c: "Fryer & Griddle", k: "baru", beli: 2600000, rek: 3800000, w: 6, stok: 90 },
+    { n: "Flat Griddle Gas 90 cm", c: "Fryer & Griddle", k: "baru", beli: 2300000, rek: 3450000, w: 5, stok: 80 },
+    { n: "Mixer Planetary 20 L", c: "Mixer & Pengolah", k: "baru", beli: 5200000, rek: 7400000, w: 4, stok: 3 },
+    { n: "Meat Grinder Stainless", c: "Mixer & Pengolah", k: "bekas", beli: 1700000, rek: 2600000, w: 4, stok: 22 },
+    { n: "Blender Bar Heavy Duty", c: "Mixer & Pengolah", k: "baru", beli: 1200000, rek: 1850000, w: 5, stok: 55 }
+  ];
+  var PW = PRODS.map(function (p) { return p.w; });
+  var STOK_VALUE = PRODS.reduce(function (a, p) { return a + p.stok * p.beli; }, 0);
+  // target = target bulanan contoh; gp = gaji pokok sales tetap (di aplikasi: Admin > Kelola User)
+  var SALES = [
+    { n: "Feby", w: 3, disc: 0.03, target: 300e6, gp: 3.5e6 }, { n: "Syifa", w: 3, disc: 0.05, target: 380e6, gp: 3.5e6 }, { n: "Rani", w: 2.2, disc: 0.04, target: 260e6, gp: 0 },
+    { n: "Dimas", w: 2, disc: 0.14, target: 240e6, gp: 0 }, { n: "Nadia", w: 1.4, disc: 0.05, target: 120e6, gp: 0 }
+  ];
+  var SW = SALES.map(function (s) { return s.w; });
+  var TEAM_TARGET = SALES.reduce(function (a, s) { return a + s.target; }, 0);
+  var KUR = [{ n: "Kurir Internal", w: 0.4, x: 0.6 }, { n: "JNE Cargo", w: 0.25, x: 3 }, { n: "Lalamove", w: 0.2, x: 0 }, { n: "Ekspedisi Mitra", w: 0.15, x: 2 }];
+  var KW = KUR.map(function (k) { return k.w; });
+  var PRE = ["Kopi", "Warung", "RM", "Dapur", "Bakery", "Resto", "Kedai", "Catering"];
+  var SUF = ["Senja", "Nusantara", "Bunda", "Rasa", "Mahkota", "Sederhana", "Laut", "Pagi", "Tiga Saudara", "Berkah"];
+  var CN = [], CW = [];
+  for (var ci = 0; ci < 40; ci++) { CN.push(PRE[ci % 8] + " " + SUF[(Math.floor(ci / 8) * 2 + ci % 8) % 10]); CW.push(1 / Math.pow(ci + 1, 0.95)); }
+
+  var inv = [];
+  for (var k = 0; k < NDAYS; k++) {
+    var day = START + k * DAY, dow = new Date(day).getUTCDay();
+    var lam = (1.7 + k * 0.0032) * (dow === 0 ? 0.25 : dow === 6 ? 0.8 : 1) * (1 + 0.12 * Math.sin(2 * Math.PI * (k - 60) / 365));
+    var n = poisson(lam);
+    for (var j = 0; j < n; j++) {
+      var si = pick(SW), cu = pick(CW), items = [], nIt = 1 + (R() < 0.5 ? 0 : R() < 0.7 ? 1 : 2), total = 0, q;
+      for (q = 0; q < nIt; q++) {
+        var p = PRODS[pick(PW)], qty = R() < 0.7 ? 1 : R() < 0.7 ? 2 : 4;
+        var disc = R() < 0.45 ? 0 : R() * SALES[si].disc * 2;
+        var jual = Math.round(p.rek * (1 - disc) / 1000) * 1000;
+        items.push({ p: p, qty: qty, jual: jual });
+        total += jual * qty;
+      }
+      var lag = R() < 0.035 ? 31 + Math.floor(R() * 40) : Math.floor(R() * R() * 26);
+      var bayar = day + lag * DAY, status = bayar <= ASOF ? "paid" : "unpaid", dp = 0, dpDay = null;
+      if (status === "unpaid") {
+        if ((ASOF - day) / DAY <= 12 && R() < 0.3) status = "draft";
+        else if (R() < 0.35) { dp = Math.round(total * 0.3 / 1000) * 1000; dpDay = Math.min(ASOF, day + (1 + Math.floor(R() * 2)) * DAY); }
+      } else if (lag >= 5 && R() < 0.3) { dp = Math.round(total * 0.3 / 1000) * 1000; dpDay = day + Math.min(lag - 1, 1 + Math.floor(R() * 3)) * DAY; }
+      // pengiriman: tanggal rencana opsional (12% kosong), siap kirim setelah DP/lunas, kurir punya keterlambatan khas
+      var kur = pick(KW), plan = R() < 0.12 ? null : day + (4 + Math.floor(R() * 10)) * DAY;
+      var ready = status === "paid" ? (dpDay != null ? Math.min(bayar, dpDay) : bayar) : dpDay, ship = null;
+      if (ready != null) { var cand = ready + (1 + Math.max(-1, Math.floor(R() * R() * 4 + (R() < 0.5 ? KUR[kur].x : 0)))) * DAY; ship = cand <= ASOF ? cand : null; if (ship && k >= NDAYS - 45 && R() < 0.05) ship = null; }
+      inv.push({ tgl: day, sales: si, cust: cu, items: items, total: total, lag: lag, bayar: bayar, status: status, paid: status === "paid", dp: dp, kur: kur, plan: plan, ready: ready, ship: ship });
+    }
+  }
+  var SUP = [{ n: "PT Baja Prima", x: 0 }, { n: "CV Inox Jaya", x: 3 }, { n: "Toko Mesin Sentosa", x: 1 }, { n: "UD Dingin Abadi", x: 0 }];
+  var PO = [], pk;
+  for (pk = 0; pk < 70; pk++) {
+    var pd = START + Math.floor(R() * (NDAYS - 3)) * DAY, sp = Math.floor(R() * 4), eta = pd + (7 + Math.floor(R() * 8)) * DAY;
+    var rv = eta + (Math.floor(R() * R() * 9) - 2 + (R() < 0.6 ? SUP[sp].x : 0)) * DAY;
+    PO.push({ pesan: pd, eta: eta, recv: rv <= ASOF ? rv : null, sup: sp, nilai: Math.round((8 + R() * 60) * 10) * 1e5 });
+  }
+  PO.push({ pesan: ASOF - 16 * DAY, eta: ASOF - 5 * DAY, recv: null, sup: 1, nilai: 42.5e6 }, { pesan: ASOF - 12 * DAY, eta: ASOF - 2 * DAY, recv: null, sup: 2, nilai: 28e6 });
+  var KAR = [{ n: "Pak Joko", j: "Kurir internal", g: 150000, p: 0.94 }, { n: "Dedi", j: "Admin gudang", g: 140000, p: 0.92 }, { n: "Rina", j: "Admin", g: 160000, p: 0.96 }];
+  var att = KAR.map(function (kr) { var a = [], d; for (d = 0; d < NDAYS; d++) a.push(new Date(START + d * DAY).getUTCDay() !== 0 && R() < kr.p ? 1 : 0); return a; });
+
+  function dayIx(t) { return Math.round((t - START) / DAY); }
+  var omz = [], cnt = [], i;
+  for (i = 0; i < NDAYS; i++) { omz.push(0); cnt.push(0); }
+  inv.forEach(function (v) { if (v.paid) { var ix = dayIx(v.bayar); omz[ix] += v.total; cnt[ix]++; } });
+  var ma = omz.map(function (_, ix) { var s = 0, c = 0, z; for (z = Math.max(0, ix - 6); z <= ix; z++) { s += omz[z]; c++; } return s / c; });
+  // agregat 12 bulan terakhir: waktu lunas dan ketepatan kirim
+  function mk(t) { var d = new Date(t); return d.getUTCFullYear() * 12 + d.getUTCMonth(); }
+  var M0 = mk(ASOF) - 11, LUN = [], OTD = [];
+  for (i = 0; i < 12; i++) { LUN.push([]); OTD.push({ on: 0, n: 0 }); }
+  inv.forEach(function (v) {
+    if (v.paid) { var m1 = mk(v.bayar) - M0; if (m1 >= 0) LUN[m1].push(v.lag); }
+    if (v.ship && v.plan && v.ready <= v.plan) { var m2 = mk(v.ship) - M0; if (m2 >= 0) { OTD[m2].n++; if (v.ship <= v.plan) OTD[m2].on++; } }
+  });
+
+  /* ---------- statistik ---------- */
+  function sum(a) { var s = 0; for (var z = 0; z < a.length; z++) s += a[z]; return s; }
+  function mean(a) { return a.length ? sum(a) / a.length : 0; }
+  function sd(a) { if (a.length < 2) return 0; var m = mean(a); return Math.sqrt(mean(a.map(function (x) { return (x - m) * (x - m); }))); }
+  function pct(a, p) { var s = a.slice().sort(function (x, y) { return x - y; }); if (!s.length) return 0; var ix = (s.length - 1) * p, lo = Math.floor(ix), hi = Math.ceil(ix); return s[lo] + (s[hi] - s[lo]) * (ix - lo); }
+  function itemsMargin(v) { return sum(v.items.map(function (it) { return (it.jual - it.p.beli) * it.qty; })); }
+  function workdays(s, e) { var c = 0; for (var t = s; t <= e; t += DAY) if (new Date(t).getUTCDay() !== 0) c++; return c; }
+
+  /* ---------- format ---------- */
+  function num(x, d) { return x.toLocaleString("id-ID", { maximumFractionDigits: d == null ? 0 : d, minimumFractionDigits: d == null ? 0 : d }); }
+  function rp(x) { var a = Math.abs(x); if (a >= 1e9) return "Rp " + num(x / 1e9, 2) + " M"; if (a >= 1e6) return "Rp " + num(x / 1e6, 1) + " jt"; if (a >= 1e3) return "Rp " + num(x / 1e3, 0) + " rb"; return "Rp " + num(x); }
+  function jt(x) { return Math.abs(x) >= 1e9 ? num(x / 1e9, 2) + " M" : num(x / 1e6, x >= 1e7 ? 0 : 1) + " jt"; }
+  function dstr(t) { var d = new Date(t); return d.getUTCDate() + " " + MON[d.getUTCMonth()]; }
+  function dfull(t) { return dstr(t) + " " + new Date(t).getUTCFullYear(); }
+  function delta(cur, prev, invert, pts, unit) {
+    if (!prev) return '<span class="pl">tanpa pembanding</span>';
+    var d = pts ? (cur - prev) : (cur - prev) / prev * 100, up = d >= 0, good = invert ? !up : up;
+    if (Math.abs(d) < 0.05) return '<span class="pl">tetap</span>';
+    return '<span class="pl ' + (good ? "good" : "bad") + '">' + (up ? "▲ " : "▼ ") + num(Math.abs(d), 1) + (pts ? " " + (unit || "poin") : "%") + "</span>";
+  }
+  function niceMax(v, t) { var raw = (v || 1) / t, mag = Math.pow(10, Math.floor(Math.log10(raw))), nn = raw / mag; var step = (nn <= 1 ? 1 : nn <= 2 ? 2 : nn <= 2.5 ? 2.5 : nn <= 5 ? 5 : 10) * mag; return { step: step, max: Math.ceil(v / step) * step || step }; }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function initials(n) { return n.split(" ").map(function (p) { return p.charAt(0); }).join("").slice(0, 2).toUpperCase(); }
+  // status terhadap target: hi = nilai tinggi lebih baik
+  function stat(v, target, hi) {
+    var ok = hi ? v >= target : v <= target, near = hi ? v >= target * 0.92 : v <= target * 1.3;
+    return ok ? ["good", "Sesuai target"] : near ? ["amber", "Mendekati target"] : ["bad", "Perlu perhatian"];
+  }
+
+  /* ---------- tooltip ---------- */
+  var tip = $("#tip");
+  function showTip(x, y, html) {
+    tip.innerHTML = html; tip.classList.add("on");
+    var w = tip.offsetWidth, h = tip.offsetHeight, L = x + 14, T = y + 14;
+    if (L + w > window.innerWidth - 8) L = x - w - 14;
+    if (T + h > window.innerHeight - 8) T = y - h - 14;
+    tip.style.left = Math.max(8, L) + "px"; tip.style.top = Math.max(8, T) + "px";
+  }
+  function hideTip() { tip.classList.remove("on"); }
+  document.addEventListener("mousemove", function (e) {
+    var t = e.target.closest ? e.target.closest("[data-tip]") : null;
+    if (t) showTip(e.clientX, e.clientY, t.getAttribute("data-tip")); else if (e.target.id !== "hv") hideTip();
+  });
+
+  /* ---------- periode ---------- */
+  var SEL = latest("bulan"), METRIC = "omzet", SHOW_ALL = false, TAB = "ringkasan", RG = "all", cur = null;
+  function latest(mode) { return { mode: mode, y: 2026, s: mode === "bulan" ? 8 : mode === "kuartal" ? 2 : 0 }; }
+  function span(sel) {
+    if (sel.mode === "bulan") return [Date.UTC(sel.y, sel.s, 1), Date.UTC(sel.y, sel.s + 1, 0)];
+    if (sel.mode === "kuartal") return [Date.UTC(sel.y, sel.s * 3, 1), Date.UTC(sel.y, sel.s * 3 + 3, 0)];
+    return [Date.UTC(sel.y, 0, 1), Date.UTC(sel.y, 11, 31)];
+  }
+  function shift(sel, d) {
+    if (sel.mode === "tahun") return { mode: sel.mode, y: sel.y + d, s: 0 };
+    var per = sel.mode === "bulan" ? 12 : 4, ix = sel.y * per + sel.s + d;
+    return { mode: sel.mode, y: Math.floor(ix / per), s: ix % per };
+  }
+  function canShift(d) { var r = span(shift(SEL, d)); return d < 0 ? r[1] >= START : r[0] <= ASOF; }
+  function labelOf(sel) { return sel.mode === "bulan" ? MONTHS[sel.s] + " " + sel.y : sel.mode === "kuartal" ? "Q" + (sel.s + 1) + " " + sel.y : String(sel.y); }
+  function windows() {
+    var r = span(SEL), s = r[0], eFull = r[1], e = Math.min(eFull, ASOF);
+    var L = Math.round((e - s) / DAY) + 1, total = Math.round((eFull - s) / DAY) + 1, complete = eFull <= ASOF;
+    var pr = span(shift(SEL, -1)), pe = complete ? pr[1] : Math.min(pr[1], pr[0] + (L - 1) * DAY);
+    return { s: s, e: e, eFull: eFull, L: L, total: total, complete: complete, ps: pr[0], pe: pe, mult: SEL.mode === "bulan" ? 1 : SEL.mode === "kuartal" ? 3 : 12, left: total - L };
+  }
+  function paidIn(a, b) { return inv.filter(function (v) { return v.paid && v.bayar >= a && v.bayar <= b; }); }
+  function summarize(list) {
+    var t = list.map(function (v) { return v.total; }), om = sum(t), mg = sum(list.map(itemsMargin));
+    return { list: list, omzet: om, n: list.length, mean: mean(t), median: pct(t, 0.5), p90: pct(t, 0.9), q1: pct(t, 0.25), q3: pct(t, 0.75), sd: sd(t), margin: mg, mpct: om ? mg / om * 100 : 0, totals: t };
+  }
+  function outstanding() {
+    return inv.filter(function (v) { return v.status !== "paid"; }).map(function (v) {
+      return { v: v, age: Math.round((ASOF - v.tgl) / DAY), sisa: v.total - v.dp, stage: v.status === "draft" ? "draft" : v.dp > 0 ? "dp" : "unpaid" };
+    });
+  }
+  function hadirIn(s, e) {
+    var a = dayIx(s), b = dayIx(e), out = KAR.map(function () { return 0; }), d, kx;
+    for (kx = 0; kx < KAR.length; kx++) for (d = Math.max(0, a); d <= Math.min(NDAYS - 1, b); d++) out[kx] += att[kx][d];
+    return out;
+  }
+  /* semua metrik yang dipakai scorecard, dihitung untuk satu jendela (dipakai periode ini dan pembanding) */
+  function calc(s, e) {
+    var L = Math.round((e - s) / DAY) + 1, A = summarize(paidIn(s, e)), lag = A.list.map(function (v) { return v.lag; });
+    var shipped = inv.filter(function (v) { return v.ship && v.ship >= s && v.ship <= e; }), meas = shipped.filter(function (v) { return v.plan && v.ready <= v.plan; }), held = shipped.filter(function (v) { return v.plan && v.ready > v.plan; }).length;
+    var on = meas.filter(function (v) { return v.ship <= v.plan; }).length;
+    var created = inv.filter(function (v) { return v.tgl >= s && v.tgl <= e; }), createdM = created.filter(function (v) { return (ASOF - v.tgl) / DAY >= 14; }), wd = workdays(s, e), hd = hadirIn(s, e), hdSum = sum(hd);
+    var cogs = sum(A.list.map(function (v) { return sum(v.items.map(function (it) { return it.p.beli * it.qty; })); }));
+    var labor = sum(KAR.map(function (kr, kx) { return kr.g * hd[kx]; })) + sum(SALES.map(function (sl) { return sl.gp * L / 30; }));
+    var komisi = sum(A.list.map(function (v) { return sum(v.items.map(function (it) { return it.jual * it.qty * (it.p.k === "bekas" ? 0.07 : 0.045); })); }));
+    var pos = PO.filter(function (p) { return p.recv && p.recv >= s && p.recv <= e; });
+    return {
+      L: L, A: A, lag: lag, medLunas: pct(lag, 0.5), p90Lunas: pct(lag, 0.9), share7: lag.length ? lag.filter(function (x) { return x <= 7; }).length / lag.length * 100 : 0,
+      shipped: shipped, meas: meas, on: on, otd: meas.length ? on / meas.length * 100 : 0, held: held, cover: shipped.length ? (meas.length + held) / shipped.length * 100 : 0,
+      leadKirim: pct(shipped.map(function (v) { return (v.ship - v.tgl) / DAY; }), 0.5),
+      created: created, createdM: createdM, conv: createdM.length ? createdM.filter(function (v) { return v.paid; }).length / createdM.length * 100 : 0,
+      wd: wd, hd: hd, hdSum: hdSum, cogs: cogs, labor: labor + komisi, komisi: komisi, laborRatio: A.omzet ? (labor + komisi) / A.omzet * 100 : 0,
+      omzetWd: A.omzet / Math.max(wd, 1) / SALES.length, perOrangHari: hdSum ? A.omzet / hdSum : 0,
+      kirimPerOrangHari: hdSum ? shipped.length / hdSum : 0,
+      poN: pos.length, poOtd: pos.length ? pos.filter(function (p) { return p.recv <= p.eta; }).length / pos.length * 100 : 0, poLead: mean(pos.map(function (p) { return (p.recv - p.pesan) / DAY; })), pos: pos,
+      doh: cogs ? STOK_VALUE / (cogs / L) : 0, turnover: STOK_VALUE ? cogs * (365 / L) / STOK_VALUE : 0, gmroi: STOK_VALUE ? A.margin * (365 / L) / STOK_VALUE : 0
+    };
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    var W = windows(), M = calc(W.s, W.e), MP = calc(W.ps, W.pe), A = M.A, B = MP.A, out = outstanding();
+    var billed = out.filter(function (o) { return o.stage !== "draft"; });
+    var pot = sum(out.map(function (o) { return o.sisa; })), wpot = sum(out.map(function (o) { return o.sisa * PROB[o.stage]; }));
+    cur = { W: W, M: M, MP: MP, A: A, B: B, out: out, billed: billed, pot: pot, wpot: wpot, tgt: TEAM_TARGET * W.mult };
+
+    $("#plabel").textContent = labelOf(SEL);
+    $("#prev").disabled = !canShift(-1); $("#next").disabled = !canShift(1);
+    var rng = SEL.mode === "kuartal" ? " (" + MON[SEL.s * 3] + " – " + MON[SEL.s * 3 + 2] + ")" : "";
+    $("#sub").textContent = dfull(W.s) + " – " + dfull(W.e) + rng + " · " + (W.complete ? "periode selesai, " + W.L + " hari" : "berjalan, hari ke-" + W.L + " dari " + W.total) + " · dibanding " + labelOf(shift(SEL, -1)) + (W.complete ? "" : " pada " + W.L + " hari yang sama") + " · omzet = invoice Lunas per tanggal bayar";
+
+    var tgt = cur.tgt, tp = tgt ? A.omzet / tgt * 100 : 0, gap = tgt - A.omzet, elapsed = W.L / W.total * 100, vs = function (s) { return B.n ? s : ""; };
+    var run = W.complete ? A.omzet : A.omzet / W.L * W.total; cur.run = run; cur.tp = tp;
+    var hero = '<div class="kpi hero"><span class="eyebrow">Omzet · target ' + labelOf(SEL) + " " + rp(tgt) + "</span>" +
+      '<span class="v">' + rp(A.omzet) + ' <small>· ' + num(tp, 0) + "%</small></span>" +
+      '<div class="trk"' + (W.complete ? "" : ' data-tip="Seharusnya sudah ' + num(elapsed, 0) + '% (hari ke-' + W.L + " dari " + W.total + ')"') + '><i style="width:' + Math.min(tp, 100) + '%"></i>' + (W.complete ? "" : '<u class="mk" style="left:' + elapsed + '%"></u>') + "</div>" +
+      '<div class="meta">' + delta(A.omzet, B.omzet) + vs("<span>vs " + rp(B.omzet) + "</span>") + (W.complete ? "" : '<span class="pl warn">Sisa ' + W.left + " hari</span>") + "</div>" +
+      '<span class="cap">' + (gap > 0 ? "Kurang <b>" + rp(gap) + "</b> lagi" : "<b>Target tercapai</b>") + (W.complete ? "" : " · proyeksi akhir periode <b>" + rp(run) + "</b> (" + num(tgt ? run / tgt * 100 : 0, 0) + "%)") + "</span></div>";
+    $("#kpis").innerHTML = hero +
+      kpi("Invoice lunas", num(A.n), delta(A.n, B.n), vs("vs " + num(B.n))) +
+      kpi("Gross margin", num(A.mpct, 1) + "%", delta(A.mpct, B.mpct, false, true), rp(A.margin)) +
+      kpi("Median invoice", rp(A.median), delta(A.median, B.median), "rata-rata " + rp(A.mean)) +
+      kpi("Potensi masuk", rp(pot), '<span class="pl info">' + out.length + " invoice</span>", "berbobot " + rp(wpot));
+
+    renderProd(); renderSales(); renderCat(); drawWeekday(); renderLunas(); renderConv(); renderAging();
+    renderOps(); renderProduktif(); renderScore(); renderPipe(); renderRecs(); redraw();
+    var dOm = B.omzet ? (A.omzet - B.omzet) / B.omzet * 100 : 0;
+    $("#bannerT").textContent = (B.omzet ? "Omzet " + (dOm >= 0 ? "naik " : "turun ") + num(Math.abs(dOm), 1) + "% dari periode lalu" : "Belum ada periode pembanding") + " · " + out.length + " invoice menunggu pembayaran (" + rp(pot) + ")";
+  }
+  function redraw() { drawTrend(); drawHist(); drawMonthly("#lunasTrend", lunasSeries(), { target: TGT.lunas }); drawMonthly("#otdTrend", otdSeries(), { target: TGT.otd, max: 100 }); }
+  function kpi(lb, v, d, sub) {
+    return '<div class="kpi"><span class="eyebrow">' + lb + '</span><span class="v">' + v + '</span><span class="meta">' + d + "<span>" + sub + "</span></span></div>";
+  }
+
+  /* --- scorecard 3 kelompok --- */
+  function metric(lb, v, d, target, st) {
+    return '<div class="m"><div><div class="eyebrow">' + lb + '</div><div class="v">' + v + '</div></div><div class="r">' + d + (st ? '<span class="pl ' + st[0] + '">' + st[1] + "</span>" : "") + '</div><div class="tg">' + target + "</div></div>";
+  }
+  function renderScore() {
+    var M = cur.M, P = cur.MP, W = cur.W, A = M.A, tp = cur.tp, basis = W.complete ? tp : (cur.tgt ? cur.run / cur.tgt * 100 : 0);
+    var sOm = basis >= 100 ? ["good", "Sesuai target"] : basis >= 90 ? ["amber", "Mendekati target"] : ["bad", "Perlu perhatian"];
+    var sales = metric("Omzet vs target", num(tp, 0) + "<small>%</small>", delta(A.omzet, P.A.omzet), rp(A.omzet) + " dari " + rp(cur.tgt) + (W.complete ? "" : " · proyeksi " + num(cur.tgt ? cur.run / cur.tgt * 100 : 0, 0) + "%"), sOm) +
+      metric("Median sampai lunas", num(M.medLunas, 0) + "<small> hari</small>", delta(M.medLunas, P.medLunas, true), "Target ≤ " + TGT.lunas + " hari · " + num(M.share7, 0) + "% invoice lunas dalam 7 hari", stat(M.medLunas, TGT.lunas, false)) +
+      metric("Konversi invoice ke lunas", num(M.conv, 0) + "<small>%</small>", delta(M.conv, P.conv, false, true), "Dari " + M.createdM.length + " invoice berumur ≥ 14 hari · target ≥ " + TGT.conv + "%", stat(M.conv, TGT.conv, true));
+    var ops = metric("Ketepatan kirim", M.meas.length ? num(M.otd, 0) + "<small>%</small>" : "—", delta(M.otd, P.otd, false, true), M.on + " dari " + M.meas.length + " kiriman tepat waktu · target ≥ " + TGT.otd + "%", M.meas.length ? stat(M.otd, TGT.otd, true) : null) +
+      metric("Lead time order ke kirim", num(M.leadKirim, 0) + "<small> hari</small>", delta(M.leadKirim, P.leadKirim, true), "Median dari invoice dibuat sampai dikirim · " + M.shipped.length + " kiriman") +
+      metric("Pasokan supplier tepat waktu", M.poN ? num(M.poOtd, 0) + "<small>%</small>" : "—", delta(M.poOtd, P.poOtd, false, true), M.poN + " PO diterima · rata-rata " + num(M.poLead, 0) + " hari · target ≥ " + TGT.po + "%", M.poN ? stat(M.poOtd, TGT.po, true) : null);
+    var prod = metric("Omzet per sales per hari kerja", rp(M.omzetWd), delta(M.omzetWd, P.omzetWd), M.wd + " hari kerja · " + SALES.length + " sales aktif") +
+      metric("Biaya tenaga kerja / omzet", num(M.laborRatio, 1) + "<small>%</small>", delta(M.laborRatio, P.laborRatio, true, true), rp(M.labor) + " · target ≤ " + TGT.labor + "%", stat(M.laborRatio, TGT.labor, false)) +
+      metric("Hari persediaan", num(M.doh, 0) + "<small> hari</small>", delta(M.doh, P.doh, true), "Modal tertahan " + rp(STOK_VALUE) + " · target ≤ " + TGT.doh + " hari", stat(M.doh, TGT.doh, false));
+    function card(h, body, go) { return '<div class="card c4"><div class="ph"><h2><i class="gdot"></i>' + h + '</h2><button type="button" class="more" data-go="' + go + '">Lihat detail →</button></div><div class="sc">' + body + "</div></div>"; }
+    $("#score").innerHTML = card("Sales", sales, "sales") + card("Operasional", ops, "ops") + card("Produktivitas", prod, "prod");
+  }
+
+  /* --- tren sales: harian untuk Bulan, bulanan untuk Kuartal dan Tahun --- */
+  var LEG_D = $("#trendLegend").innerHTML;
+  var LEG_M = '<span><i class="sw" style="background:var(--accent)"></i>Omzet bulanan</span><span><i class="sw" style="background:var(--accent);opacity:0.55"></i>Bulan berjalan (belum penuh)</span>' +
+    '<span><i class="sw" style="background:var(--ink);border-radius:999px"></i>Bulan yang sama di periode lalu</span><span><i class="sw line" style="background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 9px)"></i>Target bulanan tim</span>';
+  function drawTrend() {
+    var daily = SEL.mode === "bulan";
+    $("#trendTitle").textContent = daily ? "Tren sales per hari" : "Tren sales per bulan";
+    $("#trendSub").textContent = daily ? "Rata-rata bergerak 7 hari · vs periode lalu" : SEL.mode === "kuartal" ? "Per bulan dalam kuartal · vs kuartal lalu" : "Per bulan dalam tahun · vs tahun lalu";
+    $("#trendLegend").innerHTML = daily ? LEG_D : LEG_M;
+    if (daily) drawTrendDaily(); else drawTrendMonthly();
+  }
+  function drawTrendMonthly() {
+    var el = $("#trend"), Wd = Math.max(300, el.clientWidth), H = 220, m = { l: 38, r: 12, t: 22, b: 24 }, W = cur.W, base = mk(START), curIx = mk(ASOF) - base;
+    var i0 = mk(W.s) - base, i1 = mk(W.e) - base, back = SEL.mode === "kuartal" ? 3 : 12, d = [], z;
+    for (z = i0; z <= i1; z++) d.push({ v: MOM[z], p: z - back >= 0 ? MOM[z - back] : null, part: z === curIx, lb: MON[z % 12], full: MONTHS[z % 12] + " " + (2025 + Math.floor(z / 12)) });
+    var nn = d.length, pwid = Wd - m.l - m.r, ph = H - m.t - m.b, bw = Math.min(72, pwid / nn * 0.6);
+    var mxv = Math.max.apply(null, d.map(function (x) { return Math.max(x.v, x.p || 0); }).concat([TEAM_TARGET])), nm = niceMax(mxv / 1e6, 4);
+    var X = function (ix) { return m.l + pwid * (ix + 0.5) / nn; }, Y = function (v) { return m.t + ph * (1 - v / 1e6 / nm.max); };
+    var s = '<svg viewBox="0 0 ' + Wd + " " + H + '" height="' + H + '" role="img" aria-label="Omzet per bulan dibanding bulan yang sama di periode lalu dan target bulanan">';
+    for (var g = 0; g <= nm.max + 1e-9; g += nm.step) {
+      s += '<line class="' + (g === 0 ? "ax" : "gl") + '" x1="' + m.l + '" x2="' + (Wd - m.r) + '" y1="' + Y(g * 1e6) + '" y2="' + Y(g * 1e6) + '"/>';
+      s += '<text x="' + (m.l - 6) + '" y="' + (Y(g * 1e6) + 3.5) + '" text-anchor="end">' + num(g, nm.step < 1 ? 1 : 0) + "</text>";
+    }
+    s += '<text x="' + m.l + '" y="9">Rp juta</text>';
+    d.forEach(function (x, ix) {
+      var tt = "<b>" + x.full + "</b><br>Omzet " + rp(x.v) + (x.part ? " (baru sampai " + dstr(ASOF) + ")" : "") + "<br>" + (x.p != null ? "Bulan sama periode lalu " + rp(x.p) + "<br>" : "") + "Target bulanan " + rp(TEAM_TARGET) + (x.part ? "" : "<br>" + num(x.v / TEAM_TARGET * 100, 0) + "% dari target");
+      s += '<g data-tip="' + tt + '"><rect x="' + (X(ix) - pwid / nn / 2) + '" y="' + m.t + '" width="' + (pwid / nn) + '" height="' + ph + '" fill="transparent"/>';
+      s += '<rect x="' + (X(ix) - bw / 2) + '" y="' + Y(x.v) + '" width="' + bw + '" height="' + Math.max(0, Y(0) - Y(x.v)) + '" rx="6" fill="var(--accent)"' + (x.part ? ' opacity="0.55"' : "") + "/>";
+      if (x.p != null) s += '<circle cx="' + X(ix) + '" cy="' + Y(x.p) + '" r="5" fill="var(--ink)" stroke="var(--panel)" stroke-width="2"/>';
+      s += '<text class="lbl-ink" x="' + X(ix) + '" y="' + (Y(x.v) - 6) + '" text-anchor="middle">' + jt(x.v) + '</text></g><text x="' + X(ix) + '" y="' + (H - 6) + '" text-anchor="middle">' + x.lb + (x.part ? "*" : "") + "</text>";
+    });
+    s += '<line x1="' + m.l + '" x2="' + (Wd - m.r) + '" y1="' + Y(TEAM_TARGET) + '" y2="' + Y(TEAM_TARGET) + '" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4"/></svg>';
+    el.innerHTML = s;
+    var cm = d.filter(function (x) { return !x.part; }), vals = cm.map(function (x) { return x.v; });
+    if (!cm.length) { $("#trendStats").innerHTML = '<span class="pl">Belum ada bulan yang penuh pada periode ini</span>'; return; }
+    var best = cm.reduce(function (a, x) { return x.v > a.v ? x : a; }, cm[0]), low = cm.reduce(function (a, x) { return x.v < a.v ? x : a; }, cm[0]), hit = cm.filter(function (x) { return x.v >= TEAM_TARGET; }).length;
+    $("#trendStats").innerHTML = '<span class="pl">Rata-rata/bulan <b>' + rp(mean(vals)) + '</b></span><span class="pl">Bulan terbaik <b>' + best.full + " · " + rp(best.v) + '</b></span><span class="pl">Bulan terendah <b>' + low.full + " · " + rp(low.v) + '</b></span><span class="pl ' + (hit === cm.length ? "good" : hit ? "amber" : "bad") + '"><b>' + hit + " dari " + cm.length + "</b> bulan penuh capai target" + (d.length > cm.length ? " · * bulan berjalan" : "") + "</span>";
+  }
+  function drawTrendDaily() {
+    var el = $("#trend"), Wd = Math.max(300, el.clientWidth), H = 220, m = { l: 38, r: 12, t: 16, b: 24 }, W = cur.W;
+    var pwid = Wd - m.l - m.r, ph = H - m.t - m.b, from = dayIx(W.s), nn = W.L, d = [], z, pv = [];
+    for (z = 0; z < nn; z++) {
+      d.push({ t: W.s + z * DAY, o: omz[from + z], ma: ma[from + z], c: cnt[from + z] });
+      var pi = dayIx(W.ps) + z; pv.push(pi >= 0 && W.ps + z * DAY <= W.pe ? ma[pi] : null);
+    }
+    var mxv = Math.max.apply(null, d.map(function (x) { return Math.max(x.o, x.ma); }).concat(pv.map(function (x) { return x || 0; })));
+    var nm = niceMax(mxv / 1e6, 4);
+    var X = function (ix) { return m.l + pwid * (ix + 0.5) / nn; }, Y = function (v) { return m.t + ph * (1 - v / 1e6 / nm.max); };
+    var s = '<svg viewBox="0 0 ' + Wd + " " + H + '" height="' + H + '" role="img" aria-label="Tren omzet harian dengan rata-rata bergerak 7 hari dan periode lalu">';
+    for (var g = 0; g <= nm.max + 1e-9; g += nm.step) {
+      s += '<line class="' + (g === 0 ? "ax" : "gl") + '" x1="' + m.l + '" x2="' + (Wd - m.r) + '" y1="' + Y(g * 1e6) + '" y2="' + Y(g * 1e6) + '"/>';
+      s += '<text x="' + (m.l - 6) + '" y="' + (Y(g * 1e6) + 3.5) + '" text-anchor="end">' + num(g, nm.step < 1 ? 1 : 0) + "</text>";
+    }
+    s += '<text x="' + m.l + '" y="9">Rp juta</text>';
+    var bw = Math.max(1.2, pwid / nn * 0.6);
+    d.forEach(function (x, ix) { if (x.o > 0) s += '<rect x="' + (X(ix) - bw / 2) + '" y="' + Y(x.o) + '" width="' + bw + '" height="' + (Y(0) - Y(x.o)) + '" rx="' + Math.min(3, bw / 2) + '" fill="var(--accent)"/>'; });
+    var pp = "", open = false;
+    pv.forEach(function (v, ix) { if (v == null) { open = false; return; } pp += (open ? "L" : "M") + X(ix).toFixed(1) + " " + Y(v).toFixed(1); open = true; });
+    if (pp) s += '<path d="' + pp + '" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round"/>';
+    s += '<path d="' + d.map(function (x, ix) { return (ix ? "L" : "M") + X(ix).toFixed(1) + " " + Y(x.ma).toFixed(1); }).join("") + '" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    var step = Math.ceil(nn / 6);
+    d.forEach(function (x, ix) { if (ix % step === 0) s += '<text x="' + X(ix) + '" y="' + (H - 6) + '" text-anchor="middle">' + dstr(x.t) + "</text>"; });
+    var last = d[nn - 1];
+    s += '<circle cx="' + X(nn - 1) + '" cy="' + Y(last.ma) + '" r="4.5" fill="var(--ink)" stroke="var(--panel)" stroke-width="2"/>';
+    s += '<text class="lbl-ink" x="' + (X(nn - 1) - 8) + '" y="' + (Y(last.ma) - 9) + '" text-anchor="end">' + rp(last.ma) + "</text>";
+    s += '<line id="ch" class="ax" y1="' + m.t + '" y2="' + (m.t + ph) + '" style="display:none"/><circle id="chd" r="4.5" fill="var(--ink)" stroke="var(--panel)" stroke-width="2" style="display:none"/>';
+    s += '<rect id="hv" x="' + m.l + '" y="' + m.t + '" width="' + pwid + '" height="' + ph + '" fill="transparent"/></svg>';
+    el.innerHTML = s;
+    var hv = el.querySelector("#hv"), ch = el.querySelector("#ch"), chd = el.querySelector("#chd");
+    hv.addEventListener("mousemove", function (e) {
+      var r = hv.getBoundingClientRect(), ix = Math.min(nn - 1, Math.max(0, Math.floor((e.clientX - r.left) / r.width * nn))), x = d[ix];
+      ch.setAttribute("x1", X(ix)); ch.setAttribute("x2", X(ix)); ch.style.display = "";
+      chd.setAttribute("cx", X(ix)); chd.setAttribute("cy", Y(x.ma)); chd.style.display = "";
+      showTip(e.clientX, e.clientY, "<b>" + DOWN[new Date(x.t).getUTCDay()] + ", " + dstr(x.t) + "</b><br>Omzet " + rp(x.o) + "<br>Rata-rata 7 hari " + rp(x.ma) + (pv[ix] != null ? "<br>Periode lalu " + rp(pv[ix]) : "") + "<br>" + x.c + " invoice lunas");
+    });
+    hv.addEventListener("mouseleave", function () { ch.style.display = "none"; chd.style.display = "none"; hideTip(); });
+    var vals = d.map(function (x) { return x.o; }), best = d.reduce(function (a, x) { return x.o > a.o ? x : a; }, d[0]);
+    var zero = d.filter(function (x) { return x.o === 0 && new Date(x.t).getUTCDay() !== 0; }).length;
+    $("#trendStats").innerHTML = '<span class="pl">Rata-rata/hari <b>' + rp(mean(vals)) + '</b></span><span class="pl">Median/hari <b>' + rp(pct(vals, 0.5)) + '</b></span><span class="pl">Hari terbaik <b>' + dstr(best.t) + " · " + rp(best.o) + '</b></span><span class="pl ' + (zero ? "amber" : "") + '"><b>' + zero + "</b> hari kerja tanpa omzet</span>";
+  }
+
+  /* --- grafik batang bulanan generik (12 bulan, garis target) --- */
+  function drawMonthly(sel, series, o) {
+    var el = $(sel), W = Math.max(240, el.clientWidth), H = 170, m = { l: 30, r: 6, t: 14, b: 22 };
+    var mx = Math.max.apply(null, series.map(function (x) { return Math.max(x.v || 0, x.v2 || 0); }).concat([o.target]));
+    var nm = o.max ? { step: 25, max: o.max } : niceMax(mx * 1.05, 4);
+    var pw = W - m.l - m.r, ph = H - m.t - m.b, bw = pw / 12, Y = function (v) { return m.t + ph * (1 - v / nm.max); };
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" height="' + H + '" role="img" aria-label="Grafik 12 bulan terakhir">';
+    for (var g = 0; g <= nm.max + 1e-9; g += nm.step) s += '<line class="' + (g === 0 ? "ax" : "gl") + '" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(g) + '" y2="' + Y(g) + '"/><text x="' + (m.l - 5) + '" y="' + (Y(g) + 3.5) + '" text-anchor="end">' + num(g) + "</text>";
+    series.forEach(function (x, ix) {
+      var cx = m.l + ix * bw + bw / 2, tt = "<b>" + MONTHS[(M0 + ix) % 12] + " " + Math.floor((M0 + ix) / 12) + "</b><br>" + (x.n ? x.tip : "Belum ada data");
+      s += '<g data-tip="' + tt + '"><rect x="' + (cx - bw / 2) + '" y="' + m.t + '" width="' + bw + '" height="' + ph + '" fill="transparent"/>';
+      if (x.n) s += '<rect x="' + (cx - bw * 0.3) + '" y="' + Y(x.v) + '" width="' + (bw * 0.6) + '" height="' + Math.max(0, Y(0) - Y(x.v)) + '" rx="4" fill="var(--accent)"/>';
+      if (x.n && x.v2 != null) s += '<circle cx="' + cx + '" cy="' + Y(x.v2) + '" r="3.5" fill="var(--ink)" stroke="var(--panel)" stroke-width="1.5"/>';
+      s += '</g><text x="' + cx + '" y="' + (H - 6) + '" text-anchor="middle">' + MON[(M0 + ix) % 12] + "</text>";
+    });
+    s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(o.target) + '" y2="' + Y(o.target) + '" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4"/></svg>';
+    el.innerHTML = s;
+  }
+  function lunasSeries() { return LUN.map(function (a) { return { n: a.length, v: pct(a, 0.5), v2: pct(a, 0.9), tip: "Median " + num(pct(a, 0.5), 0) + " hari<br>P90 " + num(pct(a, 0.9), 0) + " hari<br>" + a.length + " invoice lunas" }; }); }
+  function otdSeries() { return OTD.map(function (a) { var v = a.n ? a.on / a.n * 100 : 0; return { n: a.n, v: v, tip: num(v, 0) + "% tepat waktu<br>" + a.on + " dari " + a.n + " kiriman" }; }); }
+
+  /* --- pola per hari --- */
+  function drawWeekday() {
+    var W = cur.W, sums = [0, 0, 0, 0, 0, 0, 0], cn = [0, 0, 0, 0, 0, 0, 0], z, from = dayIx(W.s);
+    for (z = 0; z < W.L; z++) { var dw = new Date(W.s + z * DAY).getUTCDay(); sums[dw] += omz[from + z]; cn[dw]++; }
+    var ord = [1, 2, 3, 4, 5, 6, 0], avg = ord.map(function (dw) { return cn[dw] ? sums[dw] / cn[dw] : 0; });
+    var mx = Math.max.apply(null, avg) || 1, bi = avg.indexOf(mx);
+    $("#wk").innerHTML = ord.map(function (dw, ix) {
+      return '<div class="col" data-tip="<b>' + DOWF[dw] + '</b><br>Rata-rata ' + rp(avg[ix]) + "<br>" + cn[dw] + ' hari dalam periode"><span class="n">' + jt(avg[ix]) + '</span><div class="bar" style="height:' + Math.max(4, avg[ix] / mx * 92) + "px;background:" + (ix === bi ? "var(--ink)" : "var(--accent)") + '"></div><span class="b">' + DOWN[dw] + "</span></div>";
+    }).join("");
+    var six = avg.slice(0, 6), m6 = mean(six), lo = six.indexOf(Math.min.apply(null, six));
+    cur.wk = { avg: avg, best: ord[bi], low: ord[lo], lowPct: m6 ? (six[lo] / m6 - 1) * 100 : 0, bestPct: m6 ? (mx / m6 - 1) * 100 : 0 };
+    $("#wkStats").innerHTML = '<span class="pl good">Terkuat <b>' + DOWF[cur.wk.best] + '</b></span><span class="pl ' + (cur.wk.lowPct < -25 ? "amber" : "") + '">Terlemah (Sen–Sab) <b>' + DOWF[cur.wk.low] + " " + num(cur.wk.lowPct, 0) + "%</b></span>";
+  }
+
+  /* --- histogram nilai invoice --- */
+  function drawHist() {
+    var A = cur.A, el = $("#hist"), W = Math.max(240, el.clientWidth), H = 170, m = { l: 26, r: 6, t: 18, b: 24 };
+    var nb = 11, bins = [], z;
+    for (z = 0; z < nb; z++) bins.push(0);
+    A.totals.forEach(function (t) { bins[Math.min(nb - 1, Math.floor(t / 5e6))]++; });
+    var pwid = W - m.l - m.r, ph = H - m.t - m.b, bwid = pwid / nb, mx = Math.max.apply(null, bins), nm = niceMax(mx, 3);
+    var Y = function (c) { return m.t + ph * (1 - c / nm.max); }, XV = function (v) { return m.l + Math.min(v / 5e6, nb) * bwid; };
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" height="' + H + '" role="img" aria-label="Histogram nilai invoice">';
+    for (var g = 0; g <= nm.max + 1e-9; g += nm.step) s += '<line class="' + (g === 0 ? "ax" : "gl") + '" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(g) + '" y2="' + Y(g) + '"/><text x="' + (m.l - 5) + '" y="' + (Y(g) + 3.5) + '" text-anchor="end">' + num(g) + "</text>";
+    bins.forEach(function (c, ix) {
+      var lo = ix * 5, label = ix === nb - 1 ? "≥ Rp " + lo + " jt" : "Rp " + lo + "–" + (lo + 5) + " jt";
+      s += '<rect x="' + (m.l + ix * bwid + 1.5) + '" y="' + Y(c) + '" width="' + (bwid - 3) + '" height="' + Math.max(0, Y(0) - Y(c)) + '" rx="3" fill="var(--accent)" data-tip="<b>' + label + '</b><br>' + c + " invoice (" + num(A.n ? c / A.n * 100 : 0, 0) + '%)"/>';
+      if (ix % 2 === 0) s += '<text x="' + (m.l + ix * bwid) + '" y="' + (H - 6) + '" text-anchor="middle">' + lo + (ix === nb - 1 ? "+" : "") + "</text>";
+    });
+    s += '<text x="' + (W - m.r) + '" y="' + (H - 6) + '" text-anchor="end">jt</text>';
+    var xm = XV(A.median), xa = XV(A.mean);
+    s += '<line x1="' + xm + '" x2="' + xm + '" y1="' + (m.t - 2) + '" y2="' + (m.t + ph) + '" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>';
+    s += '<line x1="' + xa + '" x2="' + xa + '" y1="' + (m.t - 2) + '" y2="' + (m.t + ph) + '" stroke="var(--ink)" stroke-width="2.5" stroke-dasharray="4 3"/>';
+    s += '<text class="lbl-ink" x="' + (xm - 5) + '" y="' + (m.t + 6) + '" text-anchor="end">Median</text>';
+    s += '<text class="lbl-ink" x="' + (xa + 5) + '" y="' + (m.t + 6) + '" text-anchor="start">Rata-rata</text></svg>';
+    el.innerHTML = s;
+    $("#histStats").innerHTML = '<span class="pl">Median <b>' + rp(A.median) + '</b></span><span class="pl">Rata-rata <b>' + rp(A.mean) + '</b></span><span class="pl">P90 <b>' + rp(A.p90) + '</b></span><span class="pl">IQR <b>' + rp(A.q1) + " – " + rp(A.q3) + '</b></span><span class="pl">Std <b>' + rp(A.sd) + "</b></span>";
+  }
+
+  /* --- produk --- */
+  function renderProd() {
+    var agg = {};
+    cur.A.list.forEach(function (v) { v.items.forEach(function (it) {
+      var a = agg[it.p.n] || (agg[it.p.n] = { p: it.p, omzet: 0, qty: 0, margin: 0 });
+      a.omzet += it.jual * it.qty; a.qty += it.qty; a.margin += (it.jual - it.p.beli) * it.qty;
+    }); });
+    var all = Object.keys(agg).map(function (kk) { return agg[kk]; });
+    cur.prodAll = all;
+    var totalOm = sum(all.map(function (a) { return a.omzet; }));
+    var sorted = all.slice().sort(function (a, b) { return b[METRIC] - a[METRIC]; });
+    var top = sorted.slice(0, 5), mx = top.length ? top[0][METRIC] || 1 : 1;
+    $("#prod").innerHTML = top.map(function (a, ix) {
+      var val = METRIC === "qty" ? num(a.qty) + " unit" : rp(a[METRIC]);
+      var sub = METRIC === "omzet" ? "margin " + num(a.omzet ? a.margin / a.omzet * 100 : 0, 0) + "%" : METRIC === "margin" ? num(a.omzet ? a.margin / a.omzet * 100 : 0, 0) + "% dari omzet" : rp(a.omzet);
+      var tt = "<b>" + esc(a.p.n) + "</b><br>Omzet " + rp(a.omzet) + " (" + num(totalOm ? a.omzet / totalOm * 100 : 0, 1) + "%)<br>Terjual " + a.qty + " unit<br>Margin " + rp(a.margin);
+      return '<div class="row" data-tip="' + tt + '"><div class="rname"><span class="rk">' + (ix + 1) + '</span><span class="t">' + esc(a.p.n) + "</span>" + (a.p.k === "bekas" ? '<span class="pl amber tiny">Bekas</span>' : "") + '</div><div class="trk"><i style="width:' + (a[METRIC] / mx * 100) + '%"></i></div><div class="rval">' + val + "<small>" + sub + "</small></div></div>";
+    }).join("");
+    var byOm = all.slice().sort(function (a, b) { return b.omzet - a.omzet; }), cum = 0, n80 = 0;
+    for (var z = 0; z < byOm.length; z++) { cum += byOm[z].omzet; n80++; if (cum >= totalOm * 0.8) break; }
+    cur.byOm = byOm;
+    $("#prodStats").innerHTML = '<span class="pl"><b>' + n80 + " dari " + all.length + '</b> produk = 80% omzet</span><span class="pl">Top 5 = <b>' + num(totalOm ? sum(byOm.slice(0, 5).map(function (a) { return a.omzet; })) / totalOm * 100 : 0, 0) + "%</b></span>";
+  }
+
+  /* --- performa sales --- */
+  function weeklyCV(si) {
+    var wk = [], z;
+    for (z = 0; z < 12; z++) wk.push(0);
+    inv.forEach(function (v) { if (v.paid && v.sales === si) { var age = Math.floor((ASOF - v.bayar) / DAY / 7); if (age >= 0 && age < 12) wk[age] += v.total; } });
+    var mu = mean(wk); return mu ? sd(wk) / mu : 0;
+  }
+  function renderSales() {
+    var W = cur.W, totJ = 0, totR = 0;
+    cur.A.list.forEach(function (v) { v.items.forEach(function (it) { totJ += it.jual * it.qty; totR += it.p.rek * it.qty; }); });
+    var teamDisc = totR ? (1 - totJ / totR) * 100 : 0;
+    var rows = SALES.map(function (s, si) {
+      var L = cur.A.list.filter(function (v) { return v.sales === si; }), t = L.map(function (v) { return v.total; });
+      var jual = 0, rek = 0;
+      L.forEach(function (v) { v.items.forEach(function (it) { jual += it.jual * it.qty; rek += it.p.rek * it.qty; }); });
+      var tgt = s.target * W.mult, om = sum(t);
+      var est = sum(cur.billed.filter(function (o) { return o.v.sales === si; }).map(function (o) { return o.sisa; }));
+      var expected = tgt * W.L / W.total;
+      return { i: si, n: s.n, om: om, c: L.length, mean: mean(t), cyc: pct(L.map(function (v) { return v.lag; }), 0.5), disc: rek ? (1 - jual / rek) * 100 : 0, rek: rek, cv: weeklyCV(si), tgt: tgt, p: tgt ? om / tgt * 100 : 0, est: est, pace: expected ? om / expected : 1 };
+    }).sort(function (a, b) { return b.om - a.om; });
+    cur.srows = rows; cur.teamDisc = teamDisc;
+    $("#sales").innerHTML = rows.map(function (r, ix) {
+      var hiDisc = r.disc > teamDisc + 2.5, cvCls = r.cv < 0.35 ? "good" : r.cv < 0.55 ? "info" : "bad", cvTxt = r.cv < 0.35 ? "Stabil" : r.cv < 0.55 ? "Cukup stabil" : "Fluktuatif";
+      var over = r.om >= r.tgt, capTxt = over ? "Lewat " + rp(r.om - r.tgt) : "Kurang " + rp(r.tgt - r.om);
+      var pace = W.complete ? "" : '<span class="pl ' + (r.pace >= 0.95 ? "good" : r.pace >= 0.8 ? "amber" : "bad") + '">' + (r.pace >= 0.95 ? "Di jalur" : "Tertinggal " + num((1 - r.pace) * 100, 0) + "%") + "</span>";
+      var tt = "<b>" + r.n + "</b><br>Koefisien variasi omzet mingguan " + num(r.cv, 2) + "<br>Makin kecil makin stabil";
+      return '<div class="srow" data-tip="' + tt + '"><span class="av">' + initials(r.n) + '</span>' +
+        '<div class="sn"><span><b>' + r.n + '</b><span class="sub">' + r.c + " order · rata-rata " + rp(r.mean) + '</span></span><div class="chips">' + pace + (r.est > 0 ? '<span class="pl info">+ Est. ' + rp(r.est) + "</span>" : "") + '<span class="pl">Lunas median ' + num(r.cyc, 0) + ' hari</span><span class="pl ' + (hiDisc ? "amber" : "") + '">' + (hiDisc ? "▲ " : "") + "Diskon " + num(r.disc, 1) + '%</span><span class="pl ' + cvCls + '">' + cvTxt + "</span></div></div>" +
+        '<div class="sb"><div class="trk"><i style="width:' + Math.min(r.p, 100) + '%;' + (ix === 0 ? "background:var(--accent)" : "") + '"></i></div><div class="cap">' + num(r.p, 0) + "% target · " + capTxt + "</div></div>" +
+        '<div class="sv">' + rp(r.om) + "<small>target " + rp(r.tgt) + "</small></div></div>";
+    }).join("");
+    $("#salesNote").innerHTML = '<span class="pl">Diskon rata-rata tim <b>' + num(teamDisc, 1) + '%</b></span><span class="pl amber">▲ 2,5 poin di atas rata-rata tim</span><span class="pl info">Est. = sisa tagihan invoice DP / belum lunas</span>';
+  }
+
+  /* --- kategori --- */
+  function renderCat() {
+    var agg = {};
+    cur.A.list.forEach(function (v) { v.items.forEach(function (it) {
+      var a = agg[it.p.c] || (agg[it.p.c] = { n: it.p.c, om: 0, mg: 0 });
+      a.om += it.jual * it.qty; a.mg += (it.jual - it.p.beli) * it.qty;
+    }); });
+    var arr = Object.keys(agg).map(function (kk) { return agg[kk]; }).sort(function (a, b) { return b.om - a.om; });
+    cur.cats = arr;
+    var tot = sum(arr.map(function (a) { return a.om; })) || 1, mx = arr.length ? arr[0].om : 1;
+    $("#cat").innerHTML = arr.map(function (a, ix) {
+      var mp = a.om ? a.mg / a.om * 100 : 0;
+      return '<div class="row" data-tip="<b>' + esc(a.n) + '</b><br>Omzet ' + rp(a.om) + "<br>Margin " + rp(a.mg) + " (" + num(mp, 1) + '%)"><div class="rname"><span class="rk">' + (ix + 1) + '</span><span class="t">' + esc(a.n) + '</span></div><div class="trk"><i style="width:' + (a.om / mx * 100) + '%"></i></div><div class="rval">' + num(a.om / tot * 100, 0) + "%<small>margin " + num(mp, 0) + "%</small></div></div>";
+    }).join("");
+  }
+
+  /* --- kecepatan invoice lunas --- */
+  function renderLunas() {
+    var M = cur.M, P = cur.MP, lag = M.lag, W = cur.W;
+    var dso = M.A.omzet ? sum(cur.billed.map(function (o) { return o.sisa; })) / (M.A.omzet / W.L) : 0;
+    cur.dso = dso;
+    var over30 = lag.filter(function (x) { return x > 30; }).length;
+    $("#lunasStats").innerHTML = '<span class="pl ' + stat(M.medLunas, TGT.lunas, false)[0] + '">Median <b>' + num(M.medLunas, 0) + ' hari</b></span><span class="pl">Rata-rata <b>' + num(mean(lag), 1) + ' hari</b></span><span class="pl">P90 <b>' + num(M.p90Lunas, 0) + ' hari</b></span><span class="pl good"><b>' + num(M.share7, 0) + '%</b> lunas ≤ 7 hari</span><span class="pl ' + (over30 ? "bad" : "") + '"><b>' + num(lag.length ? over30 / lag.length * 100 : 0, 1) + '%</b> lunas > 30 hari</span><span class="pl info" data-tip="Days Sales Outstanding: sisa tagihan dibagi omzet harian">DSO <b>' + num(dso, 0) + ' hari</b></span>' + delta(M.medLunas, P.medLunas, true, true, "hari");
+    var bins = [{ l: "0–1", lo: 0, hi: 1, c: "var(--accent)" }, { l: "2–3", lo: 2, hi: 3, c: "var(--accent)" }, { l: "4–7", lo: 4, hi: 7, c: "var(--accent)" }, { l: "8–14", lo: 8, hi: 14, c: "var(--s3)" }, { l: "15–30", lo: 15, hi: 30, c: "var(--s4)" }, { l: "> 30", lo: 31, hi: 9999, c: "var(--bad)" }];
+    bins.forEach(function (b) { b.n = lag.filter(function (x) { return x >= b.lo && x <= b.hi; }).length; });
+    var mx = Math.max.apply(null, bins.map(function (b) { return b.n; })) || 1;
+    $("#lunasDist").innerHTML = bins.map(function (b) {
+      return '<div class="col" data-tip="<b>Lunas dalam ' + b.l + ' hari</b><br>' + b.n + " invoice (" + num(lag.length ? b.n / lag.length * 100 : 0, 0) + '%)"><span class="n">' + num(lag.length ? b.n / lag.length * 100 : 0, 0) + '%</span><span class="c">' + b.n + '</span><div class="bar" style="height:' + Math.max(4, b.n / mx * 84) + "px;background:" + b.c + '"></div><span class="b">' + b.l + "</span></div>";
+    }).join("");
+  }
+  function renderConv() {
+    var c = cur.M.created, n = c.length || 1;
+    var st = [["Invoice dibuat", c.length], ["Sudah ditagih (bukan draft)", c.filter(function (v) { return v.status !== "draft"; }).length], ["Ada pembayaran (DP atau lunas)", c.filter(function (v) { return v.paid || v.dp > 0; }).length], ["Lunas", c.filter(function (v) { return v.paid; }).length]];
+    $("#conv").innerHTML = st.map(function (s, ix) {
+      return '<div class="row" data-tip="<b>' + s[0] + '</b><br>' + s[1] + ' invoice"><div class="rname"><span class="rk">' + (ix + 1) + '</span><span class="t">' + s[0] + '</span></div><div class="trk"><i style="width:' + (s[1] / n * 100) + '%"></i></div><div class="rval">' + s[1] + "<small>" + num(s[1] / n * 100, 0) + "%</small></div></div>";
+    }).join("");
+    var dr = c.filter(function (v) { return v.status === "draft"; }).length;
+    $("#convStats").innerHTML = '<span class="pl">Konversi invoice ≥ 14 hari <b>' + num(cur.M.conv, 0) + '%</b></span><span class="pl ' + (dr ? "amber" : "") + '"><b>' + dr + "</b> masih draft</span>";
+  }
+
+  /* --- umur piutang --- */
+  function renderAging() {
+    var bk = [{ l: "0–7 hari", lo: 0, hi: 7 }, { l: "8–14", lo: 8, hi: 14 }, { l: "15–30", lo: 15, hi: 30 }, { l: "> 30", lo: 31, hi: 9999 }];
+    bk.forEach(function (b) { var L = cur.billed.filter(function (o) { return o.age >= b.lo && o.age <= b.hi; }); b.c = L.length; b.s = sum(L.map(function (o) { return o.sisa; })); });
+    var mx = Math.max.apply(null, bk.map(function (b) { return b.s; })) || 1, cols = ["var(--s1)", "var(--s2)", "var(--s3)", "var(--s4)"];
+    $("#aging").innerHTML = bk.map(function (b, ix) {
+      return '<div class="col" data-tip="<b>' + b.l + '</b><br>' + b.c + " invoice<br>Sisa tagihan " + rp(b.s) + '"><span class="n">' + jt(b.s) + '</span><span class="c">' + b.c + ' inv</span><div class="bar" style="height:' + Math.max(4, b.s / mx * 84) + "px;background:" + cols[ix] + '"></div><span class="b">' + b.l + "</span></div>";
+    }).join("");
+    var tot = sum(bk.map(function (b) { return b.s; }));
+    $("#agingStats").innerHTML = '<span class="pl">Total <b>' + rp(tot) + '</b></span><span class="pl ' + (bk[3].s ? "bad" : "") + '"><b>' + num(tot ? bk[3].s / tot * 100 : 0, 0) + "%</b> lewat 30 hari</span>";
+  }
+
+  /* --- OPERASIONAL --- */
+  function renderOps() {
+    var M = cur.M, P = cur.MP, meas = M.meas, W = cur.W;
+    var late = meas.map(function (v) { return Math.round((v.ship - v.plan) / DAY); });
+    var lateOnly = late.filter(function (x) { return x > 0; });
+    var st = meas.length ? stat(M.otd, TGT.otd, true) : ["", "Belum ada data"];
+    $("#otdHero").innerHTML = '<div><div class="eyebrow">Kiriman tepat waktu</div><div class="big">' + (meas.length ? num(M.otd, 0) + "<small>%</small>" : "—") + "</div></div>" +
+      '<div class="chips"><span class="pl ' + st[0] + '">' + st[1] + "</span>" + delta(M.otd, P.otd, false, true) + "</div>" +
+      '<div class="trk mkr" data-tip="Target ' + TGT.otd + '%"><i style="width:' + Math.min(M.otd, 100) + '%;background:var(--accent)"></i><u class="mk" style="left:' + TGT.otd + '%"></u></div>' +
+      '<div class="cap"><b style="color:var(--ink)">' + M.on + '</b> dari <b style="color:var(--ink)">' + meas.length + "</b> kiriman berangkat sesuai tanggal rencana. Target " + TGT.otd + "%.</div>" +
+      '<div class="chips"><span class="pl ' + (M.cover < 85 ? "amber" : "") + '" data-tip="Kiriman yang punya tanggal rencana, dari semua kiriman periode ini">Cakupan data <b>' + num(M.cover, 0) + '%</b></span><span class="pl">' + (M.shipped.length - meas.length - M.held) + ' tanpa tanggal rencana</span><span class="pl info" data-tip="Pembayaran baru masuk setelah tanggal rencana kirim, jadi bukan keterlambatan gudang atau kurir">' + M.held + ' dikecualikan: tertunda pembayaran</span><span class="pl">Rata-rata telat <b>' + (lateOnly.length ? num(mean(lateOnly), 1) : "0") + " hari</b></span></div>";
+
+    var bins = [{ l: "Tepat", t: function (x) { return x <= 0; }, c: "var(--good)" }, { l: "1–2 hr", t: function (x) { return x >= 1 && x <= 2; }, c: "var(--s2)" }, { l: "3–5 hr", t: function (x) { return x >= 3 && x <= 5; }, c: "var(--s3)" }, { l: "> 5 hr", t: function (x) { return x > 5; }, c: "var(--bad)" }];
+    bins.forEach(function (b) { b.n = late.filter(b.t).length; });
+    var mx = Math.max.apply(null, bins.map(function (b) { return b.n; })) || 1;
+    $("#lateDist").innerHTML = bins.map(function (b) {
+      return '<div class="col" data-tip="<b>' + b.l + '</b><br>' + b.n + ' kiriman"><span class="n">' + num(meas.length ? b.n / meas.length * 100 : 0, 0) + '%</span><span class="c">' + b.n + '</span><div class="bar" style="height:' + Math.max(4, b.n / mx * 84) + "px;background:" + b.c + '"></div><span class="b">' + b.l + "</span></div>";
+    }).join("");
+    $("#lateStats").innerHTML = '<span class="pl">Median selisih <b>' + num(pct(late, 0.5), 0) + ' hari</b></span><span class="pl ' + (late.length && pct(late, 0.9) > 3 ? "amber" : "") + '">P90 <b>' + num(pct(late, 0.9), 0) + " hari</b></span>";
+
+    var kr = KUR.map(function (k, ki) {
+      var L = meas.filter(function (v) { return v.kur === ki; }), on = L.filter(function (v) { return v.ship <= v.plan; }).length, lt = L.filter(function (v) { return v.ship > v.plan; }).map(function (v) { return (v.ship - v.plan) / DAY; });
+      return { n: k.n, c: L.length, p: L.length ? on / L.length * 100 : 0, lt: mean(lt) };
+    }).filter(function (x) { return x.c > 0; }).sort(function (a, b) { return b.p - a.p; });
+    cur.kur = kr;
+    $("#kurir").innerHTML = kr.map(function (k, ix) {
+      var s = stat(k.p, TGT.otd, true);
+      return '<div class="row" data-tip="<b>' + k.n + '</b><br>' + k.c + " kiriman terukur<br>Rata-rata telat " + num(k.lt, 1) + ' hari saat telat"><div class="rname"><span class="rk">' + (ix + 1) + '</span><span class="t">' + k.n + "<small>" + k.c + ' kiriman</small></span></div><div class="trk"><i style="width:' + k.p + '%"></i></div><div class="rval">' + num(k.p, 0) + "%<small>" + s[1] + "</small></div></div>";
+    }).join("") || '<div class="cap">Belum ada kiriman terukur pada periode ini.</div>';
+
+    var d1 = pct(M.shipped.map(function (v) { return (v.ready - v.tgl) / DAY; }), 0.5), d2 = pct(M.shipped.map(function (v) { return (v.ship - v.ready) / DAY; }), 0.5), dp = pct(M.shipped.filter(function (v) { return v.plan; }).map(function (v) { return (v.plan - v.tgl) / DAY; }), 0.5);
+    $("#flow").innerHTML = '<div class="flow"><i style="flex:' + Math.max(d1, 0.4) + ';background:var(--s2)">' + num(d1, 0) + ' hr</i><i style="flex:' + Math.max(d2, 0.4) + ';background:var(--accent)">' + num(d2, 0) + ' hr</i></div>' +
+      '<div class="legend"><span><i class="sw" style="background:var(--s2)"></i>Invoice sampai DP/lunas</span><span><i class="sw" style="background:var(--accent)"></i>Sampai dikirim</span></div>' +
+      '<div class="chips"><span class="pl">Total <b>' + num(d1 + d2, 0) + ' hari</b></span><span class="pl info">Janji rata-rata <b>' + num(dp, 0) + ' hari</b></span><span class="pl ' + (d1 + d2 > dp ? "amber" : "good") + '">' + (d1 + d2 > dp ? "Lebih lambat dari janji" : "Lebih cepat dari janji") + "</span></div>" +
+      '<div class="cap">Tahap pertama bergantung pada kecepatan pelanggan membayar, tahap kedua murni kecepatan gudang dan kurir.</div>';
+
+    var ln = inv.filter(function (v) { return v.ready != null && !v.ship && v.plan && Math.max(v.plan, v.ready) < ASOF; }).sort(function (a, b) { return Math.max(a.plan, a.ready) - Math.max(b.plan, b.ready); });
+    cur.lateNow = ln;
+    $("#lateNow").innerHTML = (ln.length ? '<div class="chips" style="margin-bottom:6px"><span class="pl bad"><b>' + ln.length + ' invoice</b> lewat tanggal rencana</span><span class="pl">' + rp(sum(ln.map(function (v) { return v.total; }))) + "</span></div>" : "") + ln.slice(0, 4).map(function (v) {
+      return '<div class="ch"><b>' + esc(CN[v.cust]) + '</b><span class="val">' + rp(v.total) + '</span><span class="sub">Telat ' + Math.round((ASOF - Math.max(v.plan, v.ready)) / DAY) + " hari · rencana " + dstr(v.plan) + (v.ready > v.plan ? ", dibayar " + dstr(v.ready) : "") + " · " + KUR[v.kur].n + " · " + (v.paid ? "Lunas" : "Sudah DP") + "</span></div>";
+    }).join("") || '<div class="cap">Tidak ada invoice yang melewati tanggal rencana kirim.</div>';
+
+    var bySup = SUP.map(function (s, si) { var L = M.pos.filter(function (p) { return p.sup === si; }); return { n: s.n, c: L.length, p: L.length ? L.filter(function (p) { return p.recv <= p.eta; }).length / L.length * 100 : 0, lead: mean(L.map(function (p) { return (p.recv - p.pesan) / DAY; })) }; }).filter(function (x) { return x.c; });
+    var pn = PO.filter(function (p) { return !p.recv && p.eta < ASOF; }).sort(function (a, b) { return a.eta - b.eta; });
+    cur.poLate = pn;
+    $("#poBox").innerHTML = '<div class="chips"><span class="pl ' + (M.poN ? stat(M.poOtd, TGT.po, true)[0] : "") + '">Tepat waktu <b>' + (M.poN ? num(M.poOtd, 0) + "%" : "—") + '</b></span><span class="pl">Lead time <b>' + (M.poN ? num(M.poLead, 0) + " hari" : "—") + '</b></span><span class="pl">' + M.poN + ' PO diterima</span><span class="pl ' + (pn.length ? "bad" : "") + '"><b>' + pn.length + "</b> PO telat sekarang</span></div>" +
+      '<div class="rows plain">' + bySup.map(function (s, ix) { return '<div class="row" data-tip="<b>' + s.n + '</b><br>' + s.c + " PO · rata-rata " + num(s.lead, 0) + ' hari"><div class="rname"><span class="rk">' + (ix + 1) + '</span><span class="t">' + s.n + "<small>" + s.c + ' PO</small></span></div><div class="trk"><i style="width:' + s.p + '%"></i></div><div class="rval">' + num(s.p, 0) + "%<small>" + num(s.lead, 0) + " hari</small></div></div>"; }).join("") + "</div>" +
+      '<div class="chase">' + pn.slice(0, 2).map(function (p) { return '<div class="ch"><b>' + SUP[p.sup].n + '</b><span class="val">' + rp(p.nilai) + '</span><span class="sub">Telat ' + Math.round((ASOF - p.eta) / DAY) + " hari dari estimasi " + dstr(p.eta) + "</span></div>"; }).join("") + "</div>";
+
+    var low = (cur.prodAll || []).map(function (a) { var rate = a.qty / W.L; return { a: a, cover: rate ? a.p.stok / rate : 999 }; }).filter(function (x) { return x.a.qty >= 3 && x.cover < 14; }).sort(function (a, b) { return a.cover - b.cover; });
+    cur.low = low;
+    $("#lowStock").innerHTML = low.slice(0, 5).map(function (x) {
+      return '<div class="ch"><b>' + esc(x.a.p.n) + '</b><span class="val">' + num(Math.max(1, Math.round(x.cover)), 0) + ' hari</span><span class="sub">Stok ' + x.a.p.stok + " · terjual " + x.a.qty + " unit periode ini · stok contoh</span></div>";
+    }).join("") || '<div class="cap">Tidak ada produk laris yang stoknya akan habis dalam 2 minggu.</div>';
+  }
+
+  /* --- PRODUKTIVITAS --- */
+  function renderProduktif() {
+    var M = cur.M, P = cur.MP, wd = M.wd;
+    var rows = SALES.map(function (s, si) {
+      var L = M.A.list.filter(function (v) { return v.sales === si; }), cr = M.created.filter(function (v) { return v.sales === si; }), crM = M.createdM.filter(function (v) { return v.sales === si; }), om = sum(L.map(function (v) { return v.total; }));
+      return { n: s.n, om: om, perWd: om / Math.max(wd, 1), inv: cr.length / Math.max(wd, 1), conv: crM.length ? crM.filter(function (v) { return v.paid; }).length / crM.length * 100 : 0, nM: crM.length, mean: mean(L.map(function (v) { return v.total; })), nCr: cr.length };
+    }).sort(function (a, b) { return b.perWd - a.perWd; });
+    cur.prow = rows;
+    var mx = rows[0] ? rows[0].perWd || 1 : 1, med = pct(rows.map(function (r) { return r.perWd; }), 0.5);
+    $("#prodSales").innerHTML = rows.map(function (r, ix) {
+      var cs = stat(r.conv, TGT.conv, true);
+      return '<div class="srow"><span class="av">' + initials(r.n) + '</span><div class="sn"><span><b>' + r.n + '</b><span class="sub">' + r.nCr + ' invoice dibuat</span></span><div class="chips"><span class="pl">' + num(r.inv, 2) + ' invoice / hari kerja</span><span class="pl ' + cs[0] + '">Konversi ' + num(r.conv, 0) + '%</span><span class="pl">Rata-rata ' + rp(r.mean) + '</span></div></div><div class="sb"><div class="trk"><i style="width:' + (r.perWd / mx * 100) + '%;' + (ix === 0 ? "background:var(--accent)" : "") + '"></i></div><div class="cap">' + num(med ? r.perWd / med * 100 : 0, 0) + '% dari median tim</div></div><div class="sv">' + rp(r.perWd) + '<small>per hari kerja</small></div></div>';
+    }).join("");
+    $("#prodSalesNote").innerHTML = '<span class="pl"><b>' + wd + '</b> hari kerja (Sen–Sab)</span><span class="pl">Omzet per sales per hari kerja <b>' + rp(M.omzetWd) + "</b></span>" + delta(M.omzetWd, P.omzetWd);
+
+    var gajiK = sum(KAR.map(function (k, kx) { return k.g * M.hd[kx]; })), gajiS = sum(SALES.map(function (s) { return s.gp * M.L / 30; })), om = M.A.omzet || 1;
+    var orang = KAR.length + SALES.length;
+    function line(l, v, sub) { return '<div class="stg"><i class="dot" style="background:var(--accent)"></i><div><b>' + l + '</b><div class="sub">' + sub + '</div></div><div class="val">' + rp(v) + "<small>" + num(v / om * 100, 1) + "% omzet</small></div></div>"; }
+    var st = stat(M.laborRatio, TGT.labor, false);
+    $("#cost").innerHTML = '<div class="eyebrow">Total biaya tenaga kerja</div><div class="big">' + num(M.laborRatio, 1) + '<small>% omzet</small></div><div class="chips"><span class="pl ' + st[0] + '">' + st[1] + '</span><span class="pl">Target ≤ ' + TGT.labor + "%</span>" + delta(M.laborRatio, P.laborRatio, true, true) + "</div>" +
+      "<div>" + line("Gaji karyawan harian", gajiK, M.hdSum + " hari hadir") + line("Gaji pokok sales tetap", gajiS, SALES.filter(function (s) { return s.gp; }).length + " sales tetap") + line("Komisi tim (hanya Owner)", M.komisi, "total tim, tanpa rincian per sales") + "</div>" +
+      '<div class="chips"><span class="pl info">Omzet per kepala <b>' + rp(M.A.omzet / orang) + '</b></span><span class="pl">' + orang + " orang aktif</span></div>";
+
+    var tot = Math.max(wd, 1);
+    $("#teamStats").innerHTML = '<span class="pl">Omzet per orang-hari <b>' + rp(M.perOrangHari) + '</b></span><span class="pl">Pengiriman per orang-hari <b>' + num(M.kirimPerOrangHari, 2) + '</b></span><span class="pl">' + M.shipped.length + " kiriman · " + M.hdSum + " hari hadir</span>";
+    $("#team").innerHTML = KAR.map(function (k, kx) {
+      var h = M.hd[kx], p = h / tot * 100;
+      return '<div class="row" data-tip="<b>' + k.n + '</b><br>' + k.j + "<br>Biaya " + rp(k.g * h) + '"><div class="rname"><span class="rk">' + initials(k.n) + '</span><span class="t">' + k.n + "<small>" + k.j + '</small></span></div><div class="trk"><i style="width:' + p + '%"></i></div><div class="rval">' + h + " hari<small>" + num(p, 0) + "% kehadiran</small></div></div>";
+    }).join("");
+
+    var cc = {};
+    PRODS.forEach(function (p) { var c = cc[p.c] || (cc[p.c] = { n: p.c, v: 0, cogs: 0 }); c.v += p.stok * p.beli; });
+    M.A.list.forEach(function (v) { v.items.forEach(function (it) { cc[it.p.c].cogs += it.p.beli * it.qty; }); });
+    var arr = Object.keys(cc).map(function (kk) { var c = cc[kk]; c.doh = c.cogs ? c.v / (c.cogs / M.L) : 999; return c; }).sort(function (a, b) { return b.doh - a.doh; });
+    cur.invCat = arr;
+    var mxd = Math.min(Math.max.apply(null, arr.map(function (c) { return c.doh; })), 400) || 1, sd2 = stat(M.doh, TGT.doh, false);
+    $("#invStats").innerHTML = '<span class="pl ' + sd2[0] + '">Hari persediaan <b>' + num(M.doh, 0) + '</b></span><span class="pl">Perputaran <b>' + num(M.turnover, 1) + '×/tahun</b></span><span class="pl">GMROI <b>' + num(M.gmroi, 2) + '</b></span><span class="pl info">Modal tertahan <b>' + rp(STOK_VALUE) + "</b></span>";
+    $("#invCat").innerHTML = arr.map(function (c, ix) {
+      var s = stat(c.doh, TGT.doh, false);
+      return '<div class="row" data-tip="<b>' + esc(c.n) + '</b><br>Nilai stok ' + rp(c.v) + "<br>HPP periode " + rp(c.cogs) + '"><div class="rname"><span class="rk">' + (ix + 1) + '</span><span class="t">' + esc(c.n) + "<small>" + rp(c.v) + ' stok</small></span></div><div class="trk"><i style="width:' + Math.min(c.doh / mxd * 100, 100) + '%"></i></div><div class="rval">' + (c.doh > 365 ? "> 365" : num(c.doh, 0)) + " hari<small>" + s[1] + "</small></div></div>";
+    }).join("");
+  }
+
+  /* --- potensi penjualan (DP / belum lunas / draft) --- */
+  function renderPipe() {
+    var st = { dp: { n: 0, v: 0, dpv: 0 }, unpaid: { n: 0, v: 0, dpv: 0 }, draft: { n: 0, v: 0, dpv: 0 } };
+    cur.out.forEach(function (o) { var s = st[o.stage]; s.n++; s.v += o.sisa; s.dpv += o.v.dp; });
+    cur.st = st;
+    var cols = { dp: "var(--ink)", unpaid: "var(--accent)", draft: "var(--s1)" }, keys = ["dp", "unpaid", "draft"], W = cur.W;
+    var h = '<div><div class="eyebrow">Sisa tagihan + draft</div><div class="big" style="font-size:1.9rem">' + rp(cur.pot) + ' <small>· ' + cur.out.length + ' invoice</small></div><div style="margin-top:4px;font-size:12px;color:var(--muted)">Estimasi berbobot peluang lunas <b style="color:var(--accent-700)">' + rp(cur.wpot) + "</b></div></div>";
+    h += '<div class="stack">' + keys.map(function (k) { return '<i style="flex:' + Math.max(st[k].v, 1) + ";background:" + cols[k] + '" data-tip="<b>' + STAGE_LB[k] + "</b><br>" + st[k].n + " invoice · " + rp(st[k].v) + '"></i>'; }).join("") + "</div>";
+    h += "<div>" + keys.map(function (k) {
+      var s = st[k], sub = k === "dp" ? "DP diterima " + rp(s.dpv) : k === "unpaid" ? "sudah ditagih, belum ada pembayaran" : "belum dikirim ke pelanggan";
+      return '<div class="stg"><i class="dot" style="background:' + cols[k] + (k === "draft" ? ";box-shadow:inset 0 0 0 1px var(--line)" : "") + '"></i><div><b>' + STAGE_LB[k] + '</b> <span class="pl tiny">peluang ' + num(PROB[k] * 100, 0) + '%</span><div class="sub">' + s.n + " invoice · " + sub + '</div></div><div class="val">' + rp(s.v) + "<small>berbobot " + rp(s.v * PROB[k]) + "</small></div></div>";
+    }).join("") + "</div>";
+    if (!W.complete) {
+      var tgt = cur.tgt, real = cur.A.omzet, proj = real + cur.wpot, r1 = tgt ? real / tgt * 100 : 0, r2 = tgt ? Math.min(cur.wpot / tgt * 100, Math.max(0, 100 - r1)) : 0;
+      h += '<div class="proj"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>Proyeksi ' + labelOf(SEL) + '</b><span><b>' + rp(proj) + "</b> · " + num(tgt ? proj / tgt * 100 : 0, 0) + "% target</span></div>" +
+        '<div class="trk"><i style="width:' + Math.min(r1, 100) + '%" data-tip="Lunas ' + rp(real) + '"></i><i style="width:' + r2 + '%;background:var(--accent)" data-tip="Potensi berbobot ' + rp(cur.wpot) + '"></i></div>' +
+        '<div class="legend"><span><i class="sw" style="background:var(--ink)"></i>Sudah lunas ' + rp(real) + '</span><span><i class="sw" style="background:var(--accent)"></i>Potensi berbobot ' + rp(cur.wpot) + "</span></div></div>";
+    } else {
+      h += '<div class="proj"><span class="cap">Proyeksi hanya tampil untuk periode yang masih berjalan. Potensi di atas adalah posisi invoice per ' + dfull(ASOF) + ".</span></div>";
+    }
+    var chase = cur.billed.slice().sort(function (a, b) { return b.sisa - a.sisa; }).slice(0, 4);
+    h += '<div><div class="eyebrow" style="margin-bottom:4px">Perlu dikejar</div><div class="chase">' + chase.map(function (o) {
+      return '<div class="ch"><b>' + esc(CN[o.v.cust]) + '</b><span class="val">' + rp(o.sisa) + '</span><span class="sub">' + SALES[o.v.sales].n + " · umur " + o.age + " hari" + (o.stage === "dp" ? " · DP " + rp(o.v.dp) : "") + "</span></div>";
+    }).join("") + "</div></div>";
+    $("#pipe").innerHTML = h;
+  }
+
+  /* --- statistik inferensial untuk rekomendasi: uji beda, rentang 95%, regresi --- */
+  var TT = [12.71, 4.30, 3.18, 2.78, 2.57, 2.45, 2.36, 2.31, 2.26, 2.23, 2.20, 2.18, 2.16, 2.14, 2.13, 2.12, 2.11, 2.10, 2.09, 2.09, 2.08, 2.07, 2.07, 2.06, 2.06, 2.06, 2.05, 2.05, 2.05, 2.04];
+  function tcrit(df) { df = Math.round(df); return df < 1 ? 12.71 : df <= 30 ? TT[df - 1] : df <= 120 ? 1.98 : 1.96; }
+  function normCdf(z) {
+    var t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2);
+    var p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return z > 0 ? 1 - p : p;
+  }
+  function svar(a) { if (a.length < 2) return 0; var m = mean(a); return sum(a.map(function (x) { return (x - m) * (x - m); })) / (a.length - 1); }
+  function welch(a, b) {
+    var na = a.length, nb = b.length, ma = mean(a), mb = mean(b), va = svar(a) / na, vb = svar(b) / nb, se = Math.sqrt(va + vb) || 1e-9;
+    var df = (va + vb) * (va + vb) / ((va * va) / Math.max(na - 1, 1) + (vb * vb) / Math.max(nb - 1, 1)), t = tcrit(df), diff = ma - mb;
+    return { na: na, nb: nb, ma: ma, mb: mb, diff: diff, lo: diff - t * se, hi: diff + t * se, p: 2 * (1 - normCdf(Math.abs(diff / se))) };
+  }
+  function wilson(k, n) {
+    var z = 1.96, p = k / n, d = 1 + z * z / n, c = (p + z * z / (2 * n)) / d, h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
+    return [Math.max(0, c - h) * 100, Math.min(1, c + h) * 100];
+  }
+  function twoProp(k1, n1, k2, n2) {
+    var p = (k1 + k2) / (n1 + n2), se = Math.sqrt(p * (1 - p) * (1 / n1 + 1 / n2)) || 1e-9;
+    return 2 * (1 - normCdf(Math.abs((k1 / n1 - k2 / n2) / se)));
+  }
+  function ols(y) {
+    var n = y.length, xb = (n - 1) / 2, yb = mean(y), sxx = 0, sxy = 0, i, sse = 0;
+    for (i = 0; i < n; i++) { sxx += (i - xb) * (i - xb); sxy += (i - xb) * (y[i] - yb); }
+    var b = sxy / sxx, a = yb - b * xb;
+    for (i = 0; i < n; i++) { var r = y[i] - (a + b * i); sse += r * r; }
+    var s = Math.sqrt(sse / Math.max(n - 2, 1)), t = tcrit(n - 2), seb = s / Math.sqrt(sxx);
+    return { n: n, b: b, blo: b - t * seb, bhi: b + t * seb };
+  }
+  var MOM = [];
+  (function () { var z; for (z = 0; z <= mk(ASOF) - mk(START); z++) MOM.push(0); for (z = 0; z < NDAYS; z++) MOM[mk(START + z * DAY) - mk(START)] += omz[z]; })();
+  function sgn(v) { return (v >= 0 ? "+" : "−") + num(Math.abs(v), 0) + "%"; }
+  function fp(p) { return p < 0.001 ? "< 0,001" : num(p, 3); }
+
+  /* --- rekomendasi tindakan, berbasis statistik inferensial --- */
+  var CONF = { 3: ["good", "Yakin"], 2: ["info", "Cukup yakin"], 1: ["amber", "Belum pasti"], 0: ["", "Fakta hari ini"] };
+  function renderRecs() {
+    var A = cur.A, W = cur.W, M = cur.M, P = cur.MP, tgt = cur.tgt, recs = [], ix0 = dayIx(W.s), ix1 = dayIx(W.e), jx0 = dayIx(W.ps), jx1 = dayIx(W.pe);
+    // conf: 3 yakin (hampir pasti bukan kebetulan), 2 cukup yakin, 1 belum pasti, 0 fakta (bukan perkiraan)
+    function add(g, pri, conf, tag, title, ev, act, basis, impact) { recs.push({ g: g, pri: pri, conf: conf, tag: tag, title: title, ev: ev, act: act, basis: basis, impact: impact }); }
+    function cp(p) { return p < 0.05 ? 3 : p < 0.10 ? 2 : 1; }
+    // persentase vs target: yakin kalau seluruh rentang 95% ada di bawah target, belum pasti kalau rentang melewati target
+    function wrec(g, tag, k, n, T, o) {
+      if (n < 10) return;
+      var p = k / n * 100, w = wilson(k, n), bad = w[1] < T;
+      if (!bad && p >= T) return;
+      add(g, bad ? o.pri : 2, bad ? 3 : 1, tag, bad ? o.tBad : o.tWarn,
+        "Dari <b>" + n + "</b> " + o.unit + ", <b>" + k + "</b> " + o.ok + " (<b>" + num(p, 0) + "%</b>). Angka sebenarnya kemungkinan antara <b>" + num(w[0], 0) + "%</b> dan <b>" + num(w[1], 0) + "%</b>, target " + num(T, 0) + "%." + (o.extra || ""),
+        bad ? o.aBad : o.aWarn, "Rentang kepercayaan 95% (Wilson). " + (bad ? "Seluruh rentang ada di bawah target, jadi ini bukan kebetulan." : "Rentang masih menyentuh target, jadi belum pasti. Mulai perbaiki sambil menunggu data bertambah."), o.impact);
+    }
+
+    // ---- SALES
+    if (!W.complete) {
+      var mm = Math.min(W.L, 28), dd = omz.slice(ix1 - mm + 1, ix1 + 1), dm = mean(dd), dsd = Math.sqrt(svar(dd)), left = W.left, need = tgt - A.omzet, mu = dm * left, sg2 = dsd * Math.sqrt(left), fin = A.omzet + mu;
+      var pT = need <= 0 ? 1 : sg2 > 0 ? 1 - normCdf((need - mu) / sg2) : (mu >= need ? 1 : 0), flo = Math.max(A.omzet, fin - 1.96 * sg2), fhi = fin + 1.96 * sg2;
+      var evT = "Perkiraan omzet akhir <b>" + rp(fin) + "</b>, kemungkinan antara <b>" + rp(flo) + "</b> dan <b>" + rp(fhi) + "</b>. Target <b>" + rp(tgt) + "</b>.";
+      if (pT < 0.75) add("sales", pT < 0.35 ? 3 : 2, pT < 0.15 ? 3 : pT < 0.35 ? 2 : 1, "Target", "Peluang capai target " + labelOf(SEL) + " hanya " + (pT < 0.005 ? "kurang dari 1" : num(pT * 100, 0)) + "%",
+        evT, "Butuh <b>" + rp(need / left) + " per hari</b> untuk " + left + " hari ke depan, saat ini rata-rata " + rp(dm) + " per hari. Tagih invoice DP lebih dulu, lalu hubungi pelanggan langganan.",
+        "Perkiraan dari laju harian " + mm + " hari terakhir × " + left + " hari tersisa, rentang 95%.", rp(Math.max(need - mu, 0)));
+      else add("sales", 1, 2, "Target", "Target " + labelOf(SEL) + " kemungkinan tercapai (peluang " + num(pT * 100, 0) + "%)", evT, "Pertahankan laju dan tagih invoice terbuka supaya perkiraan menjadi omzet nyata.", "Perkiraan dari laju harian " + mm + " hari terakhir, rentang 95%.");
+    }
+    if (jx0 >= 0 && jx1 - jx0 >= 7 && ix1 - ix0 >= 7) {
+      var w1 = welch(omz.slice(ix0, ix1 + 1), omz.slice(jx0, jx1 + 1)), pc = w1.mb ? w1.diff / w1.mb * 100 : 0, pl = w1.mb ? w1.lo / w1.mb * 100 : 0, ph = w1.mb ? w1.hi / w1.mb * 100 : 0;
+      if (w1.p < 0.05 && w1.diff < 0) add("sales", 3, 3, "Omzet turun", "Omzet turun nyata " + num(Math.abs(pc), 0) + "% dari periode lalu",
+        "Ini bukan naik-turun biasa. Selisih sebenarnya kemungkinan antara <b>" + sgn(pl) + "</b> dan <b>" + sgn(ph) + "</b>.", "Cek pelanggan besar yang berhenti order dan produk yang penjualannya turun.",
+        "Uji beda omzet harian dua periode (Welch), p = " + fp(w1.p) + ".", rp(Math.abs(w1.diff) * W.L));
+      else if (w1.p < 0.05) add("sales", 1, 3, "Omzet naik", "Omzet naik nyata " + num(pc, 0) + "% dari periode lalu",
+        "Kenaikan ini terlalu besar untuk sekadar kebetulan. Selisih sebenarnya kemungkinan antara <b>" + sgn(pl) + "</b> dan <b>" + sgn(ph) + "</b>.", "Cari tahu apa yang berhasil (pelanggan, produk, atau promo) lalu ulangi.", "Uji beda omzet harian dua periode (Welch), p = " + fp(w1.p) + ".");
+    }
+    var last = mk(W.e) - mk(START) - (W.complete ? 0 : 1), ym = MOM.slice(Math.max(0, last - 11), last + 1);
+    if (ym.length >= 6) {
+      var rg = ols(ym);
+      if (rg.bhi < 0) add("sales", 3, 3, "Tren turun", "Omzet bulanan menurun terus", "Turun rata-rata <b>" + jt(Math.abs(rg.b)) + " per bulan</b> selama " + rg.n + " bulan terakhir (kemungkinan antara " + jt(Math.abs(rg.bhi)) + " dan " + jt(Math.abs(rg.blo)) + " per bulan).",
+        "Cari pelanggan atau produk yang berhenti sebelum penurunan makin dalam.", "Regresi linear omzet bulanan, rentang 95% tidak melewati nol.");
+      else if (rg.blo > 0) add("sales", 1, 3, "Tren naik", "Omzet bulanan naik terus", "Naik rata-rata <b>" + jt(rg.b) + " per bulan</b> selama " + rg.n + " bulan terakhir (kemungkinan antara " + jt(rg.blo) + " dan " + jt(rg.bhi) + " per bulan).",
+        "Pastikan stok dan tim siap mengikuti kenaikan ini.", "Regresi linear omzet bulanan, rentang 95% tidak melewati nol.");
+    }
+    var lagAll = inv.filter(function (v) { return v.paid && v.bayar >= ASOF - 365 * DAY; }).map(function (v) { return v.lag; }), lim = Math.max(Math.ceil(pct(lagAll, 0.95)), 14);
+    var late = cur.billed.filter(function (o) { return o.age > lim; }).sort(function (a, b) { return b.sisa - a.sisa; });
+    if (late.length) add("sales", 3, 3, "Piutang", late.length + " invoice belum lunas lewat batas wajar",
+      "95% invoice biasanya lunas dalam <b>" + lim + " hari</b>. Yang ini sudah lebih lama dan totalnya <b>" + rp(sum(late.map(function (o) { return o.sisa; }))) + "</b>: " + late.slice(0, 3).map(function (o) { return esc(CN[o.v.cust]) + " (" + rp(o.sisa) + ", " + o.age + " hari)"; }).join(", ") + ".",
+      "Hubungi hari ini mulai dari nilai terbesar. Tunda diskon atau pengiriman baru untuk pelanggan ini sampai lunas.", "Batas wajar = persentil ke-95 waktu lunas dari " + lagAll.length + " invoice 12 bulan terakhir.", rp(sum(late.map(function (o) { return o.sisa; }))));
+    wrec("sales", "Kecepatan bayar", M.lag.filter(function (x) { return x <= 7; }).length, M.lag.length, 50, { pri: 3, unit: "invoice lunas", ok: "dilunasi dalam 7 hari",
+      tBad: "Pelanggan membayar lebih lambat dari target", tWarn: "Kecepatan bayar pelanggan mulai mengkhawatirkan",
+      aBad: "Minta DP di awal untuk pelanggan yang biasa membayar lambat, dan jadwalkan pengingat H+3 dan H+7 setelah invoice terkirim.", aWarn: "Pasang pengingat pembayaran H+3 dan H+7 supaya tidak makin lambat.", extra: " Target: minimal separuh invoice lunas dalam 7 hari." });
+    wrec("sales", "Invoice tidak jadi bayar", M.createdM.filter(function (v) { return v.paid; }).length, M.createdM.length, TGT.conv, { pri: 3, unit: "invoice berumur 14 hari lebih", ok: "sudah lunas",
+      tBad: "Terlalu banyak invoice yang tidak berujung pembayaran", tWarn: "Persentase invoice yang jadi bayar mulai turun di bawah target",
+      aBad: "Tinjau invoice yang mengendap sebagai Draft atau belum dibayar, lalu follow-up satu per satu.", aWarn: "Follow-up invoice Draft lebih cepat sebelum jadi mengendap." });
+
+    var dsc = {};
+    A.list.forEach(function (v) { var rk = sum(v.items.map(function (it) { return it.p.rek * it.qty; })), jl = sum(v.items.map(function (it) { return it.jual * it.qty; })); (dsc[v.sales] = dsc[v.sales] || []).push(rk ? (1 - jl / rk) * 100 : 0); });
+    SALES.forEach(function (sl, si) {
+      var a = dsc[si] || [], rest = [], kk; for (kk in dsc) if (+kk !== si) rest = rest.concat(dsc[kk]);
+      if (a.length < 8 || rest.length < 8) return;
+      var w2 = welch(a, rest);
+      if (w2.diff > 0 && w2.p < 0.10) {
+        var rek = sum(A.list.filter(function (v) { return v.sales === si; }).map(function (v) { return sum(v.items.map(function (it) { return it.p.rek * it.qty; })); }));
+        add("sales", 2, cp(w2.p), "Diskon", sl.n + " memberi diskon nyata lebih besar dari sales lain",
+          "Rata-rata diskon <b>" + num(w2.ma, 1) + "%</b> dibanding <b>" + num(w2.mb, 1) + "%</b> sales lain. Selisih sebenarnya kemungkinan antara " + num(w2.lo, 1) + " dan " + num(w2.hi, 1) + " poin.",
+          "Minta persetujuan Manager untuk diskon di atas rata-rata tim. Menahan diskon ke rata-rata tim menambah margin sekitar <b>" + rp(w2.diff / 100 * rek) + "</b>.",
+          "Uji beda rata-rata diskon per invoice (Welch), p = " + fp(w2.p) + ", " + w2.na + " invoice vs " + w2.nb + ".", rp(w2.diff / 100 * rek));
+      }
+    });
+    var lines = {}, allL = [];
+    A.list.forEach(function (v) { v.items.forEach(function (it) { var mg = (it.jual - it.p.beli) / it.jual * 100, o = lines[it.p.n] || (lines[it.p.n] = { p: it.p, a: [], om: 0 }); o.a.push(mg); o.om += it.jual * it.qty; allL.push({ n: it.p.n, m: mg }); }); });
+    var lowM = Object.keys(lines).map(function (kk) {
+      var o = lines[kk], rest = allL.filter(function (x) { return x.n !== kk; }).map(function (x) { return x.m; });
+      return { o: o, w: o.a.length >= 8 && rest.length >= 8 ? welch(o.a, rest) : null };
+    }).filter(function (x) { return x.w && x.w.diff < -3 && x.w.p < 0.10; }).sort(function (a, b) { return b.o.om - a.o.om; }).slice(0, 2);
+    lowM.forEach(function (x) {
+      add("sales", 2, cp(x.w.p), "Margin", x.o.p.n + ": untungnya nyata lebih tipis dari produk lain",
+        "Margin rata-rata <b>" + num(x.w.ma, 1) + "%</b> dibanding <b>" + num(x.w.mb, 1) + "%</b> produk lain, padahal omzetnya <b>" + rp(x.o.om) + "</b>.",
+        "Naikkan Harga Minimum atau batasi diskon untuk produk ini. Kenaikan 2 poin margin menambah sekitar <b>" + rp(x.o.om * 0.02) + "</b>.", "Uji beda margin per baris penjualan (Welch), p = " + fp(x.w.p) + ", " + x.w.na + " baris.", rp(x.o.om * 0.02));
+    });
+    var cs = {};
+    inv.forEach(function (v) { if (v.paid) (cs[v.cust] = cs[v.cust] || []).push(v); });
+    var dorm = Object.keys(cs).map(function (kk) {
+      var ds = cs[kk].map(function (v) { return v.bayar; }).sort(function (a, b) { return a - b; }), gaps = [], z;
+      for (z = 1; z < ds.length; z++) gaps.push((ds[z] - ds[z - 1]) / DAY);
+      return { id: +kk, n: ds.length, om: sum(cs[kk].map(function (v) { return v.total; })), gap: Math.round((ASOF - ds[ds.length - 1]) / DAY), g: mean(gaps), s: Math.sqrt(svar(gaps)), ng: gaps.length };
+    }).filter(function (x) { return x.ng >= 3 && x.gap > 30 && x.gap > x.g + 2 * x.s; }).sort(function (a, b) { return b.om - a.om; });
+    if (dorm.length) add("sales", 2, 2, "Pelanggan", dorm.length + " pelanggan langganan jauh lebih lama dari biasanya tidak order",
+      dorm.slice(0, 3).map(function (x) { return "<b>" + esc(CN[x.id]) + "</b> (biasanya order tiap " + num(x.g, 0) + " hari, sekarang " + x.gap + " hari, total " + rp(x.om) + ")"; }).join(", ") + ".",
+      "Minta Sales pemilik pelanggan menghubungi dengan penawaran produk yang dulu dibeli. Pelanggan lama lebih murah dilayani daripada mencari yang baru.", "Dibandingkan dengan kebiasaan order tiap pelanggan: jeda sekarang melebihi rata-rata jeda + 2 simpangan baku.");
+
+    // ---- OPERASIONAL
+    wrec("ops", "Ketepatan kirim", M.on, M.meas.length, TGT.otd, { pri: 3, unit: "kiriman", ok: "tepat waktu", tBad: "Ketepatan kirim di bawah target", tWarn: "Ketepatan kirim mulai di bawah target",
+      aBad: "Konfirmasi ulang jadwal ke pelanggan sebelum hari kirim, dan evaluasi penugasan kurir untuk rute atau barang berat.", aWarn: "Konfirmasi jadwal kirim ke pelanggan sehari sebelumnya." });
+    var byK = {};
+    M.meas.forEach(function (v) { var c = byK[v.kur] || (byK[v.kur] = { k: 0, n: 0 }); c.n++; if (v.ship <= v.plan) c.k++; });
+    KUR.forEach(function (kr, ki) {
+      var c = byK[ki]; if (!c || c.n < 8) return;
+      var K = M.on - c.k, N = M.meas.length - c.n; if (N < 8) return;
+      var pv = twoProp(c.k, c.n, K, N);
+      if (c.k / c.n < K / N && pv < 0.10) add("ops", 2, cp(pv), "Kurir", kr.n + " nyata lebih sering telat dibanding kurir lain",
+        "Tepat waktu <b>" + num(c.k / c.n * 100, 0) + "%</b> (" + c.k + " dari " + c.n + " kiriman) dibanding <b>" + num(K / N * 100, 0) + "%</b> untuk kurir lain.",
+        "Pindahkan kiriman yang dijanjikan cepat ke kurir lain, dan minta " + kr.n + " menjelaskan penyebab telatnya.", "Uji beda dua persentase, p = " + fp(pv) + ".");
+    });
+    if (cur.lateNow && cur.lateNow.length) add("ops", 3, 0, "Telat kirim", cur.lateNow.length + " invoice sudah melewati tanggal rencana kirim",
+      "Nilai <b>" + rp(sum(cur.lateNow.map(function (v) { return v.total; }))) + "</b>, tertua " + Math.round((ASOF - Math.max(cur.lateNow[0].plan, cur.lateNow[0].ready)) / DAY) + " hari: " + cur.lateNow.slice(0, 2).map(function (v) { return esc(CN[v.cust]); }).join(", ") + ".",
+      "Kirim hari ini atau hubungi pelanggan untuk jadwal ulang. Pelanggan yang sudah membayar paling sensitif terhadap keterlambatan.", "Dihitung dari data hari ini, bukan perkiraan.", rp(sum(cur.lateNow.map(function (v) { return v.total; }))));
+    if (cur.poLate && cur.poLate.length) add("ops", 2, 0, "Supplier", cur.poLate.length + " pesanan ke supplier melewati estimasi kedatangan",
+      cur.poLate.slice(0, 2).map(function (p) { return "<b>" + SUP[p.sup].n + "</b> (" + rp(p.nilai) + ", telat " + Math.round((ASOF - p.eta) / DAY) + " hari)"; }).join(", ") + ".",
+      "Hubungi supplier untuk kepastian tanggal, dan beri tahu Sales produk mana yang tertunda supaya tidak dijanjikan ke pelanggan.", "Dihitung dari data hari ini, bukan perkiraan.");
+    wrec("ops", "Supplier", M.poN ? M.pos.filter(function (p) { return p.recv <= p.eta; }).length : 0, M.poN, TGT.po, { pri: 2, unit: "pesanan supplier", ok: "datang tepat waktu", tBad: "Supplier sering terlambat", tWarn: "Ketepatan supplier mulai di bawah target",
+      aBad: "Tambahkan cadangan 3 hari pada estimasi untuk supplier yang sering telat, atau siapkan supplier cadangan untuk barang laris.", aWarn: "Beri cadangan waktu pada barang laris yang dipesan dari supplier ini." });
+    if (cur.low && cur.low.length) add("ops", 3, 0, "Stok", "Stok " + cur.low.length + " produk laris diperkirakan habis dalam 2 minggu",
+      cur.low.slice(0, 3).map(function (x) { return "<b>" + esc(x.a.p.n) + "</b> (stok " + x.a.p.stok + ", habis sekitar " + Math.max(1, Math.round(x.cover)) + " hari lagi)"; }).join(", ") + ". Stok memakai angka contoh.",
+      "Buat Purchase Order sekarang supaya tidak kehilangan penjualan. Waktu kedatangan supplier rata-rata " + num(M.poLead || 10, 0) + " hari.", "Dihitung dari kecepatan jual dan stok contoh, bukan uji statistik.");
+
+    // ---- PRODUKTIVITAS
+    var paidAll = M.createdM.filter(function (v) { return v.paid; }).length;
+    (cur.prow || []).forEach(function (r) {
+      if (r.nM < 8 || M.createdM.length - r.nM < 8) return;
+      var k = Math.round(r.conv / 100 * r.nM), K = paidAll - k, N = M.createdM.length - r.nM, pv = twoProp(k, r.nM, K, N);
+      if (k / r.nM < K / N && pv < 0.10) add("prod", 2, cp(pv), "Konversi", r.n + ": invoice yang jadi bayar nyata lebih rendah dari sales lain",
+        "<b>" + num(k / r.nM * 100, 0) + "%</b> (" + k + " dari " + r.nM + " invoice) dibanding <b>" + num(K / N * 100, 0) + "%</b> sales lain.",
+        "Dampingi penutupan transaksi dan tinjau invoice yang mengendap sebagai Draft. Invoice yang tidak jadi membuang waktu kerja Sales.", "Uji beda dua persentase, p = " + fp(pv) + ".");
+    });
+    if (M.laborRatio > TGT.labor) add("prod", M.laborRatio > TGT.labor * 1.3 ? 3 : 2, 0, "Biaya", "Biaya tenaga kerja " + num(M.laborRatio, 1) + "% dari omzet (target " + TGT.labor + "%)",
+      "Total <b>" + rp(M.labor) + "</b> untuk omzet " + rp(A.omzet) + (P.laborRatio ? ", periode lalu " + num(P.laborRatio, 1) + "%." : "."),
+      "Gaji pokok dan gaji harian bersifat tetap, jadi persentasenya turun saat omzet naik. Tinjau jam kerja karyawan harian dan komisi per kategori produk.", "Dihitung dari data periode ini, bukan uji statistik.");
+    if (M.doh > TGT.doh) add("prod", M.doh > TGT.doh * 1.5 ? 3 : 2, 0, "Persediaan", "Stok bertahan " + num(M.doh, 0) + " hari, di atas target " + TGT.doh,
+      "Modal tertahan <b>" + rp(STOK_VALUE) + "</b>.", "Kurangi pembelian kategori yang lambat laku dan jalankan Flash Sale untuk melepas stok lama.", "Dihitung dari data periode ini, bukan uji statistik.", rp(STOK_VALUE));
+
+    recs.sort(function (a, b) { return b.pri - a.pri || b.conf - a.conf; });
+    var hi = recs.filter(function (r) { return r.pri === 3; }).length, sure = recs.filter(function (r) { return r.conf === 3; }).length;
+    $("#recMeta").textContent = recs.length + " rekomendasi · " + sure + " yakin secara statistik · " + hi + " prioritas tinggi";
+    var f = RG === "all" ? recs : recs.filter(function (r) { return r.g === RG; });
+    var shown = SHOW_ALL ? f : f.slice(0, 5), cls = { 3: "bad", 2: "amber", 1: "info" }, lb = { 3: "Tinggi", 2: "Sedang", 1: "Info" }, gl = { sales: "Sales", ops: "Operasional", prod: "Produktivitas" };
+    $("#recs").innerHTML = shown.map(function (r) {
+      return '<li class="rec"><div class="tg"><span class="pl ' + cls[r.pri] + '" data-tip="Prioritas ' + lb[r.pri] + '">' + r.tag + "</span><small>" + gl[r.g] + '</small></div><div><b class="tt">' + r.title + '</b><div class="ev">' + r.ev + '</div><div class="act"><span>Tindakan</span>' + r.act + "</div>" +
+        '<div class="basis"><span class="pl tiny ' + CONF[r.conf][0] + '">' + CONF[r.conf][1] + "</span><span>" + r.basis + "</span></div></div>" +
+        (r.impact ? '<span class="pl impact warn" data-tip="Perkiraan nilai yang terlibat">± ' + r.impact + "</span>" : "<span></span>") + "</li>";
+    }).join("") || '<li class="cap">Tidak ada rekomendasi pada kelompok ini untuk periode ini.</li>';
+    var more = $("#more");
+    more.hidden = f.length <= 5;
+    more.textContent = SHOW_ALL ? "Tampilkan lebih sedikit" : "Lihat semua " + f.length + " rekomendasi";
+  }
+
+  /* ---------- events ---------- */
+  function wire(sel, attr, onPick) {
+    var box = $(sel), btns = box.querySelectorAll("button");
+    btns.forEach(function (b, ix) {
+      b.addEventListener("click", function () {
+        btns.forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+        box.style.setProperty("--i", ix);
+        onPick(b.getAttribute(attr), ix);
+      });
+    });
+  }
+  var TABS = ["ringkasan", "sales", "ops", "prod"];
+  function showTab(t) {
+    TAB = t;
+    TABS.forEach(function (x) { $("#t-" + x).hidden = x !== t; });
+    redraw();
+  }
+  wire("#swMode", "data-md", function (v) { SEL = latest(v); render(); });
+  wire("#swTab", "data-t", function (v) { showTab(v); });
+  wire("#swMetric", "data-m", function (v) { METRIC = v; renderProd(); });
+  wire("#swRec", "data-g", function (v) { RG = v; SHOW_ALL = false; renderRecs(); });
+  $("#prev").addEventListener("click", function () { if (canShift(-1)) { SEL = shift(SEL, -1); render(); } });
+  $("#next").addEventListener("click", function () { if (canShift(1)) { SEL = shift(SEL, 1); render(); } });
+  $("#more").addEventListener("click", function () { SHOW_ALL = !SHOW_ALL; renderRecs(); });
+  document.addEventListener("click", function (e) {
+    var g = e.target.closest ? e.target.closest("[data-go]") : null;
+    if (!g) return;
+    var t = g.getAttribute("data-go"), btns = $("#swTab").querySelectorAll("button");
+    btns.forEach(function (o) { o.setAttribute("aria-pressed", o.getAttribute("data-t") === t ? "true" : "false"); });
+    $("#swTab").style.setProperty("--i", TABS.indexOf(t));
+    showTab(t);
+  });
+  var raf = 0, lastW = window.innerWidth;
+  window.addEventListener("resize", function () {
+    if (window.innerWidth === lastW) return; lastW = window.innerWidth;
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(redraw);
+  });
+  render();
+})();
+</script>
+

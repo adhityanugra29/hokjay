@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-10-02
+
+**TASK-040 (mockup)** — Laporan Owner: Rekomendasi tindakan dibangun ulang berbasis statistik inferensial (uji Welch, rentang Wilson 95%, regresi tren, peluang capai target, batas wajar piutang) dengan label keyakinan dan bahasa awam; tren sales di Kuartal/Tahun jadi batang per bulan. Percobaan pertama yang mengubah seluruh Ringkasan jadi inferensial dikembalikan atas koreksi user; bagian lain tetap deskriptif. Tidak ada perubahan kode app.
+
+Tasks: TASK-040.
+Regression: mockup dijalankan di Node (DOM stub) untuk 3 mode periode; belum dicek di ponsel/mode gelap.
+
+---
+
 ## 2026-10-01
 
 **BUG-023 fixed** — Leaderboard's month boundaries (and Beranda's "bulan ini" period) now use GMT+7 instead of server-local time, so an invoice paid just after midnight WIB on the 1st lands in the right month. "Sisa hari" now counts today (the 31st shows 1, not 0). Ranking basis unchanged: lunas by payment date.

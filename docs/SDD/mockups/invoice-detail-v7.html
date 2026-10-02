@@ -1,0 +1,442 @@
+<title>Mockup Detail Invoice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: toolbar (state + view switch) above one app-window frame; frame mirrors /invoice/[id] header + 1fr/320px grid. Tokens are HOJAY "Foundry" from app/globals.css; single light look, same as the real app. */
+:root {
+  --ink: #201e1d;
+  --paper: #f7f1e4;
+  --panel: #fffdf8;
+  --surface: #efe9da;
+  --line: rgba(36, 31, 25, 0.16);
+  --muted: rgba(36, 31, 25, 0.6);
+  --accent: #ffc800;
+  --accent-600: #f0b800;
+  --accent-100: #fff8e0;
+  --accent-700: #92610a;
+  --danger: #c0392b;
+  --ok: #10b981;
+  --ok-text: #047857;
+  --ok-bg: #ecfdf5;
+  --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  padding-inline: 16px;
+  padding-block: 24px 64px;
+}
+h1, h2, h3 { font-weight: 800; letter-spacing: -0.015em; margin: 0; text-wrap: balance; }
+button { font-family: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+/* ---------- toolbar ---------- */
+.intro h1 { font-size: 1.5rem; }
+.intro p { margin: 6px 0 0; color: var(--muted); max-width: 70ch; font-size: 0.85rem; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: flex-end; }
+.group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.group > label, .group > .lbl {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button {
+  cursor: pointer; border: 1.5px solid var(--line); background: transparent; color: var(--ink);
+  border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700;
+}
+.seg button:hover { border-color: var(--accent-600); }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+.seg button:focus-visible, .btn:focus-visible, .menu-item:focus-visible, .qlink:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.mark-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; cursor: pointer; padding-block: 6px; }
+.mark-toggle input { width: 16px; height: 16px; accent-color: var(--ink); }
+
+.scoreboard { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; background: var(--panel); border-radius: 12px; padding: 12px 16px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.score { font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.score small { font-weight: 600; font-size: 12px; color: var(--muted); margin-left: 6px; }
+.score-note { font-size: 12px; color: var(--muted); flex: 1 1 280px; min-width: 0; }
+
+/* ---------- frame ---------- */
+.frame-scroll { overflow-x: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); }
+.app { min-width: 860px; }
+.phone-stage { display: flex; justify-content: center; background: var(--surface); border-radius: 12px; padding: 20px 12px; border: 1px solid var(--line); }
+.phone { width: 390px; max-width: 100%; background: var(--paper); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; box-shadow: 0 8px 28px rgba(0,0,0,.14); }
+
+.page-header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 20px; min-height: 100px; padding: 22px 36px; border-bottom: 1px solid var(--line); }
+.crumb { font-size: 10.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.page-header h2 { font-size: 1.875rem; margin-top: 6px; }
+.sub { margin-top: 6px; font-size: 0.8rem; color: var(--muted); max-width: 560px; }
+.head-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; position: relative; }
+.back { font-size: 12px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; }
+
+.page-body { padding: 36px; display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.main-col { min-width: 0; }
+
+.phone .page-header { padding: 16px 16px 14px 56px; min-height: 0; gap: 12px; position: relative; }
+.phone .page-header h2 { font-size: 1.4rem; }
+.phone .page-body { grid-template-columns: 1fr; padding: 16px; gap: 14px; }
+.phone .head-actions { position: static; }
+/* cleaner right column: one main card; sections separated by whitespace + a single hairline, no nested boxes */
+.card.main { padding: 24px; }
+.sec { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--line); }
+.sec .done { margin-bottom: 14px; }
+.more-btn { display: flex; width: 100%; align-items: center; justify-content: space-between; background: none; border: 0; padding: 0; cursor: pointer; font-size: 0.85rem; font-weight: 800; color: var(--ink); }
+.more-btn:hover { color: var(--accent-700); }
+.more-list { margin-top: 6px; font-size: 0.72rem; color: var(--muted); line-height: 1.5; }
+.more .menu { position: static; width: auto; margin: 10px -24px -10px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.more .menu .gl { padding-inline: 24px; }
+.more .menu-item { padding-inline: 24px; font-weight: 600; }
+.more .menu-item.danger { border-top: 0; margin-top: 0; }
+.more .menu-sep { border-top: 0; margin-top: 6px; }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+  border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink);
+  padding: 10px 18px; font-size: 13.6px; font-weight: 800; line-height: 1.2; transition: background .15s;
+}
+.btn:hover { background: rgba(0,0,0,.05); }
+.btn.solid { background: var(--accent); border-color: var(--accent); }
+.btn.solid:hover { background: var(--accent-600); }
+.btn.dark { background: var(--ink); border-color: var(--ink); color: var(--accent); }
+.btn.dark:hover { background: rgba(32,30,29,.85); }
+.btn.danger { color: var(--danger); }
+.btn.block { width: 100%; }
+/* v7: icon-only button, always visible beside the total (Unduh Invoice PDF) */
+.btn.icon { width: 44px; height: 44px; padding: 0; flex: none; border-radius: 10px; background: var(--accent); border-color: var(--accent); position: relative; }
+.btn.icon:hover { background: var(--accent-600); }
+.btn.icon svg { width: 20px; height: 20px; }
+.btn.icon .tip { position: absolute; right: 0; top: calc(100% + 6px); background: var(--ink); color: var(--accent); font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 5; }
+.btn.icon:hover .tip, .btn.icon:focus-visible .tip { opacity: 1; }
+.doc-dl { position: absolute; top: 12px; right: 12px; z-index: 3; display: flex; gap: 8px; }
+.btn.icon.wa { background: var(--ok-bg); border-color: var(--ok); color: var(--ok-text); }
+.btn.icon.wa:hover { background: #d1fae5; }
+.total-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.btn.big { padding: 13px 18px; font-size: 14.5px; }
+
+/* numbered markers on the "Sekarang" view: every exposed button gets a counter */
+.marked { counter-reset: b; }
+.marked .btn { counter-increment: b; position: relative; }
+.marked .btn::after {
+  content: counter(b); position: absolute; top: -8px; right: -8px; min-width: 18px; height: 18px; padding-inline: 4px;
+  border-radius: 999px; background: var(--danger); color: #fff; font-size: 10.5px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--paper);
+}
+
+/* ---------- cards ---------- */
+.card { background: var(--panel); border-radius: 16px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.card h3 { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 12px; }
+.row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dot.gold { background: var(--accent-600); } .dot.moss { background: var(--accent); } .dot.ok { background: var(--ok); } .dot.mute { background: var(--line); }
+.dp-note { margin-top: 14px; border-left: 4px solid var(--accent); background: #f7f5ee; padding: 8px 12px; font-size: 0.75rem; line-height: 1.7; }
+.dp-note b.acc { color: var(--accent-700); }
+.stack { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.hint { font-size: 0.72rem; color: var(--muted); margin-top: 14px; }
+.hist { font-size: 0.75rem; line-height: 2; color: var(--muted); }
+.hist div { display: grid; grid-template-columns: 52px 1fr; gap: 8px; }
+.hist span:first-child { font-variant-numeric: tabular-nums; }
+
+/* summary card (new) */
+.total-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.total { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.pill { border: 1px solid; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.pill.unpaid { border-color: var(--accent-700); color: var(--accent-700); }
+.pill.dp { border-color: var(--accent-600); color: var(--accent-700); background: var(--accent-100); }
+.pill.draft { border-color: var(--line); color: var(--muted); }
+.pill.paid { border-color: var(--ink); color: var(--ink); }
+.pill.sent { border-color: var(--ok); background: var(--ok-bg); color: var(--ok-text); }
+.pill.notsent { border-color: var(--line); color: var(--muted); }
+.kv { margin-top: 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.kv span:nth-child(odd) { color: var(--muted); }
+.kv span:nth-child(even) { text-align: right; font-weight: 700; }
+.kv .big { color: var(--accent-700); }
+
+/* next-step card (new) */
+.next { border: 2px solid var(--ink); }
+.next h3 { color: var(--ink); }
+.step + .step { margin-top: 14px; }
+.step-cap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; margin-bottom: 6px; font-size: 0.75rem; }
+.step-cap { color: var(--muted); font-weight: 600; justify-content: flex-start; }
+.qlinks { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.qlink { background: none; border: 0; cursor: pointer; text-align: left; padding: 8px 2px; font-size: 0.8rem; font-weight: 700; color: var(--accent-700); text-decoration: underline; text-underline-offset: 3px; display: flex; justify-content: space-between; gap: 8px; }
+.qlink span { color: var(--muted); font-weight: 600; text-decoration: none; }
+.done { display: flex; gap: 8px; align-items: center; font-size: 0.85rem; font-weight: 700; color: var(--ok-text); margin-bottom: 12px; }
+
+/* ---------- dropdown menu ---------- */
+.menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; width: 250px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px rgba(0,0,0,.18); overflow: hidden; }
+.menu .gl { padding: 10px 14px 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.menu-item { display: block; width: 100%; text-align: left; background: none; border: 0; cursor: pointer; padding: 10px 14px; font-size: 0.82rem; font-weight: 700; color: var(--ink); }
+.menu-item:hover { background: var(--surface); }
+.menu-item.danger { color: var(--danger); border-top: 1px solid var(--line); margin-top: 4px; }
+.menu-sep { border-top: 1px solid var(--line); margin-top: 4px; }
+.backdrop { position: fixed; inset: 0; z-index: 10; }
+
+/* ---------- invoice document (simplified placeholder) ---------- */
+.doc { position: relative; overflow: hidden; border: 1px solid var(--line); background: var(--panel); padding: 28px; }
+.doc .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; font-size: 120px; font-weight: 800; letter-spacing: .04em; transform: rotate(-30deg); opacity: .12; }
+.doc h4 { margin: 0 0 14px; text-align: center; font-size: 1.4rem; letter-spacing: .08em; font-weight: 800; }
+.doc .top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; border-bottom: 2px solid var(--ink); padding-bottom: 14px; margin-bottom: 14px; font-size: 0.72rem; color: var(--muted); line-height: 1.6; }
+.doc table { width: 100%; border-collapse: collapse; font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.doc th { text-align: left; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.doc td { padding: 8px 4px; border-bottom: 1px solid var(--line); }
+.doc .r { text-align: right; }
+.doc .tot { margin-top: 12px; margin-left: auto; width: min(260px, 100%); display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.doc .tot .g { font-weight: 800; font-size: 0.95rem; border-top: 2px solid var(--ink); padding-top: 6px; }
+.doc-note { margin-top: 8px; font-size: 11px; color: var(--muted); }
+.phone .doc { padding: 16px; }
+.phone .doc .wm { font-size: 80px; }
+
+.legend { font-size: 12px; color: var(--muted); max-width: 80ch; }
+.legend b { color: var(--ink); }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--accent); padding: 10px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 700; z-index: 50; max-width: calc(100% - 32px); box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+
+@media (max-width: 560px) {
+  .page-header { padding-inline: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>Mockup Detail Invoice</h1>
+    <p>Halaman <b>/invoice/[id]</b>, tampilan sekarang dibandingkan dengan usulan. Ganti status invoice untuk melihat tombol berubah. Isi dokumen invoice tidak berubah, jadi di mockup ini ditampilkan ringkas. Data di bawah hanya contoh.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="group">
+      <span class="lbl">Tampilan</span>
+      <div class="seg" id="viewSeg" role="group" aria-label="Tampilan">
+        <button type="button" data-view="now" aria-pressed="false">Sekarang</button>
+        <button type="button" data-view="new" aria-pressed="true">Usulan (Desktop)</button>
+        <button type="button" data-view="phone" aria-pressed="false">Usulan (HP)</button>
+      </div>
+    </div>
+    <div class="group">
+      <span class="lbl">Status invoice</span>
+      <div class="seg" id="stateSeg" role="group" aria-label="Status invoice">
+        <button type="button" data-state="draft" aria-pressed="false">Draft</button>
+        <button type="button" data-state="unpaid" aria-pressed="true">Belum bayar</button>
+        <button type="button" data-state="dp" aria-pressed="false">Sudah DP</button>
+        <button type="button" data-state="paid_unsent" aria-pressed="false">Lunas, belum dikirim</button>
+        <button type="button" data-state="paid_sent" aria-pressed="false">Lunas, sudah dikirim</button>
+      </div>
+    </div>
+    <label class="mark-toggle" id="markWrap" hidden><input type="checkbox" id="markChk" checked> Beri nomor tiap tombol</label>
+  </div>
+
+  <div class="scoreboard" aria-live="polite">
+    <div><div class="score" id="scoreNow">–<small>sekarang</small></div></div>
+    <div><div class="score" id="scoreNew">–<small>usulan</small></div></div>
+    <div class="score-note" id="scoreNote"></div>
+  </div>
+
+  <div id="stage"></div>
+
+  <p class="legend"><b>Catatan mockup:</b> dokumen invoice dan isi menu hanya contoh. Aturan tampil tombol sama dengan kode sekarang: Ubah dan Hapus hilang saat lunas, Hapus hilang setelah ada DP, Catat DP hanya saat belum bayar dan belum ada DP, Tandai Sudah Kirim tidak tampil untuk draft. Tombol di mockup ini tidak menjalankan aksi apa pun.</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  var S = {
+    draft:       { status: "draft",  dp: false, sent: false },
+    unpaid:      { status: "unpaid", dp: false, sent: false },
+    dp:          { status: "unpaid", dp: true,  sent: false },
+    paid_unsent: { status: "paid",   dp: false, sent: false },
+    paid_sent:   { status: "paid",   dp: false, sent: true  }
+  };
+  var view = "new", stateKey = "unpaid", menuOpen = false, mark = true;
+  var toastTimer = null;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  /* ---------- shared pieces ---------- */
+  var waIcon = '<button class="btn icon wa" type="button" aria-label="Kirim ke Pelanggan (WA)" title="Kirim ke Pelanggan (WA)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.7-5.2A8.5 8.5 0 1 1 21 11.5Z"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 .8c-.9-.4-1.7-1.2-2.1-2.1l.8-1-1-2-1.2.4Z"/></svg><span class="tip">Kirim ke Pelanggan (WA)</span></button>';
+  var dlIcon = '<button class="btn icon" type="button" aria-label="Unduh Invoice (PDF)" title="Unduh Invoice (PDF)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span class="tip">Unduh Invoice (PDF)</span></button>';
+  function statusText(s) {
+    if (s.status === "draft") return "Draft — belum dikirim";
+    if (s.status === "paid") return "Lunas";
+    return s.dp ? "Sudah DP 30%" : "Belum Dibayar";
+  }
+  function dpNote(s) {
+    return s.dp ? '<div class="dp-note">DP diterima <b>Rp 3.750.000</b> (29 Sep)<br>Sisa tagihan <b class="acc">Rp 8.750.000</b></div>' : "";
+  }
+  function history(s) {
+    var rows = [["28 Sep", "Invoice dibuat"]];
+    if (s.status !== "draft") rows.push(["28 Sep", "Invoice dikirim ke pelanggan"]);
+    if (s.dp) rows.push(["29 Sep", "DP Rp 3.750.000 diterima"]);
+    if (s.sent) rows.push(["1 Okt", "Ditandai sudah dikirim"]);
+    if (s.status === "paid") { rows.push(["1 Okt", "Pembayaran lunas diterima"]); rows.push(["1 Okt", "Komisi dibayarkan ke Budi"]); }
+    return '<div class="hist">' + rows.map(function (r) { return "<div><span>" + r[0] + "</span><span>" + r[1] + "</span></div>"; }).join("") + "</div>";
+  }
+  function docHTML(s, withDl) {
+    var paid = s.status === "paid";
+    return '<div class="doc">' + (withDl ? '<div class="doc-dl">' + waIcon + dlIcon + '</div>' : "") + (paid ? '<div class="wm">LUNAS</div>' : "") +
+      '<h4>INVOICE</h4>' +
+      '<div class="top"><div><b style="color:var(--ink)">CV. Horeca Jaya Abadi</b><br>Jalan H.Umar no 24, Bekasi Selatan</div>' +
+      '<div style="text-align:right">No. INV-2610-0042<br>28 September 2026<br>Kepada: Resto Sederhana Bekasi</div></div>' +
+      '<div style="overflow-x:auto"><table><thead><tr><th>Produk</th><th class="r">Qty</th><th class="r">Harga</th><th class="r">Subtotal</th></tr></thead><tbody>' +
+      '<tr><td>Kompor Gas 3 Tungku</td><td class="r">2</td><td class="r">3.200.000</td><td class="r">6.400.000</td></tr>' +
+      '<tr><td>Meja Kerja Stainless 150×60</td><td class="r">3</td><td class="r">1.850.000</td><td class="r">5.550.000</td></tr>' +
+      '<tr><td>Rak Piring 4 Susun</td><td class="r">1</td><td class="r">400.000</td><td class="r">400.000</td></tr>' +
+      '</tbody></table></div>' +
+      '<div class="tot"><span>Subtotal</span><span>Rp 12.350.000</span><span>Ongkos kirim</span><span>Rp 150.000</span><span class="g">Total</span><span class="g">Rp 12.500.000</span></div>' +
+      '<div class="doc-note">Ditampilkan ringkas di mockup. Dokumen asli (logo, alamat kirim, syarat &amp; ketentuan) tidak diubah.</div></div>';
+  }
+
+  /* ---------- CURRENT layout (mirrors app/invoice/[id]/page.tsx) ---------- */
+  function currentHTML(s) {
+    var notPaid = s.status !== "paid";
+    var header = "";
+    if (notPaid) header += '<button class="btn" type="button">Ubah Invoice</button>';
+    if (notPaid && !s.dp) header += '<button class="btn danger" type="button">Hapus</button>';
+    header += '<button class="btn solid" type="button">Kirim ke Pelanggan (WA)</button>' +
+              '<button class="btn" type="button">Unduh Invoice (PDF)</button>' +
+              '<button class="btn" type="button">Unduh Surat Jalan (PDF)</button>';
+
+    var pay = '<div class="card"><h3>Status Pembayaran</h3><div class="row"><span class="dot ' + (s.status === "paid" ? "moss" : "gold") + '"></span>' + statusText(s) + "</div>" + dpNote(s);
+    if (s.status === "unpaid") {
+      pay += '<div class="stack"><button class="btn solid block" type="button">Tandai Lunas Manual</button>' +
+             (!s.dp ? '<button class="btn block" type="button">Catat DP</button>' : "") + "</div>";
+    }
+    if (s.status === "draft") pay += '<div class="hint">Invoice draft belum mengurangi stok atau menghitung komisi.</div>';
+    pay += "</div>";
+
+    var ship = "";
+    if (s.status !== "draft") {
+      ship = '<div class="card"><h3>Status Pengiriman</h3>' + (s.sent
+        ? '<div class="row"><span class="dot ok"></span>Sudah dikirim (1 Okt · Rudi)</div>'
+        : '<div class="row"><span class="dot gold"></span>Belum dikirim</div><div class="stack"><button class="btn dark block" type="button">Tandai Sudah Kirim</button></div>') + "</div>";
+    }
+    var riwayat = '<div class="card"><h3>Riwayat</h3>' + history(s) + "</div>";
+
+    return '<div class="frame-scroll"><div class="app' + (mark ? " marked" : "") + '">' +
+      '<div class="page-header"><div><div class="crumb">Jualan</div><h2>INV-2610-0042</h2><div class="sub">DIBUAT 28 SEPTEMBER 2026</div></div>' +
+      '<div class="head-actions">' + header + '<span class="back">← Beranda</span></div></div>' +
+      '<div class="page-body"><div class="main-col">' + docHTML(s) + '</div><div class="side">' + pay + ship + riwayat + "</div></div></div></div>";
+  }
+
+  /* ---------- NEW layout ---------- */
+  /* Max 2 action buttons, one per pending lifecycle step (pembayaran, pengiriman). Everything else lives in the Lainnya menu. */
+  function newSteps(s) {
+    var l = [];
+    if (s.status === "draft") { l.push({ cap: "Draft", label: "Lanjutkan Edit", cls: "solid", hint: "Draft belum mengurangi stok atau menghitung komisi." }); return l; }
+    if (s.status === "unpaid") l.push({ cap: "Pembayaran", label: "Tandai Lunas", cls: "solid", hint: s.dp ? "Sisa Rp 8.750.000 belum diterima" : "Belum ada pembayaran masuk" });
+    if (!s.sent) l.push({ cap: "Pengiriman", label: "Tandai Sudah Kirim", cls: l.length ? "" : "solid", hint: "Barang belum ditandai terkirim" });
+    return l;
+  }
+  /* Short names of what's inside the menu, shown under the trigger so people know what "Aksi lainnya" holds. */
+  function menuLabels(s) {
+    var l = ["Surat Jalan"];
+    if (s.status === "unpaid" && !s.dp) l.push("Catat DP");
+    if (s.status !== "paid" && s.status !== "draft") l.push("Ubah");
+    if (s.status !== "paid" && !s.dp) l.push("Hapus");
+    return l;
+  }
+  function menuHTML(s) {
+    var notPaid = s.status !== "paid";
+    var h = '<div class="backdrop" data-act="closeMenu"></div><div class="menu" role="menu">' +
+      '<div class="gl">Dokumen</div>' +
+      '<button class="menu-item" role="menuitem" type="button">Unduh Surat Jalan (PDF)</button>';
+    if (s.status === "unpaid" && !s.dp) h += '<div class="menu-sep"></div><div class="gl">Pembayaran</div><button class="menu-item" role="menuitem" type="button">Catat DP</button>';
+    var kelola = "";
+    if (notPaid && s.status !== "draft") kelola += '<button class="menu-item" role="menuitem" type="button">Ubah Invoice</button>';
+    if (notPaid && !s.dp) kelola += '<button class="menu-item danger" role="menuitem" type="button">Hapus Invoice</button>';
+    if (kelola) h += '<div class="menu-sep"></div><div class="gl">Kelola</div>' + kelola;
+    return h + "</div>";
+  }
+  function newHTML(s, phone) {
+    var steps = newSteps(s);
+    var pills = '<span class="pill ' + (s.status === "paid" ? "paid" : s.status === "draft" ? "draft" : s.dp ? "dp" : "unpaid") + '">' + (s.status === "draft" ? "Draft" : s.status === "paid" ? "Lunas" : s.dp ? "Sudah DP 30%" : "Belum Dibayar") + "</span>";
+    if (s.status !== "draft") pills += s.sent ? '<span class="pill sent">✓ Sudah dikirim · 1 Okt</span>' : '<span class="pill notsent">Belum dikirim</span>';
+    var kv = "";
+    if (s.dp) kv = '<div class="kv"><span>DP diterima (29 Sep)</span><span>Rp 3.750.000</span><span>Sisa tagihan</span><span class="big">Rp 8.750.000</span></div>';
+    else if (s.status === "paid") kv = '<div class="kv"><span>Dibayar (1 Okt)</span><span>Rp 12.500.000</span></div>';
+
+    /* One card instead of three: status on top, the (max 2) actions under it, "Aksi lainnya" last. */
+    var finished = s.status === "paid" && s.sent;
+    var main = '<div class="card main"><div class="total-label">Total Invoice</div><div class="total">Rp 12.500.000</div><div class="pills">' + pills + "</div>" + kv;
+    main += '<div class="sec">' + (finished ? '<div class="done"><span class="dot ok"></span>Semua langkah selesai</div>' : "") +
+      steps.map(function (st) {
+        var showCap = s.status !== "draft" && !finished;
+        return '<div class="step">' + (showCap ? '<div class="step-cap">' + st.cap + "</div>" : "") + '<button class="btn ' + st.cls + ' block" type="button">' + esc(st.label) + "</button></div>";
+      }).join("") + "</div>";
+    var contents = menuLabels(s).join(" · ");
+    main += '<div class="sec more"><button class="more-btn" type="button" data-act="toggleMenu" aria-haspopup="menu" aria-expanded="' + menuOpen + '"><span>Aksi lainnya</span><span aria-hidden="true">' + (menuOpen ? "▴" : "▾") + "</span></button>" +
+      (menuOpen ? menuHTML(s) : '<div class="more-list">' + esc(contents) + "</div>") + "</div></div>";
+    var riwayat = '<div class="card"><h3>Riwayat</h3>' + history(s) + "</div>";
+
+    var left = '<div class="main-col">' + docHTML(s, true) + "</div>";
+    var right = '<div class="side">' + main + riwayat + "</div>";
+
+    if (phone) {
+      return '<div class="phone-stage"><div class="phone">' +
+        '<div class="page-header"><div><div class="crumb">Jualan</div><h2>INV-2610-0042</h2><div class="sub">Dibuat 28 Sep 2026</div></div></div>' +
+        '<div class="page-body">' + right + left + "</div></div></div>";
+    }
+    return '<div class="frame-scroll"><div class="app">' +
+      '<div class="page-header"><div><div class="crumb">Jualan</div><h2>INV-2610-0042</h2><div class="sub">DIBUAT 28 SEPTEMBER 2026</div></div>' +
+      '<div class="head-actions"><span class="back">← Beranda</span></div></div>' +
+      '<div class="page-body">' + left + right + "</div></div></div>";
+  }
+
+  /* ---------- counts ---------- */
+  function countNow(s) {
+    var n = 3; // WA, PDF, SJ
+    if (s.status !== "paid") n++;                 // Ubah
+    if (s.status !== "paid" && !s.dp) n++;        // Hapus
+    if (s.status === "unpaid") n += s.dp ? 1 : 2; // Lunas (+ Catat DP)
+    if (s.status !== "draft" && !s.sent) n++;     // Tandai Sudah Kirim
+    return n;
+  }
+  function countNew(s) { return { btn: newSteps(s).length, menu: 1 }; }
+
+  function render() {
+    var s = S[stateKey];
+    var html = view === "now" ? currentHTML(s) : newHTML(s, view === "phone");
+    $("stage").innerHTML = html;
+    document.querySelectorAll("#viewSeg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.view === view)); });
+    document.querySelectorAll("#stateSeg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.state === stateKey)); });
+    $("markWrap").hidden = view !== "now";
+    var cn = countNow(s), nw = countNew(s);
+    $("scoreNow").innerHTML = cn + "<small>tombol terlihat sekarang</small>";
+    $("scoreNew").innerHTML = nw.btn + "<small>tombol aksi di usulan, plus 2 ikon dan Aksi lainnya</small>";
+    $("scoreNote").textContent = "v7: ikon Kirim WA (hijau) dan Unduh Invoice (kuning) selalu terlihat di pojok kanan atas dokumen invoice, di semua status. Tombol aksi tetap maksimal 2 (pembayaran, pengiriman). Arahkan kursor ke ikon untuk melihat labelnya.";
+  }
+
+  function toast(msg) {
+    var t = $("toast");
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 1800);
+  }
+
+  document.addEventListener("click", function (e) {
+    var seg = e.target.closest("#viewSeg button, #stateSeg button");
+    if (seg) {
+      if (seg.dataset.view) view = seg.dataset.view;
+      if (seg.dataset.state) stateKey = seg.dataset.state;
+      menuOpen = false; render(); return;
+    }
+    var act = e.target.closest("[data-act]");
+    if (act) {
+      menuOpen = act.dataset.act === "toggleMenu" ? !menuOpen : false;
+      render(); return;
+    }
+    var item = e.target.closest("#stage .btn, #stage .menu-item, #stage .qlink");
+    if (item) { menuOpen = false; render(); toast("Contoh saja: “" + item.textContent.replace(/\s+/g, " ").replace(/[0-9]+$/, "").trim() + "” belum menjalankan aksi."); }
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && menuOpen) { menuOpen = false; render(); } });
+  $("markChk").addEventListener("change", function (e) { mark = e.target.checked; render(); });
+
+  render();
+})();
+</script>

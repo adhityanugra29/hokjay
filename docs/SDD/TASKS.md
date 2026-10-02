@@ -864,3 +864,59 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Behavior notes (not removals):** Gaji's mobile page no longer renders `MobileGajiBulanan` (file left in place, now unused — candidate for deletion with approval) and now also has tanggal/bukti/catatan on phones (the old mobile version sent none). Absensi's page now remounts the form per day (`key={tanggal}`) — the old form kept the previous day's hadir state when the date changed. Current month/day for Gaji/Absensi default now uses GMT+7 (was server-local).
 
 **Regression test:** `tsc --noEmit`, `eslint` (only the pre-existing `react-hooks/set-state-in-effect` error in `KaryawanManager`'s load-on-mount effect, unchanged from before), `next build` clean. Not click-tested in a logged-in browser.
+
+---
+
+## TASK-039 — Invoice detail (`/invoice/[id]`): max 2 buttons, one main card, "Aksi lainnya"
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** READY — design mockup done, waiting for the user's go-ahead to code (paused 2026-10-01 at the user's request, "nanti saya akan panggil")
+**Dependency:** TASK-030 (same "max 2 buttons" rule on the list), TASK-037 (Riwayat card must keep the komisi line)
+**Created:** 2026-10-01 · **Last updated:** 2026-10-01
+
+**Description:** User found the invoice detail page messy: 8 buttons exposed at once in "Belum bayar" (header: Ubah, Hapus, Kirim WA, Unduh Invoice, Unduh Surat Jalan; Status Pembayaran card: Tandai Lunas Manual, Catat DP; Status Pengiriman card: Tandai Sudah Kirim). Wants max 2 buttons, clear grouping, "lebih clean".
+
+**Approved direction (mockup v6, HOJAY/Foundry look kept — an Apple-style variant was shown and rejected: "jelek, balikan ke awal"):**
+- Max **2 action buttons**, one per pending lifecycle step: *Pembayaran* → "Tandai Lunas" (links to `/invoice/[id]/bayar`), *Pengiriman* → "Tandai Sudah Kirim" (existing `TandaiKirimButton` modal). Payment and shipping are independent (an invoice can ship before it is paid), so shipping is NOT folded into the menu. Draft → single "Lanjutkan Edit"; lunas+belum kirim → only "Tandai Sudah Kirim"; lunas+sudah kirim → "Kirim ke Pelanggan (WA)".
+- Everything else goes in **"Aksi lainnya"**, placed in the SAME card directly under the buttons (user objected to it sitting far away in the header), shown with a one-line peek of its contents when closed; opens inline (not a floating dropdown). Groups: Dokumen (Kirim WA, Unduh Invoice PDF, Unduh Surat Jalan PDF), Pembayaran (Catat DP), Kelola (Ubah Invoice, Hapus — red, last).
+- Right column: **one main card** (total, status pills, DP/sisa, actions, Aksi lainnya) + Riwayat card, instead of three cards. Header carries no action buttons. Phone: sidebar cards above the document.
+- Visibility rules unchanged from today: Ubah/Hapus hidden when lunas, Hapus hidden once a DP exists, Catat DP only when unpaid with no DP, shipping not offered for draft.
+
+**Update 2026-10-02 (mockup v7):** the user called Unduh Invoice "crucial" and asked for it, plus Kirim WA, to be icons. v7 puts two always-visible icon buttons (Kirim WA green, Unduh Invoice PDF yellow) at the top-right of the invoice document, in every status. Both are removed from "Aksi lainnya" (now: Surat Jalan, Catat DP, Ubah, Hapus), and the lunas+sudah kirim state no longer needs the big WA button. Icons assumed NOT to count toward the max-2 buttons (unconfirmed). Still to decide: label text beside icons on phone (no hover). Mockup: `docs/SDD/mockups/invoice-detail-v7.html` (artifact https://claude.ai/artifact/Dgnu2QPgMNNgWav5tcZanR, private). Status still waiting for go-ahead to code.
+
+**Capability audit (planned):** all 8 current buttons remain reachable (2 visible + 6 in Aksi lainnya); nothing deleted. (v7: 2 icons + 2 buttons + 4 in Aksi lainnya.)
+
+**Open decision when work resumes:** the user asked whether "Aksi lainnya" counts toward the max-2; assumed it does NOT (same as the ⋯ menu on the list). Confirm if needed.
+
+**Files affected (planned):** `app/invoice/[id]/page.tsx`, `components/invoice/InvoiceActions.tsx` (render as menu items; WA/PDF logic untouched), one new small client component for the Aksi lainnya disclosure. NOT touched: `InvoiceDocument`, `InvoicePrintDoc`, `InvoiceListClient`, forms, APIs, `TandaiKirimButton`/`DeleteInvoiceButton` (reused as-is).
+
+**Mockup files:** `docs/SDD/mockups/invoice-detail-v6.html` (approved direction, open in a browser) and `docs/SDD/mockups/invoice-detail-apple-rejected.html` (rejected, kept for reference). Published artifact: https://claude.ai/artifact/S6ejKetdBDbpToTsNjwLGB (private).
+
+**Regression test (to do):** responsive check mobile/tablet/desktop, `tsc --noEmit`, `eslint`, `next build`.
+
+---
+
+## TASK-040 — Laporan Owner (mockup): "Rekomendasi tindakan" berbasis statistik inferensial + tren per bulan untuk Kuartal/Tahun
+
+**Type:** UX/UI + Analytics (mockup only, belum ada kode di app)
+**Priority:** P3
+**Status:** REVIEW — mockup HTML sudah jadi dan dipublikasikan, menunggu keputusan user soal arah/implementasi ke app HOJAY
+**Dependency:** Laporan HOJAY versi deskriptif (artifact https://claude.ai/artifact/YN2xJiWGSA2zokFMjHAZ3i, dibuat 2026-09-30, 4 tab: Ringkasan / Sales / Operasional / Produktivitas, data contoh 21 bulan)
+**Created:** 2026-10-02 · **Last updated:** 2026-10-02
+
+**Description:** User ingin dasbor Owner ("Laporan HOJAY") memakai metode statistik. Versi pertama = Statistik Deskriptif (artifact di atas). Permintaan lanjutan 2026-10-02:
+1. **Rekomendasi tindakan** (tab Ringkasan) dibuat berbasis **statistik inferensial**, dengan bahasa awam supaya Owner cepat mengambil keputusan. Hanya bagian ini yang berubah — bagian lain Ringkasan (KPI, scorecard 3 kelompok, Potensi penjualan) tetap deskriptif seperti semula. (Percobaan pertama salah: seluruh Ringkasan diubah jadi inferensial; user mengoreksi dan minta dikembalikan, kecuali rekomendasi.)
+2. **Tren sales** di tab Sales: saat periode Kuartal/Tahun, grafik harian diganti **batang per bulan** (vs bulan yang sama di periode lalu + garis target bulanan tim); mode Bulan tetap harian.
+
+**Metode inferensial yang dipakai di rekomendasi:** peluang capai target (proyeksi laju harian 28 hari × sisa hari, rentang 95%); uji beda Welch (omzet vs periode lalu, diskon per sales vs sales lain, margin per produk vs produk lain); regresi linear 12 bulan (tren, rentang slope 95%); rentang Wilson 95% vs target (ketepatan kirim, kecepatan bayar ≤7 hari, konversi invoice→lunas, ketepatan PO supplier); uji dua persentase (kurir, konversi per sales); batas wajar piutang = persentil ke-95 waktu lunas 12 bulan; pelanggan langganan "lebih lama dari kebiasaannya" (jeda rata-rata + 2 simpangan baku). Tiap rekomendasi diberi label keyakinan: **Yakin / Cukup yakin / Belum pasti / Fakta hari ini** + baris dasar hitungan.
+
+**Decisions made (user tidak menjawab dua pertanyaan, dipakai default):** cakupan = semua metode di atas; dipublikasikan sebagai artifact baru supaya versi deskriptif tetap utuh.
+
+**Keterbatasan / hal yang perlu dicek sebelum dipakai di app:** semua angka masih **data contoh** (seeded, 21 bulan, s.d. 24 Sep 2026), target layanan (kirim 90%, lunas 7 hari, PO 85%, hari persediaan 90, biaya tenaga kerja 7%, konversi 80%) dan target per sales adalah angka contoh. Omzet harian punya pola hari + tren sehingga asumsi uji (independen/normal) hanya perkiraan kasar — validasi ulang dengan data HOJAY nyata. Dengan target contoh, "peluang capai target" di Kuartal/Tahun terbaca ~0%.
+
+**Open decisions:** (a) apakah tab Laporan ini akan dibangun di app HOJAY (route/role Owner) atau tetap sebagai artifact; (b) bagaimana target bulanan/per sales disimpan (belum ada model); (c) apakah Sales/Operasional/Produktivitas ikut dijadikan inferensial.
+
+**Files affected:** none in app code. Mockup: `docs/SDD/mockups/laporan-inferensial.html` (salinan lokal, bisa dibuka di browser). Published artifact (private): https://claude.ai/artifact/QzqXwcqd2nRyMEJhvtiRg6 (versi 3).
+
+**Regression test:** mockup dijalankan di Node dengan DOM stub untuk mode Bulan/Kuartal/Tahun (sintaks OK, rekomendasi dan grafik terisi). Belum dilihat di layar ponsel / mode gelap.

@@ -2,7 +2,7 @@
 
 > Single "catch up" file — read this first before starting any session or major task. See `TASKS.md`, `BUGS.md`, `KNOWN_ISSUES.md`, `CHANGELOG.md` for detail.
 
-**Last updated:** 2026-10-01
+**Last updated:** 2026-10-02
 
 ---
 
@@ -22,6 +22,7 @@ A large amount of feature/bugfix work has landed since the last full rewrite of 
 
 ## LAST COMPLETED
 
+- **TASK-040 (2026-10-02, mockup only — REVIEW)** — Laporan Owner mockup: "Rekomendasi tindakan" berbasis statistik inferensial (label Yakin/Cukup yakin/Belum pasti/Fakta, bahasa awam) + tren sales per bulan untuk Kuartal/Tahun. Data contoh, belum ada kode di app; menunggu keputusan user. `docs/SDD/mockups/laporan-inferensial.html`, artifact https://claude.ai/artifact/QzqXwcqd2nRyMEJhvtiRg6.
 - **TASK-038 (2026-10-01, deployed)** — Payroll (Owner) redesigned (mockup-approved, 5 versions): shared month stepper `PayrollNav` (`?periode=`; not on Komisi/Karyawan), Komisi/Gaji summary cards + pay panel (sticky bar on phones), Riwayat as cards grouped by month paid, Karyawan/Absensi restyled, invoice number → PDF preview modal (`/api/invoices/[id]/print`). `MobileGajiBulanan.tsx` is now unused (left in place). tsc/eslint/build clean; not click-tested live. Pre-existing lint error in `KaryawanManager` (setState in effect) untouched.
 - **TASK-037 (2026-10-01, deployed)** — Invoice detail's Riwayat shows "Komisi dibayarkan ke {sales}" with the payout date once the commission has been paid out (derived from `komisiCair`/`komisiCairTanggal`, no backfill, not in the PDF). `app/invoice/[id]/page.tsx` only. tsc/eslint clean.
 - **TASK-036 (2026-10-01)** — Komisi Saya redesigned (mockup-approved, 5 iterations): period stepper, headline = "Komisi Siap Cair" (invoice lunas, commission not yet transferred; the old total also counted unpaid — "menipu"), "Komisi Tertunda" (invoice not lunas yet) as a small secondary line + tab, per-invoice status badge + "Lihat invoice", payout history with bukti transfer, unpaid/untransferred invoices carry across months (BUG-022). "Tagih" buttons + mini Papan Peringkat removed on the user's instruction. `lib/insentif.ts` (`getMyKomisiOverview`), `app/komisi-saya/page.tsx`, `components/komisi/*`. tsc/eslint/build clean; data function run read-only against the real DB; not click-tested in a logged-in browser. Open question logged in `KNOWN_ISSUES.md`: Beranda's Sales card still sums unpaid commission into its total.

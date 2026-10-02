@@ -1,0 +1,352 @@
+<title>Mockup Detail Invoice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: toolbar (segmented view + status) above one window frame. Frame = quiet top bar, hero (customer, total, two status tiles), then document sheet on the left and one sticky action card + history on the right. Apple-style: system font, grey canvas, white grouped surfaces, hairlines, one dark primary action, tints only for status. */
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --text: #1d1d1f;
+  --text-2: #6e6e73;
+  --text-3: #8e8e93;
+  --hair: rgba(0, 0, 0, 0.08);
+  --fill: rgba(120, 120, 128, 0.12);
+  --fill-hover: rgba(120, 120, 128, 0.2);
+  --primary: #1d1d1f;
+  --on-primary: #ffffff;
+  --link: #0071e3;
+  --brand: #ffc800;
+  --green: #248a3d;
+  --green-bg: rgba(52, 199, 89, 0.14);
+  --orange: #b25000;
+  --orange-bg: rgba(255, 159, 10, 0.16);
+  --red: #d70015;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --sheet-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 12px 32px rgba(0, 0, 0, 0.08);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000; --surface: #1c1c1e; --text: #f5f5f7; --text-2: #a1a1a6; --text-3: #8e8e93;
+    --hair: rgba(255, 255, 255, 0.1); --fill: rgba(120, 120, 128, 0.24); --fill-hover: rgba(120, 120, 128, 0.36);
+    --primary: #f5f5f7; --on-primary: #1d1d1f; --link: #2997ff;
+    --green: #32d74b; --green-bg: rgba(48, 209, 88, 0.18); --orange: #ff9f0a; --orange-bg: rgba(255, 159, 10, 0.2); --red: #ff453a;
+    --shadow: 0 0 0 1px rgba(255,255,255,.04); --sheet-shadow: 0 0 0 1px rgba(255,255,255,.06);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #000000; --surface: #1c1c1e; --text: #f5f5f7; --text-2: #a1a1a6; --text-3: #8e8e93;
+  --hair: rgba(255, 255, 255, 0.1); --fill: rgba(120, 120, 128, 0.24); --fill-hover: rgba(120, 120, 128, 0.36);
+  --primary: #f5f5f7; --on-primary: #1d1d1f; --link: #2997ff;
+  --green: #32d74b; --green-bg: rgba(48, 209, 88, 0.18); --orange: #ff9f0a; --orange-bg: rgba(255, 159, 10, 0.2); --red: #ff453a;
+  --shadow: 0 0 0 1px rgba(255,255,255,.04); --sheet-shadow: 0 0 0 1px rgba(255,255,255,.06);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased; padding-inline: 16px; padding-block: 28px 72px;
+}
+h1, h2, h3, h4, p { margin: 0; }
+button { font-family: inherit; color: inherit; }
+.wrap { max-width: 1160px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--link) 55%, transparent); outline-offset: 2px; }
+
+/* ---------- mockup toolbar ---------- */
+.intro h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.025em; }
+.intro p { margin-top: 6px; color: var(--text-2); max-width: 68ch; font-size: 0.9rem; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: flex-end; }
+.group { display: flex; flex-direction: column; gap: 6px; min-width: 0; max-width: 100%; }
+.group .lbl { font-size: 12px; color: var(--text-2); font-weight: 500; padding-left: 4px; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; background: var(--fill); border-radius: 10px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.seg::-webkit-scrollbar { display: none; }
+.seg button { cursor: pointer; border: 0; background: transparent; border-radius: 8px; padding: 6px 13px; font-size: 12.5px; font-weight: 500; white-space: nowrap; color: var(--text); }
+.seg button[aria-pressed="true"] { background: var(--surface); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.14), 0 0 0 .5px rgba(0,0,0,.04); }
+.compare { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; font-size: 13px; color: var(--text-2); }
+.compare b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+
+/* ---------- window frame ---------- */
+.frame-scroll { overflow-x: auto; border-radius: 20px; box-shadow: var(--shadow); background: var(--bg); border: 1px solid var(--hair); }
+.app { min-width: 880px; background: var(--bg); }
+.phone-stage { display: flex; justify-content: center; padding: 8px 0; }
+.phone { width: 390px; max-width: 100%; background: var(--bg); border-radius: 36px; overflow: hidden; border: 1px solid var(--hair); box-shadow: var(--sheet-shadow); }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 32px; border-bottom: 1px solid var(--hair); background: color-mix(in srgb, var(--bg) 80%, transparent); }
+.topbar .back { color: var(--link); font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }
+.topbar .ttl { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.topbar .sp { min-width: 60px; }
+
+.content { padding: 32px 32px 40px; display: flex; flex-direction: column; gap: 28px; }
+.hero { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px 32px; }
+.hero .meta { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.hero h2 { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.12; margin-top: 4px; text-wrap: balance; }
+.headline { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 15px; color: var(--text-2); }
+.headline .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.total { text-align: right; }
+.total .k { font-size: 13px; color: var(--text-2); }
+.total .v { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.tile { background: var(--surface); border-radius: 18px; padding: 18px 20px; box-shadow: var(--shadow); min-width: 0; }
+.tile .k { font-size: 13px; color: var(--text-2); }
+.tile .v { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 1.15rem; font-weight: 650; font-weight: 600; letter-spacing: -0.015em; }
+.tile .sub { margin-top: 2px; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.badge { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.bar { margin-top: 12px; height: 6px; border-radius: 999px; background: var(--fill); overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 999px; background: var(--brand); }
+.bar.done > i { background: var(--green); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; align-items: start; }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; position: sticky; top: 16px; }
+.card { background: var(--surface); border-radius: 18px; padding: 20px; box-shadow: var(--shadow); }
+.card h3 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+
+/* action card */
+.step { margin-top: 14px; }
+.step .cap { font-size: 12.5px; color: var(--text-2); margin-bottom: 6px; padding-left: 2px; }
+.btn { display: flex; width: 100%; align-items: center; justify-content: center; min-height: 44px; border: 0; border-radius: 12px; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; cursor: pointer; padding: 10px 16px; transition: background .15s, transform .1s; }
+.btn.primary { background: var(--primary); color: var(--on-primary); }
+.btn.primary:hover { opacity: .88; }
+.btn.secondary { background: var(--fill); color: var(--text); }
+.btn.secondary:hover { background: var(--fill-hover); }
+.btn:active { transform: scale(0.985); }
+.done { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--green); }
+
+.more { margin-top: 18px; padding-top: 6px; border-top: 1px solid var(--hair); }
+.disc { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; background: none; border: 0; cursor: pointer; padding: 12px 2px 4px; text-align: left; font-size: 15px; font-weight: 500; }
+.disc .chev { color: var(--text-3); transition: transform .2s; display: flex; }
+.disc[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.more .peek { font-size: 12.5px; color: var(--text-2); padding: 0 2px 8px; line-height: 1.5; }
+.group-list { margin-top: 10px; }
+.group-list .gl { font-size: 12px; color: var(--text-2); padding: 0 4px 6px; }
+.rows { background: var(--bg); border-radius: 12px; overflow: hidden; }
+.row { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; background: none; border: 0; cursor: pointer; text-align: left; padding: 12px 14px; font-size: 14.5px; }
+.row + .row { border-top: 1px solid var(--hair); }
+.row:hover { background: var(--fill); }
+.row .chev { color: var(--text-3); display: flex; }
+.row.danger { color: var(--red); }
+.group-list + .group-list { margin-top: 14px; }
+
+/* history */
+.hist { margin-top: 14px; display: flex; flex-direction: column; }
+.hist .it { display: grid; grid-template-columns: 14px 1fr auto; gap: 0 12px; align-items: start; position: relative; padding-bottom: 14px; font-size: 13.5px; }
+.hist .it:last-child { padding-bottom: 0; }
+.hist .pt { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); margin-top: 6px; margin-left: 3px; position: relative; z-index: 1; }
+.hist .it::before { content: ""; position: absolute; left: 6.5px; top: 14px; bottom: -6px; width: 1px; background: var(--hair); }
+.hist .it:last-child::before { display: none; }
+.hist .it.last .pt { background: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 28%, transparent); }
+.hist .tx { color: var(--text); min-width: 0; }
+.hist .dt { color: var(--text-2); font-variant-numeric: tabular-nums; font-size: 12.5px; padding-top: 1px; }
+
+/* document sheet */
+.sheet { background: var(--surface); border-radius: 6px; box-shadow: var(--sheet-shadow); padding: 36px; position: relative; overflow: hidden; }
+.sheet .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; font-size: 120px; font-weight: 700; letter-spacing: .04em; transform: rotate(-30deg); color: var(--text); opacity: .06; }
+.sheet h4 { text-align: center; font-size: 1.2rem; letter-spacing: .14em; font-weight: 600; margin-bottom: 20px; }
+.sheet .top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding-bottom: 16px; margin-bottom: 14px; border-bottom: 1px solid var(--hair); font-size: 12px; color: var(--text-2); line-height: 1.6; }
+.sheet .top b { color: var(--text); font-weight: 600; }
+.sheet table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.sheet th { text-align: left; font-size: 11.5px; font-weight: 500; color: var(--text-2); padding: 8px 4px; border-bottom: 1px solid var(--hair); }
+.sheet td { padding: 10px 4px; border-bottom: 1px solid var(--hair); }
+.sheet .r { text-align: right; }
+.sheet .tot { margin: 14px 0 0 auto; width: min(270px, 100%); display: grid; grid-template-columns: 1fr auto; gap: 5px 14px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.sheet .tot .g { font-weight: 700; font-size: 15px; border-top: 1px solid var(--text); padding-top: 8px; margin-top: 4px; }
+.caption { margin-top: 10px; text-align: center; font-size: 12px; color: var(--text-3); }
+
+/* phone */
+.phone .topbar { padding: 14px 16px; }
+.phone .content { padding: 20px 16px 28px; gap: 20px; }
+.phone .hero { flex-direction: column; align-items: flex-start; gap: 14px; }
+.phone .hero h2 { font-size: 1.7rem; }
+.phone .total { text-align: left; }
+.phone .total .v { font-size: 2rem; }
+.phone .tiles { grid-template-columns: 1fr 1fr; gap: 10px; }
+.phone .tile { padding: 14px; }
+.phone .tile .v { font-size: 1rem; }
+.phone .grid { grid-template-columns: 1fr; gap: 20px; }
+.phone .side { position: static; }
+.phone .sheet { padding: 20px 16px; }
+.phone .sheet .wm { font-size: 80px; }
+
+.legend { font-size: 12.5px; color: var(--text-2); max-width: 82ch; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: rgba(29,29,31,.92); color: #f5f5f7; padding: 11px 18px; border-radius: 999px; font-size: 13px; font-weight: 500; z-index: 50; max-width: calc(100% - 32px); box-shadow: 0 8px 28px rgba(0,0,0,.28); }
+@media (prefers-reduced-motion: reduce) { .btn, .disc .chev { transition: none; } .btn:active { transform: none; } }
+</style>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>Mockup Detail Invoice</h1>
+    <p>Halaman <b>/invoice/[id]</b> dengan gaya yang lebih bersih dan tenang. Ganti status invoice untuk melihat isi dan tombol berubah. Dokumen invoice ditampilkan ringkas dan datanya contoh.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="group">
+      <span class="lbl">Tampilan</span>
+      <div class="seg" id="viewSeg" role="group" aria-label="Tampilan">
+        <button type="button" data-view="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" data-view="phone" aria-pressed="false">HP</button>
+      </div>
+    </div>
+    <div class="group">
+      <span class="lbl">Status invoice</span>
+      <div class="seg" id="stateSeg" role="group" aria-label="Status invoice">
+        <button type="button" data-state="draft" aria-pressed="false">Draft</button>
+        <button type="button" data-state="unpaid" aria-pressed="true">Belum bayar</button>
+        <button type="button" data-state="dp" aria-pressed="false">Sudah DP</button>
+        <button type="button" data-state="paid_unsent" aria-pressed="false">Lunas, belum dikirim</button>
+        <button type="button" data-state="paid_sent" aria-pressed="false">Lunas, sudah dikirim</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="compare" id="compare" aria-live="polite"></div>
+
+  <div id="stage"></div>
+
+  <p class="legend">Aturan tombol sama dengan kode sekarang: Ubah dan Hapus hilang saat lunas, Hapus hilang setelah ada DP, Catat DP hanya saat belum bayar dan belum ada DP, dan pengiriman tidak muncul untuk draft. Tombol di mockup ini tidak menjalankan aksi.</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  var S = {
+    draft:       { status: "draft",  dp: false, sent: false },
+    unpaid:      { status: "unpaid", dp: false, sent: false },
+    dp:          { status: "unpaid", dp: true,  sent: false },
+    paid_unsent: { status: "paid",   dp: false, sent: false },
+    paid_sent:   { status: "paid",   dp: false, sent: true  }
+  };
+  var view = "desktop", stateKey = "unpaid", moreOpen = false, toastTimer = null;
+  var CHEV = '<svg width="8" height="13" viewBox="0 0 8 13" fill="none" aria-hidden="true"><path d="M1.5 1.5l5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var CHEV_BACK = '<svg width="10" height="16" viewBox="0 0 10 16" fill="none" aria-hidden="true"><path d="M8.5 1.5l-6.5 6.5 6.5 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  /* ---------- derived, plain-language state ---------- */
+  function derive(s) {
+    var d = {};
+    if (s.status === "draft") {
+      d.headline = ["var(--text-3)", "Draft · belum mengurangi stok atau menghitung komisi"];
+      d.pay = null; d.ship = null; return d;
+    }
+    if (s.status === "unpaid" && !s.dp) {
+      d.headline = ["var(--orange)", "Menunggu pembayaran · 3 hari sejak dibuat"];
+      d.pay = { v: "Belum dibayar", tone: "var(--orange)", sub: "Rp 12.500.000 menunggu", pct: 0, done: false };
+    } else if (s.status === "unpaid") {
+      d.headline = ["var(--orange)", "Menunggu pelunasan Rp 8.750.000"];
+      d.pay = { v: "Sudah DP 30%", tone: "var(--brand)", sub: "Sisa tagihan Rp 8.750.000", pct: 30, done: false };
+    } else {
+      d.headline = s.sent ? ["var(--green)", "Selesai · lunas dan sudah dikirim"] : ["var(--green)", "Lunas · tinggal pengiriman"];
+      d.pay = { v: "Lunas", tone: "var(--green)", sub: "Rp 12.500.000 diterima 1 Okt", pct: 100, done: true };
+    }
+    d.ship = s.sent
+      ? { v: "Sudah dikirim", tone: "var(--green)", sub: "1 Okt · Rudi · via Lalamove" }
+      : { v: "Belum dikirim", tone: "var(--orange)", sub: "Kurir: Lalamove" };
+    return d;
+  }
+
+  function steps(s) {
+    var l = [];
+    if (s.status === "draft") return [{ cap: "", label: "Lanjutkan Edit", cls: "primary" }];
+    if (s.status === "unpaid") l.push({ cap: "Pembayaran", label: "Tandai Lunas", cls: "primary" });
+    if (!s.sent) l.push({ cap: "Pengiriman", label: "Tandai Sudah Kirim", cls: l.length ? "secondary" : "primary" });
+    if (!l.length) l.push({ cap: "", label: "Kirim ke Pelanggan (WA)", cls: "primary" });
+    return l;
+  }
+  function moreGroups(s) {
+    var notPaid = s.status !== "paid", g = [];
+    g.push({ t: "Dokumen", items: [["Kirim ke Pelanggan (WA)"], ["Unduh Invoice (PDF)"], ["Unduh Surat Jalan (PDF)"]] });
+    if (s.status === "unpaid" && !s.dp) g.push({ t: "Pembayaran", items: [["Catat DP"]] });
+    var k = [];
+    if (notPaid && s.status !== "draft") k.push(["Ubah Invoice"]);
+    if (notPaid && !s.dp) k.push(["Hapus Invoice", true]);
+    if (k.length) g.push({ t: "Kelola", items: k });
+    return g;
+  }
+  function peek(s) {
+    var l = ["Kirim WA", "Unduh PDF", "Surat Jalan"];
+    if (s.status === "unpaid" && !s.dp) l.push("Catat DP");
+    if (s.status !== "paid" && s.status !== "draft") l.push("Ubah");
+    if (s.status !== "paid" && !s.dp) l.push("Hapus");
+    return l.join(" · ");
+  }
+  function history(s) {
+    var r = [["Invoice dibuat", "28 Sep"]];
+    if (s.status !== "draft") r.push(["Dikirim ke pelanggan", "28 Sep"]);
+    if (s.dp) r.push(["DP Rp 3.750.000 diterima", "29 Sep"]);
+    if (s.sent) r.push(["Ditandai sudah dikirim", "1 Okt"]);
+    if (s.status === "paid") { r.push(["Pembayaran lunas diterima", "1 Okt"]); r.push(["Komisi dibayarkan ke Budi", "1 Okt"]); }
+    return r.map(function (x, i) { return '<div class="it' + (i === r.length - 1 ? " last" : "") + '"><span class="pt"></span><span class="tx">' + x[0] + '</span><span class="dt">' + x[1] + "</span></div>"; }).join("");
+  }
+
+  /* ---------- pieces ---------- */
+  function tileHTML(label, t, withBar) {
+    var bar = withBar ? '<div class="bar' + (t.done ? " done" : "") + '" role="img" aria-label="' + t.pct + ' persen terbayar"><i style="width:' + t.pct + '%"></i></div>' : "";
+    return '<div class="tile"><div class="k">' + label + '</div><div class="v"><span class="badge" style="background:' + t.tone + '"></span>' + t.v + '</div><div class="sub">' + t.sub + "</div>" + bar + "</div>";
+  }
+  function sheetHTML(s) {
+    return '<div><div class="sheet">' + (s.status === "paid" ? '<div class="wm">LUNAS</div>' : "") +
+      '<h4>INVOICE</h4><div class="top"><div><b>CV. Horeca Jaya Abadi</b><br>Jalan H.Umar no 24, Bekasi Selatan</div>' +
+      '<div style="text-align:right">No. INV-2610-0042<br>28 September 2026<br>Kepada: <b>Resto Sederhana Bekasi</b></div></div>' +
+      '<div style="overflow-x:auto"><table><thead><tr><th>Produk</th><th class="r">Qty</th><th class="r">Harga</th><th class="r">Subtotal</th></tr></thead><tbody>' +
+      '<tr><td>Kompor Gas 3 Tungku</td><td class="r">2</td><td class="r">3.200.000</td><td class="r">6.400.000</td></tr>' +
+      '<tr><td>Meja Kerja Stainless 150×60</td><td class="r">3</td><td class="r">1.850.000</td><td class="r">5.550.000</td></tr>' +
+      '<tr><td>Rak Piring 4 Susun</td><td class="r">1</td><td class="r">400.000</td><td class="r">400.000</td></tr></tbody></table></div>' +
+      '<div class="tot"><span>Subtotal</span><span class="r">Rp 12.350.000</span><span>Ongkos kirim</span><span class="r">Rp 150.000</span><span class="g">Total</span><span class="g r">Rp 12.500.000</span></div></div>' +
+      '<div class="caption">Dokumen ditampilkan ringkas di mockup. Dokumen asli tidak diubah.</div></div>';
+  }
+  function actionCard(s) {
+    var st = steps(s), finished = s.status === "paid" && s.sent;
+    var h = '<div class="card"><h3>' + (finished ? "Invoice selesai" : "Langkah berikutnya") + "</h3>";
+    if (finished) h += '<div class="done">✓ Semua langkah selesai</div>';
+    h += st.map(function (b) {
+      return '<div class="step">' + (b.cap ? '<div class="cap">' + b.cap + "</div>" : "") + '<button class="btn ' + b.cls + '" type="button">' + esc(b.label) + "</button></div>";
+    }).join("");
+    h += '<div class="more"><button class="disc" type="button" data-act="more" aria-expanded="' + moreOpen + '"><span>Aksi lainnya</span><span class="chev">' + CHEV + "</span></button>";
+    if (!moreOpen) h += '<div class="peek">' + esc(peek(s)) + "</div>";
+    else h += moreGroups(s).map(function (g) {
+      return '<div class="group-list"><div class="gl">' + g.t + '</div><div class="rows">' + g.items.map(function (it) {
+        return '<button class="row' + (it[1] ? " danger" : "") + '" type="button"><span>' + esc(it[0]) + '</span><span class="chev">' + CHEV + "</span></button>";
+      }).join("") + "</div></div>";
+    }).join("");
+    return h + "</div></div>";
+  }
+
+  function render() {
+    var s = S[stateKey], d = derive(s), phone = view === "phone";
+    var tiles = d.pay ? '<div class="tiles">' + tileHTML("Pembayaran", d.pay, true) + tileHTML("Pengiriman", d.ship, false) + "</div>" : "";
+    var hero = '<div class="hero"><div><div class="meta">INV-2610-0042 · 28 September 2026 · Sales: Budi</div><h2>Resto Sederhana Bekasi</h2>' +
+      '<div class="headline"><span class="dot" style="background:' + d.headline[0] + '"></span>' + d.headline[1] + "</div></div>" +
+      '<div class="total"><div class="k">Total invoice</div><div class="v">Rp 12.500.000</div></div></div>';
+    var side = '<div class="side">' + actionCard(s) + '<div class="card"><h3>Riwayat</h3><div class="hist">' + history(s) + "</div></div></div>";
+    var body = '<div class="content">' + hero + tiles + '<div class="grid">' + (phone ? side + sheetHTML(s) : sheetHTML(s) + side) + "</div></div>";
+    var top = '<div class="topbar"><span class="back">' + CHEV_BACK + ' Invoice</span><span class="ttl">INV-2610-0042</span><span class="sp"></span></div>';
+    $("stage").innerHTML = phone ? '<div class="phone-stage"><div class="phone">' + top + body + "</div></div>" : '<div class="frame-scroll"><div class="app">' + top + body + "</div></div>";
+
+    document.querySelectorAll("#viewSeg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.view === view)); });
+    document.querySelectorAll("#stateSeg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.state === stateKey)); });
+
+    var now = 3 + (s.status !== "paid" ? 1 : 0) + (s.status !== "paid" && !s.dp ? 1 : 0) + (s.status === "unpaid" ? (s.dp ? 1 : 2) : 0) + (s.status !== "draft" && !s.sent ? 1 : 0);
+    $("compare").innerHTML = "Tombol terlihat untuk status ini: sekarang <b>" + now + "</b>, usulan <b>" + steps(s).length + "</b> tombol aksi + Aksi lainnya";
+  }
+
+  function toast(msg) {
+    var t = $("toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 1800);
+  }
+
+  document.addEventListener("click", function (e) {
+    var seg = e.target.closest("#viewSeg button, #stateSeg button");
+    if (seg) { if (seg.dataset.view) view = seg.dataset.view; if (seg.dataset.state) stateKey = seg.dataset.state; moreOpen = false; render(); return; }
+    var act = e.target.closest("[data-act]");
+    if (act) { moreOpen = !moreOpen; render(); return; }
+    var item = e.target.closest("#stage .btn, #stage .row");
+    if (item) toast("Contoh saja: “" + item.textContent.replace(/\s+/g, " ").trim() + "” belum menjalankan aksi.");
+  });
+
+  render();
+})();
+</script>
