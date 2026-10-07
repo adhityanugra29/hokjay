@@ -19,6 +19,7 @@
   color-scheme: light;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.45; margin: 0; padding: 24px 16px 64px; }
 h1, h2, h3 { font-weight: 800; letter-spacing: -.015em; margin: 0; text-wrap: balance; }
 button, input, select { font-family: inherit; font-size: inherit; color: inherit; }
@@ -170,6 +171,28 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .jitem input { width: 150px; border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 7px 10px; font-family: var(--mono); font-size: 13px; }
 .cartbar { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--ink); color: var(--accent); border-radius: 12px; padding: 12px 16px; font-weight: 700; }
 .cartbar .btn { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+.jrow { border-bottom: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.jrow:last-child { border-bottom: 0; }
+.jrow.sel { background: var(--accent-100); }
+.jpick { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 700; font-size: .9rem; }
+.jpick input { width: 18px; height: 18px; accent-color: var(--accent-700); flex: none; }
+.jprice { display: none; padding-left: 28px; }
+.jrow.sel .jprice { display: block; }
+.jprice input { width: 100%; max-width: 220px; border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 8px 10px; font-family: var(--mono); font-size: 13px; }
+.jfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.jhint { font-size: 12.5px; color: var(--muted); }
+.jbtns { display: flex; gap: 8px; }
+.jrows { display: flex; flex-direction: column; gap: 10px; }
+.jline { display: grid; grid-template-columns: minmax(0, 1fr) 150px 32px; gap: 8px; align-items: end; }
+.jline .field { gap: 4px; }
+.jline .x { height: 40px; width: 32px; border: 1px solid var(--line); background: transparent; border-radius: 8px; cursor: pointer; color: var(--danger); font-size: 16px; line-height: 1; }
+.jline .x:hover { background: rgba(0,0,0,.05); }
+.jline .x[hidden] { display: none !important; }
+@media (max-width: 560px) { .jline { grid-template-columns: 1fr 32px; } .jline .pf { grid-column: 1 / -1; } }
+.jfields { display: flex; flex-direction: column; gap: 14px; }
+.jline select, .jline input, .jfields select, .jfields input { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 10px 14px; width: 100%; }
+.jline input, .jfields input { font-family: var(--mono); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 720px) {
   .fgrid { grid-template-columns: 1fr; }
   .frame { padding: 16px 12px 22px; }
@@ -249,7 +272,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
   <!-- 3 Katalog -->
   <section class="screen" id="s6">
-    <div class="cap"><b>Katalog</b>: header disederhanakan. Empat tombol sejajar (Pesan Produk Custom, Lihat Produk Custom, + Jasa, PDF) jadi dua: satu tombol kuning <b>+ Tambah ▾</b> berisi Jasa (paling atas), Pesan Produk Custom, dan Lihat Produk Custom, ditambah <b>Buat Katalog (PDF)</b>. Satu aksi utama per layar, sama seperti Invoice. Klik <b>Sekarang</b> untuk membandingkan. Jasa <b>tidak muncul</b> sebagai kartu di grid maupun di PDF katalog. Tombol ini hanya pintu masuk: membuka panel berisi jasa aktif, tiap jasa punya isian harga dan tombol <b>Tambah</b> yang memasukkannya ke keranjang invoice, sama seperti produk. Coba klik <b>+ Tambah</b>, lalu <b>Jasa</b> (pilihan pertama).</div>
+    <div class="cap"><b>Katalog</b>: header disederhanakan jadi satu tombol kuning <b>+ Tambah ▾</b> (Jasa paling atas, lalu Pesan Produk Custom dan Lihat Produk Custom) plus <b>Buat Katalog</b>. Klik <b>Jasa</b>: panel berisi baris <b>dropdown Jasa</b>; isian Harga Jasa baru aktif setelah jasa dipilih. Tombol <b>+ Tambah jasa lain</b> menambah baris baru supaya <b>dua jasa atau lebih</b> bisa dimasukkan sekaligus (baris bisa dihapus dengan ×). Tombol <b>Tambah</b> aktif kalau semua baris sudah lengkap. Jasa masuk keranjang yang sama dengan produk dan tidak muncul sebagai kartu di grid maupun PDF katalog.</div>
     <div class="frame">
       <div class="kmode" role="group" aria-label="Bandingkan header">
         <button type="button" data-k="now" aria-pressed="false">Sekarang (4 tombol)</button>
@@ -280,13 +303,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         </div>
       </div>
       <div class="jpanel" id="kJasaPanel">
-        <div><h3>Tambah Jasa ke Invoice</h3><p>Isi harga jasa, lalu tambahkan. Jasa tidak punya stok, diskon, maupun komisi.</p></div>
-        <div class="jlist">
-          <div class="jitem"><b>Jasa Pemasangan Exhaust Hood</b><div class="jr"><input value="Rp 750.000" aria-label="Harga jasa"><button class="btn solid sm" type="button">Tambah</button></div></div>
-          <div class="jitem"><b>Jasa Instalasi Gas &amp; Kompor</b><div class="jr"><input placeholder="Rp 0" aria-label="Harga jasa"><button class="btn solid sm" type="button">Tambah</button></div></div>
-          <div class="jitem"><b>Servis Berkala Mesin</b><div class="jr"><input placeholder="Rp 0" aria-label="Harga jasa"><button class="btn solid sm" type="button">Tambah</button></div></div>
+        <div><h3>Tambah Jasa ke Invoice</h3><p>Pilih jasa yang dipakai, lalu isi harganya. Jasa tidak punya stok, diskon, maupun komisi.</p></div>
+        <div class="jrows" id="kJasaRows"></div>
+        <div><button class="btn sm" type="button" id="kJasaMore">+ Tambah jasa lain</button></div>
+        <div class="jfoot">
+          <span class="jhint" id="kJasaHint">Pilih jasa dulu</span>
+          <div class="jbtns"><button class="btn sm" type="button" id="kJasaClose">Tutup</button><button class="btn solid sm" type="button" id="kJasaAdd" disabled>Tambah</button></div>
         </div>
-        <div><button class="btn sm" type="button" id="kJasaClose">Tutup</button></div>
       </div>
       <div class="kgrid">
         <div class="kcard"><div class="ph">Foto produk</div><div class="b"><b>Exhaust Hood 120cm</b><span>Stok 4 · Rp 4.500.000</span></div></div>
@@ -429,6 +452,43 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   var kb = document.getElementById('kJasaBtn'), kp = document.getElementById('kJasaPanel'), kc = document.getElementById('kJasaClose');
   kb.addEventListener('click', function () { kp.classList.toggle('on'); kb.classList.toggle('ghost-on'); });
   kc.addEventListener('click', function () { kp.classList.remove('on'); kb.classList.remove('ghost-on'); });
+  var rowsEl = document.getElementById('kJasaRows'), addBtn = document.getElementById('kJasaAdd'), moreBtn = document.getElementById('kJasaMore'), hint = document.getElementById('kJasaHint');
+  var jasaNames = ['Jasa Pemasangan Exhaust Hood', 'Jasa Instalasi Gas & Kompor', 'Servis Berkala Mesin'];
+  function esc(t) { return t.replace(/&/g, '&amp;'); }
+  function newLine() {
+    var d = document.createElement('div');
+    d.className = 'jline';
+    d.innerHTML = '<div class="field"><label>Jasa</label><select class="jsel"><option value="">— Pilih jasa —</option>' + jasaNames.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="field pf"><label>Harga Jasa</label><input class="jprc" placeholder="Rp 0" inputmode="numeric" disabled></div>' +
+      '<button class="x" type="button" aria-label="Hapus baris jasa">×</button>';
+    rowsEl.appendChild(d);
+    d.querySelector('.jsel').addEventListener('change', function () {
+      var pr = d.querySelector('.jprc'); pr.disabled = !this.value; pr.value = '';
+      if (this.value) pr.focus();
+      refreshJasa();
+    });
+    d.querySelector('.jprc').addEventListener('input', refreshJasa);
+    d.querySelector('.x').addEventListener('click', function () { d.remove(); refreshJasa(); });
+    refreshJasa();
+  }
+  function refreshJasa() {
+    var lines = rowsEl.querySelectorAll('.jline'), picked = 0, ready = 0;
+    lines.forEach(function (l) {
+      l.querySelector('.x').hidden = lines.length === 1;
+      if (l.querySelector('.jsel').value) { picked++; if (l.querySelector('.jprc').value.replace(/\D/g, '')) ready++; }
+    });
+    var ok = picked > 0 && ready === picked && picked === lines.length;
+    addBtn.disabled = !ok;
+    addBtn.textContent = ok && picked > 1 ? 'Tambah (' + picked + ')' : 'Tambah';
+    moreBtn.disabled = picked < lines.length;
+    hint.textContent = picked === 0 ? 'Pilih jasa dulu' : (!ok ? 'Lengkapi jasa dan harga di setiap baris' : picked + ' jasa siap ditambahkan');
+  }
+  moreBtn.addEventListener('click', newLine);
+  addBtn.addEventListener('click', function () {
+    rowsEl.innerHTML = ''; newLine();
+    hint.textContent = 'Jasa ditambahkan ke keranjang';
+  });
+  newLine();
   var pick = document.getElementById('jasaPicker'), open = document.getElementById('jasaBtn'), cancel = document.getElementById('jasaCancel');
   open.addEventListener('click', function () { pick.classList.remove('off'); open.classList.add('tgl-hide'); });
   cancel.addEventListener('click', function () { pick.classList.add('off'); open.classList.remove('tgl-hide'); });

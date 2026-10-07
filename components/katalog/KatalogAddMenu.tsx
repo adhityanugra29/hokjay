@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { CurrencyInput } from "@/components/ui/Form";
+import { CurrencyInput, Select } from "@/components/ui/Form";
 import { useCart } from "@/components/cart/CartProvider";
 import { makeJasaCartItem } from "@/lib/jasaCart";
 
@@ -12,25 +12,35 @@ interface JasaOption {
   nama: string;
 }
 
+interface JasaLine {
+  key: number;
+  jasaId: string;
+  harga: string;
+}
+
 const itemCls =
   "flex w-full cursor-pointer flex-col items-start gap-0.5 rounded-lg border-0 bg-transparent px-3 py-2.5 text-left font-sans text-[0.85rem] font-extrabold text-ink hover:bg-accent-100";
+
+let lineKey = 0;
+const newLine = (): JasaLine => ({ key: ++lineKey, jasaId: "", harga: "" });
 
 /**
  * Katalog header's single primary "+ Tambah" action — replaces the separate
  * "Pesan Produk Custom" / "Lihat Produk Custom" buttons and adds Jasa (service
  * fee) as the first entry, per the approved mockup
  * (docs/SDD/mockups/jasa-v2.html). Jasa never shows up as a card in the grid or
- * in the catalog PDF; this menu is only an entry point that opens a panel
- * where a price is typed and the jasa is added to the same cart as products.
- * Per the user's request 2026-10-07.
+ * in the catalog PDF; this menu is only an entry point. The panel is a list of
+ * rows (jasa dropdown first, price field only once a jasa is picked) with a
+ * "+ Tambah jasa lain" button for two or more at once, all added to the same
+ * cart as products. Per the user's request 2026-10-07.
  */
 export default function KatalogAddMenu() {
   const { addItem } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [jasaList, setJasaList] = useState<JasaOption[] | null>(null);
-  const [prices, setPrices] = useState<Record<string, string>>({});
-  const [added, setAdded] = useState<Record<string, boolean>>({});
+  const [lines, setLines] = useState<JasaLine[]>(() => [newLine()]);
+  const [justAdded, setJustAdded] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,14 +70,33 @@ export default function KatalogAddMenu() {
     }
   }
 
-  function addJasa(j: JasaOption) {
-    const harga = Number(prices[j._id] || 0);
-    if (!(harga > 0)) return;
-    addItem(makeJasaCartItem(j, harga));
-    setPrices((p) => ({ ...p, [j._id]: "" }));
-    setAdded((a) => ({ ...a, [j._id]: true }));
-    setTimeout(() => setAdded((a) => ({ ...a, [j._id]: false })), 1800);
+  function patchLine(key: number, patch: Partial<JasaLine>) {
+    setJustAdded(false);
+    setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   }
+
+  const picked = lines.filter((l) => l.jasaId).length;
+  const ready = lines.filter((l) => l.jasaId && Number(l.harga) > 0).length;
+  const allPicked = picked === lines.length;
+  const canAdd = picked > 0 && allPicked && ready === picked;
+
+  function addAll() {
+    if (!canAdd || !jasaList) return;
+    for (const l of lines) {
+      const jasa = jasaList.find((j) => j._id === l.jasaId);
+      if (jasa) addItem(makeJasaCartItem(jasa, Number(l.harga)));
+    }
+    setLines([newLine()]);
+    setJustAdded(true);
+  }
+
+  const hint = justAdded
+    ? "Jasa ditambahkan ke keranjang"
+    : picked === 0
+      ? "Pilih jasa dulu"
+      : !canAdd
+        ? "Lengkapi jasa dan harga di setiap baris"
+        : `${picked} jasa siap ditambahkan`;
 
   return (
     <>
@@ -107,41 +136,86 @@ export default function KatalogAddMenu() {
           <div role="dialog" aria-label="Tambah Jasa ke Invoice" className="w-full max-w-[560px] rounded-2xl bg-panel p-5 shadow-xl">
             <h2 className="font-sans text-[1.05rem] font-extrabold text-ink">Tambah Jasa ke Invoice</h2>
             <p className="mt-1 font-sans text-[0.8rem] text-muted">
-              Isi harga jasa, lalu tambahkan. Jasa tidak punya stok, diskon, maupun komisi.
+              Pilih jasa yang dipakai, lalu isi harganya. Jasa tidak punya stok, diskon, maupun komisi.
             </p>
-            <div className="mt-4 max-h-[50vh] overflow-y-auto rounded-xl border border-line">
-              {jasaList === null && <div className="px-4 py-5 font-mono text-[0.8rem] text-muted">Memuat jasa...</div>}
+
+            <div className="mt-4 flex max-h-[50vh] flex-col gap-2.5 overflow-y-auto">
+              {jasaList === null && <div className="py-3 font-mono text-[0.8rem] text-muted">Memuat jasa...</div>}
               {jasaList?.length === 0 && (
-                <div className="px-4 py-5 font-mono text-[0.8rem] text-muted">
+                <div className="py-3 font-mono text-[0.8rem] text-muted">
                   Belum ada jasa aktif. Tambahkan di Inventory &rarr; tab Jasa.
                 </div>
               )}
-              {jasaList?.map((j) => {
-                const harga = Number(prices[j._id] || 0);
-                return (
-                  <div key={j._id} className="flex flex-wrap items-center justify-between gap-2.5 border-b border-line px-4 py-3 last:border-b-0">
-                    <span className="min-w-0 flex-1 font-sans text-[0.9rem] font-bold">{j.nama}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-[150px]">
+              {jasaList && jasaList.length > 0 &&
+                lines.map((l) => (
+                  <div key={l.key} className="grid grid-cols-[minmax(0,1fr)_32px] items-end gap-2 sm:grid-cols-[minmax(0,1fr)_150px_32px]">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[0.68rem] uppercase tracking-wide text-muted">Jasa</span>
+                      <Select
+                        value={l.jasaId}
+                        onChange={(e) => patchLine(l.key, { jasaId: e.target.value, harga: "" })}
+                        aria-label="Pilih jasa"
+                      >
+                        <option value="">— Pilih jasa —</option>
+                        {jasaList.map((j) => (
+                          <option key={j._id} value={j._id}>
+                            {j.nama}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div className="order-last col-span-2 flex flex-col gap-1 sm:order-none sm:col-span-1">
+                      <span className="font-mono text-[0.68rem] uppercase tracking-wide text-muted">Harga Jasa</span>
+                      {/* Disabled until a jasa is picked — price only makes sense for a chosen jasa. */}
+                      <div className={l.jasaId ? "" : "pointer-events-none opacity-50"}>
                         <CurrencyInput
-                          value={prices[j._id] ?? ""}
-                          onChange={(v) => setPrices((p) => ({ ...p, [j._id]: v }))}
-                          placeholder="0"
+                          value={l.harga}
+                          onChange={(v) => patchLine(l.key, { harga: v })}
+                          placeholder="Rp 0"
                           showPrefix
                         />
                       </div>
-                      <Button type="button" onClick={() => addJasa(j)} disabled={!(harga > 0)}>
-                        {added[j._id] ? "Ditambahkan" : "Tambah"}
-                      </Button>
                     </div>
+                    {lines.length > 1 ? (
+                      <button
+                        type="button"
+                        aria-label="Hapus baris jasa"
+                        onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}
+                        className="h-10 w-8 cursor-pointer rounded-lg border border-line bg-transparent text-[1rem] leading-none text-danger hover:bg-black/5"
+                      >
+                        ×
+                      </button>
+                    ) : (
+                      <span />
+                    )}
                   </div>
-                );
-              })}
+                ))}
             </div>
-            <div className="mt-4">
-              <Button type="button" variant="ghost" onClick={() => setPanelOpen(false)}>
-                Tutup
-              </Button>
+
+            {jasaList && jasaList.length > 0 && (
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="px-3 py-1.5 text-[0.78rem]"
+                  disabled={!allPicked}
+                  onClick={() => setLines((ls) => [...ls, newLine()])}
+                >
+                  + Tambah jasa lain
+                </Button>
+              </div>
+            )}
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5">
+              <span className="font-sans text-[0.78rem] text-muted">{hint}</span>
+              <div className="flex gap-2">
+                <Button type="button" variant="ghost" onClick={() => setPanelOpen(false)}>
+                  Tutup
+                </Button>
+                <Button type="button" onClick={addAll} disabled={!canAdd}>
+                  {canAdd && picked > 1 ? `Tambah (${picked})` : "Tambah"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

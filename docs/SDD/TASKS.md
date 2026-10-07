@@ -955,6 +955,8 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 
 **Build:** `models/Jasa.ts` (nama, kode JS-0001, aktif), `/api/jasa`, tab Jasa di Inventory (`/produk/jasa`, form tambah/ubah). Invoice: item punya `isJasa` + `jasa`, qty selalu 1; `lib/services/jasaLine.ts` dipakai createInvoice/updateInvoice; `JasaRowEditor` + "+ Tambah Jasa" di InvoiceForm; komisi dan Diskon Bulk hanya menghitung produk. Jurnal lunas: baris jasa ke akun baru 4-1200 Pendapatan Jasa (tanpa diskon/HPP/komisi); Laba Rugi dan Neraca ikut menghitung 4-1200. Katalog: tombol kuning "+ Tambah" (Jasa, Pesan Produk Custom, Lihat Produk Custom) menggantikan dua tombol terpisah; panel jasa berisi isian harga + Tambah (nonaktif sampai harga diisi). Tampilan/cetak invoice: jasa di bawah produk, label "· Jasa", Qty dan Diskon "–", tidak masuk Surat Jalan.
 
+**Katalog panel jasa (follow-up 2026-10-07):** dropdown Jasa dulu, isian Harga Jasa baru aktif setelah jasa dipilih, tombol "+ Tambah jasa lain" untuk dua jasa atau lebih sekaligus (baris bisa dihapus ×). Pilihan "+ Jasa baru..." di dropdown (supaya sales bisa membuat jasa sendiri) belum diputuskan, tidak dibangun.
+
 **Differences from the mockup:** panel jasa di Katalog berupa pop-up (bukan panel inline); cetak invoice tidak punya subjudul pemisah Produk/Jasa (hanya diurutkan dan diberi label).
 
 **Decisions (user, 2026-10-07):** jasa TIDAK dihitung di Leaderboard Insentif (`lib/insentif.ts`: qty, totalPenjualan, target); jasa boleh muncul di dashboard; invoice jasa saja tetap punya field pengiriman dan Surat Jalan, dan Surat Jalan-nya mendaftar baris jasa (kalau invoice punya produk, Surat Jalan hanya mendaftar produk).
