@@ -12,7 +12,8 @@ import { useCatalogSelection } from "./CatalogSelectionProvider";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { useDialog } from "@/components/ui/Dialog";
 import PageHeader from "@/components/layout/PageHeader";
-import { Button, LinkButton } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
+import KatalogAddMenu from "./KatalogAddMenu";
 
 // Katalog PDF is the heaviest export in the app (photo-dense, often many
 // pages). RENDER_SCALE was first dropped to 1.35 to shrink file size, but
@@ -373,18 +374,16 @@ export default function KatalogClient({
           buttons all carried equal visual weight with no clear primary
           action. Switched to PageHeader + a real solid/ghost hierarchy per
           the user's request 2026-08-30 ("upgrade UI... konsisten"):
-          "Pesan Produk Custom" is the one action that isn't already
-          reachable from the product cards below, so it stays solid;
-          "Lihat Produk Custom" and the PDF export are secondary (ghost). */}
+          Pesan Produk Custom / Lihat Produk Custom now live inside the
+          single "+ Tambah" menu (KatalogAddMenu, alongside the new Jasa
+          entry), per the user's request 2026-10-07; the PDF export stays
+          the one secondary (ghost) button. */}
       <PageHeader
         title="Katalog CV HORECA JAYA"
         subtitle={`STOK TER-UPDATE OTOMATIS · ${totalProductCount} PRODUK TERSEDIA`}
         actions={
           <>
-            <LinkButton href="/katalog/custom-order">Pesan Produk Custom</LinkButton>
-            <LinkButton variant="ghost" href="/katalog/custom">
-              Lihat Produk Custom
-            </LinkButton>
+            <KatalogAddMenu />
             <Button
               type="button"
               variant="ghost"

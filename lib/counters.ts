@@ -61,6 +61,12 @@ export async function nextCustomerCode(kota?: string): Promise<string> {
   return `${plat}${yy}${mm}${String(seq).padStart(4, "0")}`;
 }
 
+/** Jasa (service fee) master data code — JS-0001, never resets. */
+export async function nextJasaCode(): Promise<string> {
+  const seq = await nextSeq("jasa");
+  return `JS-${String(seq).padStart(4, "0")}`;
+}
+
 export async function nextPurchaseRequestCode(): Promise<string> {
   const seq = await nextSeq("purchase-request");
   return `PR-${String(seq).padStart(4, "0")}`;

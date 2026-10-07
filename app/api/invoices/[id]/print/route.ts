@@ -48,6 +48,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/invoices/[id]/p
       diskonPerUnit: item.diskonPerUnit ?? 0,
       subtotal: item.subtotal,
       isFlashSale: item.isFlashSale ?? false,
+      isJasa: item.isJasa ?? false,
       hargaRekomendasiSnapshot: item.hargaRekomendasiSnapshot ?? undefined,
     })),
     subtotalProduk: invoice.subtotalProduk,

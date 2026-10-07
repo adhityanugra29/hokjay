@@ -9,10 +9,12 @@ import { useCart } from "@/components/cart/CartProvider";
 import { useDialog } from "@/components/ui/Dialog";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
 import ItemRowEditor from "./ItemRowEditor";
+import JasaRowEditor from "./JasaRowEditor";
 import InlineCustomerForm, { type CreatedCustomer } from "./InlineCustomerForm";
 import AddProductSidebar from "./AddProductSidebar";
 import { computeLineCommission, allocateBulkDiskon } from "@/lib/commission";
 import { rupiah } from "@/lib/format";
+import { makeJasaCartItem } from "@/lib/jasaCart";
 
 interface CustomerOption {
   _id: string;
@@ -71,7 +73,7 @@ export default function InvoiceForm({
   // updateInvoice.ts, resolved from the session there too, never trusted
   // from this client value.
   const isOwner = currentUser?.role === "owner";
-  const { items, clear, updateItem } = useCart();
+  const { items, clear, updateItem, addItem } = useCart();
   const { confirm, alert } = useDialog();
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
   // Keeps "Mohon menunggu" visible for the WHOLE save-then-navigate flow —
@@ -104,6 +106,11 @@ export default function InvoiceForm({
   const [customerList, setCustomerList] = useState<CustomerOption[]>(customers);
   const [addingCustomer, setAddingCustomer] = useState(false);
   const [addingProduct, setAddingProduct] = useState(false);
+  // "+ Tambah Jasa" — service fees (see models/Jasa.ts) are picked from a
+  // plain dropdown of active jasa, loaded the first time it's opened. They
+  // never appear in Katalog. Per the user's request 2026-10-07.
+  const [pickingJasa, setPickingJasa] = useState(false);
+  const [jasaOptions, setJasaOptions] = useState<{ _id: string; nama: string }[] | null>(null);
   const [shipAddress, setShipAddress] = useState(initial?.shipAddress ?? "");
   // Editable, not locked to the selected customer's own record — per the
   // user's request 2026-09-19 ("bisa di ganti ya jangan di lock"). Still
@@ -276,6 +283,9 @@ export default function InvoiceForm({
       items.reduce(
         (s, i) =>
           s +
+          // Jasa lines never earn komisi — computeLineCommission would
+          // otherwise treat them as a plain barang baru (6%).
+          (i.isJasa ? 0 : 1) *
           // diskon wasn't factored into this summary total before —
           // found and fixed alongside the 2026-08-29 diskon/komisi work
           // (ItemRowEditor's own per-line figure already did).
@@ -327,7 +337,7 @@ export default function InvoiceForm({
     for (const productId of ownLineIds) updateItem(productId, { diskonPerUnit: 0 });
 
     const result = allocateBulkDiskon(
-      items.map((i) => ({
+      items.filter((i) => !i.isJasa).map((i) => ({
         productId: i.productId,
         isCustom: i.isCustom,
         kondisi: i.kondisi,
@@ -394,7 +404,11 @@ export default function InvoiceForm({
   async function submit(status: "draft" | "unpaid") {
     setError(null);
     if (items.length === 0) {
-      setError("Belum ada produk di invoice ini.");
+      setError("Belum ada produk atau jasa di invoice ini.");
+      return;
+    }
+    if (items.some((i) => i.isJasa && !(i.hargaJual > 0))) {
+      setError("Harga jasa wajib diisi.");
       return;
     }
     const customer = customerList.find((c) => c._id === customerId);
@@ -425,7 +439,8 @@ export default function InvoiceForm({
           ongkosKirim,
           status,
           items: items.map((i) => ({
-            productId: i.isCustom ? undefined : i.productId,
+            jasaId: i.isJasa ? i.jasaId : undefined,
+            productId: i.isCustom || i.isJasa ? undefined : i.productId,
             namaSnapshot: i.isCustom ? i.name : undefined,
             qty: i.qty,
             hargaJual: i.hargaJual,
@@ -664,15 +679,19 @@ export default function InvoiceForm({
       </FormGrid>
       </FormSection>
 
-      <FormSection label="Item Produk">
+      <FormSection label="Item Produk &amp; Jasa">
       <div>
         <div>
-          {items.map((item) => (
-            <ItemRowEditor key={item.productId} item={item} isOwner={isOwner} />
-          ))}
+          {items.map((item) =>
+            item.isJasa ? (
+              <JasaRowEditor key={item.productId} item={item} />
+            ) : (
+              <ItemRowEditor key={item.productId} item={item} isOwner={isOwner} />
+            )
+          )}
           {items.length === 0 && (
             <div className="border border-dashed border-line py-6 text-center font-mono text-[0.8rem] text-muted">
-              Belum ada produk. Klik &quot;+ Tambah Produk&quot; di bawah.
+              Belum ada item. Klik &quot;+ Tambah Produk&quot; atau &quot;+ Tambah Jasa&quot; di bawah.
             </div>
           )}
         </div>
@@ -690,6 +709,49 @@ export default function InvoiceForm({
         >
           + Tambah Produk
         </button>
+        {pickingJasa ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2.5 rounded-xl border-[1.5px] border-dashed border-accent-700 bg-accent-100 p-3">
+            <div className="min-w-[200px] flex-1">
+              <Select
+                value=""
+                onChange={(e) => {
+                  const j = jasaOptions?.find((o) => o._id === e.target.value);
+                  if (!j) return;
+                  addItem(makeJasaCartItem(j));
+                  setPickingJasa(false);
+                }}
+              >
+                <option value="">
+                  {jasaOptions === null ? "Memuat jasa..." : jasaOptions.length === 0 ? "Belum ada jasa aktif" : "— Pilih jasa —"}
+                </option>
+                {(jasaOptions ?? []).map((j) => (
+                  <option key={j._id} value={j._id}>
+                    {j.nama}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <button type="button" onClick={() => setPickingJasa(false)} className="cursor-pointer font-mono text-[0.72rem] underline">
+              Batal
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setPickingJasa(true);
+              if (jasaOptions === null) {
+                fetch("/api/jasa?aktif=1")
+                  .then((r) => (r.ok ? r.json() : []))
+                  .then(setJasaOptions)
+                  .catch(() => setJasaOptions([]));
+              }
+            }}
+            className="mt-2 block w-full cursor-pointer rounded-xl border-[1.5px] border-dashed border-line py-3 text-center font-sans text-[0.85rem] text-muted hover:border-moss hover:bg-[#fbfaf5] hover:text-moss-deep"
+          >
+            + Tambah Jasa
+          </button>
+        )}
       </div>
       </FormSection>
 

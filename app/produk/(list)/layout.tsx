@@ -23,6 +23,7 @@ export default async function ProdukLayout({ children }: { children: React.React
             { href: "/produk", label: "Semua Produk" },
             { href: "/produk/kategori", label: "Kategori" },
             { href: "/produk/riwayat", label: "Riwayat Stok Masuk/Keluar" },
+            { href: "/produk/jasa", label: "Jasa" },
           ]}
         />
         {children}

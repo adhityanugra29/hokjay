@@ -55,6 +55,7 @@ export const ACCOUNTS: Account[] = [
   // 4 — Pendapatan
   { code: "4-1000", name: "Penjualan Barang Dagang", kelompok: "Pendapatan", normal: "credit" },
   { code: "4-1100", name: "Pendapatan Ongkos Kirim", kelompok: "Pendapatan", normal: "credit" },
+  { code: "4-1200", name: "Pendapatan Jasa", kelompok: "Pendapatan", normal: "credit" },
   { code: "4-1900", name: "Diskon Penjualan", kelompok: "Pendapatan", normal: "debit" }, // kontra-pendapatan
   { code: "4-2000", name: "Pendapatan Lain-lain", kelompok: "Pendapatan", normal: "credit" },
   // 5 — Harga Pokok Penjualan

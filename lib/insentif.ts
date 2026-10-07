@@ -52,6 +52,9 @@ export async function getSalesRanking(period: string): Promise<SalesRanking[]> {
       komisiBelumCairCount: 0,
     };
     for (const item of inv.items) {
+      // Jasa (service fee) lines don't count toward a sales rep's qty or
+      // penjualan on the leaderboard — per the user's request 2026-10-07.
+      if (item.isJasa) continue;
       row.qty += item.qty;
       row.totalPenjualan += item.subtotal;
       row.totalKomisi += item.komisiSubtotal;
@@ -139,7 +142,7 @@ export async function getSalesBoard(period: string): Promise<SalesBoard> {
   for (const inv of invoices) {
     const nama = inv.sales?.nama ?? "—";
     const row = map.get(nama) ?? { totalPenjualan: 0, orderCount: 0 };
-    row.totalPenjualan += inv.items.reduce((s, i) => s + i.subtotal, 0);
+    row.totalPenjualan += inv.items.reduce((s, i) => s + (i.isJasa ? 0 : i.subtotal), 0); // jasa excluded, see getSalesRanking
     row.orderCount += 1;
     map.set(nama, row);
   }
@@ -147,7 +150,7 @@ export async function getSalesBoard(period: string): Promise<SalesBoard> {
   const estimasiByNama = new Map<string, number>();
   for (const inv of unpaidInvoices) {
     const nama = inv.sales?.nama ?? "—";
-    const subtotal = inv.items.reduce((s, i) => s + i.subtotal, 0);
+    const subtotal = inv.items.reduce((s, i) => s + (i.isJasa ? 0 : i.subtotal), 0); // jasa excluded, see getSalesRanking
     estimasiByNama.set(nama, (estimasiByNama.get(nama) ?? 0) + subtotal);
   }
 

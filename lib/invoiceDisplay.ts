@@ -22,6 +22,8 @@ export interface InvoicePrintItem {
   /** Shown in its own table column — per the user's request 2026-08-29 (brought back after being hidden 2026-08-28). */
   diskonPerUnit: number;
   subtotal: number;
+  /** Service-fee (jasa) line — shown without Qty/Diskon, listed after products, left out of Surat Jalan. Per the user's request 2026-10-07. */
+  isJasa?: boolean;
   /** Snapshotted at add-to-cart time (see models/Invoice.ts). Per the user's request 2026-08-29. */
   isFlashSale?: boolean;
   /** Only meaningfully populated for a Flash Sale line — see displayDiskon below. Per the user's request 2026-08-29. */

@@ -5,10 +5,13 @@ import { nextInvoiceNumber } from "@/lib/counters";
 import { computeLineCommission, maxDiskonBekas, maxDiskonBaru, resolveKomisiBekasPercent } from "@/lib/commission";
 import { formatDimensi, productDisplayName } from "@/lib/format";
 import { getKategoriKomisiBekasMap } from "@/lib/katalog";
+import { buildJasaLine, loadJasaMap } from "@/lib/services/jasaLine";
 
 export interface CreateInvoiceItemInput {
   /** Absent for custom-order line items, which have no backing Product. */
   productId?: string;
+  /** Set for a service-fee (jasa) line instead of productId — see lib/services/jasaLine.ts. */
+  jasaId?: string;
   /** Required when productId is absent — the custom item's description. */
   namaSnapshot?: string;
   qty: number;
@@ -67,15 +70,19 @@ export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?:
   }
 
   const productIds = input.items.filter((i) => i.productId).map((i) => i.productId!);
-  const [products, kategoriKomisiBekasMap] = await Promise.all([
+  const jasaIds = input.items.filter((i) => i.jasaId).map((i) => i.jasaId!);
+  const [products, kategoriKomisiBekasMap, jasaMap] = await Promise.all([
     Product.find({ _id: { $in: productIds } }),
     getKategoriKomisiBekasMap(),
+    loadJasaMap(jasaIds),
   ]);
   const productMap = new Map(products.map((p) => [String(p._id), p]));
 
   const finalize = input.status !== "draft";
 
   const items = input.items.map((i) => {
+    if (i.jasaId) return buildJasaLine({ jasaId: i.jasaId, hargaJual: i.hargaJual }, jasaMap);
+
     const rawDiskon = i.diskonPerUnit ?? 0;
 
     if (!i.productId) {

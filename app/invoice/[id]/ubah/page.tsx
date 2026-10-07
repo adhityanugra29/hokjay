@@ -49,11 +49,15 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
     invoice.status === "unpaid" &&
     (await JournalEntry.exists({ invoice: invoice._id, sumberTipe: "invoice-finalisasi" }));
 
-  const cartItems: CartItem[] = invoice.items.map((item) => {
+  const cartItems: CartItem[] = invoice.items.map((item, index) => {
     const product = item.product ? productMap.get(String(item.product)) : undefined;
     const liveStok = product ? product.stok + (wasFinalized ? item.qty : 0) : 999999;
     return {
-      productId: item.product ? String(item.product) : `custom-${item.namaSnapshot}`,
+      productId: item.isJasa
+        ? `jasa:${String(item.jasa)}:${index}`
+        : item.product
+          ? String(item.product)
+          : `custom-${item.namaSnapshot}`,
       name: item.namaSnapshot,
       hargaJual: item.hargaJual,
       hargaMinimum: item.hargaMinimumSnapshot,
@@ -67,6 +71,8 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
       qty: item.qty,
       diskonPerUnit: item.diskonPerUnit,
       isCustom: item.isCustom,
+      isJasa: item.isJasa,
+      jasaId: item.isJasa ? String(item.jasa) : undefined,
       kondisi: (product?.kondisi as "baru" | "bekas") ?? "baru",
       // Resolved fresh from the product's/category's CURRENT state, same as
       // kondisi above (not a historical snapshot — there's no field for

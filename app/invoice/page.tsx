@@ -142,6 +142,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
         diskonPerUnit: item.diskonPerUnit ?? 0,
         subtotal: item.subtotal,
         isFlashSale: item.isFlashSale ?? false,
+        isJasa: item.isJasa ?? false,
         hargaRekomendasiSnapshot: item.hargaRekomendasiSnapshot ?? undefined,
       })),
       subtotalProduk: inv.subtotalProduk,

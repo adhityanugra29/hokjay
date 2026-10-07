@@ -35,6 +35,17 @@ export default function InvoiceDocument({
   const totalDiskon = invoice.items.reduce((s, i) => s + displayDiskon(i) * i.qty, 0);
   const totalBelanja = invoice.items.reduce((s, i) => s + displayHarga(i) * i.qty, 0);
   const isSuratJalan = mode === "surat-jalan";
+  // Jasa lines sit after the products. On a Surat Jalan they are left out
+  // when there are products (only what is physically shipped), but an
+  // invoice with jasa ONLY still gets a Surat Jalan listing them, since
+  // it may still need something delivered. Per the user's request
+  // 2026-10-07.
+  const hasJasa = invoice.items.some((i) => i.isJasa);
+  const jasaOnly = hasJasa && invoice.items.every((i) => i.isJasa);
+  const shownItems = [
+    ...invoice.items.filter((i) => !i.isJasa),
+    ...(isSuratJalan && !jasaOnly ? [] : invoice.items.filter((i) => i.isJasa)),
+  ];
   const syaratKetentuanPoints = (invoice.syaratKetentuan ?? "")
     .split("\n")
     .map((line) => line.trim())
@@ -120,7 +131,7 @@ export default function InvoiceDocument({
         <table className="w-full min-w-[480px] border-collapse">
           <thead>
             <tr>
-              {(isSuratJalan ? ["Produk", "Qty"] : ["Produk", "Qty", "Harga", "Diskon", "Subtotal"]).map((h, idx) => (
+              {(isSuratJalan ? ["Produk", "Qty"] : [hasJasa ? "Item" : "Produk", "Qty", "Harga", "Diskon", "Subtotal"]).map((h, idx) => (
                 <th
                   key={h}
                   className={`border-b border-ink py-2 font-mono text-[0.68rem] uppercase text-muted ${
@@ -133,7 +144,7 @@ export default function InvoiceDocument({
             </tr>
           </thead>
           <tbody>
-            {invoice.items.map((item, idx) => (
+            {shownItems.map((item, idx) => (
               <tr key={idx}>
                 <td className="border-b border-line py-3 text-[0.88rem]">
                   {item.namaSnapshot}
@@ -143,12 +154,15 @@ export default function InvoiceDocument({
                   {item.isFlashSale && (
                     <span className="ml-1.5 font-mono text-[0.72rem] font-semibold text-accent-700">· Harga Special</span>
                   )}
+                  {item.isJasa && (
+                    <span className="ml-1.5 font-mono text-[0.72rem] font-semibold text-accent-700">· Jasa</span>
+                  )}
                 </td>
-                <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
+                <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.isJasa ? "–" : item.qty}</td>
                 {!isSuratJalan && (
                   <>
                     <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayHarga(item))}</td>
-                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
+                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{item.isJasa ? "–" : rupiah(displayDiskon(item))}</td>
                     <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
                   </>
                 )}

@@ -940,3 +940,26 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 
 **Files affected:** `components/invoice/InvoiceListClient.tsx`, `components/invoice/InvoiceFilterBar.tsx` (new), `app/invoice/page.tsx`. `InvoicePeriodFilter.tsx` is now unused (candidate for deletion with approval).
 **Regression test:** `tsc --noEmit`, `eslint` on the 3 files, `next build` clean. Not click-tested in a logged-in browser.
+
+---
+
+## TASK-042 — Jasa (biaya service): master data terpisah, baris di invoice, tombol di Katalog
+
+**Type:** Feature
+**Priority:** P2
+**Status:** DONE (2026-10-07, deployed; belum diklik di browser yang login)
+**Dependency:** TASK-039, TASK-041 (pola Invoice), akuntansi COA
+**Created:** 2026-10-07 · **Last updated:** 2026-10-07
+
+**Description:** User minta biaya jasa diperlakukan beda dari produk. Disetujui lewat mockup `docs/SDD/mockups/jasa-v2.html` (versi 6): jasa terpisah dari produk, harga flat yang diinput per invoice, tanpa satuan/qty/keterangan, tanpa stok, harga bottom, diskon, komisi sales, maupun HPP. Tidak tampil sebagai kartu di Katalog maupun PDF katalog. Invoice boleh berisi jasa saja.
+
+**Build:** `models/Jasa.ts` (nama, kode JS-0001, aktif), `/api/jasa`, tab Jasa di Inventory (`/produk/jasa`, form tambah/ubah). Invoice: item punya `isJasa` + `jasa`, qty selalu 1; `lib/services/jasaLine.ts` dipakai createInvoice/updateInvoice; `JasaRowEditor` + "+ Tambah Jasa" di InvoiceForm; komisi dan Diskon Bulk hanya menghitung produk. Jurnal lunas: baris jasa ke akun baru 4-1200 Pendapatan Jasa (tanpa diskon/HPP/komisi); Laba Rugi dan Neraca ikut menghitung 4-1200. Katalog: tombol kuning "+ Tambah" (Jasa, Pesan Produk Custom, Lihat Produk Custom) menggantikan dua tombol terpisah; panel jasa berisi isian harga + Tambah (nonaktif sampai harga diisi). Tampilan/cetak invoice: jasa di bawah produk, label "· Jasa", Qty dan Diskon "–", tidak masuk Surat Jalan.
+
+**Differences from the mockup:** panel jasa di Katalog berupa pop-up (bukan panel inline); cetak invoice tidak punya subjudul pemisah Produk/Jasa (hanya diurutkan dan diberi label).
+
+**Decisions (user, 2026-10-07):** jasa TIDAK dihitung di Leaderboard Insentif (`lib/insentif.ts`: qty, totalPenjualan, target); jasa boleh muncul di dashboard; invoice jasa saja tetap punya field pengiriman dan Surat Jalan, dan Surat Jalan-nya mendaftar baris jasa (kalau invoice punya produk, Surat Jalan hanya mendaftar produk).
+
+**Open points:** (1) Surat Jalan invoice jasa saja belum dilihat hasil PDF-nya. (2) `/api/jasa` belum punya cek peran (sama seperti `/api/products`).
+
+**Files affected:** `models/Jasa.ts`, `models/Invoice.ts`, `app/api/jasa/**`, `app/produk/(list)/jasa`, `app/produk/jasa/**`, `app/produk/(list)/layout.tsx`, `components/produk/JasaForm.tsx`, `components/invoice/{JasaRowEditor,InvoiceForm,InvoiceDocument,InvoicePrintDoc}.tsx`, `components/katalog/{KatalogAddMenu,KatalogClient}.tsx`, `components/cart/CartProvider.tsx`, `lib/{jasaCart,coa,akuntansi,counters,invoiceDisplay}.ts`, `lib/services/{jasaLine,createInvoice,updateInvoice,journal}.ts`, `app/invoice/page.tsx`, `app/invoice/[id]/{page,ubah/page}.tsx`, `app/api/invoices/[id]/print/route.ts`, `app/akuntansi/laba-rugi/page.tsx`.
+**Regression test:** `tsc --noEmit` dan `next build` bersih. ESLint pada file yang diubah hanya melaporkan temuan lama (setState di effect pada CartProvider/InvoiceForm). Belum diklik di browser yang login.

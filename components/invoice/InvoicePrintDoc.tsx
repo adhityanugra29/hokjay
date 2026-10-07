@@ -110,9 +110,17 @@ export default function InvoicePrintDoc({
   // 2026-08-29, same "always first" treatment as the Katalog grid/PDF.
   // A stable partition (not a comparator-based sort) so the relative
   // order within each group is left exactly as the invoice stored it.
+  // Jasa lines come last. On a Surat Jalan they are left out when there
+  // are products (only what is physically shipped), but a jasa-ONLY
+  // invoice still gets a Surat Jalan listing them. Per the user's request
+  // 2026-10-07.
+  const hasJasa = invoice.items.some((it) => it.isJasa);
+  const jasaOnly = hasJasa && invoice.items.every((it) => it.isJasa);
+  const productItems = invoice.items.filter((it) => !it.isJasa);
   const sortedItems = [
-    ...invoice.items.filter((it) => it.isFlashSale),
-    ...invoice.items.filter((it) => !it.isFlashSale),
+    ...productItems.filter((it) => it.isFlashSale),
+    ...productItems.filter((it) => !it.isFlashSale),
+    ...(mode === "surat-jalan" && !jasaOnly ? [] : invoice.items.filter((it) => it.isJasa)),
   ];
 
   const syaratKetentuanPoints = (invoice.syaratKetentuan ?? "")
@@ -410,7 +418,7 @@ export default function InvoicePrintDoc({
     </div>
   );
 
-  const tableHeaders = mode === "surat-jalan" ? ["Produk", "Qty"] : ["Produk", "Qty", "Harga", "Diskon", "Subtotal"];
+  const tableHeaders = mode === "surat-jalan" ? ["Produk", "Qty"] : [hasJasa ? "Item" : "Produk", "Qty", "Harga", "Diskon", "Subtotal"];
 
   return (
     <div className="h-0 overflow-hidden print:hidden">
@@ -478,12 +486,15 @@ export default function InvoicePrintDoc({
                               · Harga Special
                             </span>
                           )}
+                          {item.isJasa && (
+                            <span className="ml-1.5 font-mono text-[0.72rem] font-semibold text-accent-700">· Jasa</span>
+                          )}
                         </td>
-                        <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.qty}</td>
+                        <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.isJasa ? "–" : item.qty}</td>
                         {mode !== "surat-jalan" && (
                           <>
                             <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayHarga(item))}</td>
-                            <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayDiskon(item))}</td>
+                            <td className="border-b border-line py-3 text-right text-[0.88rem]">{item.isJasa ? "–" : rupiah(displayDiskon(item))}</td>
                             <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
                           </>
                         )}

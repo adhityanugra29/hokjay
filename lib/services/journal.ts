@@ -43,9 +43,14 @@ export async function postInvoiceLunas(invoice: InvoiceLike, hppTotal: number) {
   await dbConnect();
 
   let gross = 0;
+  let jasaTotal = 0; // service-fee lines go to 4-1200, never into product sales/diskon/HPP/komisi
   let diskonTotal = 0;
   let komisiTotal = 0;
   for (const item of invoice.items) {
+    if (item.isJasa) {
+      jasaTotal += item.hargaJual * item.qty;
+      continue;
+    }
     gross += item.hargaJual * item.qty;
     diskonTotal += item.diskonPerUnit * item.qty;
     komisiTotal += item.komisiSubtotal;
@@ -66,6 +71,7 @@ export async function postInvoiceLunas(invoice: InvoiceLike, hppTotal: number) {
       line(kasAkun, { debit: kasBaruDiterima }),
       line("4-1900", { debit: diskonTotal }),
       line("4-1000", { credit: gross }),
+      ...(jasaTotal > 0 ? [line("4-1200", { credit: jasaTotal })] : []),
       ...(ongkosKirim > 0 ? [line("4-1100", { credit: ongkosKirim })] : []),
     ],
   });

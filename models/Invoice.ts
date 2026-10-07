@@ -4,6 +4,13 @@ const InvoiceItemSchema = new Schema(
   {
     product: { type: Schema.Types.ObjectId, ref: "Product" },
     isCustom: { type: Boolean, default: false },
+    // Service-fee line (see models/Jasa.ts) — no product/stock, no HPP, no
+    // komisi, no diskon, flat price typed per invoice. Booked to 4-1200
+    // Pendapatan Jasa at payment (lib/services/journal.ts). Defaults false,
+    // so every pre-existing invoice item is unaffected. Per the user's
+    // request 2026-10-07.
+    isJasa: { type: Boolean, default: false },
+    jasa: { type: Schema.Types.ObjectId, ref: "Jasa" },
     namaSnapshot: { type: String, required: true },
     // Dimensions at the moment of sale (e.g. "120x80x60 cm"), shown right
     // after the product name on the printed invoice — per the user's

@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup Jasa v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Mockup Jasa v2 — lima layar yang mengikuti tampilan aplikasi sebenarnya (token HOJAY "Foundry"). Hanya mockup, belum ada kode aplikasi. */
+:root {
+  --ink: #201e1d; --paper: #f7f1e4; --panel: #fffdf8; --surface: #efe9da; --chip: #efece3;
+  --line: rgba(36,31,25,.16); --muted: rgba(36,31,25,.6);
+  --accent: #ffc800; --accent-600: #f0b800; --accent-100: #fff8e0; --accent-700: #92610a;
+  --danger: #c0392b; --moss-deep: #6b5200;
+  --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.45; margin: 0; padding: 24px 16px 64px; }
+h1, h2, h3 { font-weight: 800; letter-spacing: -.015em; margin: 0; text-wrap: balance; }
+button, input, select { font-family: inherit; font-size: inherit; color: inherit; }
+.wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.intro h1 { font-size: 1.5rem; }
+.intro p { margin: 6px 0 0; color: var(--muted); max-width: 78ch; font-size: .85rem; }
+.rules { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.rule { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 700; }
+.rule s { color: var(--muted); font-weight: 600; }
+
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { cursor: pointer; border: 1.5px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
+.seg button:hover { border-color: var(--accent-600); }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.screen { display: none; flex-direction: column; gap: 10px; }
+.screen.on { display: flex; }
+.cap { font-size: 12.5px; color: var(--muted); max-width: 95ch; background: var(--panel); border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.cap b { color: var(--ink); }
+.frame { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px 28px; }
+.frame-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.frame-h h2 { font-size: 1.3rem; }
+.sub { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: transparent; padding: 9px 16px; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.btn:hover { background: rgba(0,0,0,.05); }
+.btn.solid { background: var(--accent); border-color: var(--accent); }
+.btn.solid:hover { background: var(--accent-600); }
+.btn.sm { padding: 6px 12px; font-size: 12px; }
+.pill { border: 1px solid; border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 700; white-space: nowrap; display: inline-block; }
+.pill.jasa { border-color: var(--accent-700); background: var(--accent-100); color: var(--accent-700); }
+.pill.on { border-color: var(--accent-700); color: var(--accent-700); }
+.pill.off { border-color: var(--line); color: var(--muted); }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; }
+.tabs span { padding: 8px 16px; font-weight: 700; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; }
+.tabs span.on { color: var(--ink); border-color: var(--accent); }
+
+/* panel + table */
+.panel { background: var(--panel); border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow: hidden; }
+.panel-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--surface); padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.panel-h h3 { font-size: .95rem; }
+.tblwrap { overflow-x: auto; }
+.tbl { width: 100%; min-width: 600px; border-collapse: collapse; }
+.tbl th { text-align: left; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 12px 20px; border-bottom: 1px solid var(--line); font-weight: 400; }
+.tbl td { padding: 16px 20px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl small { display: block; color: var(--muted); font-size: 12.5px; }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+.link { font-weight: 800; font-size: 12.5px; text-decoration: underline; cursor: pointer; }
+
+/* form card (FormCard / FormSection) */
+.fcard { max-width: 780px; margin: 0 auto; background: var(--panel); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.1); overflow: hidden; }
+.fcard.wide { max-width: 900px; }
+.fcard-h { padding: 20px 24px; border-bottom: 1px solid var(--line); }
+.fcard-h h2 { font-size: 1.05rem; }
+.fcard-h p { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
+.fsec { padding: 20px 24px; border-bottom: 1px solid var(--line); }
+.fsec:last-child { border-bottom: 0; }
+.fsec-l { display: flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-700); margin-bottom: 14px; }
+.fsec-l::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.fgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+.field label, .lbl { font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.field input, .field select { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 10px 14px; min-width: 0; width: 100%; }
+.field .hint { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.fact { display: flex; flex-wrap: wrap; gap: 10px; padding: 18px 24px; }
+
+/* invoice item rows (mirror ItemRowEditor) */
+.irow { background: var(--panel); border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.1); margin-bottom: 10px; }
+.irow-h { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.irow-name { flex: 1; background: var(--chip); border-radius: 8px; padding: 8px 10px; font-weight: 600; font-size: .88rem; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; min-width: 0; }
+.irow-del { font-family: var(--mono); font-size: 11.5px; color: var(--danger); cursor: pointer; white-space: nowrap; }
+.icols { display: grid; gap: 10px; }
+.icols.prod { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.icols.jasa { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 520px; }
+.ic { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ic .v { padding: 8px 0; font-family: var(--mono); font-size: 13px; }
+.ic .v.m { color: var(--muted); }
+.ic .v.k { color: var(--moss-deep); }
+.ic input { border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 8px; font-family: var(--mono); font-size: 13px; width: 100%; }
+.ic .note { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.ic .note.bottom { color: #b4531f; }
+.addbtn { display: block; width: 100%; cursor: pointer; border: 1.5px dashed var(--line); background: transparent; border-radius: 12px; padding: 12px; text-align: center; font-size: 13.5px; color: var(--muted); margin-top: 8px; }
+.addbtn:hover { border-color: var(--accent-700); color: var(--moss-deep); background: #fbfaf5; }
+.picker { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border: 1.5px dashed var(--accent-700); background: var(--accent-100); border-radius: 12px; padding: 12px; }
+.picker select { flex: 1; min-width: 200px; border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 10px 14px; }
+.picker.off, .tgl-hide { display: none; }
+.sumbox { border: 1px solid var(--line); background: #f7f5ee; padding: 18px; margin-bottom: 14px; }
+.sumbox h4 { margin: 0 0 6px; font-family: var(--mono); font-size: 11px; font-weight: 400; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.totals { margin-left: auto; width: 100%; max-width: 300px; font-family: var(--mono); font-size: 13.5px; }
+.totals div { display: flex; justify-content: space-between; padding: 6px 0; }
+.totals .grand { margin-top: 8px; border-top: 2px solid var(--ink); padding-top: 12px; font-size: 1.1rem; font-weight: 600; }
+.totals .hl { color: var(--accent-700); }
+
+/* print doc */
+.doc { max-width: 760px; margin: 0 auto; background: #fff; border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0,0,0,.1); padding: 36px 40px; font-size: 13px; }
+.doc-h { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 16px; margin-bottom: 18px; }
+.doc-h h3 { font-size: 1.4rem; }
+.doc-meta { display: flex; gap: 40px; flex-wrap: wrap; margin-bottom: 20px; }
+.doc-meta .lbl { display: block; margin-bottom: 2px; }
+.dtbl { width: 100%; border-collapse: collapse; }
+.dtbl th { text-align: left; font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 8px 6px; border-bottom: 1.5px solid var(--ink); font-weight: 400; }
+.dtbl td { padding: 10px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.dtbl .r, .dtbl th.r { text-align: right; font-variant-numeric: tabular-nums; }
+.dtbl .grp td { background: var(--surface); font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 5px 6px; }
+.dtbl small { display: block; color: var(--muted); }
+
+/* laba rugi */
+.lr { max-width: 640px; margin: 0 auto; }
+.lr .row { display: flex; justify-content: space-between; gap: 12px; padding: 11px 20px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.lr .row.sub2 { font-weight: 800; background: var(--surface); }
+.lr .row.new { background: var(--accent-100); box-shadow: inset 3px 0 0 var(--accent); }
+.lr .row.minus span:last-child { color: var(--danger); }
+
+/* katalog */
+.kh { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.kh h2 { font-size: 1.3rem; }
+.kact { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn.solid.ghost-on { background: var(--accent-600); border-color: var(--accent-700); }
+.kmode { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.kmode button { cursor: pointer; border: 1.5px solid var(--line); background: transparent; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; }
+.kmode button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--accent); }
+.kh.hide { display: none; }
+.menuwrap { position: relative; }
+.menu { position: absolute; right: 0; top: calc(100% + 6px); min-width: 230px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.16); padding: 6px; z-index: 5; display: none; }
+.menu.on { display: block; }
+.menu button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; text-align: left; cursor: pointer; border: 0; background: transparent; border-radius: 8px; padding: 9px 12px; font-weight: 800; font-size: 13px; }
+.menu button small { font-weight: 400; font-size: 11.5px; color: var(--muted); }
+.menu button:hover { background: var(--accent-100); }
+.menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 4px; }
+.kgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.kcard { background: var(--panel); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.1); overflow: hidden; }
+.kcard .ph { aspect-ratio: 4/3; background: var(--surface); display: grid; place-items: center; font-size: 12px; color: var(--muted); }
+.kcard .b { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 2px; }
+.kcard .b b { font-size: .9rem; }
+.kcard .b span { font-size: 12px; color: var(--muted); }
+.jpanel { background: var(--panel); border: 1.5px solid var(--accent-700); border-radius: 14px; padding: 16px; display: none; flex-direction: column; gap: 12px; max-width: 560px; }
+.jpanel.on { display: flex; }
+.jpanel h3 { font-size: 1rem; }
+.jpanel p { margin: 0; font-size: 12.5px; color: var(--muted); }
+.jlist { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.jitem { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.jitem:last-child { border-bottom: 0; }
+.jitem b { font-size: .9rem; }
+.jitem .jr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.jitem input { width: 150px; border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 7px 10px; font-family: var(--mono); font-size: 13px; }
+.cartbar { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--ink); color: var(--accent); border-radius: 12px; padding: 12px 16px; font-weight: 700; }
+.cartbar .btn { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+@media (max-width: 720px) {
+  .fgrid { grid-template-columns: 1fr; }
+  .frame { padding: 16px 12px 22px; }
+  .icols.prod { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .icols.jasa { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .doc { padding: 22px 16px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="intro">
+    <h1>Mockup — Jasa (Biaya Service) v2</h1>
+    <p>Enam layar mengikuti tampilan aplikasi yang sudah ada. Jasa adalah master data terpisah dari Produk dan hanya ditambahkan lewat invoice. Ini mockup saja; belum ada kode aplikasi yang diubah untuk versi ini.</p>
+    <div class="rules">
+      <span class="rule">Harga flat, diinput per invoice</span>
+      <span class="rule"><s>Kartu/PDF Katalog</s></span><span class="rule">Tombol + Jasa di Katalog</span>
+      <span class="rule"><s>Stok</s></span>
+      <span class="rule"><s>Harga Bottom &amp; Diskon</s></span>
+      <span class="rule"><s>Komisi sales</s></span>
+      <span class="rule"><s>HPP</s></span>
+      <span class="rule">Pendapatan → akun 4-1200</span>
+    </div>
+  </div>
+
+  <div class="seg" role="group" aria-label="Pilih layar">
+    <button type="button" data-s="s1" aria-pressed="true">1 · Produk → tab Jasa</button>
+    <button type="button" data-s="s2" aria-pressed="false">2 · Form Jasa</button>
+    <button type="button" data-s="s6" aria-pressed="false">3 · Katalog (tombol Jasa)</button>
+    <button type="button" data-s="s3" aria-pressed="false">4 · Invoice Baru</button>
+    <button type="button" data-s="s4" aria-pressed="false">5 · Invoice (tampilan/cetak)</button>
+    <button type="button" data-s="s5" aria-pressed="false">6 · Laba Rugi</button>
+  </div>
+
+  <!-- 1 -->
+  <section class="screen on" id="s1">
+    <div class="cap"><b>Halaman Inventory</b> mendapat tab baru <b>Jasa</b> di sebelah Riwayat Stok. Daftar sengaja tanpa kolom Keterangan, Satuan, Stok, Harga, atau Komisi. Tombol <b>+ Tambah Jasa</b> ada di header panel, bukan di header halaman (supaya tidak bentrok dengan "+ Tambah Produk").</div>
+    <div class="frame">
+      <div class="frame-h"><div><h2>Inventory</h2><span class="sub">128 produk aktif</span></div><button class="btn solid" type="button">+ Tambah Produk</button></div>
+      <div class="tabs"><span>Semua Produk</span><span>Kategori</span><span>Riwayat Stok Masuk/Keluar</span><span class="on">Jasa</span></div>
+      <div class="panel">
+        <div class="panel-h"><h3>Jasa</h3><button class="btn solid sm" type="button">+ Tambah Jasa</button></div>
+        <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>Nama Jasa</th><th>Kode</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><b>Jasa Pemasangan Exhaust Hood</b></td><td class="mono">JS-0001</td><td><span class="pill on">Aktif</span></td><td style="text-align:right"><span class="link">Ubah</span></td></tr>
+            <tr><td><b>Jasa Instalasi Gas &amp; Kompor</b></td><td class="mono">JS-0002</td><td><span class="pill on">Aktif</span></td><td style="text-align:right"><span class="link">Ubah</span></td></tr>
+            <tr><td><b>Servis Berkala Mesin</b></td><td class="mono">JS-0003</td><td><span class="pill on">Aktif</span></td><td style="text-align:right"><span class="link">Ubah</span></td></tr>
+            <tr><td><b>Jasa Pengiriman Khusus</b></td><td class="mono">JS-0004</td><td><span class="pill off">Nonaktif</span></td><td style="text-align:right"><span class="link">Ubah</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="screen" id="s2">
+    <div class="cap"><b>Form Jasa</b> jauh lebih pendek dari form Produk: tidak ada kategori, satuan, keterangan, stok, kondisi, dimensi, foto, harga beli/minimum, maupun komisi. <b>Tidak ada kolom harga</b> — nominal diisi saat membuat invoice. Jasa yang dinonaktifkan tidak muncul di pemilih jasa invoice baru, tapi tetap tampil di invoice lama.</div>
+    <div class="frame">
+      <div class="fcard">
+        <div class="fcard-h"><h2>Jasa Baru</h2><p>Harga jasa diisi langsung di invoice, bukan di sini. Jasa tidak punya stok, komisi, HPP, maupun diskon.</p></div>
+        <div class="fsec">
+          <div class="fsec-l">Data Jasa</div>
+          <div class="fgrid">
+            <div class="field full"><label for="a1">Nama Jasa</label><input id="a1" value="Jasa Pemasangan Exhaust Hood"></div>
+            <div class="field"><label for="a2">Kode</label><input id="a2" placeholder="JS-0005"><span class="hint">Kosongkan untuk dibuat otomatis</span></div>
+            <div class="field"><label for="a4">Status</label><select id="a4"><option>Aktif</option><option>Nonaktif</option></select><span class="hint">Nonaktif = tidak bisa ditambahkan ke invoice baru</span></div>
+          </div>
+        </div>
+        <div class="fact"><button class="btn solid" type="button">Simpan Jasa</button><button class="btn" type="button">Batal</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 Katalog -->
+  <section class="screen" id="s6">
+    <div class="cap"><b>Katalog</b>: header disederhanakan. Empat tombol sejajar (Pesan Produk Custom, Lihat Produk Custom, + Jasa, PDF) jadi dua: satu tombol kuning <b>+ Tambah ▾</b> berisi Jasa (paling atas), Pesan Produk Custom, dan Lihat Produk Custom, ditambah <b>Buat Katalog (PDF)</b>. Satu aksi utama per layar, sama seperti Invoice. Klik <b>Sekarang</b> untuk membandingkan. Jasa <b>tidak muncul</b> sebagai kartu di grid maupun di PDF katalog. Tombol ini hanya pintu masuk: membuka panel berisi jasa aktif, tiap jasa punya isian harga dan tombol <b>Tambah</b> yang memasukkannya ke keranjang invoice, sama seperti produk. Coba klik <b>+ Tambah</b>, lalu <b>Jasa</b> (pilihan pertama).</div>
+    <div class="frame">
+      <div class="kmode" role="group" aria-label="Bandingkan header">
+        <button type="button" data-k="now" aria-pressed="false">Sekarang (4 tombol)</button>
+        <button type="button" data-k="new" aria-pressed="true">Usulan (2 tombol)</button>
+      </div>
+      <div class="kh" id="khNew">
+        <div><h2>Katalog CV HORECA JAYA</h2><span class="sub">Stok ter-update otomatis · 128 produk tersedia</span></div>
+        <div class="kact">
+          <div class="menuwrap">
+            <button class="btn solid" type="button" id="kAddBtn" aria-haspopup="true" aria-expanded="false">+ Tambah ▾</button>
+            <div class="menu" id="kAddMenu" role="menu">
+              <button type="button" role="menuitem" id="kMenuJasa">Jasa<small>Tambah biaya service ke invoice</small></button>
+              <button type="button" role="menuitem">Pesan Produk Custom<small>Buat produk pesanan khusus</small></button>
+              <hr>
+              <button type="button" role="menuitem">Lihat Produk Custom<small>Daftar produk custom yang sudah dibuat</small></button>
+            </div>
+          </div>
+          <button class="btn" type="button">Buat Katalog (PDF)</button>
+        </div>
+      </div>
+      <div class="kh hide" id="khNow">
+        <div><h2>Katalog CV HORECA JAYA</h2><span class="sub">Stok ter-update otomatis · 128 produk tersedia</span></div>
+        <div class="kact">
+          <button class="btn solid" type="button">Pesan Produk Custom</button>
+          <button class="btn" type="button">Lihat Produk Custom</button>
+          <button class="btn solid" type="button" id="kJasaBtn">+ Jasa</button>
+          <button class="btn" type="button">Buat Katalog (PDF)</button>
+        </div>
+      </div>
+      <div class="jpanel" id="kJasaPanel">
+        <div><h3>Tambah Jasa ke Invoice</h3><p>Isi harga jasa, lalu tambahkan. Jasa tidak punya stok, diskon, maupun komisi.</p></div>
+        <div class="jlist">
+          <div class="jitem"><b>Jasa Pemasangan Exhaust Hood</b><div class="jr"><input value="Rp 750.000" aria-label="Harga jasa"><button class="btn solid sm" type="button">Tambah</button></div></div>
+          <div class="jitem"><b>Jasa Instalasi Gas &amp; Kompor</b><div class="jr"><input placeholder="Rp 0" aria-label="Harga jasa"><button class="btn solid sm" type="button">Tambah</button></div></div>
+          <div class="jitem"><b>Servis Berkala Mesin</b><div class="jr"><input placeholder="Rp 0" aria-label="Harga jasa"><button class="btn solid sm" type="button">Tambah</button></div></div>
+        </div>
+        <div><button class="btn sm" type="button" id="kJasaClose">Tutup</button></div>
+      </div>
+      <div class="kgrid">
+        <div class="kcard"><div class="ph">Foto produk</div><div class="b"><b>Exhaust Hood 120cm</b><span>Stok 4 · Rp 4.500.000</span></div></div>
+        <div class="kcard"><div class="ph">Foto produk</div><div class="b"><b>Kompor Gas 3 Tungku</b><span>Stok 7 · Rp 2.800.000</span></div></div>
+        <div class="kcard"><div class="ph">Foto produk</div><div class="b"><b>Meja Stainless 150cm</b><span>Stok 3 · Rp 3.200.000</span></div></div>
+      </div>
+      <div class="cartbar"><span>Keranjang: 1 produk · 1 jasa</span><button class="btn sm" type="button">Lanjut ke Invoice</button></div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="screen" id="s3">
+    <div class="cap"><b>Form Invoice</b> — bagian Item. Baris produk tetap seperti sekarang. Baris jasa jauh lebih sederhana: hanya <b>Harga Jasa</b> yang diisi (satu baris = satu harga, tanpa Qty dan Satuan), tanpa Stok/Harga Bottom/Diskon/Komisi. Mau dua kali jasa yang sama? Tambahkan barisnya lagi atau isi harga totalnya. Tombol <b>+ Tambah Jasa</b> membuka pilihan jasa aktif (klik tombolnya untuk mencoba). <b>Estimasi Komisi</b> dan <b>Diskon Bulk</b> hanya menghitung baris produk.</div>
+    <div class="frame">
+      <div class="fcard wide">
+        <div class="fcard-h"><h2>Invoice Baru</h2><p>Pilih pelanggan, isi detail pengiriman, lalu tambahkan produk atau jasa.</p></div>
+        <div class="fsec">
+          <div class="fsec-l">Item Produk &amp; Jasa</div>
+
+          <div class="irow">
+            <div class="irow-h"><span class="irow-name">Exhaust Hood 120cm</span><span class="irow-del">Hapus</span></div>
+            <div class="icols prod">
+              <div class="ic"><span class="lbl">Stok</span><span class="v m">4 unit</span></div>
+              <div class="ic"><span class="lbl">Qty</span><input value="1" aria-label="Qty produk"></div>
+              <div class="ic"><span class="lbl">Harga Jual</span><input value="Rp 4.500.000" aria-label="Harga jual"><span class="note bottom">Harga Bottom: Rp 4.000.000</span></div>
+              <div class="ic"><span class="lbl">Diskon /unit</span><input value="Rp 0" aria-label="Diskon"></div>
+              <div class="ic"><span class="lbl">Harga Final</span><span class="v">Rp 4.500.000</span></div>
+              <div class="ic"><span class="lbl">Komisi</span><span class="v k">Rp 270.000 x1</span></div>
+            </div>
+          </div>
+
+          <div class="irow">
+            <div class="irow-h"><span class="irow-name">Jasa Pemasangan Exhaust Hood <span class="pill jasa">Jasa</span></span><span class="irow-del">Hapus</span></div>
+            <div class="icols jasa">
+              <div class="ic"><span class="lbl">Harga Jasa</span><input value="Rp 750.000" aria-label="Harga jasa"><span class="note">Harga flat, tanpa diskon &amp; komisi</span></div>
+              <div class="ic"><span class="lbl">Harga Final</span><span class="v">Rp 750.000</span></div>
+            </div>
+          </div>
+
+          <div class="irow">
+            <div class="irow-h"><span class="irow-name">Jasa Instalasi Gas &amp; Kompor <span class="pill jasa">Jasa</span></span><span class="irow-del">Hapus</span></div>
+            <div class="icols jasa">
+              <div class="ic"><span class="lbl">Harga Jasa</span><input value="Rp 700.000" aria-label="Harga jasa"><span class="note">Harga flat, tanpa diskon &amp; komisi</span></div>
+              <div class="ic"><span class="lbl">Harga Final</span><span class="v">Rp 700.000</span></div>
+            </div>
+          </div>
+
+          <button class="addbtn" type="button">+ Tambah Produk</button>
+          <button class="addbtn" type="button" id="jasaBtn">+ Tambah Jasa</button>
+          <div class="picker off" id="jasaPicker">
+            <select aria-label="Pilih jasa"><option>— Pilih jasa —</option><option>Jasa Pemasangan Exhaust Hood</option><option>Jasa Instalasi Gas &amp; Kompor</option><option>Servis Berkala Mesin</option></select>
+            <span class="link" id="jasaCancel">Batal</span>
+          </div>
+        </div>
+        <div class="fsec">
+          <div class="fsec-l">Ringkasan</div>
+          <div class="sumbox"><h4>Estimasi Komisi Sales</h4><div class="mono">Total komisi jika invoice ini lunas: <b style="color:var(--moss-deep)">Rp 270.000</b> <span style="color:var(--muted)">(hanya dari produk)</span></div></div>
+          <div class="totals">
+            <div><span>Total Belanja</span><span>Rp 5.950.000</span></div>
+            <div><span>Total Diskon</span><span>Rp 0</span></div>
+            <div><span>Ongkos Kirim</span><span>Rp 0</span></div>
+            <div class="grand"><span>Total</span><span>Rp 5.950.000</span></div>
+          </div>
+        </div>
+        <div class="fact"><button class="btn solid" type="button">Simpan &amp; Kirim Invoice</button><button class="btn" type="button">Simpan sebagai Draft</button><button class="btn" type="button">Batal</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="screen" id="s4">
+    <div class="cap"><b>Tampilan/cetak invoice</b>: baris produk dan jasa dipisah dengan subjudul kecil supaya pelanggan langsung membedakan barang dan biaya service. Baris jasa tidak menampilkan Qty/satuan dan tidak punya diskon. Total tetap satu angka.</div>
+    <div class="frame">
+      <div class="doc">
+        <div class="doc-h"><div><h3>INVOICE</h3><span class="mono">INV-0142</span></div><div style="text-align:right"><b>CV HORECA JAYA</b><br><span class="mono" style="color:var(--muted)">Tanggal 07 Okt 2026</span></div></div>
+        <div class="doc-meta">
+          <div><span class="lbl">Kepada</span><b>Kafe Senja</b><br>Jl. Merdeka No. 12</div>
+          <div><span class="lbl">Sales</span>Rina</div>
+          <div><span class="lbl">Status</span>Belum Lunas</div>
+        </div>
+        <table class="dtbl">
+          <thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Harga</th><th class="r">Diskon</th><th class="r">Subtotal</th></tr></thead>
+          <tbody>
+            <tr class="grp"><td colspan="5">Produk</td></tr>
+            <tr><td><b>Exhaust Hood 120cm</b><small>120x60x50 cm</small></td><td class="r">1</td><td class="r">Rp 4.500.000</td><td class="r">–</td><td class="r">Rp 4.500.000</td></tr>
+            <tr class="grp"><td colspan="5">Jasa</td></tr>
+            <tr><td><b>Jasa Pemasangan Exhaust Hood</b></td><td class="r">–</td><td class="r">Rp 750.000</td><td class="r">–</td><td class="r">Rp 750.000</td></tr>
+            <tr><td><b>Jasa Instalasi Gas &amp; Kompor</b></td><td class="r">–</td><td class="r">Rp 700.000</td><td class="r">–</td><td class="r">Rp 700.000</td></tr>
+          </tbody>
+        </table>
+        <div class="totals" style="margin-top:18px">
+          <div><span>Total Belanja</span><span>Rp 5.950.000</span></div>
+          <div><span>Total Diskon</span><span>Rp 0</span></div>
+          <div><span>Ongkos Kirim</span><span>Rp 0</span></div>
+          <div class="grand"><span>Total</span><span>Rp 5.950.000</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="screen" id="s5">
+    <div class="cap"><b>Akuntansi → Laba Rugi</b>: satu baris baru <b>Pendapatan Jasa</b> (akun 4-1200) muncul saat invoice berisi jasa dilunasi. Tidak ada HPP untuk jasa, jadi seluruhnya masuk ke laba kotor. Neraca ikut memperhitungkan akun ini supaya tetap seimbang.</div>
+    <div class="frame">
+      <div class="lr panel">
+        <div class="panel-h"><h3>Laba Rugi — Oktober 2026</h3></div>
+        <div class="row"><span>Penjualan Barang Dagang</span><span>Rp 48.200.000</span></div>
+        <div class="row new"><span>Pendapatan Jasa <span class="pill jasa">baru</span></span><span>Rp 3.150.000</span></div>
+        <div class="row"><span>Pendapatan Ongkos Kirim</span><span>Rp 1.200.000</span></div>
+        <div class="row minus"><span>Diskon Penjualan</span><span>− Rp 2.400.000</span></div>
+        <div class="row sub2"><span>Pendapatan Bersih</span><span>Rp 50.150.000</span></div>
+        <div class="row minus"><span>HPP</span><span>− Rp 31.000.000</span></div>
+        <div class="row sub2"><span>Laba Kotor</span><span>Rp 19.150.000</span></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script>
+(function () {
+  var btns = document.querySelectorAll('.seg button');
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      btns.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === b.dataset.s); });
+    });
+  });
+  var am = document.getElementById('kAddMenu'), ab = document.getElementById('kAddBtn');
+  ab.addEventListener('click', function (e) { e.stopPropagation(); var on = am.classList.toggle('on'); ab.setAttribute('aria-expanded', on ? 'true' : 'false'); });
+  document.addEventListener('click', function () { am.classList.remove('on'); ab.setAttribute('aria-expanded', 'false'); });
+  document.getElementById('kMenuJasa').addEventListener('click', function () { document.getElementById('kJasaPanel').classList.add('on'); });
+  document.querySelectorAll('.kmode button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.kmode button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      var isNew = b.dataset.k === 'new';
+      document.getElementById('khNew').classList.toggle('hide', !isNew);
+      document.getElementById('khNow').classList.toggle('hide', isNew);
+    });
+  });
+  var kb = document.getElementById('kJasaBtn'), kp = document.getElementById('kJasaPanel'), kc = document.getElementById('kJasaClose');
+  kb.addEventListener('click', function () { kp.classList.toggle('on'); kb.classList.toggle('ghost-on'); });
+  kc.addEventListener('click', function () { kp.classList.remove('on'); kb.classList.remove('ghost-on'); });
+  var pick = document.getElementById('jasaPicker'), open = document.getElementById('jasaBtn'), cancel = document.getElementById('jasaCancel');
+  open.addEventListener('click', function () { pick.classList.remove('off'); open.classList.add('tgl-hide'); });
+  cancel.addEventListener('click', function () { pick.classList.add('off'); open.classList.remove('tgl-hide'); });
+})();
+</script>
+</body>
+</html>

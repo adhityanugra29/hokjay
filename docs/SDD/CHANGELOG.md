@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-10-07
+
+**TASK-042** — Fitur Jasa (biaya service): master data terpisah dari produk (tab Jasa di Inventory), ditambahkan lewat invoice atau tombol "+ Tambah" di Katalog. Harga flat diinput per invoice, tanpa qty/stok/diskon/komisi/HPP; pendapatan masuk akun baru 4-1200 Pendapatan Jasa dan tampil di Laba Rugi. Header Katalog disederhanakan jadi "+ Tambah" dan Buat Katalog. Mengikuti mockup `jasa-v2.html`.
+
+Tasks: TASK-042.
+Regression: tsc dan next build bersih; belum diklik di browser yang login. Belum diputuskan: apakah jasa ikut total penjualan di Leaderboard Insentif.
+
+---
+
 ## 2026-10-02
 
 **TASK-039** — Detail invoice dirapikan sesuai mockup v7: satu kartu utama (total, status, maksimal 2 tombol langkah), ikon Kirim WA dan Unduh Invoice di pojok kanan atas dokumen, dan "Aksi lainnya" (Surat Jalan, Catat DP, Ubah, Hapus) di kartu yang sama. Header tidak lagi berisi tombol.

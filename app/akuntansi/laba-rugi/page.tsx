@@ -52,6 +52,7 @@ export default async function LabaRugiPage({ searchParams }: PageProps<"/akuntan
           Pendapatan
         </div>
         <Row label="Penjualan Bruto" value={lr.penjualanBruto} />
+        <Row label="Pendapatan Jasa" value={lr.pendapatanJasa} />
         <Row label="Pendapatan Ongkos Kirim" value={lr.pendapatanOngkosKirim} />
         <Row label="Diskon Penjualan" value={-lr.diskonPenjualan} />
         <Row label="Pendapatan Bersih" value={lr.pendapatanBersih} bold />

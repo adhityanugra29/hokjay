@@ -45,6 +45,8 @@ export interface LabaRugi {
   penjualanBruto: number;
   diskonPenjualan: number;
   pendapatanOngkosKirim: number;
+  /** 4-1200 — service-fee (jasa) revenue, no HPP attached. */
+  pendapatanJasa: number;
   pendapatanBersih: number;
   hpp: number;
   labaKotor: number;
@@ -67,8 +69,9 @@ export async function getLabaRugi(range: { from?: Date; to?: Date }): Promise<La
 
   const penjualanBruto = byCode.get("4-1000")?.saldo ?? 0;
   const pendapatanOngkosKirim = byCode.get("4-1100")?.saldo ?? 0;
+  const pendapatanJasa = byCode.get("4-1200")?.saldo ?? 0;
   const diskonPenjualan = byCode.get("4-1900")?.saldo ?? 0;
-  const pendapatanBersih = penjualanBruto + pendapatanOngkosKirim - diskonPenjualan;
+  const pendapatanBersih = penjualanBruto + pendapatanJasa + pendapatanOngkosKirim - diskonPenjualan;
 
   const hpp = (byCode.get("5-1000")?.saldo ?? 0) + (byCode.get("5-1900")?.saldo ?? 0);
   const labaKotor = pendapatanBersih - hpp;
@@ -84,6 +87,7 @@ export async function getLabaRugi(range: { from?: Date; to?: Date }): Promise<La
     penjualanBruto,
     diskonPenjualan,
     pendapatanOngkosKirim,
+    pendapatanJasa,
     pendapatanBersih,
     hpp,
     labaKotor,
@@ -114,7 +118,7 @@ export async function getNeraca(asOf?: Date): Promise<Neraca> {
   const kewajiban = balances.filter((b) => b.kelompok === "Kewajiban" && b.saldo !== 0);
   const ekuitasAccounts = balances.filter((b) => b.kelompok === "Ekuitas" && b.saldo !== 0);
 
-  const penjualan = (balances.find((b) => b.code === "4-1000")?.saldo ?? 0) + (balances.find((b) => b.code === "4-1100")?.saldo ?? 0);
+  const penjualan = (balances.find((b) => b.code === "4-1000")?.saldo ?? 0) + (balances.find((b) => b.code === "4-1100")?.saldo ?? 0) + (balances.find((b) => b.code === "4-1200")?.saldo ?? 0);
   const diskon = balances.find((b) => b.code === "4-1900")?.saldo ?? 0;
   // Every expense group (HPP, operating Beban, and non-operating Beban
   // Non-Operasional) nets against equity here — labaBerjalan has to match

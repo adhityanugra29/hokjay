@@ -7,6 +7,7 @@ import { computeLineCommission, maxDiskonBekas, maxDiskonBaru, resolveKomisiBeka
 import { formatDimensi, productDisplayName } from "@/lib/format";
 import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
+import { buildJasaLine, loadJasaMap } from "@/lib/services/jasaLine";
 
 /**
  * Edits a draft or unpaid invoice in place (same _id and nomor) — lets a
@@ -55,15 +56,19 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   }
 
   const productIds = input.items.filter((i) => i.productId).map((i) => i.productId!);
-  const [products, kategoriKomisiBekasMap] = await Promise.all([
+  const jasaIds = input.items.filter((i) => i.jasaId).map((i) => i.jasaId!);
+  const [products, kategoriKomisiBekasMap, jasaMap] = await Promise.all([
     Product.find({ _id: { $in: productIds } }),
     getKategoriKomisiBekasMap(),
+    loadJasaMap(jasaIds),
   ]);
   const productMap = new Map(products.map((p) => [String(p._id), p]));
 
   const finalize = input.status !== "draft";
 
   const items = input.items.map((i) => {
+    if (i.jasaId) return buildJasaLine({ jasaId: i.jasaId, hargaJual: i.hargaJual }, jasaMap);
+
     const rawDiskon = i.diskonPerUnit ?? 0;
 
     if (!i.productId) {

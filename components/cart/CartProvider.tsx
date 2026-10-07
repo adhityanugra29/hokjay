@@ -15,6 +15,10 @@ export interface CartItem {
   diskonPerUnit: number;
   fotoUrl?: string;
   isCustom?: boolean;
+  /** Service-fee line — see models/Jasa.ts and lib/jasaCart.ts. hargaJual is typed per invoice, no qty/diskon/komisi/stok. Per the user's request 2026-10-07. */
+  isJasa?: boolean;
+  /** The real Jasa _id for a jasa line (productId is only a unique cart key there). */
+  jasaId?: string;
   /** Product condition, used for the live commission preview (see lib/commission.ts). */
   kondisi?: "baru" | "bekas";
   /**
