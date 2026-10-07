@@ -957,6 +957,8 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 
 **Katalog panel jasa (follow-up 2026-10-07):** dropdown Jasa dulu, isian Harga Jasa baru aktif setelah jasa dipilih, tombol "+ Tambah jasa lain" untuk dua jasa atau lebih sekaligus (baris bisa dihapus ×). Pilihan "+ Jasa baru..." di dropdown (supaya sales bisa membuat jasa sendiri) belum diputuskan, tidak dibangun.
 
+**Hapus jasa (follow-up 2026-10-07):** tombol Hapus di tab Jasa (`DeleteJasaButton`, `DELETE /api/jasa/[id]`), hanya Owner (aturan yang sama dengan hapus produk), dengan dialog konfirmasi. Jasa yang sudah dipakai di invoice ditolak (409, "Nonaktifkan saja lewat Ubah"), karena halaman Ubah invoice dan `updateInvoice` mencari jasa berdasarkan id. Dikonfirmasi user. Deployed.
+
 **Differences from the mockup:** panel jasa di Katalog berupa pop-up (bukan panel inline); cetak invoice tidak punya subjudul pemisah Produk/Jasa (hanya diurutkan dan diberi label).
 
 **Decisions (user, 2026-10-07):** jasa TIDAK dihitung di Leaderboard Insentif (`lib/insentif.ts`: qty, totalPenjualan, target); jasa boleh muncul di dashboard; invoice jasa saja tetap punya field pengiriman dan Surat Jalan, dan Surat Jalan-nya mendaftar baris jasa (kalau invoice punya produk, Surat Jalan hanya mendaftar produk).

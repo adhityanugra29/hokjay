@@ -3,12 +3,17 @@ import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { LinkButton } from "@/components/ui/Button";
 import { dbConnect } from "@/lib/db";
 import { Jasa } from "@/models/Jasa";
+import DeleteJasaButton from "@/components/produk/DeleteJasaButton";
+import { getSession } from "@/lib/auth/session";
+import { isProductDeleteAllowed } from "@/lib/auth/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProdukJasaPage() {
   await dbConnect();
-  const jasa = await Jasa.find().sort({ nama: 1 }).lean();
+  const [jasa, session] = await Promise.all([Jasa.find().sort({ nama: 1 }).lean(), getSession()]);
+  // Owner-only, same as deleting a product — see DELETE /api/jasa/[id].
+  const canDelete = isProductDeleteAllowed(session?.role);
 
   return (
     <Panel>
@@ -46,9 +51,12 @@ export default async function ProdukJasaPage() {
                   </span>
                 </td>
                 <td className="border-b border-line px-5 py-4.5 text-right">
-                  <Link href={`/produk/jasa/${j._id}/edit`} className="text-[0.8rem] font-bold underline">
-                    Ubah
-                  </Link>
+                  <div className="flex items-center justify-end gap-4">
+                    <Link href={`/produk/jasa/${j._id}/edit`} className="text-[0.8rem] font-bold underline">
+                      Ubah
+                    </Link>
+                    {canDelete && <DeleteJasaButton jasaId={String(j._id)} jasaNama={j.nama} />}
+                  </div>
                 </td>
               </tr>
             ))}
