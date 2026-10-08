@@ -420,3 +420,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `lib/insentif.ts`. Not touched: `lib/payroll.ts` and `gaji-karyawan/bayar/route.ts` (own `periodRange`, same pattern, outside the Leaderboard).
 **Regression test:** `tsc --noEmit` clean. Not verified against production data or a logged-in browser.
+
+---
+
+## BUG-024 — Katalog search stops at the first 12 results (infinite scroll never loads page 2)
+
+**Severity:** B2
+**Status:** FIXED (2026-10-08)
+**Source:** User report (searching "cabinet" didn't show every product with "cabinet" in its name; "open" showed all of its matches).
+
+**Description:** Only the first 12 matches rendered for searches with more than 12 results; scrolling to the bottom loaded nothing more. Server query was correct.
+
+**Root cause:** `KatalogClient.tsx` created its `IntersectionObserver` once at mount, but the sentinel div renders only while `cursor !== null` (and not while `downloading`). After a search with <=12 results the sentinel unmounted; a later search with more results mounted a new div the observer never watched. Also, an observer only fires on a visibility change, so a `loadMore` skipped during an in-flight request was never retried.
+
+**Fix:** The observer effect now re-runs when the sentinel's presence, `downloading`, `loadingMore` or `loadingFilters` change, so it always watches the live sentinel and re-fires if it is still on-screen.
+
+**Files:** `components/katalog/KatalogClient.tsx`.
+**Regression test:** `tsc --noEmit` and eslint clean. Not yet verified in a logged-in browser. Not changed: unescaped regex in `lib/katalog.ts` search (noted, separate).

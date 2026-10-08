@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-10-08
+
+**BUG-024** — Pencarian Katalog (mis. "cabinet") hanya menampilkan 12 produk pertama karena scroll otomatis tidak memuat halaman berikutnya setelah pencarian dengan hasil sedikit. Diperbaiki dengan memantau ulang penanda scroll.
+
+Regression: tsc dan eslint bersih; belum diklik di browser yang login.
+
+---
+
 ## 2026-10-07
 
 **TASK-042** — Fitur Jasa (biaya service): master data terpisah dari produk (tab Jasa di Inventory), ditambahkan lewat invoice atau tombol "+ Tambah" di Katalog. Harga flat diinput per invoice, tanpa qty/stok/diskon/komisi/HPP; pendapatan masuk akun baru 4-1200 Pendapatan Jasa dan tampil di Laba Rugi. Header Katalog disederhanakan jadi "+ Tambah" dan Buat Katalog. Mengikuti mockup `jasa-v2.html`.

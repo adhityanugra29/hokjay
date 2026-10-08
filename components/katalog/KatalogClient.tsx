@@ -199,6 +199,13 @@ export default function KatalogClient({
     loadMoreRef.current = loadMore;
   });
   const sentinelRef = useRef<HTMLDivElement>(null);
+  // Re-created whenever the sentinel div itself is (un)mounted — it only
+  // renders while `cursor !== null` and not `downloading`, so an observer
+  // created once at mount kept watching a detached div after a search with
+  // <=12 results, and later searches with more results never loaded page 2
+  // (e.g. "cabinet" stuck at 12). A fresh observer also fires immediately
+  // if the sentinel is already on-screen, retrying a loadMore that was
+  // skipped while a request was in flight.
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -210,7 +217,7 @@ export default function KatalogClient({
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [cursor !== null, downloading, loadingMore, loadingFilters]); // eslint-disable-line react-hooks/exhaustive-deps -- booleans on purpose: re-observe on sentinel mount/unmount and when a request finishes
 
   // Staged flow: idle button ("Buat Katalog") -> click reveals checkboxes +
   // "Pilih Semua" (label stays "Buat Katalog", disabled while 0 selected) ->
