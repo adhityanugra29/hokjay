@@ -11,6 +11,12 @@ export const LOW_STOCK_THRESHOLD = 5;
 // per the user's request 2026-08-28.
 export const PRODUK_BARU_DAYS = 3;
 
+// "New Stock" — Katalog label/section for a product uploaded within this
+// many days (Product.createdAt), regardless of kondisi Baru/Bekas or whether
+// it has sold. Separate from PRODUK_BARU_DAYS above on purpose. TASK-043,
+// per the user's request 2026-10-09.
+export const NEW_STOCK_DAYS = 7;
+
 export const STOCK_REASONS = [
   "Penjualan",
   "Restock",

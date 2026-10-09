@@ -3,7 +3,7 @@ import { dbConnect } from "@/lib/db";
 import { Category } from "@/models/Category";
 import { Product } from "@/models/Product";
 import { getSession } from "@/lib/auth/session";
-import { queryKatalogProducts, CAN_EDIT_PRODUCT_ROLES, CAN_FLASH_SALE_ROLES } from "@/lib/katalog";
+import { queryKatalogProducts, queryNewStockProducts, CAN_EDIT_PRODUCT_ROLES, CAN_FLASH_SALE_ROLES } from "@/lib/katalog";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +32,11 @@ export default async function KatalogPage() {
   // before this task, never affected by the client's own search/filter
   // state (that text never updated live even before this task, since
   // PageHeader is server-rendered once).
-  const [{ products, nextCursor }, categories, totalProductCount] = await Promise.all([
-    queryKatalogProducts({}, { cursor: 0, limit: KATALOG_PAGE_SIZE, canEditProduct, canFlashSale }),
+  // New Stock (TASK-043) is fetched separately and left out of the grid's
+  // page 1 so it never shows twice while the section is visible.
+  const [{ products, nextCursor }, newStock, categories, totalProductCount] = await Promise.all([
+    queryKatalogProducts({ excludeNewStock: true }, { cursor: 0, limit: KATALOG_PAGE_SIZE, canEditProduct, canFlashSale }),
+    queryNewStockProducts({ canEditProduct, canFlashSale }),
     Category.find().sort({ name: 1 }).lean(),
     Product.countDocuments({ isCustom: { $ne: true }, stok: { $gt: 0 } }),
   ]);
@@ -45,6 +48,7 @@ export default async function KatalogPage() {
       isOwner={isOwner}
       categories={categories.map((c) => c.name)}
       initialProducts={products}
+      initialNewStock={newStock}
       initialNextCursor={nextCursor}
       totalProductCount={totalProductCount}
     />

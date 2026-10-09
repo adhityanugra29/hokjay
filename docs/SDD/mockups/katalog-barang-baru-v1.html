@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup Katalog New Stock v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Mockup Katalog "New Stock" v1 — hanya mockup, belum ada kode aplikasi. Token HOJAY "Foundry". */
+:root {
+  --ink: #201e1d; --paper: #f7f1e4; --panel: #fffdf8; --surface: #efe9da; --chip: #efece3;
+  --line: rgba(36,31,25,.16); --muted: rgba(36,31,25,.6);
+  --accent: #ffc800; --accent-600: #f0b800; --accent-100: #fff8e0; --accent-700: #92610a;
+  --baru: #16a34a; --baru-deep: #0f6b31; --baru-100: #e7f6ec;
+  --danger: #c0392b;
+  --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.45; margin: 0; padding: 24px 16px 64px; }
+h1, h2, h3 { font-weight: 800; letter-spacing: -.015em; margin: 0; text-wrap: balance; }
+button { font-family: inherit; font-size: inherit; color: inherit; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.intro h1 { font-size: 1.5rem; }
+.intro p { margin: 6px 0 0; color: var(--muted); max-width: 80ch; font-size: .85rem; }
+.rules { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.rule { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 700; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { cursor: pointer; border: 1.5px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
+.seg button:hover { border-color: var(--accent-600); }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+.screen { display: none; flex-direction: column; gap: 10px; }
+.screen.on { display: flex; }
+.cap { font-size: 12.5px; color: var(--muted); max-width: 100ch; background: var(--panel); border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.cap b { color: var(--ink); }
+.frame { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px 28px; }
+.sub { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: transparent; padding: 9px 16px; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.btn.solid { background: var(--accent); border-color: var(--accent); }
+.btn.sm { padding: 6px 12px; font-size: 12px; }
+.kh { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.kh h2 { font-size: 1.3rem; }
+.kact { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* search + filter row */
+.bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.bar .s { flex: 1; min-width: 200px; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 10px 14px; color: var(--muted); }
+.bar .f { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 10px 14px; font-weight: 700; font-size: 13px; }
+
+/* ===== New Stock section ===== */
+.bsec { border-radius: 16px; background: linear-gradient(180deg, var(--baru-100), var(--panel) 70%); border: 1.5px solid var(--baru); padding: 14px 16px 16px; margin-bottom: 22px; }
+.bsec-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.bsec-t { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bsec-t h3 { font-size: 1.05rem; }
+.tag { display: inline-flex; align-items: center; gap: 6px; background: var(--baru); color: #fff; border-radius: 999px; padding: 3px 11px; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .08em; }
+.tag i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .tag i { animation: none; } }
+.bsec-note { font-size: 12px; color: var(--baru-deep); font-weight: 600; }
+.bscroll { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.bscroll.row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+.bscroll.row .kcard { flex: 0 0 200px; scroll-snap-align: start; }
+
+/* cards */
+.kgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.kcard { background: var(--panel); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.1); overflow: hidden; display: flex; flex-direction: column; border: 2px solid transparent; }
+.kcard.baru { border-color: var(--baru); }
+.kcard .ph { position: relative; aspect-ratio: 4/3; background: var(--surface); display: grid; place-items: center; font-size: 12px; color: var(--muted); }
+.ribbon { position: absolute; inset: 0 0 auto 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 6px; background: var(--baru); color: #fff; padding: 5px 10px; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .08em; }
+.ribbon .left { opacity: .95; font-weight: 400; letter-spacing: .02em; }
+.kon { position: absolute; z-index: 1; left: 10px; top: 34px; background: var(--baru); color: #fff; border-radius: 999px; padding: 3px 10px; font-size: 10.5px; font-weight: 700; }
+.kon.plain { top: 10px; }
+.kcard .b { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.kcard .b b { font-size: .9rem; line-height: 1.3; }
+.kcard .b .pr { font-weight: 800; }
+.kcard .b span { font-size: 12px; color: var(--muted); }
+.kcard .add { margin-top: auto; background: var(--accent); border-radius: 8px; text-align: center; font-weight: 700; font-size: 12.5px; padding: 8px; }
+.divider { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; }
+.divider span { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.divider::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+
+/* compare */
+.cmp { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.cmp .kcard { max-width: 260px; }
+.cmp h4 { margin: 0 0 8px; font-family: var(--mono); font-size: 11px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.timeline { display: flex; flex-direction: column; gap: 8px; background: var(--panel); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); font-size: 13px; }
+.tl { display: flex; align-items: center; gap: 10px; }
+.tl .dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--baru); color: #fff; font-family: var(--mono); font-size: 11px; font-weight: 600; flex: none; }
+.tl .dot.off { background: var(--surface); color: var(--muted); }
+.tl .dot.warn { background: var(--accent); color: var(--ink); }
+.empty { text-align: center; color: var(--muted); font-size: 13px; padding: 14px; border: 1.5px dashed var(--line); border-radius: 12px; }
+@media (max-width: 720px) { .frame { padding: 16px 12px 22px; } .cmp { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .phone .kgrid, .phone .bscroll { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="intro">
+    <h1>Mockup — Katalog: Label "New Stock" (7 hari)</h1>
+    <p>Produk yang <b>baru diupload</b> (apa pun kondisinya, Baru atau Bekas) mendapat label hijau <b>NEW STOCK</b> seperti banner Flash Sale, tampil di <b>bagian paling atas</b> Katalog selama <b>7 hari</b>, lalu otomatis kembali ke grid biasa. Ini mockup saja; belum ada kode aplikasi yang diubah.</p>
+    <div class="rules">
+      <span class="rule">Banner hijau di foto, tanpa hitungan hari</span><span class="rule">Bukan status Baru/Bekas</span>
+      <span class="rule">Section khusus di atas grid</span>
+      <span class="rule">Otomatis hilang setelah 7 hari</span>
+      <span class="rule">Hijau ≠ kuning Flash Sale</span>
+    </div>
+  </div>
+
+  <div class="seg" role="group" aria-label="Pilih layar">
+    <button type="button" data-s="s1" aria-pressed="true">1 · Katalog (usulan)</button>
+    <button type="button" data-s="s2" aria-pressed="false">2 · Kartu: baru vs biasa</button>
+    <button type="button" data-s="s3" aria-pressed="false">3 · Aturan 7 hari</button>
+    <button type="button" data-s="s4" aria-pressed="false">4 · Tampilan HP</button>
+  </div>
+
+  <!-- 1 -->
+  <section class="screen on" id="s1">
+    <div class="cap"><b>Katalog</b>: di bawah pencarian ada section <b>New Stock</b> (hijau, ber-border) berisi semua produk yang diupload ≤ 7 hari terakhir (kondisi Baru maupun Bekas), diurutkan upload terbaru dulu. Setiap kartu punya banner hijau di foto, mirip banner kuning Flash Sale (tanpa hitungan hari). Di bawahnya grid Katalog biasa; produk yang sama <b>tidak muncul dua kali</b>. Kalau tidak ada upload baru, section ini tidak ditampilkan sama sekali.</div>
+    <div class="frame">
+      <div class="kh">
+        <div><h2>Katalog CV HORECA JAYA</h2><span class="sub">Stok ter-update otomatis · 128 produk tersedia</span></div>
+        <div class="kact"><button class="btn solid" type="button">+ Tambah ▾</button><button class="btn" type="button">Buat Katalog (PDF)</button></div>
+      </div>
+      <div class="bar"><div class="s">Cari produk…</div><div class="f">Filter</div></div>
+
+      <div class="bsec">
+        <div class="bsec-h">
+          <div class="bsec-t"><span class="tag"><i></i>NEW STOCK</span><h3>New Stock</h3><span class="sub">4 produk</span></div>
+          <span class="bsec-note">Tampil 7 hari sejak diupload</span>
+        </div>
+        <div class="bscroll">
+          <div class="kcard baru"><div class="ph"><div class="ribbon"><span>✦ NEW STOCK</span></div>Foto produk</div><div class="b"><b>Exhaust Hood 150cm</b><span class="pr">Rp 5.200.000</span><span>Tersedia 3 unit · Komisi Rp 312.000</span><div class="add">+ Tambah ke Invoice</div></div></div>
+          <div class="kcard baru"><div class="ph"><div class="ribbon"><span>✦ NEW STOCK</span></div>Foto produk</div><div class="b"><b>Kompor Gas 4 Tungku (Bekas)</b><span class="pr">Rp 3.400.000</span><span>Tersedia 5 unit · Komisi Rp 204.000</span><div class="add">+ Tambah ke Invoice</div></div></div>
+          <div class="kcard baru"><div class="ph"><div class="ribbon"><span>✦ NEW STOCK</span></div>Foto produk</div><div class="b"><b>Meja Stainless 180cm</b><span class="pr">Rp 3.900.000</span><span>Tersedia 2 unit · Komisi Rp 234.000</span><div class="add">+ Tambah ke Invoice</div></div></div>
+          <div class="kcard baru"><div class="ph"><div class="ribbon"><span>✦ NEW STOCK</span></div>Foto produk</div><div class="b"><b>Freezer Chest 300L</b><span class="pr">Rp 6.800.000</span><span>Tersedia 1 unit · Komisi Rp 408.000</span><div class="add">+ Tambah ke Invoice</div></div></div>
+        </div>
+      </div>
+
+      <div class="divider"><span>Semua Produk</span></div>
+      <div class="kgrid">
+        <div class="kcard"><div class="ph"><span class="kon plain" style="background:#16A34A">Baru</span>Foto produk</div><div class="b"><b>Exhaust Hood 120cm</b><span class="pr" style="color:var(--ink)">Rp 4.500.000</span><span>Tersedia 4 unit · Komisi Rp 270.000</span><div class="add">+ Tambah ke Invoice</div></div></div>
+        <div class="kcard"><div class="ph"><span class="kon plain" style="background:#D97706">Bekas</span>Foto produk</div><div class="b"><b>Kompor Gas 3 Tungku</b><span class="pr" style="color:var(--ink)">Rp 2.800.000</span><span>Tersedia 7 unit · Komisi Rp 140.000</span><div class="add">+ Tambah ke Invoice</div></div></div>
+        <div class="kcard"><div class="ph"><span class="kon plain" style="background:#16A34A">Baru</span>Foto produk</div><div class="b"><b>Meja Stainless 150cm</b><span class="pr" style="color:var(--ink)">Rp 3.200.000</span><span>Tersedia 3 unit · Komisi Rp 192.000</span><div class="add">+ Tambah ke Invoice</div></div></div>
+        <div class="kcard"><div class="ph"><span class="kon plain" style="background:#D97706">Bekas</span>Foto produk</div><div class="b"><b>Rak Piring 3 Susun</b><span class="pr" style="color:var(--ink)">Rp 950.000</span><span>Tersedia 9 unit · Komisi Rp 47.500</span><div class="add">+ Tambah ke Invoice</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="screen" id="s2">
+    <div class="cap"><b>Kartu</b>: banner hijau "NEW STOCK" menempel di tepi atas foto (posisi sama dengan banner Flash Sale, tapi hijau). Label ini <b>terpisah dari pil kondisi</b> Baru/Bekas di bawahnya: produk Bekas yang baru diupload tetap dapat banner hijau dan tetap berpil oranye "Bekas". Pil kondisi turun sedikit seperti saat Flash Sale. Isi kartu tidak berubah. Kalau produk sekaligus Flash Sale, banner kuning Flash Sale yang menang.</div>
+    <div class="frame">
+      <div class="cmp">
+        <div><h4>New Stock (kondisi Baru)</h4>
+          <div class="kcard baru"><div class="ph"><div class="ribbon"><span>✦ NEW STOCK</span></div><span class="kon">Baru</span>Foto produk</div><div class="b"><b>Exhaust Hood 150cm</b><span class="pr">Rp 5.200.000</span><span>Tersedia 3 unit · Komisi Rp 312.000</span><div class="add">+ Tambah ke Invoice</div></div></div>
+        </div>
+        <div><h4>New Stock (kondisi Bekas)</h4>
+          <div class="kcard baru"><div class="ph"><div class="ribbon"><span>✦ NEW STOCK</span></div><span class="kon" style="background:#D97706">Bekas</span>Foto produk</div><div class="b"><b>Kompor Gas 2 Tungku</b><span class="pr">Rp 1.900.000</span><span>Tersedia 2 unit · Komisi Rp 95.000</span><div class="add">+ Tambah ke Invoice</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="screen" id="s3">
+    <div class="cap"><b>Aturan 7 hari</b> (usulan, perlu persetujuan sebelum dikerjakan). Hitungan (di balik layar, tidak ditampilkan ke sales) mulai dari tanggal produk diupload, otomatis tanpa perlu tombol manual. Setelah hari ke-7 label dan section hilang dengan sendirinya.</div>
+    <div class="frame">
+      <div class="timeline">
+        <div class="tl"><span class="dot">H0</span><span><b>Produk diupload / dibuat</b> — langsung muncul di section New Stock</span></div>
+        <div class="tl"><span class="dot">H3</span><span>Masih di atas, tampilan sama persis</span></div>
+        <div class="tl"><span class="dot warn">H6</span><span>Hari ke-7 — masih tampil, besok hilang otomatis</span></div>
+        <div class="tl"><span class="dot off">H8</span><span>Hilang dari section (label kondisi Baru/Bekas tetap), kembali ke grid biasa tanpa banner</span></div>
+      </div>
+      <div style="height:12px"></div>
+      <div class="empty">Tidak ada produk diupload ≤ 7 hari → section New Stock tidak ditampilkan (grid langsung di bawah pencarian).</div>
+      <div style="height:12px"></div>
+      <div class="cap"><b>Catatan teknis:</b> aplikasi sudah punya "Produk Baru" (filter "Hanya Produk Baru"), dibatasi <b>3 hari</b> dan hanya produk yang <b>belum pernah terjual</b>. Karena yang dimaksud di sini adalah waktu upload, usulannya (B): aturan terpisah berdasarkan tanggal produk dibuat, 7 hari, tanpa syarat belum terjual, dan filter lama tidak diubah. Nama labelnya "New Stock" supaya tidak tertukar dengan kondisi Baru/Bekas.</div>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="screen" id="s4">
+    <div class="cap"><b>Tampilan HP</b> (sales pakai mobile): section New Stock berupa baris yang bisa digeser ke samping supaya tidak memakan layar, grid biasa 2 kolom di bawahnya.</div>
+    <div class="frame phone" style="max-width:400px;margin:0 auto">
+      <div class="kh" style="margin-bottom:10px"><div><h2 style="font-size:1.1rem">Katalog</h2></div><button class="btn solid sm" type="button">+ Tambah ▾</button></div>
+      <div class="bar"><div class="s">Cari produk…</div></div>
+      <div class="bsec">
+        <div class="bsec-h"><div class="bsec-t"><span class="tag"><i></i>NEW STOCK</span><h3 style="font-size:.95rem">New Stock</h3></div><span class="sub">4 produk →</span></div>
+        <div class="bscroll row">
+          <div class="kcard baru"><div class="ph"><div class="ribbon"><span>✦ NEW STOCK</span></div>Foto</div><div class="b"><b>Exhaust Hood 150cm</b><span class="pr">Rp 5.200.000</span></div></div>
+          <div class="kcard baru"><div class="ph"><div class="ribbon"><span>✦ NEW STOCK</span></div>Foto</div><div class="b"><b>Kompor Gas 4 Tungku</b><span class="pr">Rp 3.400.000</span></div></div>
+          <div class="kcard baru"><div class="ph"><div class="ribbon"><span>✦ NEW STOCK</span></div>Foto</div><div class="b"><b>Meja Stainless 180cm</b><span class="pr">Rp 3.900.000</span></div></div>
+        </div>
+      </div>
+      <div class="divider"><span>Semua Produk</span></div>
+      <div class="kgrid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <div class="kcard"><div class="ph">Foto</div><div class="b"><b>Exhaust Hood 120cm</b><span class="pr" style="color:var(--ink)">Rp 4.500.000</span></div></div>
+        <div class="kcard"><div class="ph">Foto</div><div class="b"><b>Kompor Gas 3 Tungku</b><span class="pr" style="color:var(--ink)">Rp 2.800.000</span></div></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script>
+(function () {
+  var btns = document.querySelectorAll('.seg button');
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      btns.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === b.dataset.s); });
+    });
+  });
+})();
+</script>
+</body>
+</html>

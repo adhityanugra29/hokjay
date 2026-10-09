@@ -967,3 +967,33 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 
 **Files affected:** `models/Jasa.ts`, `models/Invoice.ts`, `app/api/jasa/**`, `app/produk/(list)/jasa`, `app/produk/jasa/**`, `app/produk/(list)/layout.tsx`, `components/produk/JasaForm.tsx`, `components/invoice/{JasaRowEditor,InvoiceForm,InvoiceDocument,InvoicePrintDoc}.tsx`, `components/katalog/{KatalogAddMenu,KatalogClient}.tsx`, `components/cart/CartProvider.tsx`, `lib/{jasaCart,coa,akuntansi,counters,invoiceDisplay}.ts`, `lib/services/{jasaLine,createInvoice,updateInvoice,journal}.ts`, `app/invoice/page.tsx`, `app/invoice/[id]/{page,ubah/page}.tsx`, `app/api/invoices/[id]/print/route.ts`, `app/akuntansi/laba-rugi/page.tsx`.
 **Regression test:** `tsc --noEmit` dan `next build` bersih. ESLint pada file yang diubah hanya melaporkan temuan lama (setState di effect pada CartProvider/InvoiceForm). Belum diklik di browser yang login.
+
+---
+
+## TASK-043 — Katalog: label "New Stock" (produk baru diupload, 7 hari, tampil paling atas)
+
+**Type:** Feature
+**Priority:** P2
+**Status:** DONE (2026-10-09, pushed ke main untuk deploy Vercel; belum diklik di browser yang login)
+**Dependency:** TASK-012 (Katalog server-paginated), Flash Sale banner di `ProductCard`
+**Created:** 2026-10-09 · **Last updated:** 2026-10-09
+
+**Requirement:** Produk yang baru diupload (`Product.createdAt` ≤ 7 hari, bukan produk custom, stok > 0) diberi banner hijau "✦ NEW STOCK" di foto (seperti banner Flash Sale) dan dikumpulkan di section "New Stock" di atas grid Katalog. Setelah 7 hari label dan section hilang otomatis. Tanpa hitungan hari. Ini BUKAN status kondisi Baru/Bekas (produk Bekas yang baru diupload tetap dapat label). Mockup disetujui: `docs/SDD/mockups/katalog-barang-baru-v1.html` (artifact https://claude.ai/artifact/4H1CUzq45rESv3zKeqXsBs).
+
+**Existing system analysis:** Sudah ada "Produk Baru" (`getProdukBaruIds`, `PRODUK_BARU_DAYS = 3`, hanya yang belum pernah terjual) yang dipakai filter "Hanya Produk Baru", urutan default Katalog, dan badge nav Inventory. Dibiarkan apa adanya (Opsi B: aturan terpisah). Katalog diambil per 12 produk (infinite scroll) lewat `queryKatalogProducts` / `/api/katalog`.
+
+**Impact: LOW.** ADD konstanta `NEW_STOCK_DAYS`, ADD `getNewStockIds` + `queryNewStockProducts`, EXTEND `KatalogProduct.isNewStock`, EXTEND query grid dengan opsi `excludeNewStock`, EXTEND `ProductCard` (banner) dan `KatalogClient` (section). Tidak ada perubahan skema/DB.
+
+**Plan / rules:**
+- Section hanya tampil saat tidak ada pencarian dan tidak ada filter aktif; produk yang sama tidak muncul dua kali (grid mengecualikannya selama section tampil). Saat mencari/memfilter, produk New Stock muncul di grid biasa dengan banner.
+- Produk yang sedang Flash Sale: banner Flash Sale yang menang.
+- "Pilih Semua" (PDF) tetap mencakup produk New Stock. PDF katalog tidak berubah.
+- Di HP, section berupa baris yang digeser ke samping.
+
+**Files affected:** `lib/constants.ts`, `lib/katalog.ts`, `app/api/katalog/route.ts`, `app/katalog/page.tsx`, `components/katalog/ProductCard.tsx`, `components/katalog/KatalogClient.tsx`.
+**Files NOT changed:** `getProdukBaruIds`/`PRODUK_BARU_DAYS`, filter sidebar, nav badge, PDF katalog, model `Product`.
+**Acceptance criteria:** produk ≤ 7 hari punya banner dan muncul di section; > 7 hari tidak; tidak duplikat; filter/search/infinite scroll/edit/Flash Sale/Pilih Semua tetap jalan; `tsc` dan `next build` bersih.
+
+**Build:** `NEW_STOCK_DAYS = 7`; `getNewStockIds`, `queryNewStockProducts`, opsi `excludeNewStock`, field `isNewStock`, `/api/katalog?mode=newStock`; banner hijau di `ProductCard` (Flash Sale menang bila keduanya berlaku); section "New Stock" di `KatalogClient` (baris geser di HP, grid dari sm ke atas), tampil hanya tanpa pencarian dan tanpa filter aktif.
+**Regression test:** `tsc --noEmit`, `eslint` pada 5 file, dan `next build` bersih. Belum diklik di browser yang login.
+**Open points:** (1) jika dalam seminggu banyak produk diupload, section ikut memanjang (tanpa batas jumlah). (2) Section tidak diperbarui otomatis saat produk habis stok di sesi yang sedang terbuka (ikut tersegarkan saat halaman dimuat ulang).

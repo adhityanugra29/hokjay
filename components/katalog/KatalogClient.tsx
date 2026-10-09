@@ -52,8 +52,14 @@ const KATALOG_PAGE_SIZE = 12;
 const FILTER_DEBOUNCE_MS = 350;
 
 /** Builds the app/api/katalog/route.ts query string from the current search/filters/sort state — shared by the grid fetch and the "Pilih Semua" ids fetch so the two can never target different result sets. */
-function buildKatalogParams(search: string, filters: KatalogFilters, sort: string): URLSearchParams {
+function buildKatalogParams(
+  search: string,
+  filters: KatalogFilters,
+  sort: string,
+  excludeNewStock = false
+): URLSearchParams {
   const params = new URLSearchParams();
+  if (excludeNewStock) params.set("excludeNewStock", "1");
   if (search.trim()) params.set("search", search.trim());
   for (const cat of filters.categories) params.append("category", cat);
   if (filters.kondisi) params.set("kondisi", filters.kondisi);
@@ -70,6 +76,7 @@ function buildKatalogParams(search: string, filters: KatalogFilters, sort: strin
 
 export default function KatalogClient({
   initialProducts,
+  initialNewStock,
   initialNextCursor,
   totalProductCount,
   categories,
@@ -78,6 +85,8 @@ export default function KatalogClient({
   isOwner,
 }: {
   initialProducts: KatalogProduct[];
+  /** Products uploaded within NEW_STOCK_DAYS — shown in the "New Stock" section above the grid (TASK-043). Already left out of `initialProducts`. */
+  initialNewStock: KatalogProduct[];
   /** null once there's nothing left to load — see queryKatalogProducts()'s own nextCursor. */
   initialNextCursor: number | null;
   /** Total catalog size (unfiltered) — only powers the header's "N PRODUK TERSEDIA", never affected by search/filter (that text never updated live even before this task). */
@@ -107,7 +116,14 @@ export default function KatalogClient({
   // case on the next full navigation.
   function handleProductSaved(updated: KatalogProduct) {
     setItems((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
+    setNewStock((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
   }
+  // "New Stock" section (TASK-043) — products uploaded within the last
+  // NEW_STOCK_DAYS days. Only shown while there's no search and no active
+  // filter; the grid leaves these products out in exactly that state (see
+  // `showNewStock` below) so a product never appears twice.
+  const [newStock, setNewStock] = useState<KatalogProduct[]>(initialNewStock);
+  const showNewStock = !search.trim() && countActiveFilters(filters) === 0;
   const [cursor, setCursor] = useState<number | null>(initialNextCursor);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingFilters, setLoadingFilters] = useState(false);
@@ -150,7 +166,7 @@ export default function KatalogClient({
     const timer = setTimeout(async () => {
       setLoadingFilters(true);
       try {
-        const params = buildKatalogParams(search, filters, sort);
+        const params = buildKatalogParams(search, filters, sort, showNewStock);
         params.set("cursor", "0");
         params.set("limit", String(KATALOG_PAGE_SIZE));
         const res = await fetch(`/api/katalog?${params.toString()}`);
@@ -172,7 +188,7 @@ export default function KatalogClient({
     setLoadingMore(true);
     const seq = ++fetchSeq.current;
     try {
-      const params = buildKatalogParams(search, filters, sort);
+      const params = buildKatalogParams(search, filters, sort, showNewStock);
       params.set("cursor", String(cursor));
       params.set("limit", String(KATALOG_PAGE_SIZE));
       const res = await fetch(`/api/katalog?${params.toString()}`);
@@ -486,6 +502,37 @@ export default function KatalogClient({
         <div className="py-16 text-center font-mono text-sm text-muted">Menyiapkan PDF...</div>
       ) : (
         <>
+          {/* New Stock (TASK-043, per the user's request 2026-10-09) —
+              products uploaded in the last NEW_STOCK_DAYS days, pinned above
+              the grid. Hidden while searching/filtering (those products then
+              show in the grid with their own banner) and when there are none.
+              A swipeable row on phones, the same grid as below from sm up. */}
+          {showNewStock && newStock.length > 0 && (
+            <section className="mb-7 rounded-2xl border-[1.5px] border-[#16A34A] bg-[#E7F6EC] p-3.5 sm:p-4">
+              <div className="mb-3 flex flex-wrap items-center gap-2.5">
+                <span className="rounded-full bg-[#16A34A] px-3 py-0.5 font-mono text-[0.68rem] font-semibold tracking-[0.08em] text-white">
+                  NEW STOCK
+                </span>
+                <h2 className="font-sans text-[1rem] font-extrabold">New Stock</h2>
+                <span className="font-mono text-[0.68rem] uppercase tracking-[0.08em] text-muted">
+                  {newStock.length} produk
+                </span>
+              </div>
+              <div className="flex snap-x snap-mandatory gap-4.5 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3">
+                {newStock.map((p) => (
+                  <div key={p._id} className="w-[270px] shrink-0 snap-start sm:w-auto">
+                    <ProductCard
+                      product={p}
+                      canEdit={canEditProduct}
+                      canFlashSale={canFlashSale}
+                      isOwner={isOwner}
+                      onEdit={() => setEditingProduct(p)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
           <div className={`grid grid-cols-1 gap-4.5 sm:grid-cols-2 lg:grid-cols-3 ${loadingFilters ? "opacity-50" : ""}`}>
             {items.map((p) => (
               <ProductCard

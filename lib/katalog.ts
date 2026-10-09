@@ -4,7 +4,7 @@ import { Invoice } from "@/models/Invoice";
 import { Product } from "@/models/Product";
 import { StockMovement } from "@/models/StockMovement";
 import { Category } from "@/models/Category";
-import { PRODUK_BARU_DAYS } from "@/lib/constants";
+import { PRODUK_BARU_DAYS, NEW_STOCK_DAYS } from "@/lib/constants";
 import { resolveKomisiBekasPercent } from "@/lib/commission";
 import type { KatalogProduct } from "@/components/katalog/ProductCard";
 
@@ -141,6 +141,20 @@ export async function getProdukBaruIds(): Promise<Set<string>> {
   return new Set(products.map((p) => String(p._id)).filter((id) => !soldSet.has(id)));
 }
 
+/**
+ * IDs of "New Stock" — uploaded (Product.createdAt) within the last
+ * NEW_STOCK_DAYS days. Unlike getProdukBaruIds above, sold status doesn't
+ * matter: the label is about when the product was uploaded, not whether it
+ * has moved. Custom-order products are excluded (they live on
+ * /katalog/custom). TASK-043, per the user's request 2026-10-09.
+ */
+export async function getNewStockIds(): Promise<Set<string>> {
+  await dbConnect();
+  const since = new Date(Date.now() - NEW_STOCK_DAYS * 24 * 60 * 60 * 1000);
+  const products = await Product.find({ createdAt: { $gte: since }, isCustom: { $ne: true } }, { _id: 1 }).lean();
+  return new Set(products.map((p) => String(p._id)));
+}
+
 // ---------------------------------------------------------------------
 // Server-paginated Katalog query — TASK-012 (2026-09-04), per the user's
 // request to limit the actual data pull to 12 products/batch (infinite
@@ -162,6 +176,8 @@ export interface KatalogFiltersInput {
   nama?: string;
   ukuran?: string;
   produkBaru?: boolean;
+  /** Leave out products shown in the Katalog's "New Stock" section (TASK-043) so they don't appear twice. */
+  excludeNewStock?: boolean;
   sort?: "" | "price-asc" | "price-desc";
 }
 
@@ -214,10 +230,11 @@ function sizeMatchClauses(nums: number[]): Record<string, unknown>[] {
  */
 async function prepareKatalogMatch(filters: KatalogFiltersInput) {
   await dbConnect();
-  const [statusMap, produkBaruIds, kategoriKomisiBekasMap] = await Promise.all([
+  const [statusMap, produkBaruIds, kategoriKomisiBekasMap, newStockIds] = await Promise.all([
     getProductInvoiceStatusMap(),
     getProdukBaruIds(),
     getKategoriKomisiBekasMap(),
+    getNewStockIds(),
   ]);
 
   // Custom-order products live on /katalog/custom, sold-out (stok 0) ones
@@ -267,6 +284,12 @@ async function prepareKatalogMatch(filters: KatalogFiltersInput) {
     match._id = { $in: [...produkBaruIds].filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id)) };
   }
 
+  if (filters.excludeNewStock && newStockIds.size > 0) {
+    andClauses.push({
+      _id: { $nin: [...newStockIds].filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id)) },
+    });
+  }
+
   if (andClauses.length > 0) match.$and = andClauses;
 
   // Booked/Sudah DP/SOLD sink to the bottom of the grid — this is what
@@ -283,7 +306,7 @@ async function prepareKatalogMatch(filters: KatalogFiltersInput) {
     .filter((id) => Types.ObjectId.isValid(id))
     .map((id) => new Types.ObjectId(id));
 
-  return { match, statusMap, produkBaruIds, kategoriKomisiBekasMap, encumberedObjectIds, produkBaruObjectIds };
+  return { match, statusMap, produkBaruIds, newStockIds, kategoriKomisiBekasMap, encumberedObjectIds, produkBaruObjectIds };
 }
 
 /** Same per-product mapping app/katalog/page.tsx did inline before this task — kept identical so nothing about what a card shows changes. */
@@ -292,6 +315,7 @@ function toKatalogProduct(
   ctx: {
     statusMap: Map<string, ProductInvoiceStatus>;
     produkBaruIds: Set<string>;
+    newStockIds: Set<string>;
     kategoriKomisiBekasMap: Map<string, number>;
     canEditProduct?: boolean;
     canFlashSale?: boolean;
@@ -334,6 +358,7 @@ function toKatalogProduct(
     dpBy: status?.dpBy ?? [],
     soldQty: status?.soldQty ?? 0,
     isBaru: ctx.produkBaruIds.has(id),
+    isNewStock: ctx.newStockIds.has(id),
     flashSale: p.flashSale?.active ? { active: true as const, harga: p.flashSale.harga ?? 0 } : undefined,
   };
 }
@@ -355,16 +380,18 @@ export async function getKatalogProductById(
   opts: { canEditProduct?: boolean; canFlashSale?: boolean }
 ): Promise<KatalogProduct | null> {
   await dbConnect();
-  const [product, statusMap, produkBaruIds, kategoriKomisiBekasMap] = await Promise.all([
+  const [product, statusMap, produkBaruIds, newStockIds, kategoriKomisiBekasMap] = await Promise.all([
     Product.findById(id).lean(),
     getProductInvoiceStatusMap(),
     getProdukBaruIds(),
+    getNewStockIds(),
     getKategoriKomisiBekasMap(),
   ]);
   if (!product) return null;
   return toKatalogProduct(product, {
     statusMap,
     produkBaruIds,
+    newStockIds,
     kategoriKomisiBekasMap,
     canEditProduct: opts.canEditProduct,
     canFlashSale: opts.canFlashSale,
@@ -392,7 +419,7 @@ export async function queryKatalogProducts(
 ): Promise<KatalogQueryResult> {
   const cursor = opts.cursor ?? 0;
   const limit = opts.limit ?? 12;
-  const { match, statusMap, produkBaruIds, kategoriKomisiBekasMap, encumberedObjectIds, produkBaruObjectIds } =
+  const { match, statusMap, produkBaruIds, newStockIds, kategoriKomisiBekasMap, encumberedObjectIds, produkBaruObjectIds } =
     await prepareKatalogMatch(filters);
 
   // Default order ("Urutkan: Default") is Produk Terbaru -> Kategori ->
@@ -434,6 +461,7 @@ export async function queryKatalogProducts(
     toKatalogProduct(p, {
       statusMap,
       produkBaruIds,
+      newStockIds,
       kategoriKomisiBekasMap,
       canEditProduct: opts.canEditProduct,
       canFlashSale: opts.canFlashSale,
@@ -441,6 +469,34 @@ export async function queryKatalogProducts(
   );
 
   return { products, nextCursor: products.length === limit ? cursor + limit : null };
+}
+
+/**
+ * Every product in the Katalog's "New Stock" section (TASK-043), newest
+ * upload first. Unpaginated on purpose: it only holds the last NEW_STOCK_DAYS
+ * days of uploads, a small bounded set. Same visibility rule as the grid
+ * (non-custom, stok > 0) and the same card shape.
+ */
+export async function queryNewStockProducts(opts: {
+  canEditProduct?: boolean;
+  canFlashSale?: boolean;
+}): Promise<KatalogProduct[]> {
+  const { statusMap, produkBaruIds, newStockIds, kategoriKomisiBekasMap } = await prepareKatalogMatch({});
+  if (newStockIds.size === 0) return [];
+  const ids = [...newStockIds].filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id));
+  const docs = await Product.find({ _id: { $in: ids }, isCustom: { $ne: true }, stok: { $gt: 0 } })
+    .sort({ createdAt: -1, _id: -1 })
+    .lean();
+  return docs.map((p) =>
+    toKatalogProduct(p, {
+      statusMap,
+      produkBaruIds,
+      newStockIds,
+      kategoriKomisiBekasMap,
+      canEditProduct: opts.canEditProduct,
+      canFlashSale: opts.canFlashSale,
+    })
+  );
 }
 
 /**

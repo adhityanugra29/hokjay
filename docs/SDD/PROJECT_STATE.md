@@ -2,7 +2,7 @@
 
 > Single "catch up" file — read this first before starting any session or major task. See `TASKS.md`, `BUGS.md`, `KNOWN_ISSUES.md`, `CHANGELOG.md` for detail.
 
-**Last updated:** 2026-10-02
+**Last updated:** 2026-10-09
 
 ---
 
@@ -22,6 +22,7 @@ A large amount of feature/bugfix work has landed since the last full rewrite of 
 
 ## LAST COMPLETED
 
+- **TASK-043 (2026-10-09, pushed untuk deploy)** — Katalog: label + section "New Stock" untuk produk yang diupload ≤ 7 hari (banner hijau di foto, section di atas grid, tanpa hitungan hari, hilang otomatis). `lib/katalog.ts`, `lib/constants.ts`, `app/api/katalog/route.ts`, `app/katalog/page.tsx`, `ProductCard`, `KatalogClient`. tsc/eslint/build clean; belum diklik live.
 - **TASK-042 (2026-10-07, deployed)** — Jasa (biaya service): master data terpisah (`models/Jasa.ts`, tab Jasa di Inventory), harga flat diinput per invoice (tanpa qty/stok/diskon/komisi/HPP), tombol "+ Tambah" di header Katalog (Jasa, Pesan Produk Custom, Lihat Produk Custom), pendapatan ke akun baru 4-1200 (Laba Rugi + Neraca), tidak dihitung di Leaderboard Insentif, boleh di dashboard; invoice jasa saja punya pengiriman + Surat Jalan. Mockup `docs/SDD/mockups/jasa-v2.html`. tsc/build clean; not click-tested live; Surat Jalan jasa-only belum dilihat PDF-nya.
 - **TASK-040 (2026-10-02, mockup only — REVIEW)** — Laporan Owner mockup: "Rekomendasi tindakan" berbasis statistik inferensial (label Yakin/Cukup yakin/Belum pasti/Fakta, bahasa awam) + tren sales per bulan untuk Kuartal/Tahun. Data contoh, belum ada kode di app; menunggu keputusan user. `docs/SDD/mockups/laporan-inferensial.html`, artifact https://claude.ai/artifact/QzqXwcqd2nRyMEJhvtiRg6.
 - **TASK-038 (2026-10-01, deployed)** — Payroll (Owner) redesigned (mockup-approved, 5 versions): shared month stepper `PayrollNav` (`?periode=`; not on Komisi/Karyawan), Komisi/Gaji summary cards + pay panel (sticky bar on phones), Riwayat as cards grouped by month paid, Karyawan/Absensi restyled, invoice number → PDF preview modal (`/api/invoices/[id]/print`). `MobileGajiBulanan.tsx` is now unused (left in place). tsc/eslint/build clean; not click-tested live. Pre-existing lint error in `KaryawanManager` (setState in effect) untouched.

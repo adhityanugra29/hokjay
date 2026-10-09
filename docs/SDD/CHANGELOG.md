@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-10-09
+
+**TASK-043** — Katalog: produk yang baru diupload (7 hari terakhir, kondisi Baru maupun Bekas) mendapat banner hijau "NEW STOCK" dan dikumpulkan di section "New Stock" di atas grid, tanpa hitungan hari; hilang otomatis setelah 7 hari. Filter "Hanya Produk Baru" (3 hari) tidak berubah. Mockup: `docs/SDD/mockups/katalog-barang-baru-v1.html`.
+
+Preserved: Flash Sale, filter, infinite scroll, Pilih Semua, PDF katalog. Regression: tsc, eslint, next build bersih; belum diklik di browser yang login.
+
+---
+
 ## 2026-10-08
 
 **BUG-024** — Pencarian Katalog (mis. "cabinet") hanya menampilkan 12 produk pertama karena scroll otomatis tidak memuat halaman berikutnya setelah pencarian dengan hasil sedikit. Diperbaiki dengan memantau ulang penanda scroll.

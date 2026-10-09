@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import {
   queryKatalogProducts,
+  queryNewStockProducts,
   queryKatalogAvailableIds,
   getKatalogProductById,
   CAN_EDIT_PRODUCT_ROLES,
@@ -51,8 +52,16 @@ export async function GET(req: NextRequest) {
     nama: searchParams.get("nama") ?? undefined,
     ukuran: searchParams.get("ukuran") ?? undefined,
     produkBaru: searchParams.get("produkBaru") === "1",
+    excludeNewStock: searchParams.get("excludeNewStock") === "1",
     sort: (searchParams.get("sort") as KatalogFiltersInput["sort"]) || "",
   };
+
+  // The "New Stock" section's own list (TASK-043) — the first copy is
+  // rendered server-side; this serves a fresh copy on demand.
+  if (searchParams.get("mode") === "newStock") {
+    const products = await queryNewStockProducts({ canEditProduct, canFlashSale });
+    return NextResponse.json({ products });
+  }
 
   if (searchParams.get("mode") === "ids") {
     const ids = await queryKatalogAvailableIds(filters);
