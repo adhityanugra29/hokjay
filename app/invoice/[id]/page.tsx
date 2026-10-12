@@ -117,7 +117,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
   const canCatatDp = invoice.status === "unpaid" && !dpNominal;
   const canUbah = !isPaid && !isDraft;
   const canHapus = !isPaid && !dpNominal;
-  const morePeek = ["Surat Jalan", ...(canCatatDp ? ["Catat DP"] : []), ...(canUbah ? ["Ubah"] : []), ...(canHapus ? ["Hapus"] : [])];
+  const morePeek = ["Surat Jalan", ...(canUbah ? ["Ubah"] : []), ...(canHapus ? ["Hapus"] : [])];
 
   return (
     <>
@@ -232,6 +232,15 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                     <LinkButton href={`/invoice/${invoice._id}/bayar`} className="w-full">
                       Tandai Lunas
                     </LinkButton>
+                    {/* Back out of "Aksi lainnya" as a visible secondary
+                        button — TASK-039 had tucked it into that menu and
+                        sales couldn't find it. Per the user's request
+                        2026-10-12. Same rule as before: unpaid, no DP yet. */}
+                    {canCatatDp && (
+                      <LinkButton variant="ghost" href={`/invoice/${invoice._id}/dp`} className="mt-2 w-full">
+                        Catat DP
+                      </LinkButton>
+                    )}
                   </div>
                 )}
                 {!isDraft && !invoice.dikirim && (
@@ -260,16 +269,6 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                   customerWhatsapp={invoice.customer!.whatsapp ?? undefined}
                   grandTotal={invoice.grandTotal}
                 />
-                {canCatatDp && (
-                  <>
-                    <div className="px-6 pt-2.5 pb-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-                      Pembayaran
-                    </div>
-                    <Link href={`/invoice/${invoice._id}/dp`} className={MENU_ITEM_CLS}>
-                      Catat DP
-                    </Link>
-                  </>
-                )}
                 {(canUbah || canHapus) && (
                   <>
                     <div className="px-6 pt-2.5 pb-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">

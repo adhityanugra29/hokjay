@@ -11,6 +11,8 @@
 Perlu dijalankan sekali: `npm run freeze-syarat-ketentuan -- --apply` (dry run dulu tanpa flag) agar invoice lama tidak ikut berubah saat template diedit.
 Preserved: tampilan/cetak invoice, Surat Jalan, pengaturan template. Regression: tsc bersih; belum diklik di browser yang login.
 
+**UX fix (halaman detail invoice)** — "Catat DP" kembali jadi tombol terlihat di bawah "Tandai Lunas" (sebelumnya tersembunyi di "Aksi lainnya" sejak TASK-039, sales tidak menemukannya). Aturan tampil tidak berubah: Belum bayar dan belum ada DP. Tidak ada perubahan logika DP.
+
 ---
 
 ## 2026-10-09
