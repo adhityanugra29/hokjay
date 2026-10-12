@@ -6,6 +6,7 @@ import { computeLineCommission, maxDiskonBekas, maxDiskonBaru, resolveKomisiBeka
 import { formatDimensi, productDisplayName } from "@/lib/format";
 import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 import { buildJasaLine, loadJasaMap } from "@/lib/services/jasaLine";
+import { resolveSyaratKetentuanForSave } from "@/lib/services/syaratKetentuan";
 
 export interface CreateInvoiceItemInput {
   /** Absent for custom-order line items, which have no backing Product. */
@@ -29,6 +30,13 @@ export interface CreateInvoiceInput {
   provinsi?: string;
   kota?: string;
   catatan?: string;
+  /**
+   * This invoice's own Syarat & Ketentuan text. undefined = leave as is
+   * (update only), null = follow the Admin → Invoice template, string =
+   * custom ("" = no S&K). See lib/services/syaratKetentuan.ts. Per the
+   * user's request 2026-10-12.
+   */
+  syaratKetentuan?: string | null;
   salesId?: string;
   salesNama: string;
   tanggalInvoice?: Date | string;
@@ -200,6 +208,11 @@ export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?:
   const ongkosKirim = input.ongkosKirim ?? 0;
   const grandTotal = subtotalProduk + ongkosKirim;
 
+  const syaratKetentuan = await resolveSyaratKetentuanForSave({
+    input: input.syaratKetentuan,
+    finalStatus: input.status,
+  });
+
   const nomor = await nextInvoiceNumber();
 
   const invoice = await Invoice.create({
@@ -213,6 +226,7 @@ export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?:
     provinsi: input.provinsi,
     kota: input.kota,
     catatan: input.catatan,
+    syaratKetentuan,
     sales: { ref: input.salesId || undefined, nama: input.salesNama },
     // Undefined falls back to the schema's Date.now default — lets the
     // create form pre-fill today's date but still allows backdating.

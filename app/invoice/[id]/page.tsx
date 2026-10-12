@@ -60,7 +60,9 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
     tanggalKirim: invoice.tanggalKirim ? invoice.tanggalKirim.toISOString() : undefined,
     kurir: invoice.kurir ?? undefined,
     catatan: invoice.catatan ?? undefined,
-    syaratKetentuan: pengaturan?.syaratKetentuan ?? undefined,
+    // Own text when this invoice has one (frozen at send / custom), else the
+    // live template — see lib/services/syaratKetentuan.ts.
+    syaratKetentuan: invoice.syaratKetentuan ?? pengaturan?.syaratKetentuan ?? undefined,
     salesNama: invoice.sales!.nama,
     salesNomorHp,
     items: invoice.items.map((item) => ({

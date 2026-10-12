@@ -64,6 +64,7 @@ export default function EditInvoiceLoader({
   salesList,
   couriers,
   currentUser,
+  syaratKetentuanTemplate,
 }: {
   invoiceId: string;
   nomor: string;
@@ -74,6 +75,8 @@ export default function EditInvoiceLoader({
   couriers: CourierOption[];
   /** Wasn't threaded through to the edit flow before — see InvoiceForm.tsx's own isOwner. Per the user's request 2026-09-05. */
   currentUser?: { nama: string; role: string } | null;
+  /** Admin → Invoice template, forwarded to InvoiceForm — per the user's request 2026-10-12. */
+  syaratKetentuanTemplate?: string;
 }) {
   const { loadItems } = useCart();
   const loaded = useRef(false);
@@ -95,6 +98,7 @@ export default function EditInvoiceLoader({
       couriers={couriers}
       initial={initial}
       currentUser={currentUser}
+      syaratKetentuanTemplate={syaratKetentuanTemplate}
     />
   );
 }

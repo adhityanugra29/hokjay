@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup S&amp;K per Invoice v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Mockup Syarat & Ketentuan per invoice v1 — mengikuti token HOJAY "Foundry". Hanya mockup, belum ada kode aplikasi. */
+:root {
+  --ink: #201e1d; --paper: #f7f1e4; --panel: #fffdf8; --surface: #efe9da; --chip: #efece3;
+  --line: rgba(36,31,25,.16); --muted: rgba(36,31,25,.6);
+  --accent: #ffc800; --accent-600: #f0b800; --accent-100: #fff8e0; --accent-700: #92610a;
+  --danger: #c0392b;
+  --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.45; margin: 0; padding: 24px 16px 64px; }
+h1, h2, h3 { font-weight: 800; letter-spacing: -.015em; margin: 0; text-wrap: balance; }
+button, input, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.intro h1 { font-size: 1.5rem; }
+.intro p { margin: 6px 0 0; color: var(--muted); max-width: 80ch; font-size: .85rem; }
+.rules { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.rule { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 700; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { cursor: pointer; border: 1.5px solid var(--line); background: transparent; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 700; }
+.seg button:hover { border-color: var(--accent-600); }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.screen { display: none; flex-direction: column; gap: 10px; }
+.screen.on { display: flex; }
+.cap { font-size: 12.5px; color: var(--muted); max-width: 95ch; background: var(--panel); border-radius: 12px; padding: 10px 14px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.cap b { color: var(--ink); }
+.frame { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px 28px; }
+.frame-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.frame-h h2 { font-size: 1.3rem; }
+.sub { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: transparent; padding: 9px 16px; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.btn:hover { background: rgba(0,0,0,.05); }
+.btn.solid { background: var(--accent); border-color: var(--accent); }
+.btn.solid:hover { background: var(--accent-600); }
+.btn.sm { padding: 6px 12px; font-size: 12px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.pill { border: 1px solid; border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 700; white-space: nowrap; display: inline-block; }
+.pill.default { border-color: var(--line); color: var(--muted); }
+.pill.custom { border-color: var(--accent-700); background: var(--accent-100); color: var(--accent-700); }
+.pill.paid { border-color: #2e7d32; color: #2e7d32; }
+
+.fcard { max-width: 780px; margin: 0 auto; background: var(--panel); border-radius: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.1); overflow: hidden; }
+.fcard-h { padding: 20px 24px; border-bottom: 1px solid var(--line); }
+.fcard-h h2 { font-size: 1.05rem; }
+.fcard-h p { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
+.fsec { padding: 20px 24px; border-bottom: 1px solid var(--line); }
+.fsec:last-child { border-bottom: 0; }
+.fsec-l { display: flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-700); margin-bottom: 14px; }
+.fsec-l::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.fsec-l .right { margin-left: auto; text-transform: none; letter-spacing: 0; }
+.fact { display: flex; flex-wrap: wrap; gap: 10px; padding: 18px 24px; }
+
+.irow { background: var(--panel); border-radius: 12px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.1); margin-bottom: 8px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.irow .nm { font-weight: 600; }
+.irow .mono { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+.totals { margin-left: auto; width: 100%; max-width: 300px; font-family: var(--mono); font-size: 13.5px; margin-top: 10px; }
+.totals div { display: flex; justify-content: space-between; padding: 5px 0; }
+.totals .grand { margin-top: 6px; border-top: 2px solid var(--ink); padding-top: 10px; font-size: 1.05rem; font-weight: 600; }
+
+/* S&K editor — the piece being designed */
+.sk-toggle { width: 100%; display: flex; align-items: center; gap: 10px; cursor: pointer; border: 1px solid var(--line); background: var(--paper); border-radius: 12px; padding: 12px 14px; text-align: left; }
+.sk-toggle:hover { border-color: var(--accent-600); }
+.sk-toggle .t { font-weight: 800; }
+.sk-toggle .d { color: var(--muted); font-size: 12.5px; }
+.sk-toggle .chev { margin-left: auto; font-family: var(--mono); color: var(--muted); }
+.sk-body { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.sk-row { display: flex; gap: 8px; align-items: flex-start; }
+.sk-row .n { flex: none; width: 28px; padding-top: 10px; font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; }
+.sk-row textarea { flex: 1; min-width: 0; resize: vertical; border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 9px 12px; line-height: 1.4; }
+.sk-row .del { flex: none; cursor: pointer; border: 0; background: transparent; color: var(--danger); font-family: var(--mono); font-size: 11.5px; padding: 10px 4px; }
+.sk-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+.sk-tools .grow { flex: 1; }
+.addbtn { cursor: pointer; border: 1.5px dashed var(--line); background: transparent; border-radius: 10px; padding: 8px 14px; font-size: 13px; color: var(--muted); }
+.addbtn:hover { border-color: var(--accent-700); color: var(--accent-700); }
+.hint { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.locked textarea { background: var(--chip); color: var(--muted); }
+.lockmsg { display: flex; gap: 8px; align-items: flex-start; background: var(--chip); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+
+/* paper preview */
+.doc { max-width: 640px; margin: 0 auto; background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.12); padding: 28px 32px; font-size: 12px; }
+.doc h4 { margin: 0 0 4px; font-size: 1.1rem; }
+.doc .row { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 6px 0; }
+.doc .sk { margin-top: 22px; }
+.doc .sk b { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+.doc ol { margin: 0; padding-left: 18px; color: rgba(36,31,25,.8); }
+.doc ol li { margin: 2px 0; }
+.cmp { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.cmp h3 { font-size: .9rem; margin-bottom: 8px; }
+@media (max-width: 720px) { .cmp { grid-template-columns: 1fr; } .frame { padding: 14px; } .fsec { padding: 16px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="intro">
+    <h1>Syarat &amp; Ketentuan per Invoice</h1>
+    <p>Mockup v1 — bukan kode aplikasi. S&amp;K diisi dari template default (Admin → Invoice), lalu bisa diubah per invoice di bagian paling bawah form, setelah item barang. Klik tombol di bawah untuk pindah layar; semua kolom di layar 1 bisa dicoba.</p>
+    <div class="rules">
+      <span class="rule">Default = template Admin → Invoice</span>
+      <span class="rule">Semua role (Sales, Admin, Owner) boleh ubah</span>
+      <span class="rule">Draft ikut template · Belum bayar/DP/Lunas dibekukan</span>
+      <span class="rule">Lunas → tidak bisa diubah</span>
+      <span class="rule">Satu template default</span>
+    </div>
+  </div>
+
+  <div class="seg" id="seg">
+    <button aria-pressed="true" data-s="s1">1 · Form invoice (buat/edit)</button>
+    <button aria-pressed="false" data-s="s2">2 · Aturan per status</button>
+    <button aria-pressed="false" data-s="s3">3 · Admin → Invoice</button>
+    <button aria-pressed="false" data-s="s4">4 · Hasil di invoice</button>
+  </div>
+
+  <!-- ============ SCREEN 1 ============ -->
+  <section class="screen on" id="s1">
+    <div class="cap"><b>Form invoice.</b> Seksi baru <b>"Syarat &amp; Ketentuan"</b> ada di paling bawah, setelah item + total, sebelum tombol Simpan. Defaultnya tertutup (supaya form di HP tidak makin panjang) dan ringkasannya menunjukkan apakah masih ikut default atau sudah custom. Coba: buka, ubah satu baris, lalu klik "Kembalikan ke default".</div>
+    <div class="frame">
+      <div class="frame-h"><h2>Invoice Baru</h2><span class="sub">INV-2610-0042 · draft</span></div>
+      <div class="fcard">
+        <div class="fsec">
+          <div class="fsec-l">Item Produk &amp; Jasa</div>
+          <div class="irow"><div><div class="nm">Kitchen Set Minimalis 240cm</div><div class="mono">1 × Rp 18.500.000</div></div><div class="mono">Rp 18.500.000</div></div>
+          <div class="irow"><div><div class="nm">Jasa Pemasangan</div><div class="mono">1 × Rp 1.200.000</div></div><div class="mono">Rp 1.200.000</div></div>
+          <div class="totals">
+            <div><span>Subtotal</span><span>Rp 19.700.000</span></div>
+            <div><span>Ongkos Kirim</span><span>Rp 350.000</span></div>
+            <div class="grand"><span>Total</span><span>Rp 20.050.000</span></div>
+          </div>
+        </div>
+
+        <div class="fsec">
+          <div class="fsec-l">Syarat &amp; Ketentuan <span class="right"><span class="pill default" id="badge">Default</span></span></div>
+          <button type="button" class="sk-toggle" id="skToggle" aria-expanded="false">
+            <span><span class="t" id="skTitle">Ikut template default</span><br><span class="d" id="skDesc">6 poin · ditampilkan di invoice</span></span>
+            <span class="chev" id="chev">Ubah ▾</span>
+          </button>
+          <div class="sk-body" id="skBody" hidden>
+            <div id="rows"></div>
+            <div class="sk-tools">
+              <button type="button" class="addbtn" id="add">+ Tambah poin</button>
+              <span class="grow"></span>
+              <button type="button" class="btn sm" id="reset" disabled>Kembalikan ke default</button>
+            </div>
+            <div class="hint">Perubahan di sini hanya berlaku untuk invoice ini. Template default diatur di Admin → Invoice.</div>
+          </div>
+        </div>
+
+        <div class="fact">
+          <button class="btn solid" type="button">Simpan Invoice</button>
+          <button class="btn" type="button">Batal</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 2 ============ -->
+  <section class="screen" id="s2">
+    <div class="cap"><b>Aturan per status.</b> Teks template hanya diikuti selama invoice masih draft. Begitu invoice dikirim (Belum bayar), teks yang berlaku saat itu dibekukan di invoice dan tidak pernah ikut berubah lagi. Invoice Lunas tidak punya form ubah sama sekali (halaman ubah = 404, server menolak), jadi S&amp;K-nya hanya terlihat di detail dan PDF.</div>
+    <div class="frame">
+      <div style="background:var(--panel);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow-x:auto">
+        <table style="width:100%;min-width:620px;border-collapse:collapse">
+          <thead><tr style="text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">
+            <th style="padding:14px 16px">Status</th><th style="padding:14px 16px">Template diubah di Admin</th><th style="padding:14px 16px">S&amp;K di form invoice</th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-top:1px solid var(--line)"><td style="padding:14px 16px"><b>Baru / Draft</b></td><td style="padding:14px 16px">Ikut berubah (selama belum diubah manual)</td><td style="padding:14px 16px">Bisa diubah, hanya invoice ini</td></tr>
+            <tr style="border-top:1px solid var(--line)"><td style="padding:14px 16px"><b>Belum bayar</b></td><td style="padding:14px 16px">Tidak ikut — teks dibekukan saat dikirim</td><td style="padding:14px 16px">Bisa diubah, hanya invoice ini</td></tr>
+            <tr style="border-top:1px solid var(--line)"><td style="padding:14px 16px"><b>DP</b></td><td style="padding:14px 16px">Tidak ikut — sudah dibekukan</td><td style="padding:14px 16px">Bisa diubah, hanya invoice ini</td></tr>
+            <tr style="border-top:1px solid var(--line)"><td style="padding:14px 16px"><b>Lunas</b> <span class="pill paid">Paid</span></td><td style="padding:14px 16px">Tidak ikut</td><td style="padding:14px 16px">Tidak bisa diubah (tidak ada form ubah)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hint" style="margin-top:12px">Invoice yang sudah ada sebelum fitur ini: dibekukan satu kali dengan teks template saat ini lewat skrip, supaya tampilannya tidak berubah.</p>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 3 ============ -->
+  <section class="screen" id="s3">
+    <div class="cap"><b>Admin → Invoice.</b> Layar yang sudah ada, hanya judul dan teks bantunya diubah supaya jelas ini <b>template default</b>, bukan teks yang langsung berlaku di semua invoice. Invoice lama yang belum punya S&amp;K sendiri tetap memakai teks ini saat dicetak.</div>
+    <div class="frame">
+      <div class="fcard">
+        <div class="fcard-h">
+          <h2>Template Default Syarat &amp; Ketentuan</h2>
+          <p>Dipakai sebagai isi awal S&amp;K setiap invoice baru. Mengubah template ini <b>tidak</b> mengubah invoice yang sudah dibuat dengan S&amp;K sendiri.</p>
+        </div>
+        <div class="fsec">
+          <div class="sk-body" style="margin-top:0">
+            <div class="sk-row"><span class="n">1.</span><textarea rows="2" readonly>Barang yang sudah dibeli tidak dapat ditukar atau dikembalikan, kecuali cacat produksi.</textarea></div>
+            <div class="sk-row"><span class="n">2.</span><textarea rows="2" readonly>Garansi produk mengikuti ketentuan dari masing-masing produsen/merek.</textarea></div>
+            <div class="sk-row"><span class="n">3.</span><textarea rows="2" readonly>Komplain wajib disertai nota dan foto/video unboxing.</textarea></div>
+            <div class="sk-tools"><button class="addbtn" type="button">+ Tambah baris</button></div>
+          </div>
+        </div>
+        <div class="fact"><button class="btn solid" type="button">Simpan Template</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 4 ============ -->
+  <section class="screen" id="s4">
+    <div class="cap"><b>Hasil di invoice (PDF/preview).</b> Tata letak tidak berubah, hanya isinya yang kini bisa berbeda per invoice. Kiri: invoice yang ikut default. Kanan: invoice dengan S&amp;K custom. Invoice tanpa S&amp;K (semua baris dihapus) tidak menampilkan blok ini sama sekali.</div>
+    <div class="frame">
+      <div class="cmp">
+        <div>
+          <h3>Invoice A <span class="pill default">Default</span></h3>
+          <div class="doc">
+            <h4>INVOICE INV-2610-0041</h4>
+            <div class="row"><span>Kitchen Set 240cm</span><span>Rp 18.500.000</span></div>
+            <div class="row"><b>Total</b><b>Rp 18.500.000</b></div>
+            <div class="sk"><b>Syarat &amp; Ketentuan</b>
+              <ol>
+                <li>Barang yang sudah dibeli tidak dapat ditukar atau dikembalikan, kecuali cacat produksi.</li>
+                <li>Garansi produk mengikuti ketentuan dari masing-masing produsen/merek.</li>
+                <li>Komplain wajib disertai nota dan foto/video unboxing.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3>Invoice B <span class="pill custom">Custom</span></h3>
+          <div class="doc">
+            <h4>INVOICE INV-2610-0042</h4>
+            <div class="row"><span>Kitchen Set 240cm</span><span>Rp 18.500.000</span></div>
+            <div class="row"><b>Total</b><b>Rp 18.500.000</b></div>
+            <div class="sk"><b>Syarat &amp; Ketentuan</b>
+              <ol>
+                <li>Harga sudah termasuk pemasangan di lokasi dalam kota.</li>
+                <li>Pembayaran DP 50% saat pemesanan, pelunasan sebelum barang dikirim.</li>
+                <li>Barang custom tidak dapat dibatalkan setelah produksi dimulai.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  var DEFAULT = [
+    "Barang yang sudah dibeli tidak dapat ditukar atau dikembalikan, kecuali cacat produksi.",
+    "Garansi produk mengikuti ketentuan dari masing-masing produsen/merek.",
+    "Komplain wajib disertai nota dan foto/video unboxing.",
+    "Pembayaran DP 50% saat pemesanan, pelunasan sebelum barang dikirim.",
+    "Barang custom tidak dapat dibatalkan setelah produksi dimulai.",
+    "Pengiriman mengikuti jadwal yang disepakati; keterlambatan karena force majeure di luar tanggung jawab penjual."
+  ];
+  var lines = DEFAULT.slice();
+  var open = false;
+
+  var rows = document.getElementById("rows");
+  var body = document.getElementById("skBody");
+  var toggle = document.getElementById("skToggle");
+
+  function isDefault() {
+    return lines.length === DEFAULT.length && lines.every(function (l, i) { return l === DEFAULT[i]; });
+  }
+
+  function render() {
+    rows.innerHTML = "";
+    lines.forEach(function (text, i) {
+      var r = document.createElement("div");
+      r.className = "sk-row";
+      r.innerHTML = '<span class="n">' + (i + 1) + '.</span>';
+      var ta = document.createElement("textarea");
+      ta.rows = 2; ta.value = text;
+      ta.addEventListener("input", function () { lines[i] = ta.value; summary(); });
+      var del = document.createElement("button");
+      del.type = "button"; del.className = "del"; del.textContent = "Hapus";
+      del.addEventListener("click", function () { lines.splice(i, 1); render(); });
+      r.appendChild(ta); r.appendChild(del);
+      rows.appendChild(r);
+    });
+    summary();
+  }
+
+  function summary() {
+    var def = isDefault();
+    var n = lines.filter(function (l) { return l.trim(); }).length;
+    var badge = document.getElementById("badge");
+    badge.textContent = def ? "Default" : "Custom";
+    badge.className = "pill " + (def ? "default" : "custom");
+    document.getElementById("skTitle").textContent = def ? "Ikut template default" : "Custom untuk invoice ini";
+    document.getElementById("skDesc").textContent = n === 0 ? "Tanpa S&K — blok tidak ditampilkan di invoice" : n + " poin · ditampilkan di invoice";
+    document.getElementById("reset").disabled = def;
+  }
+
+  toggle.addEventListener("click", function () {
+    open = !open;
+    body.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    document.getElementById("chev").textContent = open ? "Tutup ▴" : "Ubah ▾";
+  });
+  document.getElementById("add").addEventListener("click", function () { lines.push(""); render(); });
+  document.getElementById("reset").addEventListener("click", function () { lines = DEFAULT.slice(); render(); });
+
+  document.getElementById("seg").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    document.querySelectorAll("#seg button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+    document.querySelectorAll(".screen").forEach(function (s) { s.classList.toggle("on", s.id === b.dataset.s); });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

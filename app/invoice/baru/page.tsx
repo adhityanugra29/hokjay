@@ -7,6 +7,7 @@ import { Courier } from "@/models/Courier";
 import { peekNextInvoiceNumber } from "@/lib/counters";
 import { getSession } from "@/lib/auth/session";
 import { customerVisibilityFilter } from "@/lib/pelanggan";
+import { getSyaratKetentuanTemplate } from "@/lib/services/syaratKetentuan";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +18,12 @@ export default async function InvoiceBaruPage() {
   // API (2026-08-27) — without this, a plain "sales" account could still
   // pick another rep's customer straight from this dropdown. Fetched
   // before the Promise.all below since the filter itself depends on it.
-  const [customers, salesList, couriers, nextNumber] = await Promise.all([
+  const [customers, salesList, couriers, nextNumber, syaratKetentuanTemplate] = await Promise.all([
     Customer.find(customerVisibilityFilter(session)).sort({ nama: 1 }).lean(),
     Sales.find({ aktif: true }).sort({ nama: 1 }).lean(),
     Courier.find().sort({ name: 1 }).lean(),
     peekNextInvoiceNumber(),
+    getSyaratKetentuanTemplate(),
   ]);
 
   return (
@@ -40,6 +42,7 @@ export default async function InvoiceBaruPage() {
           salesList={salesList.map((s) => ({ _id: String(s._id), nama: s.nama }))}
           couriers={couriers.map((c) => ({ _id: String(c._id), name: c.name }))}
           nextNumberHint={nextNumber}
+          syaratKetentuanTemplate={syaratKetentuanTemplate}
           currentUser={session ? { nama: session.nama, role: session.role } : null}
         />
       </div>

@@ -8,6 +8,7 @@ import { formatDimensi, productDisplayName } from "@/lib/format";
 import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
 import { buildJasaLine, loadJasaMap } from "@/lib/services/jasaLine";
+import { resolveSyaratKetentuanForSave } from "@/lib/services/syaratKetentuan";
 
 /**
  * Edits a draft or unpaid invoice in place (same _id and nomor) — lets a
@@ -149,6 +150,12 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   const ongkosKirim = input.ongkosKirim ?? 0;
   const grandTotal = subtotalProduk + ongkosKirim;
 
+  const syaratKetentuan = await resolveSyaratKetentuanForSave({
+    input: input.syaratKetentuan,
+    existing: { status: existing.status, syaratKetentuan: existing.syaratKetentuan },
+    finalStatus: input.status,
+  });
+
   existing.set({
     customer: {
       ref: input.customerId || undefined,
@@ -159,6 +166,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
     provinsi: input.provinsi,
     kota: input.kota,
     catatan: input.catatan,
+    syaratKetentuan,
     sales: { ref: input.salesId || undefined, nama: input.salesNama },
     tanggalInvoice: input.tanggalInvoice ? new Date(input.tanggalInvoice) : existing.tanggalInvoice,
     tanggalKirim: input.tanggalKirim ? new Date(input.tanggalKirim) : undefined,

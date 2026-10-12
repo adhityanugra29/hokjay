@@ -6,7 +6,10 @@ import { Field, FormActions, Input } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 
 /**
- * Free-text Syarat & Ketentuan shown on every Invoice PDF/preview — per
+ * Template default for the Syarat & Ketentuan on Invoice PDFs/previews. Since
+ * 2026-10-12 each invoice can carry its own text (InvoiceForm's bottom
+ * section); this is only the starting point + what a draft still follows —
+ * see lib/services/syaratKetentuan.ts. Original note: free-text S&K — per
  * the user's request 2026-09-19 ("ditambahkan ke pengaturan saja"). Lives
  * under Admin → Invoice (moved out of Keuangan 2026-09-20, "jangan taro di
  * keuangan, taro saja di invoice" — this is invoice content, not a
@@ -80,9 +83,11 @@ export default function PengaturanSyaratKetentuan() {
 
   return (
     <Panel className="max-w-xl p-7">
-      <h2 className="mb-1 text-[1.05rem] font-extrabold">Syarat &amp; Ketentuan (Invoice)</h2>
+      <h2 className="mb-1 text-[1.05rem] font-extrabold">Template Default Syarat &amp; Ketentuan</h2>
       <p className="mb-5 text-[0.8rem] text-muted">
-        Tampil di bagian bawah PDF/preview Invoice, satu baris di sini = satu poin bernomor di invoice.
+        Menjadi isi awal Syarat &amp; Ketentuan setiap invoice baru; satu baris di sini = satu poin bernomor di invoice.
+        Invoice yang sudah dikirim (Belum bayar, DP, Lunas) atau sudah diubah sendiri tidak ikut berubah — hanya draft yang
+        belum diubah yang mengikuti template ini.
       </p>
       <form onSubmit={handleSubmit}>
         <div className="flex flex-col gap-3">

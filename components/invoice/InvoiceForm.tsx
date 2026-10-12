@@ -12,6 +12,8 @@ import ItemRowEditor from "./ItemRowEditor";
 import JasaRowEditor from "./JasaRowEditor";
 import InlineCustomerForm, { type CreatedCustomer } from "./InlineCustomerForm";
 import AddProductSidebar from "./AddProductSidebar";
+import SyaratKetentuanEditor from "./SyaratKetentuanEditor";
+import { normalizeSyarat, parseSyaratPoin, validateSyarat } from "@/lib/syaratKetentuan";
 import { computeLineCommission, allocateBulkDiskon } from "@/lib/commission";
 import { rupiah } from "@/lib/format";
 import { makeJasaCartItem } from "@/lib/jasaCart";
@@ -44,6 +46,10 @@ export interface InvoiceFormInitial {
   provinsi?: string;
   kota?: string;
   catatan?: string;
+  /** Edit mode: the S&K text in force right now (own text, else the template) — per the user's request 2026-10-12. */
+  syaratKetentuan?: string;
+  /** Edit mode: invoice already sent (not draft) — its S&K no longer follows the template. */
+  syaratKetentuanFrozen?: boolean;
 }
 
 export default function InvoiceForm({
@@ -55,6 +61,7 @@ export default function InvoiceForm({
   invoiceId,
   initial,
   currentUser,
+  syaratKetentuanTemplate = "",
 }: {
   customers: CustomerOption[];
   salesList: SalesOption[];
@@ -64,6 +71,8 @@ export default function InvoiceForm({
   invoiceId?: string;
   initial?: InvoiceFormInitial;
   currentUser?: { nama: string; role: string } | null;
+  /** Admin → Invoice's template text — the starting point for this invoice's own Syarat & Ketentuan. */
+  syaratKetentuanTemplate?: string;
 }) {
   const router = useRouter();
   // Owner-only "no plafon diskon" override — per the user's request
@@ -122,6 +131,17 @@ export default function InvoiceForm({
   // Free-text note, shown on the printed Invoice/Bukti Transfer AND Surat
   // Jalan — per the user's request 2026-09-19.
   const [catatan, setCatatan] = useState(initial?.catatan ?? "");
+  // Per-invoice Syarat & Ketentuan, edited at the bottom of the form — per
+  // the user's request 2026-10-12. Starts from this invoice's own text when
+  // editing, otherwise from the Admin → Invoice template. Only this invoice
+  // is ever changed; the template is never written from here.
+  const templateLines = useMemo(() => parseSyaratPoin(syaratKetentuanTemplate), [syaratKetentuanTemplate]);
+  const skFrozen = initial?.syaratKetentuanFrozen ?? false;
+  const [skLines, setSkLines] = useState<string[]>(() =>
+    initial?.syaratKetentuan !== undefined ? parseSyaratPoin(initial.syaratKetentuan) : templateLines
+  );
+  const skText = normalizeSyarat(skLines.join("\n"));
+  const skIsDefault = skText === normalizeSyarat(syaratKetentuanTemplate);
   const [salesId, setSalesId] = useState(initial?.salesId ?? "");
   const [tanggalInvoice, setTanggalInvoice] = useState(
     initial?.tanggalInvoice ?? new Date().toISOString().slice(0, 10)
@@ -160,6 +180,7 @@ export default function InvoiceForm({
         provinsi: string;
         kota: string;
         catatan: string;
+        skLines: string[];
         salesId: string;
         tanggalInvoice: string;
         tanggalKirim: string;
@@ -171,6 +192,7 @@ export default function InvoiceForm({
       if (draft.provinsi) setProvinsi(draft.provinsi);
       if (draft.kota) setKota(draft.kota);
       if (draft.catatan) setCatatan(draft.catatan);
+      if (Array.isArray(draft.skLines)) setSkLines(draft.skLines);
       if (draft.salesId) setSalesId(draft.salesId);
       if (draft.tanggalInvoice) setTanggalInvoice(draft.tanggalInvoice);
       if (draft.tanggalKirim) setTanggalKirim(draft.tanggalKirim);
@@ -194,6 +216,7 @@ export default function InvoiceForm({
           provinsi,
           kota,
           catatan,
+          skLines,
           salesId,
           tanggalInvoice,
           tanggalKirim,
@@ -211,6 +234,7 @@ export default function InvoiceForm({
     provinsi,
     kota,
     catatan,
+    skLines,
     salesId,
     tanggalInvoice,
     tanggalKirim,
@@ -416,6 +440,9 @@ export default function InvoiceForm({
     if (!customer) return setError("Pilih pelanggan terlebih dahulu.");
     if (!sales) return setError("Pilih sales terlebih dahulu.");
 
+    const skError = validateSyarat(skText);
+    if (skError) return setError(skError);
+
     setSaving(true);
     showLoading();
     try {
@@ -431,6 +458,11 @@ export default function InvoiceForm({
           provinsi: provinsi || undefined,
           kota: kota || undefined,
           catatan: catatan || undefined,
+          // null = still the template (a draft keeps following it; saving as
+          // unpaid freezes it server-side). A sent invoice always sends its
+          // explicit text so it can never slip back to following the
+          // template. See lib/services/syaratKetentuan.ts.
+          syaratKetentuan: skIsDefault && !skFrozen ? null : skText,
           salesId: sales._id,
           salesNama: sales.nama,
           tanggalInvoice: tanggalInvoice || undefined,
@@ -755,7 +787,7 @@ export default function InvoiceForm({
       </div>
       </FormSection>
 
-      <FormSection label="Ringkasan" last>
+      <FormSection label="Ringkasan">
       <div className="border border-line bg-[#f7f5ee] p-5">
         <h3 className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Estimasi Komisi Sales</h3>
         <div className="mt-1.5 font-mono text-[0.85rem]">
@@ -825,6 +857,16 @@ export default function InvoiceForm({
       </div>
 
       {error && <div className="mt-3 font-mono text-[0.75rem] text-danger">{error}</div>}
+      </FormSection>
+
+      <FormSection label="Syarat &amp; Ketentuan" last>
+        <SyaratKetentuanEditor
+          lines={skLines}
+          onChange={setSkLines}
+          templateLines={templateLines}
+          isDefault={skIsDefault}
+          frozen={skFrozen}
+        />
       </FormSection>
 
       <FormCardActions>

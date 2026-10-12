@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-10-12
+
+**TASK-044** — Syarat & Ketentuan bisa diatur per invoice: seksi baru di paling bawah form invoice (isi awal dari template Admin → Invoice, bisa diubah per baris, "Kembalikan ke default"). Draft ikut template selama belum diubah; saat invoice dikirim teksnya dibekukan, sehingga perubahan template tidak mengubah invoice Belum bayar/DP/Lunas. Lunas tidak bisa diubah. Halaman Admin → Invoice kini berjudul "Template Default Syarat & Ketentuan". Mockup: `invoice-syarat-ketentuan-v1.html`.
+
+Perlu dijalankan sekali: `npm run freeze-syarat-ketentuan -- --apply` (dry run dulu tanpa flag) agar invoice lama tidak ikut berubah saat template diedit.
+Preserved: tampilan/cetak invoice, Surat Jalan, pengaturan template. Regression: tsc bersih; belum diklik di browser yang login.
+
+---
+
 ## 2026-10-09
 
 **TASK-043** — Katalog: produk yang baru diupload (7 hari terakhir, kondisi Baru maupun Bekas) mendapat banner hijau "NEW STOCK" dan dikumpulkan di section "New Stock" di atas grid, tanpa hitungan hari; hilang otomatis setelah 7 hari. Filter "Hanya Produk Baru" (3 hari) tidak berubah. Mockup: `docs/SDD/mockups/katalog-barang-baru-v1.html`.

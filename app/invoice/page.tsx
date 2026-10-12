@@ -152,7 +152,9 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       dpTanggal: inv.dp?.tanggal ? inv.dp.tanggal.toISOString() : undefined,
       isPaid: inv.status === "paid",
       catatan: inv.catatan ?? undefined,
-      syaratKetentuan: pengaturan?.syaratKetentuan ?? undefined,
+      // Own text when this invoice has one (frozen at send / custom), else the
+      // live template — see lib/services/syaratKetentuan.ts.
+      syaratKetentuan: inv.syaratKetentuan ?? pengaturan?.syaratKetentuan ?? undefined,
       // Feeds the Preview drawer's "Bukti Transfer" tab (TASK-016) — see
       // InvoicePrintData's own doc comment for why this is only populated
       // here, not on /invoice/[id].

@@ -997,3 +997,34 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Build:** `NEW_STOCK_DAYS = 7`; `getNewStockIds`, `queryNewStockProducts`, opsi `excludeNewStock`, field `isNewStock`, `/api/katalog?mode=newStock`; banner hijau di `ProductCard` (Flash Sale menang bila keduanya berlaku); section "New Stock" di `KatalogClient` (baris geser di HP, grid dari sm ke atas), tampil hanya tanpa pencarian dan tanpa filter aktif.
 **Regression test:** `tsc --noEmit`, `eslint` pada 5 file, dan `next build` bersih. Belum diklik di browser yang login.
 **Open points:** (1) jika dalam seminggu banyak produk diupload, section ikut memanjang (tanpa batas jumlah). (2) Section tidak diperbarui otomatis saat produk habis stok di sesi yang sedang terbuka (ikut tersegarkan saat halaman dimuat ulang).
+
+---
+
+## TASK-044 — Syarat & Ketentuan per invoice (template default tetap di Admin → Invoice)
+
+**Type:** Feature
+**Priority:** P2
+**Status:** TESTING (2026-10-12; kode selesai, belum diklik di browser yang login; skrip pembekuan data lama belum dijalankan)
+**Dependency:** Pengaturan.syaratKetentuan (2026-09-19), TASK-042 (pola InvoiceForm)
+**Created:** 2026-10-12 · **Last updated:** 2026-10-12
+
+**Requirement (user):** S&K di invoice sebelumnya satu teks global dari Admin → Invoice. Sekarang bisa diatur per invoice, di bagian paling bawah form invoice (setelah item/ringkasan), dengan isi awal dari template Admin → Invoice. Mockup: `docs/SDD/mockups/invoice-syarat-ketentuan-v1.html`.
+
+**Rules (disetujui user):**
+- Semua role (Sales, Admin, Owner) boleh mengubah; mengikuti hak edit invoice yang ada (guard per-sales tetap).
+- Mengubah S&K di invoice hanya berlaku untuk invoice itu; template global tidak pernah ditulis dari form invoice.
+- Draft: ikut template selama belum diubah manual. Saat invoice dikirim (Belum bayar), teks yang berlaku dibekukan di invoice dan tidak ikut perubahan template lagi. DP dan Lunas sama (sudah dibekukan).
+- Belum bayar dan DP boleh diubah S&K-nya, hanya di invoice itu. Lunas tidak bisa diubah (halaman ubah 404, `updateInvoice` menolak).
+- Semua poin dihapus berarti invoice tanpa S&K (`""`), berbeda dari "ikut template" (`undefined`).
+- Batas yang saya usulkan (belum dibantah user): maksimal 15 poin, 300 karakter per poin; hanya berlaku untuk teks custom.
+
+**Impact: LOW-MEDIUM.** ADD field `Invoice.syaratKetentuan` (opsional), ADD helper `lib/syaratKetentuan.ts` dan `lib/services/syaratKetentuan.ts`, EXTEND `createInvoice`/`updateInvoice`, EXTEND 4 tempat `printData` (fallback `invoice.syaratKetentuan ?? template`), ADD `SyaratKetentuanEditor` di `InvoiceForm`, ubah label/teks halaman Admin → Invoice. Komponen cetak (`InvoicePrintDoc`/`InvoiceDocument`) tidak diubah.
+
+**Data lama:** invoice non-draft yang belum punya S&K sendiri masih ikut template sampai dibekukan. `scripts/freeze-syarat-ketentuan.ts` (`npm run freeze-syarat-ketentuan`, default dry run, `-- --apply` untuk menulis) menyalin template saat ini ke invoice tersebut. Jalankan SEKALI sebelum template pertama kali diubah.
+
+**Files affected:** `models/Invoice.ts`, `lib/syaratKetentuan.ts`, `lib/services/{syaratKetentuan,createInvoice,updateInvoice}.ts`, `components/invoice/{SyaratKetentuanEditor,InvoiceForm,EditInvoiceLoader}.tsx`, `components/admin/PengaturanSyaratKetentuan.tsx`, `app/invoice/{page.tsx,baru/page.tsx,[id]/page.tsx,[id]/ubah/page.tsx}`, `app/api/invoices/[id]/print/route.ts`, `scripts/freeze-syarat-ketentuan.ts`, `package.json`.
+**Files NOT changed:** `InvoicePrintDoc`, `InvoiceDocument`, Surat Jalan (memakai `catatan`, bukan S&K), model Pengaturan, API pengaturan.
+**Acceptance criteria:** invoice baru terisi template; edit custom hanya mengubah invoice itu; template diubah tidak mengubah invoice Belum bayar/DP/Lunas/custom, tetapi mengubah draft yang belum diubah; Lunas tidak bisa diubah; invoice lama tampil sama; PDF multi-halaman tetap benar.
+**Regression test:** `tsc --noEmit` dan `next build` bersih; ESLint pada file yang diubah hanya melaporkan 2 temuan lama di InvoiceForm (setState di effect). Belum diklik di browser yang login.
+**Open points:** (1) batas 15 poin/300 karakter menunggu konfirmasi. (2) Skrip pembekuan harus dijalankan di database produksi sebelum template diubah. (3) Invoice Belum bayar yang disimpan kembali sebagai draft tetap membawa teks beku (tidak kembali ikut template).
+

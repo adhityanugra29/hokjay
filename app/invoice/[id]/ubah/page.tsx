@@ -14,6 +14,7 @@ import { customerVisibilityFilter } from "@/lib/pelanggan";
 import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
 import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 import { resolveKomisiBekasPercent } from "@/lib/commission";
+import { getSyaratKetentuanTemplate } from "@/lib/services/syaratKetentuan";
 
 export const dynamic = "force-dynamic";
 
@@ -98,10 +99,11 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
     ? { $or: [baseFilter, { _id: invoice.customer.ref }] }
     : baseFilter;
 
-  const [customers, salesList, couriers] = await Promise.all([
+  const [customers, salesList, couriers, syaratKetentuanTemplate] = await Promise.all([
     Customer.find(customerFilter).sort({ nama: 1 }).lean(),
     Sales.find({ aktif: true }).sort({ nama: 1 }).lean(),
     Courier.find().sort({ name: 1 }).lean(),
+    getSyaratKetentuanTemplate(),
   ]);
 
   const selectedCourier = couriers.find((c) => c.name === invoice.kurir);
@@ -119,6 +121,7 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
           nomor={invoice.nomor}
           currentUser={session ? { nama: session.nama, role: session.role } : null}
           items={cartItems}
+          syaratKetentuanTemplate={syaratKetentuanTemplate}
           initial={{
             customerId: invoice.customer?.ref ? String(invoice.customer.ref) : undefined,
             salesId: invoice.sales?.ref ? String(invoice.sales.ref) : undefined,
@@ -130,6 +133,11 @@ export default async function InvoiceUbahPage({ params }: PageProps<"/invoice/[i
             provinsi: invoice.provinsi ?? invoiceCustomer?.provinsi ?? undefined,
             kota: invoice.kota ?? invoiceCustomer?.kota ?? undefined,
             catatan: invoice.catatan ?? undefined,
+            // Own text if it has one (custom, or frozen when sent), else the
+            // template a draft still follows. Per the user's request
+            // 2026-10-12.
+            syaratKetentuan: invoice.syaratKetentuan ?? syaratKetentuanTemplate,
+            syaratKetentuanFrozen: invoice.status !== "draft",
           }}
           customers={customers.map((c) => ({
             _id: String(c._id),

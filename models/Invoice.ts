@@ -79,6 +79,15 @@ const InvoiceSchema = new Schema(
     // dp.catatan/payment.catatan above, which are specific to one payment
     // event, not a general invoice-level note.
     catatan: { type: String },
+    // This invoice's own Syarat & Ketentuan, one point per line — per the
+    // user's request 2026-10-12. Undefined = follow Pengaturan.
+    // syaratKetentuan (the template) live, which only a DRAFT may do; "" =
+    // deliberately no S&K block. Frozen onto the invoice the moment it
+    // leaves draft (see lib/services/syaratKetentuan.ts), so editing the
+    // template later never rewrites an invoice already sent. Invoices that
+    // predate this field are frozen once by scripts/
+    // freeze-syarat-ketentuan.ts.
+    syaratKetentuan: { type: String },
 
     sales: {
       ref: { type: Schema.Types.ObjectId, ref: "Sales" },
