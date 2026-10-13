@@ -158,6 +158,13 @@ export function CatalogSelectionProvider({ children }: { children: React.ReactNo
   }
 
   function startPicking() {
+    // Starts every picking session from zero checked items: `selected` is
+    // restored from localStorage on load, so without this a leftover set from
+    // an earlier session (e.g. a past "Pilih Semua" = 165 items) silently
+    // carried into the new one and the PDF included products the user never
+    // checked this time. Only called while pickMode is off, so selections
+    // kept across searches within one session are unaffected.
+    clearAll();
     setPickMode(true);
   }
 

@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-10-13
+
+**BUG-025** — Unduh Katalog PDF memuat produk yang tidak dicentang: sisa pilihan dari sesi sebelumnya (tersimpan di browser) ikut terbawa saat klik "Buat Katalog". Sekarang setiap sesi "Buat Katalog" mulai dari 0 centang.
+
+Preserved: pilihan lintas pencarian dalam satu sesi, harga custom, diskon. Regression: tsc bersih; belum diklik di browser yang login.
+
+---
+
 ## 2026-10-12
 
 **TASK-044** — Syarat & Ketentuan bisa diatur per invoice: seksi baru di paling bawah form invoice (isi awal dari template Admin → Invoice, bisa diubah per baris, "Kembalikan ke default"). Draft ikut template selama belum diubah; saat invoice dikirim teksnya dibekukan, sehingga perubahan template tidak mengubah invoice Belum bayar/DP/Lunas. Lunas tidak bisa diubah. Halaman Admin → Invoice kini berjudul "Template Default Syarat & Ketentuan". Mockup: `invoice-syarat-ketentuan-v1.html`.

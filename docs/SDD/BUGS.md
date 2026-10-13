@@ -437,3 +437,20 @@ Also applied, per the user's related request, a conservative compression tighten
 
 **Files:** `components/katalog/KatalogClient.tsx`.
 **Regression test:** `tsc --noEmit` and eslint clean. Not yet verified in a logged-in browser. Not changed: unescaped regex in `lib/katalog.ts` search (noted, separate).
+
+---
+
+## BUG-025 — "Unduh Katalog PDF" includes products that were not checked this session (stale selection)
+
+**Severity:** B2
+**Status:** FIXED (2026-10-13)
+**Source:** User report (after searching and checking products, the button read "165 itemnya" and the PDF contained every product instead of only the checked ones).
+
+**Description:** A selection left over from an earlier session (e.g. a past "Pilih Semua") carried into a new "Buat Katalog" session, so every visible card was already checked and the PDF included them.
+
+**Root cause:** `selected` is persisted to localStorage and restored on load, but `startPicking()` only turned `pickMode` on without clearing it.
+
+**Fix:** `startPicking()` now calls `clearAll()` first, so each picking session starts from 0 checked items. Selections kept across searches within one session are unaffected (`startPicking` runs only while pickMode is off). Custom prices/discounts untouched.
+
+**Files:** `components/katalog/CatalogSelectionProvider.tsx`.
+**Regression test:** `tsc --noEmit` clean. Not yet verified in a logged-in browser.
