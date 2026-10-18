@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-10-18
+
+**TASK-045** — Batas Syarat & Ketentuan per poin naik dari 300 ke 1000 karakter. Ditambah batas total 3500 karakter (15 poin tetap) agar S&K tidak melebihi satu halaman dan terpotong di PDF; form menampilkan penghitung pemakaian.
+
+Preserved: tampilan/cetak invoice dan Surat Jalan, invoice lama. Regression: tsc dan eslint bersih; belum diuji dengan PDF nyata dan belum diklik di browser.
+
+---
+
 ## 2026-10-13
 
 **BUG-025** — Unduh Katalog PDF memuat produk yang tidak dicentang: sisa pilihan dari sesi sebelumnya (tersimpan di browser) ikut terbawa saat klik "Buat Katalog". Sekarang setiap sesi "Buat Katalog" mulai dari 0 centang.

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Textarea } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
-import { SK_MAX_POIN, SK_MAX_CHARS_PER_POIN } from "@/lib/syaratKetentuan";
+import { SK_MAX_POIN, SK_MAX_CHARS_PER_POIN, SK_MAX_CHARS_TOTAL } from "@/lib/syaratKetentuan";
 
 /**
  * Per-invoice Syarat & Ketentuan, at the very bottom of the invoice form —
@@ -31,6 +31,7 @@ export default function SyaratKetentuanEditor({
 }) {
   const [open, setOpen] = useState(false);
   const count = lines.filter((l) => l.trim()).length;
+  const totalChars = lines.reduce((n, l) => n + l.trim().length, 0);
 
   const title = isDefault
     ? frozen
@@ -72,7 +73,7 @@ export default function SyaratKetentuanEditor({
               <div className="min-w-0 flex-1">
                 <Textarea
                   rows={2}
-                  maxLength={SK_MAX_CHARS_PER_POIN}
+                  maxLength={Math.min(SK_MAX_CHARS_PER_POIN, line.length + Math.max(0, SK_MAX_CHARS_TOTAL - totalChars))}
                   value={line}
                   onChange={(e) => onChange(lines.map((l, i) => (i === idx ? e.target.value : l)))}
                 />
@@ -103,7 +104,8 @@ export default function SyaratKetentuanEditor({
           </div>
           <p className="font-mono text-[0.7rem] text-muted">
             Perubahan di sini hanya berlaku untuk invoice ini; template diatur di Admin → Invoice. Maksimal{" "}
-            {SK_MAX_POIN} poin, {SK_MAX_CHARS_PER_POIN} karakter per poin.
+            {SK_MAX_POIN} poin, {SK_MAX_CHARS_PER_POIN} karakter per poin, total {SK_MAX_CHARS_TOTAL} karakter agar
+            muat di PDF ({totalChars}/{SK_MAX_CHARS_TOTAL} terpakai).
           </p>
         </div>
       )}

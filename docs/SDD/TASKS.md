@@ -1028,3 +1028,22 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Regression test:** `tsc --noEmit` dan `next build` bersih; ESLint pada file yang diubah hanya melaporkan 2 temuan lama di InvoiceForm (setState di effect). Belum diklik di browser yang login.
 **Open points:** (1) batas 15 poin/300 karakter menunggu konfirmasi. (2) Skrip pembekuan harus dijalankan di database produksi sebelum template diubah. (3) Invoice Belum bayar yang disimpan kembali sebagai draft tetap membawa teks beku (tidak kembali ikut template).
 
+---
+
+## TASK-045 — Batas karakter per poin Syarat & Ketentuan naik 300 → 1000 (format PDF tetap aman)
+
+**Type:** Enhancement
+**Priority:** P3
+**Status:** TESTING (2026-10-18; kode selesai, `tsc` dan `eslint` bersih, belum diuji dengan PDF nyata)
+**Dependency:** TASK-044, TASK-032 (aturan penempatan S&K di PDF)
+**Created:** 2026-10-18 · **Last updated:** 2026-10-18
+
+**Requirement (user):** Batas karakter per poin S&K dinaikkan menjadi 1000, tanpa merusak format sebelumnya.
+
+**Keputusan:** Menaikkan batas per poin saja bisa membuat blok S&K lebih tinggi dari satu halaman A4 (15 × 1000), dan `InvoicePrintDoc` memotong apa pun di luar satu halaman (lihat TASK-032). Karena itu ditambah batas total `SK_MAX_CHARS_TOTAL = 3500` (perkiraan ≈108 karakter mono per baris, ≈45 baris per halaman) agar S&K tetap muat di satu halaman khusus. Batas 15 poin tidak berubah.
+
+**Impact: LOW.** Hanya konstanta dan validasi; komponen cetak (`InvoicePrintDoc`, `InvoiceDocument`) tidak diubah. Invoice yang sudah ada tidak berubah. Validasi hanya berjalan saat simpan.
+
+**Files affected:** `lib/syaratKetentuan.ts` (`SK_MAX_CHARS_PER_POIN` 1000, `SK_MAX_CHARS_TOTAL` baru, `validateSyarat`), `components/invoice/SyaratKetentuanEditor.tsx` (`maxLength` mengikuti sisa kuota total, teks bantuan dengan penghitung).
+**Regression test:** `tsc --noEmit` dan `eslint` pada dua file yang diubah bersih. Belum diuji dengan PDF nyata (15 poin berisi penuh, dengan dan tanpa Catatan panjang) dan belum diklik di browser.
+**Open points:** (1) Angka 3500 adalah perkiraan hitungan, belum diukur di PDF; perlu dites lalu disesuaikan. (2) Template di Admin → Invoice juga memakai `validateSyarat`, jadi batas totalnya berlaku di sana. Invoice atau template lama yang S&K-nya lebih dari 3500 karakter akan ditolak saat disimpan ulang sampai dipersingkat.
