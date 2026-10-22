@@ -1054,7 +1054,7 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 
 **Type:** Feature (UI baru)
 **Priority:** P2
-**Status:** REVIEW (2026-10-22; baru mockup, belum ada kode aplikasi, menunggu approval user)
+**Status:** TESTING (2026-10-22; kode selesai, tsc/eslint/build bersih, belum diklik di browser yang login)
 **Dependency:** TASK-026 (`shippingUrgency`, "Perlu Dikirim"), TASK-039 (pengiriman dan pembayaran terpisah), TASK-041 (pola daftar), TASK-018 (Surat Jalan)
 **Created:** 2026-10-22 · **Last updated:** 2026-10-22
 
@@ -1082,3 +1082,13 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Acceptance criteria:** daftar dan urutan sama dengan tampilan lama; Tandai Dikirim menyimpan tanggal, kurir, dan resi (boleh kosong); Batalkan mengembalikan ke Perlu Dikirim dengan jadwal asli; filter bulan, kurir, pembayaran, dan pencarian bekerja di kedua tab; Sales hanya melihat miliknya; semua role yang berhak bisa membuka menu; Purchasing memakai ikon baru; PDF invoice dan Surat Jalan tidak berubah.
 
 **Open points:** (1) Resi butuh field baru di Invoice, keluar dari keputusan awal "tanpa perubahan model". (2) Resi hanya diisi saat Tandai Dikirim; belum ada cara mengisi/mengubahnya sesudahnya. (3) Pembatalan pengiriman: apakah resi dihapus (di mockup hilang). (4) Default filter bulan "Semua bulan" atau bulan berjalan. (5) Hak akses `/pengiriman` untuk Finance dan Purchasing belum diputuskan (Sales, Admin-level jelas). (6) Mockup belum dicek di browser oleh saya; frame desktop bisa digeser di layar sempit.
+
+**Implementasi (2026-10-22):**
+- ADD `Invoice.noResiKirim` (opsional); `PATCH /api/invoices/[id]/kirim` menyimpan `noResiKirim` (dipotong 100 karakter) dan menghapusnya saat pengiriman dibatalkan; `TandaiKirimButton` punya kolom "No. Resi (opsional)".
+- ADD `lib/pengiriman.ts` (`getPengirimanData`: Perlu Dikirim = `getShippingPriorityInvoices` apa adanya + kota/alamat/catatan/ongkir; Sudah Dikirim = `dikirim:true`, terbaru dulu, maksimal 500), `app/pengiriman/page.tsx`, `components/pengiriman/PengirimanClient.tsx` (tab, kotak ringkasan, filter pencarian/bulan/kurir/pembayaran, tabel desktop + kartu HP, menu titik tiga, Batalkan).
+- EXTEND `FollowUpStatusBadge` (prop `label` opsional), `lib/auth/access.ts` (`/pengiriman` terbuka untuk semua role seperti `/follow-up`), `lib/nav.ts` (Pengiriman, ikon truk, di bawah Invoice; Purchasing ikon `bag`), `NavIcons.tsx` (ikon `bag`), link "lihat semua" Beranda → `/pengiriman`.
+- Jawaban open points: (3) resi ikut terhapus saat dibatalkan; (4) default "Semua bulan"; (5) semua role boleh membuka, Sales hanya melihat invoice miliknya (aturan data tidak berubah).
+- Perbedaan dari mockup: (a) menu titik tiga berisi Lihat Detail dan Buka Invoice; **Surat Jalan belum ada di menu** karena unduhnya butuh dokumen cetak di halaman (tetap lewat detail invoice / daftar Invoice). (b) **Badge angka di menu belum dibuat** (perlu mengubah `app/layout.tsx`, `AppShell`, `app/menu/page.tsx`). (c) Invoice draft tetap muncul di Perlu Dikirim dengan tombol "Lanjutkan", seperti tampilan lama.
+
+**REMOVED (dengan alasan):** `PerluDikirimView` di `app/follow-up/page.tsx` dihapus. WHAT: fungsi tampilan Perlu Dikirim lama. WHY: halaman baru menggantikannya sesuai keputusan user. IMPACT: `/follow-up?view=kirim` kini redirect ke `/pengiriman`; tampilan default Follow-up tidak berubah. ALTERNATIVE: dibiarkan sebagai kode mati. RISK: rendah; `MobileShippingRows.tsx` sekarang tidak dipakai, file dibiarkan.
+**Open points tersisa:** (1) Resi hanya bisa diisi saat Tandai Dikirim. (2) Surat Jalan di menu dan badge angka (di atas). (3) Perlu klik di browser: Admin dan Sales, desktop dan HP, termasuk menu titik tiga di baris terbawah dan Batalkan.

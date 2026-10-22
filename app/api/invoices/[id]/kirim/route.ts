@@ -43,14 +43,18 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/invoices/[id]/
   if (dikirim) {
     const tanggalDikirimAktual = body.tanggalDikirimAktual ? new Date(body.tanggalDikirimAktual) : new Date();
     const kurir = typeof body.kurir === "string" && body.kurir.trim() ? body.kurir.trim() : undefined;
+    // Optional (TASK-046) — empty/missing means "no resi", stored as unset.
+    const noResiKirim =
+      typeof body.noResiKirim === "string" && body.noResiKirim.trim() ? body.noResiKirim.trim().slice(0, 100) : undefined;
     existing.set({
       dikirim: true,
       tanggalDikirimAktual,
       dikirimOleh: session?.nama,
+      noResiKirim,
       ...(kurir ? { kurir } : {}),
     });
   } else {
-    existing.set({ dikirim: false, tanggalDikirimAktual: undefined, dikirimOleh: undefined });
+    existing.set({ dikirim: false, tanggalDikirimAktual: undefined, dikirimOleh: undefined, noResiKirim: undefined });
   }
   await existing.save();
   return NextResponse.json(existing);

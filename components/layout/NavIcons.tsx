@@ -17,6 +17,7 @@ export type NavIconName =
   | "trophy"
   | "split"
   | "truck"
+  | "bag"
   | "receipt"
   | "gear"
   | "menu"
@@ -98,6 +99,13 @@ const ICONS: Record<NavIconName, React.ReactNode> = {
       <path d="M10 8.5h3.5L16 11v2h-2.5" />
       <circle cx="5.5" cy="15.5" r="1.5" />
       <circle cx="13.5" cy="15.5" r="1.5" />
+    </>
+  ),
+  // Purchasing (TASK-046) — shopping bag; original stroke, same visual language.
+  bag: (
+    <>
+      <path d="M4 7h12l-1 10H5z" />
+      <path d="M7.5 7V5.5a2.5 2.5 0 0 1 5 0V7" />
     </>
   ),
   receipt: (

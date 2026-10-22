@@ -6,9 +6,15 @@
 
 ## 2026-10-22
 
-**TASK-046 (mockup saja)** — Halaman Pengiriman `/pengiriman` dirancang di mockup: kolom Status, Jadwal Kirim, Tgl Kirim; tab Perlu Dikirim / Sudah Dikirim; filter bulan, kurir, pembayaran, pencarian; No. Resi opsional di modal Tandai Dikirim; menu titik tiga per baris; item Pengiriman (ikon truk) di grup Jualan, Purchasing pindah ke ikon kantong belanja. Mockup: `pengiriman-v1.html`.
+**Cleanup Tahap 1** — Hapus kode/file mati: 6 komponen tak terpakai (HotProductsCarousel, InvoicePeriodFilter, MobileGajiBulanan, payroll/tabs, MenuTile, RankBadge), `downloadReportPdf`/`reportTableStyle`, `getLowStockProducts`/`countLowStockProducts`, shim re-export di InvoicePrintDoc, prop mati StatCard (`accent`, `deltaTone`), `reference/preview-ui.html`, mockup lama, script `freeze-syarat-ketentuan`, `server.js`/`.cpanel.yml` (deploy = Vercel), svg bawaan Next.
 
-Preserved: seluruh kode aplikasi (belum ada yang diubah). Regression: tidak ada perubahan kode. Menunggu approval sebelum implementasi; resi butuh field baru di Invoice.
+Preserved: semua fungsi aplikasi (tidak ada perubahan perilaku). Regression: `tsc --noEmit` bersih; lint tidak menambah error. Belum dikerjakan: Tahap 2 (gabung duplikasi) menunggu approval.
+
+**TASK-046** — Halaman Pengiriman `/pengiriman` dibuat (mockup `pengiriman-v1.html`): kolom Status, Jadwal Kirim, Tgl Kirim; tab Perlu Dikirim / Sudah Dikirim; filter bulan, kurir, pembayaran, pencarian; No. Resi opsional di modal Tandai Dikirim; menu titik tiga per baris; item Pengiriman (ikon truk) di grup Jualan, Purchasing pindah ke ikon kantong belanja. Mockup: `pengiriman-v1.html`.
+
+Link `/follow-up?view=kirim` dan "lihat semua" di Beranda kini mengarah ke `/pengiriman`. Field baru `Invoice.noResiKirim`; Purchasing memakai ikon kantong belanja.
+
+Preserved: aturan urutan Perlu Dikirim, Surat Jalan/PDF, arti `dikirim`, tampilan default Follow-up. Removed: `PerluDikirimView` (diganti halaman baru). Regression: tsc, eslint, build bersih; belum diklik di browser yang login. Belum: Surat Jalan di menu titik tiga, badge angka di menu.
 
 ---
 

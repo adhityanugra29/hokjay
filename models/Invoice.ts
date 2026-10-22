@@ -145,6 +145,10 @@ const InvoiceSchema = new Schema(
     dikirim: { type: Boolean, default: false },
     tanggalDikirimAktual: { type: Date },
     dikirimOleh: { type: String },
+    // Optional courier tracking number (resi), typed in "Tandai Sudah
+    // Kirim" — TASK-046 (2026-10-22). NOT payment.noResi, which is the
+    // payment receipt number. Cleared when the shipment is un-marked.
+    noResiKirim: { type: String },
 
     riwayat: { type: [RiwayatEntrySchema], default: [] },
   },

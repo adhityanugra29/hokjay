@@ -12,7 +12,14 @@
 // "paid" (2026-09-19) — a fully-paid invoice that still shows up on
 // Beranda's "Perlu Dikirim" widget (see getShippingPriorityInvoices) reads
 // as "Lunas", same green already used for "paid" everywhere else (Pill.tsx).
-export default function FollowUpStatusBadge({ status }: { status: "draft" | "unpaid" | "dp" | "paid" | "sepi" }) {
+export default function FollowUpStatusBadge({
+  status,
+  label: labelOverride,
+}: {
+  status: "draft" | "unpaid" | "dp" | "paid" | "sepi";
+  /** Replaces the default text while keeping the status color — /pengiriman's "Terkirim" (TASK-046). */
+  label?: string;
+}) {
   const style =
     status === "draft"
       ? "border-yellow-400 bg-yellow-50 text-yellow-700"
@@ -35,7 +42,7 @@ export default function FollowUpStatusBadge({ status }: { status: "draft" | "unp
             : "Sepi";
   return (
     <span className={`whitespace-nowrap border px-2 py-0.5 font-sans text-[0.62rem] font-semibold uppercase tracking-wide ${style}`}>
-      {label}
+      {labelOverride ?? label}
     </span>
   );
 }

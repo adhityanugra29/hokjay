@@ -34,6 +34,9 @@ export const NAV_GROUPS: NavGroup[] = [
       // own inline picker).
       { href: "/katalog", label: "Katalog", icon: "cart" },
       { href: "/invoice", label: "Invoice", icon: "document", badge: "invoiceCount" },
+      // Pengiriman (TASK-046) — the step after Invoice; replaces the
+      // "Perlu Dikirim" view that used to live under /follow-up?view=kirim.
+      { href: "/pengiriman", label: "Pengiriman", icon: "truck" },
       { href: "/pelanggan", label: "Pelanggan", icon: "users" },
       // Moved from "Uang" into "Jualan" per the user's request 2026-08-23.
       { href: "/insentif", label: "Leaderboard Sales", icon: "trophy" },
@@ -46,7 +49,8 @@ export const NAV_GROUPS: NavGroup[] = [
       // which already surfaces it as a tab (app/produk/(list)/layout.tsx).
       // Removed per the user's request 2026-08-22.
       { href: "/produk", label: "Inventory", icon: "box", badge: "produkBaru" },
-      { href: "/purchasing", label: "Purchasing", icon: "truck" },
+      // Icon moved truck → bag (TASK-046): the truck now belongs to Pengiriman.
+      { href: "/purchasing", label: "Purchasing", icon: "bag" },
       // Split out from Purchasing into its own module per the user's
       // request 2026-08-23 — it's asset tracking, not procurement.
       { href: "/inventaris-kantor", label: "Inventaris Kantor", icon: "list" },

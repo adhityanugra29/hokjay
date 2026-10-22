@@ -153,6 +153,10 @@ export function isAllowedPage(role: UserRole, pathname: string): boolean {
   if (
     pathname === "/" ||
     pathname === "/follow-up" ||
+    // "/pengiriman" (TASK-046) replaces /follow-up?view=kirim, so it keeps
+    // that view's reach: every role (a plain "sales" is scoped to their own
+    // invoices by the data layer, not here).
+    pathname === "/pengiriman" ||
     pathname === "/aktivitas" ||
     pathname === "/akun-saya" ||
     pathname === "/menu"

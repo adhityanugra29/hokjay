@@ -46,12 +46,14 @@ export default function TandaiKirimButton({
   const [open, setOpen] = useState(false);
   const [tanggal, setTanggal] = useState(todayInputValue);
   const [kurir, setKurir] = useState(currentKurir ?? "");
+  const [noResi, setNoResi] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function openModal() {
     setTanggal(todayInputValue());
     setKurir(currentKurir ?? "");
+    setNoResi("");
     setError(null);
     setOpen(true);
   }
@@ -65,7 +67,7 @@ export default function TandaiKirimButton({
       const res = await fetch(`/api/invoices/${invoiceId}/kirim`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dikirim: true, tanggalDikirimAktual: tanggal, kurir }),
+        body: JSON.stringify({ dikirim: true, tanggalDikirimAktual: tanggal, kurir, noResiKirim: noResi }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -143,6 +145,17 @@ export default function TandaiKirimButton({
                     </option>
                   ))}
                 </Select>
+              </Field>
+              <Field label="No. Resi (opsional)" hint="Boleh dikosongkan.">
+                <input
+                  type="text"
+                  value={noResi}
+                  onChange={(e) => setNoResi(e.target.value)}
+                  maxLength={100}
+                  autoComplete="off"
+                  placeholder="Contoh: JNE-8820145637"
+                  className="w-full rounded-lg border border-line bg-paper px-3.5 py-2.5 font-sans text-[0.9rem] text-ink placeholder:text-muted outline-offset-1 focus:outline-2 focus:outline-moss"
+                />
               </Field>
               {error && <p className="font-mono text-[0.75rem] text-danger">{error}</p>}
               <div className="mt-1 flex gap-2">
