@@ -49,10 +49,10 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
       <PageHeader title="Follow-up Penjualan" subtitle="SEMUA INVOICE BELUM LUNAS & DRAFT · TOTAL PER SALES" />
       <div className="p-6 md:p-9">
         <div className="mb-6 grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-          <StatCard label="Invoice Perlu Follow-up" value={String(rows.length)} accent="teal" deltaTone="up" delta={`${unpaidCount} belum lunas · ${draftCount} draft`} />
-          <StatCard label="Total Nilai Penjualan" value={rupiahCompact(totalNilai)} accent="gold" deltaTone="gold" delta="belum closing" />
-          <StatCard label="Total Komisi Potensial" value={rupiahCompact(totalKomisi)} accent="violet" deltaTone="violet" delta="kalau semua closing & lunas" />
-          <StatCard label="Sales Terlibat" value={String(bySales.length)} accent="clay" deltaTone="warn" delta="punya follow-up aktif" />
+          <StatCard label="Invoice Perlu Follow-up" value={String(rows.length)} delta={`${unpaidCount} belum lunas · ${draftCount} draft`} />
+          <StatCard label="Total Nilai Penjualan" value={rupiahCompact(totalNilai)} delta="belum closing" />
+          <StatCard label="Total Komisi Potensial" value={rupiahCompact(totalKomisi)} delta="kalau semua closing & lunas" />
+          <StatCard label="Sales Terlibat" value={String(bySales.length)} delta="punya follow-up aktif" />
         </div>
 
         <Panel className="mb-6">
