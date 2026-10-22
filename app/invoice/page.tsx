@@ -2,12 +2,10 @@ import PageHeader from "@/components/layout/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import InvoiceListClient, { type InvoiceRow } from "@/components/invoice/InvoiceListClient";
 import InvoiceFilterBar from "@/components/invoice/InvoiceFilterBar";
-import type { InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
 import { Courier } from "@/models/Courier";
-import { Pengaturan } from "@/models/Pengaturan";
 import { formatDateShort } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
 import { getSession } from "@/lib/auth/session";
@@ -104,65 +102,12 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   // Feeds TandaiKirimButton's Kurir select (see components/invoice/TandaiKirimButton.tsx).
   const couriers = (await Courier.find().sort({ name: 1 }).lean()).map((c) => ({ _id: String(c._id), name: c.name }));
 
-  // Feeds the Preview drawer's Syarat & Ketentuan block — see
-  // models/Pengaturan.ts's syaratKetentuan doc comment.
-  const pengaturan = await Pengaturan.findById("singleton").lean();
-
-  // Live phone-number lookup for the Preview drawer's document footer —
-  // same reasoning as /invoice/[id]'s own salesNomorHp (a number changing
-  // should show up on invoices viewed afterward, unlike the snapshot
-  // fields that deliberately freeze at booking time). Batched once for
-  // every sales name on this page, same pattern as app/payroll/page.tsx.
-  const salesNames = [...new Set(invoices.map((i) => i.sales?.nama).filter((n): n is string => !!n))];
-  const salesDocs = await Sales.find({ nama: { $in: salesNames } }).lean();
-  const salesPhoneByNama = new Map(salesDocs.map((s) => [s.nama, s.nomorHp ?? undefined]));
-
   const rows: InvoiceRow[] = invoices.map((inv) => {
     const tanggal = inv.tanggalInvoice ?? inv.get("createdAt");
     const [tglNum, tglMon] = formatDateShortParts(tanggal);
     const status: InvoiceRow["status"] =
       inv.status === "draft" ? "draft" : inv.status === "paid" ? "paid" : inv.dp?.nominal ? "dp" : "unpaid";
     const komisi = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
-
-    const printData: InvoicePrintData = {
-      nomor: inv.nomor,
-      tanggal: tanggal.toISOString(),
-      customerNama: inv.customer?.nama ?? "—",
-      customerWhatsapp: inv.customer?.whatsapp ?? undefined,
-      shipAddress: inv.shipAddress ?? undefined,
-      tanggalKirim: inv.tanggalKirim ? inv.tanggalKirim.toISOString() : undefined,
-      kurir: inv.kurir ?? undefined,
-      salesNama: inv.sales?.nama ?? "—",
-      salesNomorHp: inv.sales?.nama ? salesPhoneByNama.get(inv.sales.nama) : undefined,
-      items: inv.items.map((item) => ({
-        namaSnapshot: item.namaSnapshot,
-        dimensiSnapshot: item.dimensiSnapshot ?? undefined,
-        qty: item.qty,
-        hargaJual: item.hargaJual,
-        diskonPerUnit: item.diskonPerUnit ?? 0,
-        subtotal: item.subtotal,
-        isFlashSale: item.isFlashSale ?? false,
-        isJasa: item.isJasa ?? false,
-        hargaRekomendasiSnapshot: item.hargaRekomendasiSnapshot ?? undefined,
-      })),
-      subtotalProduk: inv.subtotalProduk,
-      ongkosKirim: inv.ongkosKirim ?? 0,
-      grandTotal: inv.grandTotal,
-      dpNominal: inv.dp?.nominal ?? undefined,
-      dpTanggal: inv.dp?.tanggal ? inv.dp.tanggal.toISOString() : undefined,
-      isPaid: inv.status === "paid",
-      catatan: inv.catatan ?? undefined,
-      // Own text when this invoice has one (frozen at send / custom), else the
-      // live template — see lib/services/syaratKetentuan.ts.
-      syaratKetentuan: inv.syaratKetentuan ?? pengaturan?.syaratKetentuan ?? undefined,
-      // Feeds the Preview drawer's "Bukti Transfer" tab (TASK-016) — see
-      // InvoicePrintData's own doc comment for why this is only populated
-      // here, not on /invoice/[id].
-      dpBuktiUrl: inv.dp?.buktiUrl ?? undefined,
-      paymentBuktiUrl: inv.payment?.buktiUrl ?? undefined,
-      paymentTanggalBayar: inv.payment?.tanggalBayar ? inv.payment.tanggalBayar.toISOString() : undefined,
-      paymentNominalDiterima: inv.payment?.nominalDiterima ?? undefined,
-    };
 
     return {
       id: String(inv._id),
@@ -182,7 +127,8 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       sisaTagihan: inv.dp?.nominal ? inv.grandTotal - inv.dp.nominal : undefined,
       dikirim: !!inv.dikirim,
       tanggalDikirimAktual: inv.tanggalDikirimAktual ? inv.tanggalDikirimAktual.toISOString() : undefined,
-      printData,
+      tanggal: tanggal.toISOString(),
+      hasBukti: !!(inv.dp?.buktiUrl || inv.payment?.buktiUrl),
     };
   });
 

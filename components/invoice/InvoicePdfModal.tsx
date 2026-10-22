@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import InvoiceDocument from "./InvoiceDocument";
 import InvoicePrintDoc from "./InvoicePrintDoc";
 import { useInvoicePdfDownload } from "./useInvoicePdfDownload";
-import type { InvoicePrintData } from "@/lib/invoiceDisplay";
+import { useInvoicePrintData } from "./useInvoicePrintData";
 
 const PRINT_DOC_ID = "payroll-invoice-print-doc";
 
@@ -30,30 +30,10 @@ export default function InvoicePdfModal({
   nomor: string;
   onClose: () => void;
 }) {
-  const [data, setData] = useState<InvoicePrintData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const result = useInvoicePrintData(invoiceId);
+  const data = result?.data;
+  const error = result?.error;
   const { downloading, downloadInvoicePdf } = useInvoicePdfDownload();
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/invoices/${invoiceId}/print`)
-      .then(async (res) => {
-        if (!res.ok) {
-          const b = await res.json().catch(() => ({}));
-          throw new Error(b.error || "Gagal memuat invoice");
-        }
-        return res.json() as Promise<InvoicePrintData>;
-      })
-      .then((d) => {
-        if (!cancelled) setData(d);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Gagal memuat invoice");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [invoiceId]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
