@@ -6,11 +6,7 @@ import { GajiPayment } from "@/models/GajiPayment";
 import { getSession } from "@/lib/auth/session";
 import { isPayrollAdminLevel } from "@/lib/auth/access";
 import { recordCashflow } from "@/lib/services/recordCashflow";
-
-function periodRange(periode: string) {
-  const [y, m] = periode.split("-").map(Number);
-  return { start: new Date(y, m - 1, 1), end: new Date(y, m, 1) };
-}
+import { periodRange } from "@/lib/payrollPeriod";
 
 /** Batch gaji payout for one or more karyawan, computed from that period's Absensi count x gajiHarian. */
 export async function POST(req: Request) {

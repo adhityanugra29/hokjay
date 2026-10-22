@@ -2,7 +2,8 @@ import PageHeader from "@/components/layout/PageHeader";
 import BayarTagihanSheet from "@/components/purchasing/BayarTagihanSheet";
 import MobileBayarTagihanSheet from "@/components/purchasing/MobileBayarTagihanSheet";
 import { getBayarTagihanSummary, getTagihanBerjalan } from "@/lib/purchasing";
-import { getGajiBulananSummary, currentPeriod } from "@/lib/payroll";
+import { getGajiBulananSummary } from "@/lib/payroll";
+import { currentPayrollPeriode } from "@/lib/payrollPeriod";
 import { rupiah } from "@/lib/format";
 import { currentJakartaMonthYear } from "@/lib/timezone";
 import { MONTH_NAMES } from "@/lib/constants";
@@ -17,7 +18,7 @@ export default async function BayarTagihanPage() {
   const [summary, rows, gajiRows] = await Promise.all([
     getBayarTagihanSummary(),
     getTagihanBerjalan(),
-    getGajiBulananSummary(currentPeriod()),
+    getGajiBulananSummary(currentPayrollPeriode()),
   ]);
 
   const gajiBelumDibayar = gajiRows.filter((r) => !r.sudahDibayar).reduce((s, r) => s + r.jumlah, 0);

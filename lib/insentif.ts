@@ -2,19 +2,8 @@ import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
 import { User } from "@/models/User";
-import { currentJakartaMonthYear, jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
-
-export function currentPeriod(): string {
-  const { month, year } = currentJakartaMonthYear();
-  return `${year}-${String(month).padStart(2, "0")}`;
-}
-
-/** [start, end) of the period's month as GMT+7 boundaries, not server-local time. */
-function periodRange(period: string) {
-  const [y, m] = period.split("-").map(Number);
-  const { from: start, to: end } = jakartaMonthRange(y, m);
-  return { start, end };
-}
+import { jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
+import { periodRange } from "@/lib/payrollPeriod";
 
 export interface SalesRanking {
   salesNama: string;

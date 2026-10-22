@@ -1,5 +1,5 @@
 import { MONTH_NAMES } from "@/lib/constants";
-import { currentJakartaMonthYear } from "@/lib/timezone";
+import { currentJakartaMonthYear, jakartaMonthRange } from "@/lib/timezone";
 
 /**
  * Shared month filter for the Payroll tabs that work per period (Gaji,
@@ -20,6 +20,13 @@ const PERIODE_RE = /^(\d{4})-(0[1-9]|1[0-2])$/;
 export function currentPayrollPeriode(): string {
   const { year, month } = currentJakartaMonthYear();
   return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+/** [start, end) of the period's month as GMT+7 boundaries, not server-local time. */
+export function periodRange(periode: string) {
+  const [y, m] = periode.split("-").map(Number);
+  const { from: start, to: end } = jakartaMonthRange(y, m);
+  return { start, end };
 }
 
 function toIndex(periode: string): number {

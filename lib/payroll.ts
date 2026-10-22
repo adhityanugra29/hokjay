@@ -4,16 +4,7 @@ import { Karyawan } from "@/models/Karyawan";
 import { Absensi } from "@/models/Absensi";
 import { GajiPayment } from "@/models/GajiPayment";
 import { Invoice } from "@/models/Invoice";
-import { currentPeriod } from "@/lib/insentif";
-
-export { currentPeriod };
-
-function periodRange(periode: string) {
-  const [y, m] = periode.split("-").map(Number);
-  const start = new Date(y, m - 1, 1);
-  const end = new Date(y, m, 1);
-  return { start, end };
-}
+import { periodRange } from "@/lib/payrollPeriod";
 
 export interface GajiSalesRow {
   salesId: string;
