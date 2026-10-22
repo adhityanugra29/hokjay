@@ -2,7 +2,7 @@
 
 > Single "catch up" file — read this first before starting any session or major task. See `TASKS.md`, `BUGS.md`, `KNOWN_ISSUES.md`, `CHANGELOG.md` for detail.
 
-**Last updated:** 2026-10-09
+**Last updated:** 2026-10-22
 
 ---
 
@@ -22,6 +22,7 @@ A large amount of feature/bugfix work has landed since the last full rewrite of 
 
 ## LAST COMPLETED
 
+- **TASK-046 (2026-10-22, mockup only — REVIEW)** — Halaman Pengiriman `/pengiriman` (menggantikan `/follow-up?view=kirim`): Status / Jadwal Kirim / Tgl Kirim, filter bulan, No. Resi opsional (butuh field baru `Invoice.noResiKirim`), menu titik tiga, nav Jualan (ikon truk) dan Purchasing ke ikon kantong belanja. Belum ada kode aplikasi, menunggu approval. `docs/SDD/mockups/pengiriman-v1.html`, artifact https://claude.ai/artifact/71NbVGRSzv15qrRvAxwg4x.
 - **TASK-043 (2026-10-09, pushed untuk deploy)** — Katalog: label + section "New Stock" untuk produk yang diupload ≤ 7 hari (banner hijau di foto, section di atas grid, tanpa hitungan hari, hilang otomatis). `lib/katalog.ts`, `lib/constants.ts`, `app/api/katalog/route.ts`, `app/katalog/page.tsx`, `ProductCard`, `KatalogClient`. tsc/eslint/build clean; belum diklik live.
 - **TASK-042 (2026-10-07, deployed)** — Jasa (biaya service): master data terpisah (`models/Jasa.ts`, tab Jasa di Inventory), harga flat diinput per invoice (tanpa qty/stok/diskon/komisi/HPP), tombol "+ Tambah" di header Katalog (Jasa, Pesan Produk Custom, Lihat Produk Custom), pendapatan ke akun baru 4-1200 (Laba Rugi + Neraca), tidak dihitung di Leaderboard Insentif, boleh di dashboard; invoice jasa saja punya pengiriman + Surat Jalan. Mockup `docs/SDD/mockups/jasa-v2.html`. tsc/build clean; not click-tested live; Surat Jalan jasa-only belum dilihat PDF-nya.
 - **TASK-040 (2026-10-02, mockup only — REVIEW)** — Laporan Owner mockup: "Rekomendasi tindakan" berbasis statistik inferensial (label Yakin/Cukup yakin/Belum pasti/Fakta, bahasa awam) + tren sales per bulan untuk Kuartal/Tahun. Data contoh, belum ada kode di app; menunggu keputusan user. `docs/SDD/mockups/laporan-inferensial.html`, artifact https://claude.ai/artifact/QzqXwcqd2nRyMEJhvtiRg6.

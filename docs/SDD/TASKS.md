@@ -1047,3 +1047,38 @@ Kirim WA, Edit, and Hapus are gone from the list entirely — not lost, all thre
 **Files affected:** `lib/syaratKetentuan.ts` (`SK_MAX_CHARS_PER_POIN` 1000, `SK_MAX_CHARS_TOTAL` baru, `validateSyarat`), `components/invoice/SyaratKetentuanEditor.tsx` (`maxLength` mengikuti sisa kuota total, teks bantuan dengan penghitung).
 **Regression test:** `tsc --noEmit` dan `eslint` pada dua file yang diubah bersih. Belum diuji dengan PDF nyata (15 poin berisi penuh, dengan dan tanpa Catatan panjang) dan belum diklik di browser.
 **Open points:** (1) Angka 3500 adalah perkiraan hitungan, belum diukur di PDF; perlu dites lalu disesuaikan. (2) Template di Admin → Invoice juga memakai `validateSyarat`, jadi batas totalnya berlaku di sana. Invoice atau template lama yang S&K-nya lebih dari 3500 karakter akan ditolak saat disimpan ulang sampai dipersingkat.
+
+---
+
+## TASK-046 — Halaman Pengiriman (`/pengiriman`): status, jadwal & tgl kirim, filter bulan, No. Resi opsional
+
+**Type:** Feature (UI baru)
+**Priority:** P2
+**Status:** REVIEW (2026-10-22; baru mockup, belum ada kode aplikasi, menunggu approval user)
+**Dependency:** TASK-026 (`shippingUrgency`, "Perlu Dikirim"), TASK-039 (pengiriman dan pembayaran terpisah), TASK-041 (pola daftar), TASK-018 (Surat Jalan)
+**Created:** 2026-10-22 · **Last updated:** 2026-10-22
+
+**Requirement (user):** Halaman khusus untuk pengiriman. Mockup: `docs/SDD/mockups/pengiriman-v1.html` (commit `96cddc7`), Artifact https://claude.ai/artifact/71NbVGRSzv15qrRvAxwg4x (privat, 6 versi).
+
+**Existing system:** Tidak ada model pengiriman terpisah; semuanya di `Invoice` (`tanggalKirim` = jadwal, `dikirim`, `tanggalDikirimAktual`, `dikirimOleh`, `kurir`, `ongkosKirim`, `shipAddress`, `catatan`). Tampilan terdekat adalah `/follow-up?view=kirim` (`PerluDikirimView`, `getShippingPriorityInvoices`, `shippingUrgency` di `lib/dashboard.ts`). "Tandai Dikirim" lewat `TandaiKirimButton` dan `PATCH /api/invoices/[id]/kirim`. Draft tidak bisa ditandai terkirim; Sales hanya melihat invoice miliknya. `payment.noResi` adalah nomor bukti bayar, bukan resi kirim.
+
+**Keputusan user (mockup):**
+- Cakupan memakai data yang ada, tanpa status perjalanan dan tanpa field driver.
+- Halaman baru **menggantikan** tampilan `?view=kirim` di Follow-up.
+- Kolom paling kiri bernama **Status** (bukan Urgensi): Terlambat N hari / Kirim Hari Ini / Besok / Kirim {tgl} / Belum Dijadwalkan; di tab Sudah Dikirim = Terkirim. Lalu kolom **Jadwal Kirim** (`tanggalKirim`) dan **Tgl Kirim** (`tanggalDikirimAktual`).
+- Dua tab: Perlu Dikirim, Sudah Dikirim. Urutan Perlu Dikirim: Lunas, Sudah DP, Belum Bayar, lalu urgensi (sama seperti `getShippingPriorityInvoices`).
+- Filter: pencarian (pelanggan, no. invoice, kota, resi), **bulan** (Perlu Dikirim memakai Jadwal Kirim, Sudah Dikirim memakai Tgl Kirim; invoice tanpa jadwal tidak muncul saat satu bulan dipilih; default "Semua bulan"), kurir, pembayaran.
+- **No. Resi** diinput di modal Tandai Dikirim, **opsional**. Tampil di bawah nama kurir di tab Sudah Dikirim dan bisa dicari.
+- Satu tombol utama per baris (Tandai Dikirim); menu **titik tiga** berisi Lihat Detail, Surat Jalan, Buka Invoice. Di tab Sudah Dikirim tombol Batalkan terlihat langsung.
+- Navigasi: item **Pengiriman** di grup Jualan, tepat di bawah Invoice, **ikon truk**, badge = jumlah Terlambat + Kirim Hari Ini. **Purchasing** pindah ke ikon baru **kantong belanja** (`bag`). Di HP muncul di dalam tab Jualan.
+
+**Impact: MEDIUM.** ADD rute `/pengiriman`, ADD field `Invoice.noResiKirim` (opsional string, tidak ada backfill), ADD ikon `bag`. EXTEND `PATCH /api/invoices/[id]/kirim` dan `TandaiKirimButton` (field resi), EXTEND `lib/dashboard.ts` (query Sudah Dikirim + filter bulan), MODIFY `isAllowedPage`, `lib/nav.ts`, `MobileTabBar`, dan arah tautan widget Beranda / `/follow-up?view=kirim`. Perubahan ikon Purchasing hanya tampilan.
+
+**Files affected (rencana):** `models/Invoice.ts`, `app/api/invoices/[id]/kirim/route.ts`, `components/invoice/TandaiKirimButton.tsx`, `app/pengiriman/page.tsx` + komponen baru di `components/pengiriman/`, `lib/dashboard.ts`, `lib/auth/access.ts`, `lib/nav.ts`, `components/layout/{MobileTabBar,NavIcons}.tsx`, `app/follow-up/page.tsx`, widget "Perlu Dikirim" di Beranda.
+**Files NOT changed:** model `Courier` dan Admin → Kurir, Surat Jalan (`InvoicePrintDoc`), field pembayaran, arti `dikirim` (boolean tetap), pembatasan draft, aturan Sales hanya invoice sendiri.
+
+**Plan:** (1) approval mockup; (2) field `noResiKirim` + API + modal; (3) query dan halaman `/pengiriman` (desktop tabel, HP kartu, memakai `Panel`, `Pill`, `TandaiKirimButton`); (4) akses + nav + ikon; (5) alihkan `?view=kirim` ke `/pengiriman`; (6) tsc, eslint, build, klik di browser (Admin dan Sales, desktop dan HP).
+
+**Acceptance criteria:** daftar dan urutan sama dengan tampilan lama; Tandai Dikirim menyimpan tanggal, kurir, dan resi (boleh kosong); Batalkan mengembalikan ke Perlu Dikirim dengan jadwal asli; filter bulan, kurir, pembayaran, dan pencarian bekerja di kedua tab; Sales hanya melihat miliknya; semua role yang berhak bisa membuka menu; Purchasing memakai ikon baru; PDF invoice dan Surat Jalan tidak berubah.
+
+**Open points:** (1) Resi butuh field baru di Invoice, keluar dari keputusan awal "tanpa perubahan model". (2) Resi hanya diisi saat Tandai Dikirim; belum ada cara mengisi/mengubahnya sesudahnya. (3) Pembatalan pengiriman: apakah resi dihapus (di mockup hilang). (4) Default filter bulan "Semua bulan" atau bulan berjalan. (5) Hak akses `/pengiriman` untuk Finance dan Purchasing belum diputuskan (Sales, Admin-level jelas). (6) Mockup belum dicek di browser oleh saya; frame desktop bisa digeser di layar sempit.

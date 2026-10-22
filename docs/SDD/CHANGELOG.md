@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-10-22
+
+**TASK-046 (mockup saja)** — Halaman Pengiriman `/pengiriman` dirancang di mockup: kolom Status, Jadwal Kirim, Tgl Kirim; tab Perlu Dikirim / Sudah Dikirim; filter bulan, kurir, pembayaran, pencarian; No. Resi opsional di modal Tandai Dikirim; menu titik tiga per baris; item Pengiriman (ikon truk) di grup Jualan, Purchasing pindah ke ikon kantong belanja. Mockup: `pengiriman-v1.html`.
+
+Preserved: seluruh kode aplikasi (belum ada yang diubah). Regression: tidak ada perubahan kode. Menunggu approval sebelum implementasi; resi butuh field baru di Invoice.
+
+---
+
 ## 2026-10-18
 
 **TASK-045** — Batas Syarat & Ketentuan per poin naik dari 300 ke 1000 karakter. Ditambah batas total 3500 karakter (15 poin tetap) agar S&K tidak melebihi satu halaman dan terpotong di PDF; form menampilkan penghitung pemakaian.
