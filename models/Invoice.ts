@@ -84,9 +84,7 @@ const InvoiceSchema = new Schema(
     // syaratKetentuan (the template) live, which only a DRAFT may do; "" =
     // deliberately no S&K block. Frozen onto the invoice the moment it
     // leaves draft (see lib/services/syaratKetentuan.ts), so editing the
-    // template later never rewrites an invoice already sent. Invoices that
-    // predate this field are frozen once by scripts/
-    // freeze-syarat-ketentuan.ts.
+    // template later never rewrites an invoice already sent.
     syaratKetentuan: { type: String },
 
     sales: {

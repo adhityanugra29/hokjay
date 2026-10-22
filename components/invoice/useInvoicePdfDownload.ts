@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { useDialog } from "@/components/ui/Dialog";
+import { capturePagesToPdf } from "@/lib/pdfExport";
 
 /**
  * Shared Invoice/Surat Jalan PDF-building logic — extracted from
@@ -35,47 +36,7 @@ export function useInvoicePdfDownload() {
     const element = document.getElementById(elementId);
     if (!element) return null;
 
-    // Logo + product photos aren't part of this doc beyond the HOJAY
-    // logo, but the same "wait for every image to finish loading before
-    // capturing" guard as the Katalog PDF applies regardless.
-    const images = Array.from(element.querySelectorAll("img"));
-    await Promise.all(
-      images.map((img) =>
-        img.complete
-          ? Promise.resolve()
-          : new Promise<void>((resolve) => {
-              img.addEventListener("load", () => resolve(), { once: true });
-              img.addEventListener("error", () => resolve(), { once: true });
-            })
-      )
-    );
-
-    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
-    const pageEls = Array.from(element.querySelectorAll<HTMLElement>("[data-print-page]"));
-    if (pageEls.length === 0) return null;
-
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-    const pageWidthMM = pdf.internal.pageSize.getWidth();
-    const pageHeightMM = pdf.internal.pageSize.getHeight();
-
-    for (let i = 0; i < pageEls.length; i++) {
-      // Matches the Katalog PDF's own settings exactly (JPEG 0.94, scale
-      // 2, FAST compression) — see InvoiceActions.tsx's original comment
-      // for the full tuning history.
-      const canvas = await html2canvas(pageEls[i], {
-        scale: 2,
-        useCORS: true,
-        scrollY: -window.scrollY,
-        scrollX: 0,
-        logging: false,
-        imageTimeout: 0,
-      });
-      const imgData = canvas.toDataURL("image/jpeg", 0.94);
-      if (i > 0) pdf.addPage();
-      pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMM, pageHeightMM, undefined, "FAST");
-    }
-
-    return pdf;
+    return capturePagesToPdf(element);
   }
 
   /**

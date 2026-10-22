@@ -2,21 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { rupiah, formatDateShort, formatDateLong } from "@/lib/format";
-import {
-  displayDiskon,
-  displayHarga,
-  type InvoicePrintItem,
-  type InvoicePrintData,
-} from "@/lib/invoiceDisplay";
-
-// displayDiskon/displayHarga/InvoicePrintItem/InvoicePrintData used to live
-// here, but moved to lib/invoiceDisplay.ts (a plain, non-"use client"
-// module) so InvoiceDocument.tsx can call them from a Server Component —
-// see that file's comment. Re-exported below so existing imports from this
-// file (app/invoice/[id]/page.tsx, app/invoice/page.tsx,
-// InvoiceListClient.tsx) keep working unchanged.
-export { displayDiskon, displayHarga };
-export type { InvoicePrintItem, InvoicePrintData };
+import { displayDiskon, displayHarga, type InvoicePrintItem, type InvoicePrintData } from "@/lib/invoiceDisplay";
 
 // Same A4-at-96dpi math as the Katalog PDF (CatalogPrintDoc.tsx) — 794px
 // wide container, 297mm page height maps to ≈1123px at this scale.

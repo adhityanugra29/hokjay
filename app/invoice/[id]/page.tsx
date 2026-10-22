@@ -3,7 +3,8 @@ import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import InvoiceActions from "@/components/invoice/InvoiceActions";
 import InvoiceMoreActions from "@/components/invoice/InvoiceMoreActions";
-import InvoicePrintDoc, { type InvoicePrintData } from "@/components/invoice/InvoicePrintDoc";
+import InvoicePrintDoc from "@/components/invoice/InvoicePrintDoc";
+import { buildInvoicePrintData } from "@/lib/invoiceDisplay";
 import InvoiceDocument from "@/components/invoice/InvoiceDocument";
 import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
 import TandaiKirimButton from "@/components/invoice/TandaiKirimButton";
@@ -42,49 +43,14 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
   // hargaMinimumSnapshot etc. which deliberately freeze at booking time.
   // Per the user's request 2026-08-28.
   const salesDoc = invoice.sales?.ref ? await Sales.findById(invoice.sales.ref).lean() : null;
-  const salesNomorHp = salesDoc?.nomorHp ?? undefined;
 
   // Feeds InvoicePrintDoc — the hidden, multi-page layout InvoiceActions'
-  // "Unduh Invoice (PDF)" button actually captures (html2canvas + jsPDF,
-  // same approach as the Katalog PDF). Replaces native window.print() per
-  // the user's report 2026-08-27 that a long invoice's content got cut off
-  // — #invoice-doc below sat inside a CSS grid, a well-known source of
-  // print-pagination bugs across browsers. The visible #invoice-doc stays
-  // as the on-screen preview; it's no longer what actually gets exported.
-  const printData: InvoicePrintData = {
-    nomor: invoice.nomor,
-    tanggal: (invoice.tanggalInvoice ?? invoice.createdAt!).toISOString(),
-    customerNama: invoice.customer!.nama,
-    customerWhatsapp: invoice.customer!.whatsapp ?? undefined,
-    shipAddress: invoice.shipAddress ?? undefined,
-    tanggalKirim: invoice.tanggalKirim ? invoice.tanggalKirim.toISOString() : undefined,
-    kurir: invoice.kurir ?? undefined,
-    catatan: invoice.catatan ?? undefined,
-    // Own text when this invoice has one (frozen at send / custom), else the
-    // live template — see lib/services/syaratKetentuan.ts.
-    syaratKetentuan: invoice.syaratKetentuan ?? pengaturan?.syaratKetentuan ?? undefined,
-    salesNama: invoice.sales!.nama,
-    salesNomorHp,
-    items: invoice.items.map((item) => ({
-      namaSnapshot: item.namaSnapshot,
-      dimensiSnapshot: item.dimensiSnapshot ?? undefined,
-      qty: item.qty,
-      hargaJual: item.hargaJual,
-      diskonPerUnit: item.diskonPerUnit ?? 0,
-      subtotal: item.subtotal,
-      isFlashSale: item.isFlashSale ?? false,
-      isJasa: item.isJasa ?? false,
-      hargaRekomendasiSnapshot: item.hargaRekomendasiSnapshot ?? undefined,
-    })),
-    subtotalProduk: invoice.subtotalProduk,
-    ongkosKirim: invoice.ongkosKirim ?? 0,
-    grandTotal: invoice.grandTotal,
-    dpNominal: invoice.dp?.nominal ?? undefined,
-    dpTanggal: invoice.dp?.tanggal ? invoice.dp.tanggal.toISOString() : undefined,
-    isPaid: invoice.status === "paid",
-    paymentTanggalBayar: invoice.payment?.tanggalBayar ? invoice.payment.tanggalBayar.toISOString() : undefined,
-    paymentNominalDiterima: invoice.payment?.nominalDiterima ?? undefined,
-  };
+  // "Unduh Invoice (PDF)" button captures; #invoice-doc below is only the
+  // on-screen preview.
+  const printData = buildInvoicePrintData(invoice, {
+    salesNomorHp: salesDoc?.nomorHp ?? undefined,
+    syaratKetentuanTemplate: pengaturan?.syaratKetentuan ?? undefined,
+  });
 
   // Riwayat card = the invoice's own stored events plus, once its commission
   // has been paid out to the sales rep, one more line with that date —

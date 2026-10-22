@@ -70,17 +70,4 @@ export const CUSTOM_ORDER_CATEGORIES: {
 // lib/nav.ts's NAV_GROUPS, which replaced the old flat NAV_ITEMS list here
 // as of the 2026-08-22 "Rak & Rel v2" redesign.
 
-export const MONTH_NAMES = [
-  "Januari",
-  "Februari",
-  "Maret",
-  "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Agustus",
-  "September",
-  "Oktober",
-  "November",
-  "Desember",
-];
+export { MONTH_LONG as MONTH_NAMES } from "@/lib/format";

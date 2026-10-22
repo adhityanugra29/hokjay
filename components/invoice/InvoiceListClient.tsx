@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/Button";
 import { useInvoicePdfDownload } from "./useInvoicePdfDownload";
 import { useDialog } from "@/components/ui/Dialog";
 import ZoomableImage from "@/components/katalog/ZoomableImage";
-import type { InvoicePrintData } from "./InvoicePrintDoc";
+import { useInvoicePrintData } from "./useInvoicePrintData";
+import type { InvoicePrintData } from "@/lib/invoiceDisplay";
 import { rupiah, toWaPhone, formatDateShort } from "@/lib/format";
 
 export type InvoiceRowStatus = "unpaid" | "dp" | "draft" | "paid";
@@ -36,8 +37,10 @@ export interface InvoiceRow {
   /** Real "sudah dikirim" flag, independent of payment status — see /api/invoices/[id]/kirim. */
   dikirim: boolean;
   tanggalDikirimAktual?: string;
-  /** Feeds the Preview drawer — same shape InvoicePrintDoc.tsx/InvoiceDocument.tsx already use. */
-  printData: InvoicePrintData;
+  /** Invoice date (ISO) — the full InvoicePrintData for the Preview drawer is loaded on open (useInvoicePrintData). */
+  tanggal: string;
+  /** Has a DP and/or pelunasan proof of transfer — decides whether the Preview drawer offers the "Bukti Transfer" tab. */
+  hasBukti: boolean;
 }
 
 const STATUS_LABEL: Record<InvoiceRowStatus, string> = {
@@ -225,6 +228,8 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
 
   const filtered = filter === "semua" ? rows : rows.filter((r) => r.status === filter);
   const previewRow = rows.find((r) => r.id === previewId) ?? null;
+  const printResult = useInvoicePrintData(previewId);
+  const printData = printResult?.data;
 
   // "Total Nilai Invoice" — meaning shifts with the active pill so it never
   // mixes piutang (still owed) with uang yang sudah lunas into one
@@ -383,7 +388,7 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
             <DetailItem label="Sales" value={r.salesNama} />
             <DetailItem label="Item" value={`${r.itemCount} item`} />
             <DetailItem label="Pengiriman" value={r.kurir ?? "—"} />
-            <DetailItem label="Dibuat" value={formatDateShort(r.printData.tanggal)} />
+            <DetailItem label="Dibuat" value={formatDateShort(r.tanggal)} />
             <div className="col-span-2 flex flex-wrap justify-end gap-2 md:col-span-1">
               {/* Second lifecycle step, kept reachable here when the next-step
                   button above is "Tandai Lunas". */}
@@ -504,7 +509,7 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                 [
                   ["invoice", "Invoice"],
                   ["surat-jalan", "Surat Jalan"],
-                  ...(previewRow.printData.dpBuktiUrl || previewRow.printData.paymentBuktiUrl
+                  ...(previewRow.hasBukti
                     ? ([["bukti", "Bukti Transfer"]] as const)
                     : []),
                 ] as const
@@ -522,8 +527,13 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
               ))}
             </div>
             <div className="p-5">
-              {previewTab === "bukti" && <BuktiTransferView invoice={previewRow.printData} />}
-              {previewTab === "invoice" && (
+              {!printData && (
+                <div className="py-10 text-center font-mono text-[0.8rem] text-muted">
+                  {printResult?.error ?? "Memuat invoice..."}
+                </div>
+              )}
+              {printData && previewTab === "bukti" && <BuktiTransferView invoice={printData} />}
+              {printData && previewTab === "invoice" && (
                 <>
                   <div className="mb-4 flex justify-end">
                     <Button
@@ -534,10 +544,10 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                       {downloading ? "Menyiapkan PDF..." : "Unduh Invoice (PDF)"}
                     </Button>
                   </div>
-                  <InvoiceDocument invoice={previewRow.printData} />
+                  <InvoiceDocument invoice={printData} />
                 </>
               )}
-              {previewTab === "surat-jalan" && (
+              {printData && previewTab === "surat-jalan" && (
                 <>
                   {/* Driver name is asked as soon as this tab opens
                       (handleTabClick above) — this row just shows what
@@ -570,7 +580,7 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                     </Button>
                   </div>
                   <InvoiceDocument
-                    invoice={{ ...previewRow.printData, namaDriver: driverName ?? undefined }}
+                    invoice={{ ...printData, namaDriver: driverName ?? undefined }}
                     mode="surat-jalan"
                   />
                 </>
@@ -597,12 +607,12 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
           page-packing fresh instead of carrying over a previous invoice's
           measured header/footer heights. Mounted only while a row is
           being previewed. */}
-      {previewRow && (
+      {previewRow && printData && (
         <>
-          <InvoicePrintDoc key={`inv-${previewRow.id}`} invoice={previewRow.printData} id="list-invoice-print-doc" />
+          <InvoicePrintDoc key={`inv-${previewRow.id}`} invoice={printData} id="list-invoice-print-doc" />
           <InvoicePrintDoc
             key={`sj-${previewRow.id}`}
-            invoice={previewRow.printData}
+            invoice={printData}
             mode="surat-jalan"
             id="list-surat-jalan-print-doc"
           />

@@ -4,7 +4,8 @@ import NavIcon from "@/components/layout/NavIcons";
 import Logo from "@/components/layout/Logo";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import { dbConnect } from "@/lib/db";
-import { currentPeriod, getSalesRanking, getMyCommissionSummary } from "@/lib/insentif";
+import { currentPayrollPeriode } from "@/lib/payrollPeriod";
+import { getSalesRanking, getMyCommissionSummary } from "@/lib/insentif";
 import { getFollowUpInvoices, getShippingPriorityInvoices, shippingUrgency } from "@/lib/dashboard";
 import { getMyDormantCustomers } from "@/lib/pelanggan";
 import { getKeuanganSummary, getCurrentCashBalance } from "@/lib/keuangan";
@@ -52,14 +53,14 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     getFollowUpInvoices(session),
     getShippingPriorityInvoices(session),
-    getSalesRanking(currentPeriod()),
+    getSalesRanking(currentPayrollPeriode()),
     getKeuanganSummary(thisMonthRange),
     getActivityLog(50),
     getCurrentCashBalance(),
     canSeePurchasing ? getPurchasingSummary() : null,
     canSeeBayarTagihan ? getBayarTagihanSummary() : null,
     getLowStockSuggestions(),
-    isSales && session ? getMyCommissionSummary(session.nama, currentPeriod()) : null,
+    isSales && session ? getMyCommissionSummary(session.nama, currentPayrollPeriode()) : null,
     isSales && session ? getMyDormantCustomers(session.nama, 3) : [],
     // Feeds TandaiKirimButton's Kurir select — per the user's request
     // 2026-09-19 ("di dashboard, kenapa ga ada tandai sudah dikirim?"),

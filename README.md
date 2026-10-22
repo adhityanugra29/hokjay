@@ -2,8 +2,7 @@
 
 Aplikasi internal untuk mengelola penjualan, invoice, inventory, pelanggan,
 insentif sales, dan keuangan CV HORECA JAYA. Dibangun dengan Next.js (App
-Router) dan MongoDB, mengikuti desain & alur kerja dari mockup
-[`reference/preview-ui.html`](reference/preview-ui.html).
+Router) dan MongoDB, mengikuti desain & alur kerja mockup.
 
 ## Menjalankan di lokal
 
@@ -54,8 +53,6 @@ Router) dan MongoDB, mengikuti desain & alur kerja dari mockup
   (buat invoice, konfirmasi pembayaran, restock, catat pengeluaran) — dipakai
   bersama oleh API routes dan `scripts/seed.ts`.
 - `scripts/seed.ts` — pengisi data contoh.
-- `reference/preview-ui.html` — mockup HTML asli, dipakai sebagai acuan
-  desain & alur.
 
 ## Alur bisnis penting
 

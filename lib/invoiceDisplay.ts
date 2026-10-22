@@ -13,6 +13,8 @@
 // occurred" interstitial). Moving them here (no client dependency — pure
 // data in, number out) fixes it for both callers.
 
+import type { InvoiceDoc } from "@/models/Invoice";
+
 export interface InvoicePrintItem {
   namaSnapshot: string;
   /** e.g. "120x80x60 cm" — shown right after the product name. Per the user's request 2026-08-28. */
@@ -51,15 +53,11 @@ export interface InvoicePrintData {
   /** True once the invoice is fully settled (models/Invoice.ts status === "paid") — drives the "LUNAS" badge and zeroes out "Sisa Tagihan" for invoices that started as DP. */
   isPaid?: boolean;
   /**
-   * Proof-of-transfer for the DP and the full settlement, respectively —
-   * both already captured today (DpForm.tsx/PaymentForm.tsx's own "Bukti
-   * Transfer" UploadBox, stored as invoice.dp.buktiUrl/invoice.payment.
-   * buktiUrl) but never surfaced anywhere for viewing. Only populated by
-   * app/invoice/page.tsx (the list's Preview drawer, TASK-016) — the
-   * detail page (app/invoice/[id]/page.tsx) deliberately leaves these
-   * undefined per the user's explicit scope choice 2026-09-07 ("Drawer
-   * Preview di list Invoice saja"). Absent (not just empty-string) when
-   * paid in cash — PaymentForm.tsx clears buktiUrl for "tunai/cash".
+   * Proof-of-transfer for the DP and the full settlement
+   * (invoice.dp.buktiUrl / invoice.payment.buktiUrl) — shown in the list
+   * Preview drawer's "Bukti Transfer" tab (TASK-016). Absent (not just
+   * empty-string) when paid in cash — PaymentForm.tsx clears buktiUrl for
+   * "tunai/cash".
    */
   dpBuktiUrl?: string;
   paymentBuktiUrl?: string;
@@ -115,4 +113,51 @@ export function displayHarga(item: InvoicePrintItem): number {
     return item.hargaRekomendasiSnapshot;
   }
   return item.hargaJual;
+}
+
+/**
+ * The one place an Invoice document becomes InvoicePrintData — used by
+ * /invoice/[id], GET /api/invoices/[id]/print and (through that route) the
+ * list's Preview drawer. `salesNomorHp` is a live lookup (not snapshotted);
+ * `syaratKetentuanTemplate` is the fallback for invoices without their own
+ * frozen S&K text — see lib/services/syaratKetentuan.ts.
+ */
+export function buildInvoicePrintData(
+  inv: InvoiceDoc,
+  opts: { salesNomorHp?: string; syaratKetentuanTemplate?: string } = {}
+): InvoicePrintData {
+  return {
+    nomor: inv.nomor,
+    tanggal: (inv.tanggalInvoice ?? inv.createdAt!).toISOString(),
+    customerNama: inv.customer?.nama ?? "—",
+    customerWhatsapp: inv.customer?.whatsapp ?? undefined,
+    shipAddress: inv.shipAddress ?? undefined,
+    tanggalKirim: inv.tanggalKirim ? inv.tanggalKirim.toISOString() : undefined,
+    kurir: inv.kurir ?? undefined,
+    catatan: inv.catatan ?? undefined,
+    syaratKetentuan: inv.syaratKetentuan ?? opts.syaratKetentuanTemplate ?? undefined,
+    salesNama: inv.sales?.nama ?? "—",
+    salesNomorHp: opts.salesNomorHp,
+    items: inv.items.map((item) => ({
+      namaSnapshot: item.namaSnapshot,
+      dimensiSnapshot: item.dimensiSnapshot ?? undefined,
+      qty: item.qty,
+      hargaJual: item.hargaJual,
+      diskonPerUnit: item.diskonPerUnit ?? 0,
+      subtotal: item.subtotal,
+      isFlashSale: item.isFlashSale ?? false,
+      isJasa: item.isJasa ?? false,
+      hargaRekomendasiSnapshot: item.hargaRekomendasiSnapshot ?? undefined,
+    })),
+    subtotalProduk: inv.subtotalProduk,
+    ongkosKirim: inv.ongkosKirim ?? 0,
+    grandTotal: inv.grandTotal,
+    dpNominal: inv.dp?.nominal ?? undefined,
+    dpTanggal: inv.dp?.tanggal ? inv.dp.tanggal.toISOString() : undefined,
+    dpBuktiUrl: inv.dp?.buktiUrl ?? undefined,
+    isPaid: inv.status === "paid",
+    paymentBuktiUrl: inv.payment?.buktiUrl ?? undefined,
+    paymentTanggalBayar: inv.payment?.tanggalBayar ? inv.payment.tanggalBayar.toISOString() : undefined,
+    paymentNominalDiterima: inv.payment?.nominalDiterima ?? undefined,
+  };
 }

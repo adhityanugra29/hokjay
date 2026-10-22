@@ -6,6 +6,10 @@
 
 ## 2026-10-22
 
+**Refactor Tahap 2** — (1) `buildInvoicePrintData()` di `lib/invoiceDisplay.ts` menggantikan 3 salinan builder (detail, API print, list). (2) `capturePagesToPdf()` di `lib/pdfExport.ts` dipakai Katalog & Invoice; `formatDateDMY()` di `lib/format.ts`. (3) `SimpleNameManager` menggantikan isi CourierManager/PaymentMethodManager. (4) `periodRange`/`currentPeriod`/`MONTH_NAMES`/`Chevron` jadi satu sumber. (5) Invoice list: `printData` tidak lagi dikirim per baris — Preview mengambilnya saat dibuka lewat `useInvoicePrintData` (`/api/invoices/[id]/print`, kini juga memuat URL bukti transfer).
+
+Perubahan perilaku (disetujui): Preview invoice di list punya jeda loading singkat; periode Payroll (Gaji, bayar gaji karyawan) kini memakai batas bulan WIB seperti Insentif, bukan jam server. Preserved: semua fitur lain. Regression: `tsc`, `npm run build` bersih; error lint 44 → 43 (tidak ada yang baru).
+
 **Cleanup Tahap 1** — Hapus kode/file mati: 6 komponen tak terpakai (HotProductsCarousel, InvoicePeriodFilter, MobileGajiBulanan, payroll/tabs, MenuTile, RankBadge), `downloadReportPdf`/`reportTableStyle`, `getLowStockProducts`/`countLowStockProducts`, shim re-export di InvoicePrintDoc, prop mati StatCard (`accent`, `deltaTone`), `reference/preview-ui.html`, mockup lama, script `freeze-syarat-ketentuan`, `server.js`/`.cpanel.yml` (deploy = Vercel), svg bawaan Next.
 
 Preserved: semua fungsi aplikasi (tidak ada perubahan perilaku). Regression: `tsc --noEmit` bersih; lint tidak menambah error. Belum dikerjakan: Tahap 2 (gabung duplikasi) menunggu approval.

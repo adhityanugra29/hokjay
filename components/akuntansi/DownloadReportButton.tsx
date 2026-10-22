@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { formatDateDMY } from "@/lib/format";
 import { PDF_JPEG_QUALITY, PDF_RENDER_SCALE } from "@/lib/pdfExport";
 
 const TITLES: Record<string, string> = {
@@ -10,11 +11,6 @@ const TITLES: Record<string, string> = {
   "/akuntansi/laba-rugi": "Laba-Rugi",
   "/akuntansi/neraca": "Neraca",
 };
-
-function today() {
-  const d = new Date();
-  return [String(d.getDate()).padStart(2, "0"), String(d.getMonth() + 1).padStart(2, "0"), d.getFullYear()].join("-");
-}
 
 /** Downloads whatever report page currently renders #report-doc as a PDF. */
 export default function DownloadReportButton() {
@@ -31,7 +27,7 @@ export default function DownloadReportButton() {
       await html2pdf()
         .set({
           margin: 10,
-          filename: `${name}_${today()}.pdf`,
+          filename: `${name}_${formatDateDMY()}.pdf`,
           image: { type: "jpeg", quality: PDF_JPEG_QUALITY },
           html2canvas: { scale: PDF_RENDER_SCALE, useCORS: true },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
