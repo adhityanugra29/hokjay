@@ -14,23 +14,8 @@ import { useDialog } from "@/components/ui/Dialog";
 import PageHeader from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import KatalogAddMenu from "./KatalogAddMenu";
-
-// Katalog PDF is the heaviest export in the app (photo-dense, often many
-// pages). RENDER_SCALE was first dropped to 1.35 to shrink file size, but
-// per the user's direct report against a real downloaded PDF ("tulisan
-// jangan blur") that was too aggressive — html2canvas rasterizes text the
-// same as everything else, so a lower scale means fewer literal pixels per
-// character, not just a smaller file. Restored to 2 (the original,
-// known-crisp value). JPEG_QUALITY went through the same lesson: 0.78, then
-// 0.82, still read as blurry on the small 11-13px SKU/spec text — JPEG's
-// block-based compression is genuinely rough on fine text edges regardless
-// of resolution once quality drops much below "near-lossless". Raised to
-// 0.94 (close to the original 0.98) so legibility is no longer a trade-off
-// at all; the adaptive packing fitting more products per page (fewer total
-// pages) is now the main thing keeping file size down instead of these two
-// knobs.
-const KATALOG_PDF_JPEG_QUALITY = 0.94;
-const KATALOG_PDF_RENDER_SCALE = 2;
+import { capturePagesToPdf } from "@/lib/pdfExport";
+import { formatDateDMY } from "@/lib/format";
 
 // Server-paginated grid (TASK-012, 2026-09-04) — replaces the earlier
 // client-side-only GRID_PAGE_SIZE/"Tampilkan Lebih Banyak" cap
@@ -282,95 +267,12 @@ export default function KatalogClient({
         return;
       }
 
-      // Product photos + the HOJAY logo load asynchronously — html2canvas
-      // captures whatever's painted at the instant it runs, so an
-      // in-flight image is captured blank (and, since the <img> reserves
-      // its box via width/height either way, can throw pagination off by
-      // however tall that gap ends up). Wait for every image in the
-      // captured subtree to finish (or fail) loading first.
-      const images = Array.from(element.querySelectorAll("img"));
-      await Promise.all(
-        images.map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise<void>((resolve) => {
-                img.addEventListener("load", () => resolve(), { once: true });
-                img.addEventListener("error", () => resolve(), { once: true });
-              })
-        )
-      );
-
-      // Per-page capture (2026-08-26) — replaces html2pdf.js's single-shot
-      // "capture the whole document, then slice it into pages" approach.
-      // That slicing turned out to be unreliable to pin exactly on our own
-      // page boundaries (repeated reports of a repeated category heading
-      // bleeding across a page boundary, no matter how much buffer space
-      // got added around the marker). CatalogPrintDoc.tsx now renders each
-      // page as its own fixed-size `[data-print-page]` div; each one is
-      // captured here as its own independent canvas and added as its own
-      // jsPDF page directly — there's no shared canvas to slice, so nothing
-      // can bleed from one page's capture into another's.
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
-      const pageEls = Array.from(element.querySelectorAll<HTMLElement>("[data-print-page]"));
-      if (pageEls.length === 0) {
+      const pdf = await capturePagesToPdf(element);
+      if (!pdf) {
         await alert("Tidak ada halaman untuk diunduh.");
         return;
       }
-
-      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-      const pageWidthMM = pdf.internal.pageSize.getWidth();
-      const pageHeightMM = pdf.internal.pageSize.getHeight();
-
-      // REVERTED 2026-08-31 — briefly changed this to Promise.all
-      // (capture every page "concurrently") on the theory that the
-      // sequential loop was serializing work unnecessarily. Wrong: by
-      // this point every image is already loaded (awaited above), so
-      // there's essentially no I/O left for html2canvas to overlap —
-      // it's almost entirely synchronous DOM-clone + canvas-rasterize
-      // work, which JS's single thread can't actually run concurrently
-      // regardless of how the promises are scheduled. Promise.all just
-      // held every page's cloned subtree + canvas in memory at once
-      // instead of one at a time, which the user reported made the
-      // export slower, not faster. Back to one page fully processed
-      // (and released) before the next starts.
-      for (let i = 0; i < pageEls.length; i++) {
-        // scrollY/scrollX: html2canvas otherwise captures from the
-        // *current* window scroll position — since the button that
-        // triggers this sits far down the page (after browsing/picking
-        // products), whatever the user had scrolled to leaked into the
-        // capture. Per the user's report 2026-08-25.
-        //
-        // logging:false / imageTimeout:0 — per the user's request
-        // 2026-08-27 to speed up the download without touching scale or
-        // JPEG_QUALITY (the two knobs that actually affect visual quality,
-        // already fought over across the fixes above). html2canvas's
-        // default verbose console logging has real per-element overhead
-        // across a many-page catalog; imageTimeout only matters for
-        // images still loading, which none are by this point (already
-        // awaited above).
-        const canvas = await html2canvas(pageEls[i], {
-          scale: KATALOG_PDF_RENDER_SCALE,
-          useCORS: true,
-          scrollY: -window.scrollY,
-          scrollX: 0,
-          logging: false,
-          imageTimeout: 0,
-        });
-        const imgData = canvas.toDataURL("image/jpeg", KATALOG_PDF_JPEG_QUALITY);
-        if (i > 0) pdf.addPage();
-        // compression: "FAST" — jsPDF's own PDF-stream compression of the
-        // already-JPEG-encoded bytes, not a second pass over the image
-        // itself; doesn't touch KATALOG_PDF_JPEG_QUALITY.
-        pdf.addImage(imgData, "JPEG", 0, 0, pageWidthMM, pageHeightMM, undefined, "FAST");
-      }
-
-      const today = new Date();
-      const tanggal = [
-        String(today.getDate()).padStart(2, "0"),
-        String(today.getMonth() + 1).padStart(2, "0"),
-        today.getFullYear(),
-      ].join("-");
-      pdf.save(`Katalog-CV-HORECA-JAYA_${tanggal}.pdf`);
+      pdf.save(`Katalog-CV-HORECA-JAYA_${formatDateDMY()}.pdf`);
     } catch (err) {
       // html2pdf/html2canvas failures otherwise vanish as an unhandled
       // rejection — no visible feedback beyond the button re-enabling —

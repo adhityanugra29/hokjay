@@ -14,58 +14,61 @@
 export const PDF_JPEG_QUALITY = 0.85;
 export const PDF_RENDER_SCALE = 1.5;
 
+// Katalog/Invoice page PDFs are photo- and text-dense, so they use a higher
+// render scale and JPEG quality than the report export above. RENDER_SCALE
+// 1.35 and JPEG quality 0.78/0.82 all read as blurry on small SKU/spec text
+// (JPEG is rough on fine text edges below near-lossless), so these stay at
+// 2 / 0.94; file size is kept down by the adaptive page packing instead.
+const PAGE_PDF_SCALE = 2;
+const PAGE_PDF_JPEG_QUALITY = 0.94;
+
 /**
- * Builds an off-screen container, fills it with the given HTML, captures it
- * with html2pdf.js, and triggers a direct download — then cleans up. Used
- * for reports that don't have (and don't need) their own page, like Jurnal
- * Umum and Buku Besar.
+ * Captures every `[data-print-page]` child of `element` into one multi-page
+ * A4 jsPDF (per-page html2canvas, so nothing can bleed across a page
+ * boundary). Returns null when there are no pages. The caller decides
+ * whether to .save() it or turn it into a File.
  */
-export async function downloadReportPdf(opts: {
-  filename: string;
-  title: string;
-  subtitle?: string;
-  bodyHtml: string;
-}) {
-  const container = document.createElement("div");
-  container.style.position = "fixed";
-  container.style.top = "0";
-  container.style.left = "-9999px";
-  container.style.width = "800px";
-  container.style.background = "#ffffff";
-  container.style.padding = "20px";
-  container.style.color = "#16232a";
-  container.style.fontFamily = "'Space Grotesk', ui-sans-serif, system-ui, sans-serif";
-  container.innerHTML = `
-    <h1 style="font-family: Georgia, serif; font-size: 1.6rem; font-weight: 600; margin: 0 0 4px;">${opts.title}</h1>
-    ${
-      opts.subtitle
-        ? `<div style="font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: #7c7666; margin-bottom: 20px;">${opts.subtitle}</div>`
-        : ""
-    }
-    ${opts.bodyHtml}
-  `;
-  document.body.appendChild(container);
+export async function capturePagesToPdf(element: HTMLElement) {
+  // html2canvas captures whatever is painted at that instant, so an
+  // in-flight image would come out blank (and throw pagination off).
+  await Promise.all(
+    Array.from(element.querySelectorAll("img")).map((img) =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise<void>((resolve) => {
+            img.addEventListener("load", () => resolve(), { once: true });
+            img.addEventListener("error", () => resolve(), { once: true });
+          })
+    )
+  );
 
-  try {
-    const { default: html2pdf } = await import("html2pdf.js");
-    await html2pdf()
-      .set({
-        margin: 10,
-        filename: opts.filename,
-        image: { type: "jpeg", quality: PDF_JPEG_QUALITY },
-        html2canvas: { scale: PDF_RENDER_SCALE, useCORS: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(container)
-      .save();
-  } finally {
-    document.body.removeChild(container);
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
+  const pageEls = Array.from(element.querySelectorAll<HTMLElement>("[data-print-page]"));
+  if (pageEls.length === 0) return null;
+
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const pageWidthMM = pdf.internal.pageSize.getWidth();
+  const pageHeightMM = pdf.internal.pageSize.getHeight();
+
+  // Sequential on purpose: Promise.all was tried (2026-08-31) and was
+  // slower — by now every image is loaded, so html2canvas is pure
+  // synchronous DOM-clone + rasterize work that can't overlap, and parallel
+  // only held every page's canvas in memory at once.
+  for (let i = 0; i < pageEls.length; i++) {
+    // scrollY: otherwise html2canvas captures from the current window scroll
+    // position (reported 2026-08-25). logging:false / imageTimeout:0 skip
+    // per-element logging overhead and image waits (all images are loaded).
+    const canvas = await html2canvas(pageEls[i], {
+      scale: PAGE_PDF_SCALE,
+      useCORS: true,
+      scrollY: -window.scrollY,
+      scrollX: 0,
+      logging: false,
+      imageTimeout: 0,
+    });
+    if (i > 0) pdf.addPage();
+    // "FAST" is jsPDF's own stream compression of the already-JPEG bytes.
+    pdf.addImage(canvas.toDataURL("image/jpeg", PAGE_PDF_JPEG_QUALITY), "JPEG", 0, 0, pageWidthMM, pageHeightMM, undefined, "FAST");
   }
+  return pdf;
 }
-
-export const reportTableStyle = {
-  table: "width:100%; border-collapse:collapse; font-size:11px;",
-  th: "text-align:left; border-bottom:1.5px solid #16232a; padding:6px 8px; font-family:'IBM Plex Mono',monospace; font-size:9px; text-transform:uppercase; color:#7c7666;",
-  td: "border-bottom:1px solid #ddd6c4; padding:6px 8px;",
-  tdRight: "border-bottom:1px solid #ddd6c4; padding:6px 8px; text-align:right; font-family:'IBM Plex Mono',monospace;",
-};

@@ -41,7 +41,7 @@ const MONTH_SHORT = [
   "Nov",
   "Des",
 ];
-const MONTH_LONG = [
+export const MONTH_LONG = [
   "Januari",
   "Februari",
   "Maret",
@@ -106,6 +106,11 @@ export function toWaPhone(phone?: string | null): string {
   const digits = (phone ?? "").replace(/[^0-9]/g, "");
   if (!digits) return "";
   return digits.startsWith("0") ? `62${digits.slice(1)}` : digits;
+}
+
+/** "dd-mm-yyyy" (server/browser local date) — for download filenames. */
+export function formatDateDMY(d: Date = new Date()): string {
+  return [String(d.getDate()).padStart(2, "0"), String(d.getMonth() + 1).padStart(2, "0"), d.getFullYear()].join("-");
 }
 
 export function slugify(text: string): string {
