@@ -25,6 +25,9 @@ const CashflowEntrySchema = new Schema(
   { timestamps: true }
 );
 
+// Every Beranda/Keuangan/Payroll/Bayar Tagihan view filters or sums by tanggal (running cash balance, monthly cashbook); without this each one scanned the whole ledger.
+CashflowEntrySchema.index({ tanggal: 1 });
+
 export type CashflowEntryDoc = InferSchemaType<typeof CashflowEntrySchema>;
 
 export const CashflowEntry: Model<CashflowEntryDoc> =

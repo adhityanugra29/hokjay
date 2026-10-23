@@ -26,6 +26,9 @@ const StockMovementSchema = new Schema(
 // (getProdukBaruIds in lib/katalog.ts).
 StockMovementSchema.index({ product: 1, tanggal: -1 });
 StockMovementSchema.index({ alasan: 1 });
+// {alasan, product}: the "Penjualan" distinct() in getProdukBaruIds can be answered from the index alone; {tanggal}: the global Riwayat Stok sort.
+StockMovementSchema.index({ alasan: 1, product: 1 });
+StockMovementSchema.index({ tanggal: -1 });
 
 export type StockMovementDoc = InferSchemaType<typeof StockMovementSchema>;
 
