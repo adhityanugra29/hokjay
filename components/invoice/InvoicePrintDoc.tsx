@@ -11,34 +11,17 @@ const PAGE_HEIGHT_PX = Math.round((297 * 794) / 210);
 const PAGE_VPAD_PX = 72; // p-9 top+bottom, exact.
 const TABLE_HEADER_PX = 46; // repeats at the top of every page that has item rows.
 const ITEM_ROW_PX = 55; // safety-padded above the real ~44px single-line row, room for an occasional 2-line product name.
-// Used only for the handful of renders before the header/footer refs land
-// their real measured height (see below) — generous on purpose so a
-// transient under-measurement never lets a page overpack before the real
-// number arrives.
+// Used only until the header/footer refs land their real measured height; generous on purpose so a transient under-measurement never lets a page overpack.
 const DEFAULT_HEADER_HEIGHT_PX = 260;
-const DEFAULT_FOOTER_HEIGHT_PX = 300; // bumped after adding the closing logo + thank-you line, 2026-08-27
+const DEFAULT_FOOTER_HEIGHT_PX = 300; // includes the closing logo + thank-you line
 const DEFAULT_SK_HEIGHT_PX = 160; // Syarat & Ketentuan's own pre-measurement estimate, see its own placement logic below.
 
 /**
- * Off-screen multi-page invoice layout, captured page-by-page by
- * InvoiceActions' download handler (html2canvas + jsPDF, same pattern as
- * the Katalog PDF) — replaces native window.print() entirely. Per the
- * user's report 2026-08-27 that a long invoice's content got visibly cut
- * off when printed: #invoice-doc sat inside a CSS grid (the 2-column
- * layout with the status sidebar) and grid items are a well-known source
- * of print-pagination bugs across browsers — content that should have
- * flowed onto a second physical page instead got clipped. Capturing each
- * page as its own independent image (like the Katalog PDF, after its own
- * multi-attempt fix for a similar class of problem) sidesteps browser
- * print pagination altogether.
- *
- * Adaptive per-page row packing — a page always gets as many item rows as
- * safely fit its real remaining height (page 1 loses the measured header
- * block's height up front; the closing totals/payment-details block is
- * placed on whichever page has room for it after every row is packed, or
- * gets a page of its own if none do). Header/footer heights are measured
- * via ref rather than guessed, since either can vary in height (Dikirim
- * ke / Kurir being present or not; DP being recorded or not).
+ * Off-screen multi-page invoice layout, captured page-by-page by InvoiceActions' download handler (html2canvas + jsPDF, same pattern as the Katalog PDF).
+ * Replaces native window.print(), which visibly cut off long invoices (grid items are a known source of print-pagination bugs).
+ * Adaptive row packing: a page gets as many item rows as safely fit its remaining height (page 1 loses the measured header); the closing totals/payment
+ * block goes on whichever page has room after every row is packed, else on its own page. Header/footer heights are measured via ref since they vary
+ * (Dikirim ke / Kurir present or not; DP recorded or not).
  */
 export default function InvoicePrintDoc({
   invoice,
@@ -47,13 +30,8 @@ export default function InvoicePrintDoc({
 }: {
   invoice: InvoicePrintData;
   /**
-   * "surat-jalan" (TASK-018, 2026-09-07) — the same document, minus every
-   * price (no Harga/Diskon/Subtotal columns, no totals/Payment Details
-   * block at all), title swapped to "SURAT JALAN", plus a driver-name
-   * line. A second, separate hidden instance renders alongside the
-   * normal "invoice" one (see app/invoice/[id]/page.tsx) rather than
-   * toggling the existing one, so both PDFs stay independently
-   * downloadable without re-rendering between clicks.
+   * "surat-jalan": the same document minus every price (no Harga/Diskon/Subtotal columns, no totals/Payment Details), titled "SURAT JALAN", plus a driver-name line.
+   * A second hidden instance renders alongside the invoice one (app/invoice/[id]/page.tsx) so both PDFs stay independently downloadable.
    */
   mode?: "invoice" | "surat-jalan";
   /** Lets a second instance coexist in the DOM with its own id — defaults to the original hardcoded value so the existing "invoice" caller needs no change. */
@@ -61,19 +39,9 @@ export default function InvoicePrintDoc({
 }) {
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
-  // Syarat & Ketentuan measured SEPARATELY from the rest of the footer —
-  // per the user's report 2026-09-20 ("masih belum berimpact untuk pdf
-  // yang sudah dibuat"). Every page here has a FIXED height with
-  // `overflow: hidden` (needed for the per-page html2canvas capture this
-  // whole component exists for) — before this, S&K lived inside the same
-  // measured footerRef block as Total/Catatan/Payment Details/logo, so if
-  // that WHOLE block grew taller than a single page (an invoice with DP +
-  // a long Catatan + a long custom S&K, all stacked), the excess got
-  // silently clipped by that overflow:hidden — and since S&K sits LAST in
-  // that block, it's exactly what would disappear first, with no error
-  // anywhere. Splitting it into its own measured block lets it fall back
-  // to its own additional page when it doesn't fit alongside the rest,
-  // instead of ever being silently cut off.
+  // Syarat & Ketentuan is measured SEPARATELY from the rest of the footer: every page is fixed-height with `overflow: hidden` (needed for the per-page capture),
+  // so when the whole footer block (DP + long Catatan + long S&K) outgrew a page, the excess was silently clipped, and S&K sits last so it vanished first with no
+  // error. Its own measured block lets it fall back to its own page.
   const skRef = useRef<HTMLDivElement>(null);
   const [headerHeight, setHeaderHeight] = useState<number | null>(null);
   const [footerHeight, setFooterHeight] = useState<number | null>(null);
@@ -83,23 +51,14 @@ export default function InvoicePrintDoc({
     if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight);
     if (footerRef.current) setFooterHeight(footerRef.current.offsetHeight);
     if (skRef.current) setSkHeight(skRef.current.offsetHeight);
-    // Depends on the actual invoice content (item count changes the total
-    // document height but not header/footer height directly — kept for
-    // safety since dp/shipAddress presence can change between renders of
-    // the same mounted component in principle).
+    // Depends on the invoice content: dp/shipAddress presence can change header/footer height between renders.
   }, [invoice]);
 
   const header = headerHeight ?? DEFAULT_HEADER_HEIGHT_PX;
   const footer = footerHeight ?? DEFAULT_FOOTER_HEIGHT_PX;
 
-  // Flash Sale items lead the item list — per the user's request
-  // 2026-08-29, same "always first" treatment as the Katalog grid/PDF.
-  // A stable partition (not a comparator-based sort) so the relative
-  // order within each group is left exactly as the invoice stored it.
-  // Jasa lines come last. On a Surat Jalan they are left out when there
-  // are products (only what is physically shipped), but a jasa-ONLY
-  // invoice still gets a Surat Jalan listing them. Per the user's request
-  // 2026-10-07.
+  // Flash Sale items lead the item list (stable partition, so order within each group is as stored). Jasa lines come last; on a Surat Jalan they are left out
+  // when there are products (only what is physically shipped), but a jasa-ONLY invoice still lists them.
   const hasJasa = invoice.items.some((it) => it.isJasa);
   const jasaOnly = hasJasa && invoice.items.every((it) => it.isJasa);
   const productItems = invoice.items.filter((it) => !it.isJasa);
@@ -135,12 +94,8 @@ export default function InvoicePrintDoc({
   }
   if (rowPages.length === 0) rowPages.push([]); // no items (shouldn't happen, but never emit zero pages)
 
-  // Pass 2: does the totals/payment-details footer (and Syarat &
-  // Ketentuan alongside it) fit on the last page with its rows? Three
-  // tiers, checked in order, so S&K only ever spills onto a page of its
-  // OWN when it genuinely doesn't fit anywhere else — never silently
-  // clipped. See skRef's doc comment for why footer and S&K are measured
-  // (and placed) separately now.
+  // Pass 2: does the totals/payment footer (and S&K alongside it) fit on the last page with its rows? Three tiers, checked in order, so S&K only spills onto its
+  // OWN page when it fits nowhere else (see skRef).
   const lastPageIsFirst = rowPages.length === 1;
   const lastPageRowCount = rowPages[rowPages.length - 1].length;
   const lastPageBudget =
@@ -175,26 +130,13 @@ export default function InvoicePrintDoc({
 
   const totalPages = rowPages.length + (footerJoinsLastPage ? 0 : 1) + (skOwnPage ? 1 : 0);
 
-  // Per the user's request 2026-08-29 ("tambahkan total diskon di
-  // invoice pdf maupun preview"). Uses displayDiskon so a Flash Sale
-  // line's implied discount (Harga Rekomendasi − hargaJual) counts too,
-  // not just diskonPerUnit (always 0 for those).
+  // Uses displayDiskon so a Flash Sale line's implied discount (Harga Rekomendasi − hargaJual) counts too.
   const totalDiskon = invoice.items.reduce((s, i) => s + displayDiskon(i) * i.qty, 0);
-  // "Subtotal Produk" renamed to "Total Belanja" and its logic changed to
-  // sum the Harga column (displayHarga) instead of invoice.subtotalProduk
-  // — per the user's request 2026-08-29. Total Belanja − Total Diskon
-  // always equals invoice.subtotalProduk exactly (Diskon is defined as
-  // Harga − actual price charged for every line, flash-sale or not), so
-  // this doesn't change grandTotal's own math at all, only what this one
-  // row displays.
+  // "Total Belanja" sums the Harga column (displayHarga). Total Belanja − Total Diskon always equals invoice.subtotalProduk (Diskon is Harga − the price charged
+  // for every line), so grandTotal's math is unchanged.
   const totalBelanja = invoice.items.reduce((s, i) => s + displayHarga(i) * i.qty, 0);
 
-  // Surat Jalan skips this whole block's price content (Total
-  // Belanja/Diskon/Ongkir/Total/DP/Sisa + Payment Details) — a delivery
-  // note has no prices on it at all, per the user's request 2026-09-07.
-  // Only the closing logo/"Thank you" note stays, still ref-measured for
-  // the same adaptive page-packing math (just much shorter for this
-  // mode).
+  // Surat Jalan skips this block's price content (a delivery note has no prices); the closing logo/"Thank you" note stays, still ref-measured for the page-packing math.
   const totalsBlock = (
     <div ref={footerRef}>
       {mode !== "surat-jalan" && (
@@ -235,23 +177,13 @@ export default function InvoicePrintDoc({
           ) : null}
         </div>
       )}
-      {/* Free-text invoice note — shown on both Invoice/Bukti Transfer AND
-          Surat Jalan, per the user's request 2026-09-19. Absent entirely
-          when empty, no empty box. */}
       {invoice.catatan && (
         <div className="mt-5 border-t border-line pt-4 font-mono text-[0.8rem] leading-relaxed whitespace-pre-line">
           <div className="mb-1 text-[0.68rem] uppercase tracking-[0.1em] text-muted">Catatan</div>
           {invoice.catatan}
         </div>
       )}
-      {/* Payment Details + closing logo/thank-you note side by side, same
-          row — per the user's request 2026-08-27 (was stacked below
-          before). Translated from the user's own Indonesian wording
-          ("Terimakasih sudah mempercayakan Peralatan dapur anda kepada
-          kami") rather than the earlier English attempt, which read
-          backwards. Surat Jalan drops the Payment Details half entirely
-          (justify-end instead of justify-between once there's only one
-          side left). */}
+      {/* Payment Details + closing logo/thank-you note side by side; Surat Jalan drops the Payment Details half (justify-end once only one side is left). */}
       <div
         className={`mt-9 flex flex-wrap items-start gap-6 border-t-2 border-ink pt-5 ${
           mode === "surat-jalan" ? "justify-end" : "justify-between"
@@ -264,9 +196,6 @@ export default function InvoicePrintDoc({
             <div>Atas Nama: Mohammad Andi Abdillah</div>
           </div>
         )}
-        {/* Logo flush right, sentence wrapped to 2 short lines instead of
-            one long one — more compact. Per the user's request
-            2026-08-27. */}
         <div className="flex flex-col items-end gap-2 text-right">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -281,8 +210,6 @@ export default function InvoicePrintDoc({
             <br />
             your kitchen equipment to us.
           </div>
-          {/* Sales name + phone repeated here at the very close of the
-              document — per the user's request 2026-08-28. */}
           <div className="mt-1 font-mono text-[0.72rem] leading-relaxed text-muted">
             {invoice.salesNama}
             {invoice.salesNomorHp && (
@@ -297,13 +224,8 @@ export default function InvoicePrintDoc({
     </div>
   );
 
-  // Syarat & Ketentuan — free text from Pengaturan, one point per line
-  // rendered as a numbered list. Shown on both Invoice/Bukti Transfer and
-  // Surat Jalan, same as Catatan above. Justified + generous line-height
-  // per the user's explicit request 2026-09-19 ("align justify supaya
-  // rapih dan diberikan jarak antar baris"). Measured via its OWN ref
-  // (skRef) — see that ref's doc comment for why this is separate from
-  // totalsBlock/footerRef now.
+  // Syarat & Ketentuan: free text from Pengaturan, one point per line as a numbered list (justified, generous line-height); on both Invoice and Surat Jalan.
+  // Measured via its OWN ref (see skRef).
   const syaratKetentuanBlock =
     syaratKetentuanPoints.length > 0 ? (
       <div ref={skRef} className="border-t border-line pt-4">
@@ -349,9 +271,6 @@ export default function InvoicePrintDoc({
           No. {invoice.nomor}
           <br />
           Tanggal: {formatDateLong(invoice.tanggal)}
-          {/* Sales moved up here, level with the CV. Horeca Jaya block on
-              the left, right below Tanggal — was down in the 3-column row
-              below. Per the user's request 2026-08-27. */}
           <div className="mt-2 border-t border-line pt-2">
             Sales Consultant: {invoice.salesNama}
             {invoice.salesNomorHp && (
@@ -364,8 +283,6 @@ export default function InvoicePrintDoc({
         </div>
       </div>
 
-      {/* 3 columns, wider gap between them. Per the user's request
-          2026-08-27 ("terlalu mepet"). */}
       <div className="mb-7 flex flex-wrap items-start gap-x-12 gap-y-5">
         <div>
           <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Ditagihkan kepada</div>
@@ -374,10 +291,6 @@ export default function InvoicePrintDoc({
         </div>
         <div className="max-w-[260px]">
           <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Alamat Pengiriman</div>
-          {/* Capped width + wrap — per the user's request 2026-08-29, a
-              long address otherwise had nothing constraining it in this
-              flex-wrap row and could stretch very wide instead of
-              wrapping onto its own lines. */}
           <div className="text-[0.9rem] font-medium break-words">{invoice.shipAddress ?? "—"}</div>
         </div>
         <div>
@@ -387,11 +300,8 @@ export default function InvoicePrintDoc({
             {invoice.kurir ? ` · ${invoice.kurir}` : ""}
           </div>
         </div>
-        {/* Surat Jalan only — typed fresh at download time, never stored
-            (see InvoicePrintData.namaDriver's own doc comment). The
-            data-driver-slot hook is what InvoiceActions.tsx's
-            downloadSuratJalanPdf() patches with the typed name right
-            before html2canvas captures this element. */}
+        {/* Surat Jalan only: typed fresh at download time, never stored (InvoicePrintData.namaDriver). InvoiceActions' downloadSuratJalanPdf() patches the
+            data-driver-slot element before html2canvas captures. */}
         {mode === "surat-jalan" && (
           <div>
             <div className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-wide text-muted">Nama Driver</div>
@@ -419,14 +329,7 @@ export default function InvoicePrintDoc({
               className="relative flex flex-col bg-panel"
               style={{ width: PAGE_WIDTH_PX, height: PAGE_HEIGHT_PX, overflow: "hidden" }}
             >
-              {/* Big diagonal "LUNAS" watermark, replacing the old small
-                  badge next to the invoice number — per the user's request
-                  2026-09-19 ("jangan ada badge lunas, tapi diberikan lunas
-                  watermark yang besar, menutupi invoice... center, dan 1
-                  halaman full"). Repeats on EVERY page (not just the
-                  first) since a multi-page invoice can be printed/viewed
-                  from any page. Translucent, not opaque — content stays
-                  readable underneath, same as a real paid stamp. */}
+              {/* Big diagonal translucent "LUNAS" watermark on EVERY page (a multi-page invoice can be viewed from any page); content stays readable underneath. */}
               {mode !== "surat-jalan" && invoice.isPaid && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
                   <div
@@ -464,9 +367,6 @@ export default function InvoicePrintDoc({
                               ({item.dimensiSnapshot})
                             </span>
                           )}
-                          {/* Per the user's request 2026-08-29 — plain
-                              text, not a colored banner (see the same
-                              wording on Katalog PDF's dedicated section). */}
                           {item.isFlashSale && (
                             <span className="ml-1.5 font-mono text-[0.72rem] font-semibold text-accent-700">
                               · Harga Special
@@ -540,8 +440,7 @@ export default function InvoicePrintDoc({
           </div>
         )}
       </div>
-      {/* totalPages isn't rendered anywhere — kept for potential future use
-          (e.g. a "Halaman X dari Y" footer) without recomputing it. */}
+      {/* totalPages isn't rendered anywhere; kept for a possible "Halaman X dari Y" footer. */}
       <span className="hidden" data-total-pages={totalPages} />
     </div>
   );

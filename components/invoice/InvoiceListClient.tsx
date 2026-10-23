@@ -19,7 +19,7 @@ export type InvoiceRowStatus = "unpaid" | "dp" | "draft" | "paid";
 export interface InvoiceRow {
   id: string;
   status: InvoiceRowStatus;
-  /** Day + short month of the invoice's own date — always shown in the left block regardless of status. Per the user's request 2026-09-04 ("saya mau ini jadi tanggal dibuat saja"). */
+  /** Day + short month of the invoice's own date — always shown in the left block regardless of status. */
   tglNum: string;
   tglMon: string;
   /** Only meaningful for status "unpaid" — days since the invoice was made, shown as a separate urgency badge (not the day block itself anymore). */
@@ -139,51 +139,21 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 type FilterKey = "semua" | InvoiceRowStatus;
 
 /**
- * Invoice list — one flat list (not stacked sections) filtered through a
- * pill toggle, same pattern as Keuangan's own Semua/Masuk/Keluar filter.
- * Per the user's request 2026-09-04, which explicitly rejected an earlier
- * "3 sections stacked" version: "kamu jangan pisah itu berdasarkan line...
- * ada semacam button tambahan untuk melihat statusnya". Every row also
- * gets a "Preview" button opening a drawer with the real invoice document
- * (InvoiceDocument.tsx, shared with /invoice/[id]) instead of navigating
- * away.
- *
- * The 2 summary cards above the pill row are pure display, driven by
- * whichever pill is active — not their own click targets, and not
- * independent fixed-bucket counts — per the user's request 2026-09-07
- * (this replaced 4 independently-clickable cards, one of which,
- * "Perlu ditindak", had no pill of its own and is gone with no
- * replacement).
- *
- * 2026-10-02: rows rebuilt on fixed columns with a chevron detail, the 2
- * cards became a one-line summary, and "Perlu tindakan"/"Selesai" grouping
- * was added under "Semua" — all per the approved mockup
- * docs/SDD/mockups/invoice-list-v1.html.
+ * Invoice list: one flat list filtered through a pill toggle (not stacked sections). Every row has a "Preview" button opening a drawer with the real invoice
+ * document (InvoiceDocument.tsx, shared with /invoice/[id]). The one-line summary is display only and tracks the active pill. Rows use fixed columns with a
+ * chevron detail and, under "Semua", are grouped "Perlu tindakan"/"Selesai" (docs/SDD/mockups/invoice-list-v1.html).
  */
 export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow[]; couriers: CourierOption[] }) {
   const [filter, setFilter] = useState<FilterKey>("semua");
   const [previewId, setPreviewId] = useState<string | null>(null);
   // Which row's detail (sales / item / kurir / Ubah / Hapus) is open — one at a time.
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  // Preview drawer's "Invoice"/"Surat Jalan"/"Bukti Transfer" tabs —
-  // TASK-016 (2026-09-07) added Invoice/Bukti Transfer; "Surat Jalan"
-  // added 2026-09-08 per the user's request, so a Surat Jalan can be
-  // previewed and downloaded straight from the list without opening
-  // /invoice/[id]. Always starts on "invoice" (reset alongside
-  // setPreviewId, not via a separate effect) so opening a different
-  // row's preview never lands on the previous row's tab.
+  // Preview drawer tab. Always starts on "invoice" (reset in openPreview, not via an effect) so a different row never lands on the previous row's tab.
   const [previewTab, setPreviewTab] = useState<"invoice" | "surat-jalan" | "bukti">("invoice");
-  // Surat Jalan's driver name for the CURRENTLY open preview only — never
-  // sent to the server, never persisted (see useInvoicePdfDownload.ts's own
-  // comment on why it's never stored). null = not captured yet for this
-  // preview. Reset to null alongside previewId/previewTab so a different
-  // invoice (or reopening the same one later) always starts fresh — per
-  // the user's request 2026-09-08, captured once when the tab opens so the
-  // on-screen preview can show it too, not just the downloaded PDF.
+  // Surat Jalan's driver name for the CURRENTLY open preview only: never sent to the server or persisted (see useInvoicePdfDownload.ts). null = not captured
+  // yet; reset with previewId/previewTab. Captured once when the tab opens so the on-screen preview shows it too, not just the PDF.
   const [driverName, setDriverName] = useState<string | null>(null);
-  // Shared with InvoiceActions.tsx (the /invoice/[id] detail page) — see
-  // useInvoicePdfDownload.ts for why the html2canvas/jsPDF logic lives
-  // there instead of being duplicated here.
+  // Shared with InvoiceActions.tsx (the detail page); the html2canvas/jsPDF logic lives in useInvoicePdfDownload.ts.
   const { downloading, downloadingSuratJalan, downloadInvoicePdf, downloadSuratJalanPdf } = useInvoicePdfDownload();
   const { prompt } = useDialog();
 
@@ -206,14 +176,14 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
     return promptDriverName();
   }
 
-  /** Opens the Preview drawer on a specific invoice, always starting on the "Invoice" tab with no driver name carried over from whatever was previewed before. */
+  /** Opens the Preview drawer on a row, starting on the "Invoice" tab with no driver name carried over. */
   function openPreview(id: string) {
     setPreviewId(id);
     setPreviewTab("invoice");
     setDriverName(null);
   }
 
-  /** Switching TO "Surat Jalan" the first time for this preview immediately asks for the driver name, per the user's request 2026-09-08 — so the preview never sits there showing a placeholder the person has to guess is editable. */
+  /** Switching TO "Surat Jalan" the first time asks for the driver name immediately, so the preview never shows a placeholder the person has to guess is editable. */
   async function handleTabClick(key: "invoice" | "surat-jalan" | "bukti") {
     setPreviewTab(key);
     if (key === "surat-jalan" && driverName === null) {
@@ -231,13 +201,8 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
   const printResult = useInvoicePrintData(previewId);
   const printData = printResult?.data;
 
-  // "Total Nilai Invoice" — meaning shifts with the active pill so it never
-  // mixes piutang (still owed) with uang yang sudah lunas into one
-  // misleading number. Per the user's request 2026-09-07 ("Kamu Break jika
-  // dia pilih semua : Berapa piutangnya? berapa yang sudah lunas?"), then
-  // confirmed: "Sudah DP" sums the remaining sisa tagihan (what's still
-  // owed on those invoices); every other filter — including "Semua", which
-  // mixes lunas and belum lunas together — sums the full grandTotal.
+  // "Total Nilai Invoice" shifts meaning with the active pill so it never mixes piutang with lunas: "Sudah DP" sums the remaining sisa tagihan; every other
+  // filter (incl. "Semua") sums grandTotal.
   const totalNilaiInvoice =
     filter === "dp"
       ? filtered.reduce((s, r) => s + (r.sisaTagihan ?? r.grandTotal), 0)
@@ -249,20 +214,15 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
   const grouped = filter === "semua";
 
   /**
-   * One list row — fixed columns (tanggal | pelanggan | status | total | aksi)
-   * so every row lines up whatever its state, per the approved mockup
-   * 2026-10-02 (docs/SDD/mockups/invoice-list-v1.html). The visible actions
-   * are the one next-step button (Tandai Lunas / Tandai Sudah Kirim /
-   * Lanjutkan), Preview and WA as icons, and a chevron opening the detail
-   * (sales, item, kurir, Tandai Sudah Kirim, Ubah, Hapus). This replaces the
-   * old "⋯" overflow menu; every action it held is still reachable.
+   * One list row on fixed columns (tanggal | pelanggan | status | total | aksi) so every row lines up. Visible actions: the one next-step button, Preview and WA
+   * icons, and a chevron opening the detail (sales, item, kurir, Tandai Sudah Kirim, Ubah, Hapus).
    */
   function renderRow(r: InvoiceRow) {
     const isOpen = expandedId === r.id;
     const isDraft = r.status === "draft";
     const isPaid = r.status === "paid";
     const canEdit = r.status === "unpaid" || r.status === "dp";
-    // Delete rules unchanged: draft, or unpaid without a DP (never once DP'd).
+    // Delete: draft, or unpaid without a DP (never once DP'd).
     const canDelete = isDraft || (r.status === "unpaid" && r.sisaTagihan == null);
 
     let step: React.ReactNode = null;
@@ -419,10 +379,7 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
 
   return (
     <>
-      {/* One-line summary replacing the 2 big cards — per the user's approved
-          mockup 2026-10-02 (docs/SDD/mockups/invoice-list-v1.html). Still pure
-          display and still tracks whichever status pill is active, exactly
-          as the cards did (TASK-020). */}
+      {/* One-line summary; display only, tracks whichever status pill is active. */}
       <div className="mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 tabular-nums">
         <span className="font-sans text-[0.8rem] text-muted">
           <b className="mr-1 text-[1.2rem] font-extrabold tracking-tight text-ink">{filtered.length}</b>invoice
@@ -458,9 +415,7 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
         </div>
       </div>
 
-      {/* "Perlu tindakan" on top, "Selesai" below — only under the "Semua"
-          pill (a status pill already narrows the list to one kind). Per the
-          approved mockup 2026-10-02. */}
+      {/* "Perlu tindakan" on top, "Selesai" below, only under the "Semua" pill (a status pill already narrows the list to one kind). */}
       <div className="mt-3.5">
         {grouped ? (
           <>
@@ -499,11 +454,7 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
                 ✕
               </button>
             </div>
-            {/* "Invoice"/"Surat Jalan" always available; "Bukti Transfer"
-                only joins when there's actually something to switch to — a
-                cash-paid invoice has neither buktiUrl (PaymentForm.tsx
-                clears it for "tunai/cash"). Same pill styling the status
-                filter row above already uses, for visual consistency. */}
+            {/* "Invoice"/"Surat Jalan" always; "Bukti Transfer" only when there is something to show (a cash-paid invoice has no buktiUrl: PaymentForm clears it for tunai/cash). */}
             <div className="flex flex-wrap gap-1.5 border-b border-line bg-panel px-5 py-3">
               {(
                 [
@@ -549,12 +500,7 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
               )}
               {printData && previewTab === "surat-jalan" && (
                 <>
-                  {/* Driver name is asked as soon as this tab opens
-                      (handleTabClick above) — this row just shows what
-                      was captured plus a way to correct it before
-                      downloading. Per the user's request 2026-09-08: once
-                      set, it must actually show in the preview document
-                      below, not just silently feed the PDF. */}
+                  {/* Driver name is asked when this tab opens (handleTabClick); this row shows it plus a way to correct it, and it shows in the preview document below, not just the PDF. */}
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div className="font-mono text-[0.72rem] text-muted">
                       Nama Driver:{" "}
@@ -589,24 +535,9 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
           </div>
         </div>
       )}
-      {/* Hidden, off-screen paginated layouts the download buttons above
-          actually capture (html2canvas + jsPDF) — same approach as
-          app/invoice/[id]/page.tsx's own two instances. Deliberately a
-          SEPARATE block from the drawer overlay above, not nested inside
-          it — BUG-019: nesting these as extra children of that overlay's
-          own `flex justify-end` row made them count as flex items too,
-          and even though each renders at `h-0`, its un-clipped content
-          width (a 794px-wide invoice page) still occupies horizontal
-          space along the row — so `justify-end` packed the whole row
-          flush right INCLUDING these two invisible spacers, shoving the
-          actually-visible drawer panel over to the left. Rendering them
-          here, outside that flex container entirely, keeps them exactly
-          as invisible/off-screen as intended without them ever being able
-          to influence the overlay's own layout again. Keyed on the row id
-          so switching preview rows always starts each instance's adaptive
-          page-packing fresh instead of carrying over a previous invoice's
-          measured header/footer heights. Mounted only while a row is
-          being previewed. */}
+      {/* Hidden, off-screen paginated layouts the download buttons capture (html2canvas + jsPDF), same as app/invoice/[id]/page.tsx. Deliberately a SEPARATE block from the
+          drawer overlay (BUG-019): as children of its `flex justify-end` row they counted as flex items, and their un-clipped 794px width shoved the visible panel to the left.
+          Keyed on the row id so each instance's page-packing starts fresh instead of reusing a previous invoice's measured heights. Mounted only while a row is previewed. */}
       {previewRow && printData && (
         <>
           <InvoicePrintDoc key={`inv-${previewRow.id}`} invoice={printData} id="list-invoice-print-doc" />
@@ -628,18 +559,8 @@ function isPdfUrl(url: string): boolean {
 }
 
 /**
- * One bukti card — an image opens the same in-app full-screen zoom Katalog
- * product photos already use (ZoomableImage.tsx, with its own working ✕/
- * Escape/backdrop close), not a new browser tab. A PDF still opens in a
- * new tab (no in-app PDF viewer exists in this app to reuse, and that's
- * standard, expected browser behavior for a PDF either way).
- *
- * Originally used a plain `target="_blank"` link ("Buka ukuran penuh") for
- * both cases — per the user's report 2026-09-07 ("ketika sudah klik
- * penuh, tidak ada tombol untuk kembali"), a new tab can leave a mobile
- * user stranded with no obvious way back to the drawer. Reusing
- * ZoomableImage fixes this for the image case (the vast majority of real
- * bukti uploads) without inventing a second full-screen pattern.
+ * One bukti card: an image opens the in-app full-screen zoom Katalog photos use (ZoomableImage, with working ✕/Escape/backdrop close) rather than a new tab, which
+ * could leave a mobile user with no way back to the drawer. A PDF still opens in a new tab (no in-app PDF viewer exists).
  */
 function BuktiCard({ eyebrow, url }: { eyebrow: string; url: string }) {
   return (
@@ -656,12 +577,8 @@ function BuktiCard({ eyebrow, url }: { eyebrow: string; url: string }) {
         </a>
       ) : (
         <div className="relative h-[220px] w-full overflow-hidden rounded-lg border border-line bg-surface">
-          {/* !object-contain: ZoomableImage's own base class already sets
-              object-cover (right for a cropped product-photo thumbnail,
-              wrong here — a bukti transfer needs to show the WHOLE
-              receipt, not crop it) — same-specificity utilities aren't
-              guaranteed to lose to whichever is listed later in the
-              className string, so this needs the ! to reliably win. */}
+          {/* !object-contain: ZoomableImage's base class sets object-cover (right for a thumbnail, wrong here: a bukti must show the WHOLE receipt); equal-specificity
+              utilities aren't guaranteed to win by order, so the ! is needed. */}
           <ZoomableImage src={url} alt={eyebrow} className="!object-contain p-3" />
         </div>
       )}
