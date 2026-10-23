@@ -6,6 +6,12 @@
 
 ---
 
+## 2026-10-23
+
+**Token diet (hemat token & waktu per perubahan)** — (1) `CLAUDE.md` memuat peta arsitektur, aturan uang/stok/komisi/zona waktu, dan gotcha PDF. (2) Dokumen SDD diarsipkan ke `docs/SDD/archive/` (TASKS/BUGS selesai, CHANGELOG bulan lama, riwayat PROJECT_STATE, `INDEX.md`); bacaan wajib awal sesi turun dari ±233 KB ke ±21 KB. (3) Komentar riwayat bertanggal dipangkas di 12 file terbesar (kode identik, diverifikasi dengan pembanding AST). (4) 15 handler API tanpa pemanggil dihapus: GET customers/invoices/products/jasa/purchase-bills/purchase-requests/office-expenses/cashflow/absensi, PATCH couriers/[id], `invoices/[id]/payout`, `products/[id]/restock`, `purchase-requests/[id]`.
+
+Preserved: seluruh fitur UI dan logika uang/stok/komisi. Regression: `tsc`, `npm run build` bersih; lint tidak menambah error. Catatan: `payout` adalah satu-satunya jalan membalik status "komisi cair" lewat API (tanpa UI) dan tidak punya cek role; dipulihkan lewat `git show pre-refactor:app/api/invoices/[id]/payout/route.ts` bila diperlukan.
+
 ## 2026-10-22
 
 **Refactor Tahap 2** — (1) `buildInvoicePrintData()` di `lib/invoiceDisplay.ts` menggantikan 3 salinan builder (detail, API print, list). (2) `capturePagesToPdf()` di `lib/pdfExport.ts` dipakai Katalog & Invoice; `formatDateDMY()` di `lib/format.ts`. (3) `SimpleNameManager` menggantikan isi CourierManager/PaymentMethodManager. (4) `periodRange`/`currentPeriod`/`MONTH_NAMES`/`Chevron` jadi satu sumber. (5) Invoice list: `printData` tidak lagi dikirim per baris — Preview mengambilnya saat dibuka lewat `useInvoicePrintData` (`/api/invoices/[id]/print`, kini juga memuat URL bukti transfer).

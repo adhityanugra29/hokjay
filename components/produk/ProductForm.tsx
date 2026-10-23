@@ -21,12 +21,8 @@ export interface ProductFormValues {
   hargaMinimum: string;
   komisiPercent: string;
   /**
-   * Owner-only override of the real invoice-time barang-bekas commission
-   * rate (normally a flat 10% of Harga Bottom) — separate from komisiPercent
-   * above, which is a reference-only figure unrelated to real invoice math
-   * (see its own hint text). Empty = no override, falls back to the
-   * product's category default, then the global 10%. Per the user's
-   * request 2026-09-03.
+   * Owner-only override of the real invoice-time bekas commission rate (normally 10% of Harga Bottom); separate from komisiPercent above, which is
+   * reference-only. Empty = no override (category default, then global 10%).
    */
   komisiBekasPercent: string;
   stok: string;
@@ -47,32 +43,21 @@ export interface ProductFormValues {
 const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   name: "",
   merk: "",
-  // Defaults to "bekas" per the user's request 2026-08-25 (most products
-  // entered here are used stock) — komisiPercent below is kept in sync.
+  // Defaults to "bekas" (most products entered are used stock); komisiPercent below is kept in sync.
   kondisi: "bekas",
-  // No longer a form field (see the user's request 2026-08-25) — purely
-  // display (the "Bekas — Kondisi N%" badge in Katalog), never fed into
-  // commission math, so hiding the input is safe. Same "hidden but not
-  // removed" treatment as stokMinimum/alertHariTidakTerjual.
+  // Not a form field: display only (the "Bekas — Kondisi N%" badge in Katalog), never fed into commission math. "Hidden but not removed", like stokMinimum/alertHariTidakTerjual.
   kondisiPercent: "",
   tipeProduk: "non-elektronik",
   hargaRekomendasi: "",
   hargaMinimum: "",
-  // Matches the real invoice-time commission rule (see the hint text below
-  // the field) — 6% for baru, 10% for bekas. Kept in sync with `kondisi`
-  // by the Kondisi select's onChange, not just this initial value.
+  // Matches the real invoice-time rule: 6% baru, 10% bekas; kept in sync with `kondisi` by the Kondisi select's onChange.
   komisiPercent: "10",
   komisiBekasPercent: "",
   stok: "1",
   tanggalBarangMasuk: "",
-  // No longer a form field (see the user's request 2026-08-25) — schema
-  // default (LOW_STOCK_THRESHOLD) is preserved by still sending it, just
-  // never rendered/edited here. Purchasing's auto-suggested PO list still
-  // uses it. Same "hidden but not removed" treatment as
-  // alertHariTidakTerjual below.
+  // Not a form field: the schema default (LOW_STOCK_THRESHOLD) is preserved by still sending it. Purchasing's auto-suggested PO list uses it.
   stokMinimum: "5",
-  // No longer a form field (see confirmation 2026-08-20) — schema default
-  // (45) is preserved by still sending it, just never rendered/edited here.
+  // Not a form field: the schema default (45) is preserved by still sending it.
   alertHariTidakTerjual: "45",
   panjangCm: "",
   lebarCm: "",
@@ -80,23 +65,15 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   ketebalan: "1mm",
   dayaListrik: "",
   fotoUrl: "",
-  // No longer form fields (see the user's request 2026-08-25 — just one
-  // photo now) — kept here so an existing product's already-uploaded
-  // samping/belakang photos aren't silently wiped out by a save from this
-  // form, same "hidden but not removed" treatment as above.
+  // Not form fields (one photo now): kept so an existing product's samping/belakang photos aren't wiped by a save from this form.
   fotoSampingUrl: "",
   fotoBelakangUrl: "",
   deskripsi: "",
 };
 
-/**
- * One P/L/T box — max 3 digits, "000" placeholder, auto-advances to
- * `nextRef` the moment the 3rd digit lands. Back to three separate inputs
- * per the user's request 2026-08-25 (superseding the single free-typed
- * field from earlier the same day).
- */
 const LAST_KATEGORI_KEY = "horeca-produk-last-kategori";
 
+/** One P/L/T box: max 3 digits, "000" placeholder, auto-advances to `nextRef` when the 3rd digit lands. */
 function DimensiDigitInput({
   value,
   onChange,
@@ -126,13 +103,7 @@ function DimensiDigitInput({
   );
 }
 
-/**
- * Reads Nama Produk + Ukuran P×L×T straight out of the photo's filename —
- * per the user's request 2026-08-30 ("mereka kerja per photo... nanti
- * nama filenya, dijadikan default di nama produk... ada ukuran, kamu
- * defaultkan juga itu ukuranya"). Verified as a real interactive demo
- * (the "HOJAY Shell — Foundry" mockup) before being wired in here.
- */
+/** Reads Nama Produk + Ukuran P×L×T from the photo's filename (the workflow is per photo). */
 function parseProductFilename(filename: string): { name: string; dims: { p: string; l: string; t: string } | null } {
   const base = filename.replace(/\.[^/.]+$/, ""); // strip extension
   const dimMatch = base.match(/(\d{1,4})\s*[xX×]\s*(\d{1,4})\s*[xX×]\s*(\d{1,4})/);
@@ -159,20 +130,16 @@ export default function ProductForm({
   productId?: string;
   initial?: Partial<ProductFormValues>;
   categories: string[];
-  /** Owner/Super Admin only — shows the Komisi Bekas override field. Per the user's request 2026-09-03. */
+  /** Owner/Super Admin only — shows the Komisi Bekas override field. */
   isOwner?: boolean;
-  // Both default to the original navigate-to-/produk behavior — only the
-  // Katalog inline edit drawer (2026-08-27) passes its own, so saving/
-  // cancelling from there stays on the Katalog page instead of leaving it.
+  // Both default to navigate-to-/produk; only the Katalog inline edit drawer passes its own, so saving/cancelling there stays on the Katalog page.
   onSuccess?: () => void;
   onCancel?: () => void;
 }) {
   const router = useRouter();
   const [values, setValues] = useState<ProductFormValues>(() => {
     const merged = { ...EMPTY_BASE, category: categories[0] ?? "", ...initial };
-    // Defaults to today whenever there's no real value yet — a brand-new
-    // product being entered now, or an existing one saved before this field
-    // existed. Per the user's request 2026-08-25.
+    // Defaults to today when there's no real value yet (a new product, or an existing one saved before this field existed).
     return { ...merged, tanggalBarangMasuk: merged.tanggalBarangMasuk || new Date().toISOString().slice(0, 10) };
   });
   const [saving, setSaving] = useState(false);
@@ -180,12 +147,8 @@ export default function ProductForm({
   const lebarRef = useRef<HTMLInputElement>(null);
   const tinggiRef = useRef<HTMLInputElement>(null);
 
-  // Kategori defaults to whichever one was used last (per the user's request
-  // 2026-08-25) — entering several products of the same category in a row
-  // shouldn't mean reselecting it every time. Only in create mode, and only
-  // reading localStorage after mount (not in useState's initializer) so the
-  // server-rendered HTML and the client's first render still match — same
-  // pattern CartProvider.tsx uses for its own localStorage hydration.
+  // Kategori defaults to the last one used (several products of one category in a row). Create mode only, and read from localStorage after mount (not in
+  // useState's initializer) so the server and client first renders match, same as CartProvider.tsx.
   useEffect(() => {
     if (mode !== "create") return;
     const lastKategori = localStorage.getItem(LAST_KATEGORI_KEY);
@@ -195,20 +158,8 @@ export default function ProductForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Bug found by the user 2026-09-05 ("komisi nominal tidak sesuai dengan
-  // yang sedang diubah, harusnya tercalculate secara live"): this used to
-  // read values.komisiPercent — the "Komisi — Persen" field TASK-014 just
-  // removed from view. That field is still tracked internally (Hot
-  // Products still needs it, see ProductForm's own TASK-014 comment
-  // above), but it no longer changes when the user edits the one visible
-  // commission field, so this display had gone stale/disconnected from
-  // whatever was actually being typed. Recomputed to mirror the REAL
-  // commission formula (lib/commission.ts's computeLineCommission) instead
-  // of the old Hot-Products-only figure: for bekas, Harga Bottom × Komisi
-  // Bekas% (the guaranteed floor-price commission — matches
-  // maxDiskonBekas's own "base" term); for baru, the flat 6% of Harga
-  // Rekomendasi (baru has no per-product override, so nothing to react to
-  // there — this stays a static reference like before).
+  // Komisi Nominal mirrors the REAL commission formula (computeLineCommission): bekas = Harga Bottom × Komisi Bekas% (the guaranteed floor commission, same as
+  // maxDiskonBekas's base); baru = flat 6% of Harga Rekomendasi (no per-product override, so static). It used to read the removed "Komisi — Persen" field and went stale.
   const komisiNominal = useMemo(() => {
     const hargaRekomendasi = Number(values.hargaRekomendasi) || 0;
     if (values.kondisi === "bekas") {
@@ -219,18 +170,14 @@ export default function ProductForm({
     return Math.round((DEFAULT_KOMISI_BARU_PERCENT / 100) * hargaRekomendasi);
   }, [values.kondisi, values.komisiBekasPercent, values.hargaMinimum, values.hargaRekomendasi]);
 
-  // Harga Modal — per the user's request 2026-08-25: no longer a manual
-  // entry, always Harga Minimum ÷ 2. Still saved into the schema's
-  // `hargaBeli` field (same "cost basis" concept the field already was).
+  // Harga Modal is always Harga Minimum ÷ 2 (no manual entry); still saved into the schema's `hargaBeli`.
   const hargaModal = useMemo(() => Math.round((Number(values.hargaMinimum) || 0) / 2), [values.hargaMinimum]);
 
   function set<K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
   }
 
-  // Autofill Nama Produk / Ukuran P×L×T from the photo's filename — never
-  // overwrites a field the user already typed into by hand (checked per
-  // field, not "any field filled"). Per the user's request 2026-08-30.
+  // Autofill Nama Produk / Ukuran from the photo's filename; never overwrites a field the user already typed (checked per field).
   function handlePhotoSelected(file: File) {
     const parsed = parseProductFilename(file.name);
     setValues((v) => {
@@ -245,9 +192,7 @@ export default function ProductForm({
     });
   }
 
-  // Kondisi drives the commission default (6% baru, 10% bekas), matching
-  // the real invoice-time calculation — see the hint on the Komisi field
-  // below. Still just a default: the field stays editable afterward.
+  // Kondisi drives the commission default (6% baru, 10% bekas), matching invoice time; still just a default.
   function setKondisi(kondisi: "baru" | "bekas") {
     setValues((v) => ({ ...v, kondisi, komisiPercent: kondisi === "bekas" ? "10" : "6" }));
   }
@@ -256,10 +201,7 @@ export default function ProductForm({
     e.preventDefault();
     setError(null);
 
-    // The Kategori field is a free-typed search box now (see the datalist
-    // below) — only accept a value that's actually one of the real
-    // categories, so a typo or partial search term can't get saved as the
-    // product's category.
+    // Kategori is a free-typed search box, so only accept an actual category (a typo or partial term must not be saved).
     if (!categories.includes(values.category)) {
       setError("Kategori tidak dikenal — pilih salah satu dari daftar kategori yang ada.");
       return;
@@ -309,12 +251,8 @@ export default function ProductForm({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal menyimpan produk");
       }
-      // Both Komisi fields go through their own Owner-only endpoint, never
-      // the general PATCH above (see komisi-bekas/route.ts's doc comment)
-      // — a separate request, sent only when isOwner (the fields aren't
-      // even visible otherwise, see the two Field blocks above). Runs
-      // after the product itself is saved so a brand-new product (mode
-      // "create") has a real _id to target.
+      // Both Komisi fields go through their own Owner-only endpoint (komisi-bekas/route.ts), never the general PATCH: a separate request, sent only when
+      // isOwner, after the product is saved so a new product has an _id to target.
       if (isOwner) {
         const saved = await res.json();
         const id = mode === "create" ? saved._id : productId;
@@ -323,9 +261,7 @@ export default function ProductForm({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             komisiPercent: Number(values.komisiPercent),
-            // Only meaningful for bekas — sent as null (clears any stored
-            // override) when kondisi isn't bekas, since the field wasn't
-            // even shown to set one in the first place.
+            // Only meaningful for bekas; null clears any stored override when kondisi isn't bekas (the field wasn't shown).
             komisiBekasPercent:
               values.kondisi === "bekas" && values.komisiBekasPercent ? Number(values.komisiBekasPercent) : null,
           }),
@@ -356,12 +292,7 @@ export default function ProductForm({
       description="Harga Modal & Komisi Nominal dihitung otomatis."
     >
       <form onSubmit={handleSubmit}>
-        {/* Foto dipindah ke PALING ATAS — "mereka kerja per photo" (per
-            the user's request 2026-08-30). Nama file di-parse untuk
-            mengisi Nama Produk & Ukuran P×L×T otomatis, tapi cuma kalau
-            field itu masih kosong — lihat parseProductFilename/
-            handlePhotoSelected di atas. Verified as a real interactive
-            demo (the "HOJAY Shell — Foundry" mockup) before landing here. */}
+        {/* Foto first (the work is per photo). The filename fills Nama Produk & Ukuran P×L×T, only into fields still empty (parseProductFilename/handlePhotoSelected). */}
         <FormSection label="Foto Produk" compact>
           <UploadBox
             folder="products"
@@ -372,9 +303,7 @@ export default function ProductForm({
           />
         </FormSection>
 
-        {/* Dipadatkan (3 kolom, seksi lebih ringkas) — form ini diisi
-            berkali-kali sehari, kecepatan lebih penting daripada napas
-            visual lega. Per the user's request 2026-08-30. */}
+        {/* Compact (3 columns): this form is filled many times a day, so speed beats whitespace. */}
         <FormSection label="Identitas & Stok" compact>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Nama Produk" span2>
@@ -432,11 +361,7 @@ export default function ProductForm({
           </div>
         </FormSection>
 
-        {/* Urutan alur yang benar-benar diketik user, berurutan: Harga
-            Minimum -> Harga Rekomendasi -> Komisi %. Nilai otomatis
-            (Harga Modal, Komisi Nominal) dipisah di bawah sebagai teks
-            polos — bukan field/kotak lagi, supaya tidak terbaca seolah
-            bisa diisi manual. Per koreksi user 2026-08-30. */}
+        {/* Order of the real typing flow: Harga Minimum -> Harga Rekomendasi -> Komisi. Derived values (Harga Modal, Komisi Nominal) sit below as plain text so they don't read as editable. */}
         <FormSection label="Harga & Komisi" compact>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field
@@ -448,24 +373,9 @@ export default function ProductForm({
             <Field label="Harga Rekomendasi">
               <CurrencyInput required value={values.hargaRekomendasi} onChange={(v) => set("hargaRekomendasi", v)} placeholder="0" />
             </Field>
-            {/* Simplified to ONE visible commission field — per the user's
-                report 2026-09-05 ("kenapa ada 2 untuk setting komisi %?
-                dibuat satu kolom saja... ini membingungkan owner"). There
-                used to be a separate "Komisi — Persen" input here too —
-                it never actually drove real invoice commission (baru is
-                always a hardcoded flat 6%, bekas uses komisiBekasPercent
-                below), it only fed komisiNominal, which in turn feeds one
-                of Dashboard's three "Hot Products" rankings (the
-                "insentif" badge — see lib/dashboard.ts's getHotProducts).
-                Removed as an editable field (explained this trade-off to
-                the user before removing): komisiPercent still auto-tracks
-                kondisi under the hood exactly as before (6% baru / 10%
-                bekas, see setKondisi below), so komisiNominal/Hot Products
-                keep working, just without manual per-product tuning of
-                that one ranking. Owner/Super Admin only, same as before —
-                the actual invoice-time bekas rate override (this really
-                does drive computeLineCommission). Kosong = ikut default
-                kategori lalu 10% global. Per the user's request 2026-09-03. */}
+            {/* ONE visible commission field. The old "Komisi — Persen" input never drove real invoice commission (baru is a flat 6%, bekas uses komisiBekasPercent); it only fed
+                komisiNominal for Dashboard's "Hot Products" insentif ranking (lib/dashboard.ts getHotProducts). komisiPercent still tracks kondisi under the hood (setKondisi), so that
+                ranking keeps working. This field is Owner/Super Admin only: the invoice-time bekas rate override (it drives computeLineCommission); empty = category default, then 10%. */}
             {isOwner && values.kondisi === "bekas" && (
               <Field label="Komisi Bekas (%)" hint="Kosongkan untuk pakai default kategori/global (10%).">
                 <Input
@@ -479,10 +389,7 @@ export default function ProductForm({
               </Field>
             )}
           </div>
-          {/* Komisi Nominal is derived straight from komisiPercent, same
-              owner-only visibility — Harga Modal (cost basis, not
-              commission) stays visible to everyone who can edit a
-              product. */}
+          {/* Komisi Nominal is owner-only; Harga Modal (cost basis, not commission) stays visible to everyone who can edit a product. */}
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
             <span className="flex items-baseline gap-1.5 font-sans text-[0.74rem] text-muted">
               Harga Modal <span className="font-medium text-ink">{rupiah(hargaModal)}</span>
