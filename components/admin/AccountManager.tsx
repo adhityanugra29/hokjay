@@ -132,7 +132,7 @@ export default function AccountManager() {
         <form onSubmit={handleSubmit} className="border-b-2 border-line p-5">
           <FormGrid>
             <Field label="Nama">
-              <Input required value={values.nama} onChange={(e) => setValues((v) => ({ ...v, nama: e.target.value }))} />
+              <Input required noUppercase value={values.nama} onChange={(e) => setValues((v) => ({ ...v, nama: e.target.value }))} />
             </Field>
             <Field label="Email">
               <Input
@@ -234,6 +234,7 @@ export default function AccountManager() {
                           <Field label="Nama">
                             <Input
                               required
+                              noUppercase
                               value={editValues.nama}
                               onChange={(e) => setEditValues((v) => ({ ...v, nama: e.target.value }))}
                             />

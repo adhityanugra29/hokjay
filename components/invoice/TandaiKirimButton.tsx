@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Field, Select } from "@/components/ui/Form";
+import { Field, Select, toUpperInPlace } from "@/components/ui/Form";
 
 export interface CourierOption {
   _id: string;
@@ -89,7 +89,7 @@ export default function TandaiKirimButton({
         onClick={openModal}
         className={
           className ??
-          "cursor-pointer border border-ink bg-ink px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-accent no-underline hover:bg-ink/85"
+          "cursor-pointer rounded-lg border border-ink bg-ink px-3 py-1.5 font-sans text-[0.72rem] font-semibold text-accent no-underline hover:bg-ink/85"
         }
       >
         Tandai Sudah Kirim
@@ -112,7 +112,7 @@ export default function TandaiKirimButton({
                 type="button"
                 onClick={() => !saving && setOpen(false)}
                 aria-label="Tutup"
-                className="flex h-9 w-9 cursor-pointer items-center justify-center border border-line text-lg text-ink hover:border-accent hover:text-accent-700"
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-line text-lg text-ink hover:border-accent hover:text-accent-700"
               >
                 ✕
               </button>
@@ -150,7 +150,10 @@ export default function TandaiKirimButton({
                 <input
                   type="text"
                   value={noResi}
-                  onChange={(e) => setNoResi(e.target.value)}
+                  onChange={(e) => {
+                    toUpperInPlace(e.currentTarget);
+                    setNoResi(e.target.value);
+                  }}
                   maxLength={100}
                   autoComplete="off"
                   placeholder="Contoh: JNE-8820145637"
@@ -163,14 +166,14 @@ export default function TandaiKirimButton({
                   type="button"
                   onClick={() => setOpen(false)}
                   disabled={saving}
-                  className="flex-1 cursor-pointer border border-line py-2.5 font-sans text-[0.85rem] font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 cursor-pointer rounded-lg border border-line py-2.5 font-sans text-[0.85rem] font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={saving || !kurir}
-                  className="flex-1 cursor-pointer border border-ink bg-ink py-2.5 font-sans text-[0.85rem] font-bold text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 cursor-pointer rounded-lg border border-ink bg-ink py-2.5 font-sans text-[0.85rem] font-bold text-accent disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving ? "Menyimpan..." : "Simpan"}
                 </button>

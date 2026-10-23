@@ -9,6 +9,7 @@ export default function PaymentMethodManager() {
       columnLabel="Nama Metode"
       emptyText="Belum ada metode pembayaran."
       errorText="Gagal menambah metode pembayaran"
+      noUppercase
     />
   );
 }

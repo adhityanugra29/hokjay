@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toUpperInPlace } from "@/components/ui/Form";
 import { rupiahCompact } from "@/lib/format";
 import type { SupplierWithUtangRow } from "@/lib/purchasing";
 
@@ -65,14 +66,20 @@ export default function MobileSupplier({ suppliers, totalUtang }: { suppliers: S
             required
             placeholder="Nama usaha"
             value={values.namaUsaha}
-            onChange={(e) => setValues((v) => ({ ...v, namaUsaha: e.target.value }))}
+            onChange={(e) => {
+              toUpperInPlace(e.currentTarget);
+              setValues((v) => ({ ...v, namaUsaha: e.target.value }));
+            }}
             className="border border-line px-3 py-2.5 font-sans text-[0.85rem]"
           />
           <input
             required
             placeholder="Alamat"
             value={values.alamat}
-            onChange={(e) => setValues((v) => ({ ...v, alamat: e.target.value }))}
+            onChange={(e) => {
+              toUpperInPlace(e.currentTarget);
+              setValues((v) => ({ ...v, alamat: e.target.value }));
+            }}
             className="border border-line px-3 py-2.5 font-sans text-[0.85rem]"
           />
           <div className="grid grid-cols-2 gap-2.5">
@@ -80,21 +87,30 @@ export default function MobileSupplier({ suppliers, totalUtang }: { suppliers: S
               required
               placeholder="Bank"
               value={values.bank}
-              onChange={(e) => setValues((v) => ({ ...v, bank: e.target.value }))}
+              onChange={(e) => {
+              toUpperInPlace(e.currentTarget);
+              setValues((v) => ({ ...v, bank: e.target.value }));
+            }}
               className="border border-line px-3 py-2.5 font-sans text-[0.85rem]"
             />
             <input
               required
               placeholder="No. rekening"
               value={values.nomorRekening}
-              onChange={(e) => setValues((v) => ({ ...v, nomorRekening: e.target.value }))}
+              onChange={(e) => {
+              toUpperInPlace(e.currentTarget);
+              setValues((v) => ({ ...v, nomorRekening: e.target.value }));
+            }}
               className="border border-line px-3 py-2.5 font-sans text-[0.85rem]"
             />
           </div>
           <input
             placeholder="Kontak (opsional)"
             value={values.kontak}
-            onChange={(e) => setValues((v) => ({ ...v, kontak: e.target.value }))}
+            onChange={(e) => {
+              toUpperInPlace(e.currentTarget);
+              setValues((v) => ({ ...v, kontak: e.target.value }));
+            }}
             className="border border-line px-3 py-2.5 font-sans text-[0.85rem]"
           />
           {error && <div className="font-sans text-[0.75rem] text-danger">{error}</div>}

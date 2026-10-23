@@ -6,6 +6,21 @@
 
 ---
 
+## TASK-047 — Auto-kapital semua input teks + migrasi data lama
+
+**Type:** UX / Data
+**Priority:** P2
+**Status:** TESTING
+**Created:** 2026-10-23 · **Last updated:** 2026-10-23
+
+**Description:** Input teks di semua form otomatis HURUF KAPITAL (`Input`/`Textarea` di `components/ui/Form.tsx`, prop `noUppercase` untuk pengecualian; `autoCapitalize="characters"` untuk keyboard ponsel). Dikecualikan: email/password/angka/tanggal/pencarian, nama User/Sales/Karyawan (dicocokkan persis ke `Invoice.sales.nama` / slip gaji), S&K, nama Metode Pembayaran (`metode === "Tunai"` menentukan akun kas di `lib/services/journal.ts`). Skrip `npm run kapitalkan-data-lama` (dry-run default, `--apply` untuk menulis) mengkapitalkan data master lama (Produk, Kategori + cascade `Product.category`, Jasa, Supplier, Pelanggan, Aset Kantor); transaksi/snapshot tidak disentuh.
+
+**Subtasks:**
+- UI auto-kapital — selesai (tsc bersih), belum diuji manual di browser.
+- Migrasi data lama — skrip siap, BELUM dijalankan. Backup DB dulu; jalankan dry-run, periksa bentrok kategori, baru `--apply`, SETELAH UI ini ter-deploy.
+
+---
+
 ## TASK-002 — "Foundry" end-to-end sweep: remaining stiff pages
 
 **Type:** UX/UI

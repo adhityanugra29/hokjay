@@ -72,6 +72,7 @@ export default function SyaratKetentuanEditor({
               <span className="w-7 shrink-0 pt-2.5 text-right font-mono text-[0.75rem] text-muted">{idx + 1}.</span>
               <div className="min-w-0 flex-1">
                 <Textarea
+                  noUppercase
                   rows={2}
                   maxLength={Math.min(SK_MAX_CHARS_PER_POIN, line.length + Math.max(0, SK_MAX_CHARS_TOTAL - totalChars))}
                   value={line}

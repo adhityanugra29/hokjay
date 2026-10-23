@@ -132,7 +132,7 @@ export default function KaryawanManager() {
               <label htmlFor="kar-nama" className={labelCls}>
                 Nama
               </label>
-              <Input id="kar-nama" required value={values.nama} onChange={(e) => setValues((v) => ({ ...v, nama: e.target.value }))} />
+              <Input id="kar-nama" required noUppercase value={values.nama} onChange={(e) => setValues((v) => ({ ...v, nama: e.target.value }))} />
             </div>
             <div>
               <label htmlFor="kar-jabatan" className={labelCls}>

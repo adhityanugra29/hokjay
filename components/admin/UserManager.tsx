@@ -151,7 +151,7 @@ export default function UserManager() {
         <form onSubmit={addSales} className="border-b-2 border-line p-5">
           <FormGrid>
             <Field label="Nama">
-              <Input required value={values.nama} onChange={(e) => setValues((v) => ({ ...v, nama: e.target.value }))} />
+              <Input required noUppercase value={values.nama} onChange={(e) => setValues((v) => ({ ...v, nama: e.target.value }))} />
             </Field>
             <Field label="Bank (opsional)">
               <Input value={values.bank} onChange={(e) => setValues((v) => ({ ...v, bank: e.target.value }))} placeholder="Contoh: BCA" />
@@ -288,7 +288,7 @@ export default function UserManager() {
                       <form onSubmit={handleEditSubmit}>
                         <FormGrid>
                           <Field label="Nama">
-                            <Input required value={editValues.nama} onChange={(e) => setEditValues((v) => ({ ...v, nama: e.target.value }))} />
+                            <Input required noUppercase value={editValues.nama} onChange={(e) => setEditValues((v) => ({ ...v, nama: e.target.value }))} />
                           </Field>
                           <Field label="Bank">
                             <Input value={editValues.bank} onChange={(e) => setEditValues((v) => ({ ...v, bank: e.target.value }))} />

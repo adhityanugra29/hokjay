@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState } from "react";
+import { toUpperInPlace } from "@/components/ui/Form";
 
 /**
  * Custom alert()/confirm() replacement — the browser's native versions
@@ -118,7 +119,10 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
                 type="text"
                 autoFocus
                 value={promptValue}
-                onChange={(e) => setPromptValue(e.target.value)}
+                onChange={(e) => {
+                  toUpperInPlace(e.currentTarget);
+                  setPromptValue(e.target.value);
+                }}
                 onKeyDown={(e) => e.key === "Enter" && close(true)}
                 placeholder={dialog.placeholder}
                 className="mt-3 w-full rounded-lg border border-line bg-paper px-3.5 py-2.5 font-sans text-[0.9rem] text-ink outline-offset-1 focus:outline-2 focus:outline-accent"

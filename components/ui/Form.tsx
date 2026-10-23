@@ -30,16 +30,70 @@ export const inputCls =
 // forwardRef so callers that need to move focus programmatically (e.g. the
 // Ukuran P x L x T auto-advance fields) can attach a ref — every existing
 // non-ref usage is unaffected.
-export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input(props, ref) {
-  return <input {...props} ref={ref} className={`${inputCls} ${props.className ?? ""}`} />;
+// Auto-kapital: teks yang diketik/ditempel langsung jadi HURUF BESAR. Nilai
+// diubah di elemen DOM sebelum handler pemanggil jalan, jadi state/FormData
+// ikut kapital dan kursor tidak lompat. Hanya untuk input teks biasa (bukan
+// email/password/angka/tanggal/dll). Pakai `noUppercase` untuk mengecualikan
+// (mis. nama User/Sales yang dicocokkan persis, S&K, nama metode pembayaran).
+const UPPERCASE_INPUT_TYPES = new Set(["text"]);
+
+export function toUpperInPlace(el: HTMLInputElement | HTMLTextAreaElement) {
+  const upper = el.value.toUpperCase();
+  if (upper === el.value) return;
+  const { selectionStart, selectionEnd } = el;
+  el.value = upper;
+  try {
+    el.setSelectionRange(selectionStart, selectionEnd);
+  } catch {
+    /* tipe input tanpa selection API */
+  }
+}
+
+type UppercaseProp = { noUppercase?: boolean };
+
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & UppercaseProp>(function Input(
+  { noUppercase, onChange, className, ...props },
+  ref
+) {
+  const upper = !noUppercase && UPPERCASE_INPUT_TYPES.has(props.type ?? "text");
+  return (
+    <input
+      {...props}
+      ref={ref}
+      autoCapitalize={upper ? "characters" : props.autoCapitalize}
+      onChange={
+        upper
+          ? (e) => {
+              toUpperInPlace(e.currentTarget);
+              onChange?.(e);
+            }
+          : onChange
+      }
+      className={`${inputCls} ${className ?? ""}`}
+    />
+  );
 });
 
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...props} className={`${inputCls} ${props.className ?? ""}`} />;
 }
 
-export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea {...props} className={`${inputCls} ${props.className ?? ""}`} />;
+export function Textarea({ noUppercase, onChange, className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & UppercaseProp) {
+  return (
+    <textarea
+      {...props}
+      autoCapitalize={noUppercase ? props.autoCapitalize : "characters"}
+      onChange={
+        noUppercase
+          ? onChange
+          : (e) => {
+              toUpperInPlace(e.currentTarget);
+              onChange?.(e);
+            }
+      }
+      className={`${inputCls} ${className ?? ""}`}
+    />
+  );
 }
 
 export function FormActions({ children }: { children: React.ReactNode }) {

@@ -19,6 +19,7 @@ export default function SimpleNameManager({
   columnLabel,
   emptyText,
   errorText,
+  noUppercase,
 }: {
   endpoint: string;
   title: string;
@@ -26,6 +27,8 @@ export default function SimpleNameManager({
   columnLabel: string;
   emptyText: string;
   errorText: string;
+  /** Nama dicocokkan persis di tempat lain (mis. metode "Tunai" → akun kas) — jangan dikapitalkan. */
+  noUppercase?: boolean;
 }) {
   const [rows, setRows] = useState<NameRow[]>([]);
   const [name, setName] = useState("");
@@ -72,7 +75,7 @@ export default function SimpleNameManager({
     <Panel>
       <PanelHead title={title}>
         <form onSubmit={add} className="flex flex-wrap gap-2.5">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={placeholder} className="min-w-[180px] flex-1" />
+          <Input noUppercase={noUppercase} value={name} onChange={(e) => setName(e.target.value)} placeholder={placeholder} className="min-w-[180px] flex-1" />
           <Button type="submit" disabled={saving}>
             + Tambah
           </Button>

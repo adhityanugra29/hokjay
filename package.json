@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx scripts/seed.ts",
-    "bootstrap-admin": "tsx scripts/bootstrap-admin.ts"
+    "bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
+    "kapitalkan-data-lama": "tsx scripts/kapitalkan-data-lama.ts"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",

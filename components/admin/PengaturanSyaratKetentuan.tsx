@@ -94,7 +94,7 @@ export default function PengaturanSyaratKetentuan() {
           {lines.map((line, idx) => (
             <Field key={idx} label={`Baris ${idx + 1}`}>
               <div className="flex items-center gap-2">
-                <Input value={line} onChange={(e) => updateLine(idx, e.target.value)} placeholder="Isi poin ini..." />
+                <Input noUppercase value={line} onChange={(e) => updateLine(idx, e.target.value)} placeholder="Isi poin ini..." />
                 <button
                   type="button"
                   onClick={() => removeLine(idx)}
