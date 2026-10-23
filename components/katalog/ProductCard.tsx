@@ -11,30 +11,10 @@ import { rupiah, slugify, productDisplayName } from "@/lib/format";
 import { computeLineCommission, maxDiskonBekas, maxDiskonBaru } from "@/lib/commission";
 
 /**
- * Downloads a photo per the user's request 2026-08-27 ("bisa download
- * gambarnya, tapi buttonya di setiap produk saja") — a plain <a href
- * download> is silently ignored by browsers for cross-origin URLs (Vercel
- * Blob is a different origin than this app), so the file has to actually be
- * fetched as a blob first and downloaded from a same-origin blob: URL,
- * which always honors `download`.
- *
- * The dimension footnote gets baked into the downloaded file too — per the
- * user's follow-up 2026-08-27 ("waktu di zoom atau download, itu bisa di
- * applied juga"). This used to composite it client-side via <canvas>
- * (drawing the cross-origin Vercel Blob photo onto a canvas, which depends
- * on that browser's own CORS/image-cache behavior to avoid "tainting" the
- * canvas — invisible and inconsistent across devices), which the user
- * reported 2026-08-28 sometimes silently came out without the footnote on
- * some accounts with no clear pattern. Moved server-side instead (see
- * app/api/products/[id]/download-photo/route.ts, using sharp — the same
- * library already doing this exact kind of compositing for the upload-time
- * watermark) so the result no longer depends on the downloading browser at
- * all.
- *
- * A module-level function, not a hook — it can't call useDialog() itself,
- * so failures are left to propagate and the caller (inside the component,
- * where the hook is available) shows the error dialog. Per the user's
- * request 2026-08-28 to replace every native alert()/confirm() in the app.
+ * Downloads a photo by fetching it as a blob first: a plain <a href download> is ignored by browsers for cross-origin URLs (Vercel Blob is a different
+ * origin). The dimension footnote is baked in server-side (app/api/products/[id]/download-photo/route.ts, sharp): compositing it client-side via <canvas>
+ * depended on the browser's CORS/image-cache behavior and sometimes came out without it. A module-level function, not a hook (it can't call useDialog),
+ * so failures propagate and the caller shows the error dialog.
  */
 async function downloadPhoto(productId: string, filename: string) {
   const res = await fetch(`/api/products/${productId}/download-photo`);
@@ -66,20 +46,9 @@ export interface KatalogProduct {
   stok: number;
   kondisi: string;
   kondisiPercent?: number;
-  /**
-   * Effective barang-bekas commission rate (%), already resolved from this
-   * product's own override -> its category's default -> the global 10% —
-   * see resolveKomisiBekasPercent() in lib/commission.ts. Sent to every
-   * viewer (drives the live commission preview below), unlike
-   * komisiBekasOverride below. Per the user's request 2026-09-03.
-   */
+  /** Effective bekas rate (%), already resolved product override -> category default -> 10% (resolveKomisiBekasPercent). Sent to every viewer; drives the live commission preview. */
   komisiBekasPercent?: number;
-  /**
-   * The RAW per-product override (undefined if this product has none set)
-   * — only populated for Owner/Super Admin, feeds the edit form's input so
-   * it shows the actual stored value rather than the resolved effective
-   * one. Per the user's request 2026-09-03.
-   */
+  /** The RAW per-product override (undefined if none) — only populated for Owner/Super Admin; feeds the edit form so it shows the stored value, not the resolved one. */
   komisiBekasOverride?: number;
   isCustom?: boolean;
   dimensi?: { panjangCm?: number | null; lebarCm?: number | null; tinggiCm?: number | null };
@@ -88,14 +57,9 @@ export interface KatalogProduct {
   fotoUrl?: string;
   /** Added recently and never sold — see lib/katalog.ts's getProdukBaruIds. Powers the Filter sidebar's "Hanya Produk Baru" checkbox. */
   isBaru?: boolean;
-  /** Uploaded within NEW_STOCK_DAYS (lib/constants.ts) — shows the green "New Stock" banner. TASK-043, per the user's request 2026-10-09. Not the same as kondisi Baru/Bekas. */
+  /** Uploaded within NEW_STOCK_DAYS (lib/constants.ts) — shows the green "New Stock" banner (TASK-043). Not the same as kondisi Baru/Bekas. */
   isNewStock?: boolean;
-  // Only populated when the viewer can edit products (manager/owner/super
-  // admin) — feeds EditProductDrawer directly, with no separate fetch, so
-  // opening the pencil is instant instead of waiting on a fresh API round
-  // trip (that Product.find() already fetched the full document; this just
-  // passes the rest of its fields through). Per the user's report
-  // 2026-08-27 that the pencil felt slow to open.
+  // Only populated when the viewer can edit products: feeds EditProductDrawer directly with no separate fetch, so the pencil opens instantly.
   merk?: string;
   tipeProduk?: "elektronik" | "non-elektronik";
   tanggalBarangMasuk?: string;
@@ -104,17 +68,14 @@ export interface KatalogProduct {
   fotoSampingUrl?: string;
   fotoBelakangUrl?: string;
   deskripsi?: string;
-  // Booked / Sudah DP / SOLD — see lib/katalog.ts. Still stok > 0 and
-  // pickable (a booking doesn't reserve stock); these are informational
-  // flags so sales knows someone already has a claim on this unit before
-  // promising it to another customer. Per the user's request 2026-08-27.
+  // Booked / Sudah DP / SOLD (lib/katalog.ts). Informational only: still stok > 0 and pickable (a booking doesn't reserve stock).
   bookedQty?: number;
   bookedBy?: string[];
   dpQty?: number;
   dpBy?: string[];
   /** Total units ever sold (paid), lifetime — replaces the old plain "Sudah Terjual" boolean. */
   soldQty?: number;
-  /** Owner-set top-down price lock — see models/Product.ts. Per the user's request 2026-08-29. */
+  /** Owner-set top-down price lock — see models/Product.ts. */
   flashSale?: { active: true; harga: number };
 }
 
@@ -126,11 +87,11 @@ export default function ProductCard({
   onEdit,
 }: {
   product: KatalogProduct;
-  /** Manager/Owner/Super Admin only — shows the pencil that opens the inline edit drawer. Per the user's request 2026-08-27. */
+  /** Manager/Owner/Super Admin only — shows the pencil that opens the inline edit drawer. */
   canEdit?: boolean;
-  /** Owner/Super Admin only — shows the Flash Sale button. Per the user's request 2026-08-29. */
+  /** Owner/Super Admin only — shows the Flash Sale button. */
   canFlashSale?: boolean;
-  /** Owner role only (not Super Admin — narrower than canFlashSale) — skips the diskon plafon entirely. Per the user's request 2026-09-05. */
+  /** Owner role only (narrower than canFlashSale) — skips the diskon plafon entirely. */
   isOwner?: boolean;
   onEdit?: () => void;
 }) {
@@ -153,38 +114,18 @@ export default function ProductCard({
   const selected = isSelected(product._id);
   const hasCustomPrice = customPrices[product._id] !== undefined;
   const [downloadingPhoto, setDownloadingPhoto] = useState(false);
-  // Price warning (below-minimum OR emptied-to-zero) — per the user's
-  // request 2026-08-29 for the below-minimum case, extended 2026-08-31
-  // after a real report of a katalog PDF shipping a Rp 0 price: the price
-  // field select-all's on focus (see CurrencyInput), so clicking in to
-  // retype and getting interrupted before finishing (tab away, click
-  // another card) can leave the field genuinely empty on blur. The old
-  // guard only handled "positive but below hargaMinimum" — an empty/zero
-  // blur fell through untouched, silently persisting customPrice=0
-  // (getEffectivePrice treats 0 as a real override, not "unset") into
-  // both this card's own display and the exported PDF, with no warning
-  // shown at all. Checked on blur, not on every keystroke, since
-  // intermediate typed digits are naturally "too low"/empty while a
-  // larger number is still being typed. Holds the actual message now
-  // (not just a boolean) since there are two different reasons to show.
+  // Price warning (below-minimum or emptied-to-zero), checked on blur since intermediate typed digits are naturally too low/empty. The empty case matters:
+  // the price field select-alls on focus, so an interrupted retype can leave it empty, which used to persist customPrice=0 into the card and the exported PDF.
   const [priceWarning, setPriceWarning] = useState<string | null>(null);
-  // Diskon-exceeds-insentif warning for barang bekas — see maxDiskonBekas
-  // usage below. Per the user's request 2026-08-29.
+  // Diskon-exceeds-insentif warning (see maxDiskonBekas/maxDiskonBaru below).
   const [discountWarning, setDiscountWarning] = useState(false);
-  // Diskon and Detail Spesifikasi both collapsed by default to declutter the
-  // card (2026-09-30, per the user's report "to much information ... card
-  // terlalu panjang"). Diskon auto-opens if this line already has a saved
-  // discount, so an existing value is never hidden from view.
+  // Diskon and Detail Spesifikasi are collapsed by default to declutter the card; Diskon auto-opens when the line already has a saved discount.
   const [diskonOpen, setDiskonOpen] = useState(() => getDiscount(product._id) > 0);
   const [detailOpen, setDetailOpen] = useState(false);
-  // Flash Sale — top-down price lock set by an owner/super_admin (server
-  // enforced, see app/api/products/[id]/flash-sale/route.ts). While
-  // active, this card can't offer any other price: no preset buttons, no
-  // custom price, no Diskon. Per the user's request 2026-08-29.
+  // Flash Sale: top-down price lock set by owner/super_admin (server enforced, app/api/products/[id]/flash-sale/route.ts). While active this card offers no
+  // other price: no presets, no custom price, no Diskon.
   const flashSaleActive = !!product.flashSale?.active;
-  // New Stock banner (TASK-043) shares the photo's top edge with the Flash
-  // Sale banner, so Flash Sale wins when both apply. Either banner nudges
-  // the checkbox/pencil/kondisi pill down a notch.
+  // The New Stock banner shares the photo's top edge with the Flash Sale banner (Flash Sale wins); either nudges the checkbox/pencil/kondisi pill down.
   const newStockBanner = !!product.isNewStock && !flashSaleActive;
   const bannerActive = flashSaleActive || newStockBanner;
   const [flashSaleFormOpen, setFlashSaleFormOpen] = useState(false);
@@ -212,26 +153,13 @@ export default function ProductCard({
     setFlashSaleSaving(false);
   }
 
-  // Price toggle (Harga Rekomendasi/Minimum, + manual custom typing) shows
-  // on every product card at all times — not just while picking products
-  // for the PDF — and this is the price actually used for "+ Tambah ke
-  // Invoice" below. Per the user's request 2026-08-25. Overridden entirely
-  // by the Flash Sale price when active — that's the whole point of a
-  // top-down lock, no other price can apply.
+  // The Rekomendasi/Bottom toggle (+ manual typing) shows on every card and is the price used for "+ Tambah ke Invoice"; an active Flash Sale overrides it.
   const effectivePrice = flashSaleActive ? (product.flashSale?.harga ?? 0) : getEffectivePrice(product);
-  // Diskon — separate from the price above (which is what the customer
-  // pays); this is how much of that price was given away, tracked so it
-  // can also reduce komisi. Per the user's request 2026-08-29. Forced to 0
-  // during a Flash Sale — the locked price already is the final price.
+  // Diskon is separate from the price (what the customer pays) and also reduces komisi; forced to 0 during a Flash Sale.
   const discount = flashSaleActive ? 0 : getDiscount(product._id);
   const finalPrice = Math.max(0, effectivePrice - discount);
-  // Live insentif — matches the exact formula used at real invoice time
-  // (lib/commission.ts), computed against whatever price is currently
-  // showing minus diskon, same as the authoritative save-time calculation
-  // in lib/services/createInvoice.ts/updateInvoice.ts. Per the user's
-  // request 2026-08-25 (live preview), 2026-08-29 (diskon factored in),
-  // and 2026-08-29 again (Flash Sale gets its own flat 7%, bypassing the
-  // usual kondisi/hargaMinimum-based formula entirely).
+  // Live insentif: the same formula as at invoice time (lib/commission.ts; authoritative save-time calc in createInvoice/updateInvoice.ts), on the shown price
+  // minus diskon. Flash Sale gets its own flat 7%.
   const liveKomisi = computeLineCommission({
     isCustom: product.isCustom,
     kondisi: product.kondisi as "baru" | "bekas",
@@ -247,33 +175,18 @@ export default function ProductCard({
     dims && (dims.panjangCm || dims.lebarCm || dims.tinggiCm)
       ? `${dims.panjangCm ?? "—"} x ${dims.lebarCm ?? "—"} x ${dims.tinggiCm ?? "—"} cm (P x L x T)`
       : null;
-  // Small on-photo footnote (not the Katalog PDF — that one was reverted,
-  // was crashing PDF generation entirely: html2canvas can't parse the
-  // oklab color-mix() that Tailwind's bg-ink/NN opacity-modifier classes
-  // compile to, per the user's report 2026-08-27) — a standalone label
-  // meant to read directly on the image, e.g. "120cm x 80cm x 60cm",
-  // separate from the fuller "Dimensi: ..." line already in the text block
-  // below.
+  // Small on-photo footnote, e.g. "120cm x 80cm x 60cm". Not part of the Katalog PDF: Tailwind bg-ink/NN compiles to oklab color-mix(), which html2canvas
+  // can't parse and crashed PDF generation.
   const photoLabelText =
     dims?.panjangCm && dims?.lebarCm && dims?.tinggiCm
       ? `${dims.panjangCm}cm x ${dims.lebarCm}cm x ${dims.tinggiCm}cm`
       : null;
 
-  // Stok already committed to a Booked/Sudah DP invoice doesn't physically
-  // leave the shelf (that only happens at actual payment, see
-  // lib/services/payInvoice.ts) — but showing the full raw stok here would
-  // let a sales rep promise units that are already spoken for. This is a
-  // display/qty-cap-only guard, not a real reservation: it never touches
-  // Product.stok or accounting. The card itself only ever disappears once
-  // stok is truly 0 (i.e. actually sold/paid) — a fully Booked/DP'd
-  // product with plenty of raw stok left just shows 0 available here,
-  // still visible with its badges. Per the user's request 2026-08-27.
+  // Stok committed to a Booked/Sudah DP invoice doesn't leave the shelf until payment (payInvoice.ts), but showing raw stok would let a rep promise units
+  // already spoken for. Display/qty-cap guard only, not a reservation; the card disappears only when stok is truly 0.
   const availableQty = Math.max(0, product.stok - (product.bookedQty ?? 0) - (product.dpQty ?? 0));
   const stockStatusLabel = availableQty <= 0 ? "Tidak Tersedia" : `Tersedia ${availableQty} unit`;
-  // Just "Bekas" / "Baru" — the kondisiPercent number was dropped from
-  // every status label per the user's request 2026-08-25 (kondisiPercent
-  // itself stays on the product / still editable in the form, it's only
-  // hidden from this display).
+  // Just "Bekas" / "Baru" (kondisiPercent stays on the product, hidden here).
   const kondisiLabel = product.kondisi === "bekas" ? "Bekas" : "Baru";
   const specsText = [
     dimText ? `Dimensi: ${dimText}` : null,
@@ -294,31 +207,16 @@ export default function ProductCard({
   }
 
   return (
-    // "Soft Trade" card treatment (2026-08-30) — replaces the always-on
-    // hard border with a resting shadow + rounded corners, matching the
-    // mockup confirmed with the user (see the "Katalog Card Directions"
-    // artifact). The pickMode "selected" state still needs a visible
-    // ring, so the border stays in the DOM, just transparent at rest
-    // instead of border-line.
-    //
-    // NOTE: deliberately NOT using a hover `transform` (translate) here —
-    // ZoomableImage's full-screen preview is `position: fixed`, and a
-    // `transform` on ANY ancestor makes it that element's own containing
-    // block instead of the viewport, so the fixed overlay collapses to
-    // the card's own box instead of covering the screen. Hit exactly this
-    // bug 2026-08-30 ("fitur zoom eror di katalog") — a hover shadow
-    // alone (box-shadow doesn't create a containing block) gives the same
-    // "this card is interactive" cue without it.
+    // "Soft Trade" card: resting shadow + rounded corners; the border stays in the DOM, transparent at rest, so the pickMode "selected" ring has room.
+    // NOTE: deliberately NO hover `transform`: ZoomableImage's full-screen preview is `position: fixed`, and a transform on any ancestor becomes its
+    // containing block, collapsing the overlay to the card's box. A hover shadow gives the same cue without it.
     <div
       className={`flex flex-col overflow-hidden rounded-xl border-2 bg-panel shadow-sm transition hover:shadow-md ${
         pickMode && selected ? "border-accent" : "border-transparent"
       }`}
     >
       <div className="relative flex aspect-4/3 items-center justify-center overflow-hidden rounded-t-[10px] bg-surface text-[0.68rem] text-muted">
-        {/* Flash Sale banner — per the user's request 2026-08-29 ("harus
-            ada ... banner khusus"). Pinned to the photo's very top edge, so
-            the pickMode checkbox / edit pencil below get nudged down a
-            notch to stay clear of it. */}
+        {/* Flash Sale banner pinned to the photo's top edge; the pickMode checkbox / edit pencil are nudged down to clear it. */}
         {flashSaleActive && (
           <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-center gap-1.5 bg-accent py-1.5 font-mono text-[0.7rem] font-extrabold tracking-[0.08em] text-ink">
             🔥 FLASH SALE
@@ -329,14 +227,7 @@ export default function ProductCard({
             ✦ NEW STOCK
           </div>
         )}
-        {/* Only an available product can go into the Katalog PDF — per the
-            user's request 2026-08-31 ("hanya boleh checklist produk yang
-            tersedia"). This is the UI-level guard (dims + blocks the
-            checkbox); the actual guarantee against a stale selection
-            slipping through (e.g. picked while in stock, sold out before
-            the PDF was generated) lives in CatalogPrintDoc.tsx, which
-            filters selectedProducts the same way regardless of what's in
-            the selection state. */}
+        {/* Only an available product can go into the Katalog PDF. This is the UI guard; the real guarantee against a stale selection is the availability filter in CatalogPrintDoc.tsx. */}
         {pickMode && (
           <label
             className={`absolute ${bannerActive ? "top-8" : "top-2.5"} left-2.5 z-10 flex h-6 w-6 items-center justify-center rounded-md border-2 border-line bg-panel shadow-sm ${
@@ -370,15 +261,8 @@ export default function ProductCard({
             </svg>
           </button>
         )}
-        {/* Kondisi (Baru/Bekas) — moved here from the badge row below onto
-            the photo itself, to shorten the card. Per the user's request
-            2026-09-30. Was bottom-left, but that collided with
-            ZoomableImage's own dimension footnote (photoLabelText) at that
-            same corner — per the user's report 2026-10-01 ("label Baru
-            dengan ukuran ... bertabrakan"). Moved to top-left instead,
-            same top-8/top-2.5 flashSale offset as the checkbox/pencil, and
-            nudged right (left-11) while the pick-mode checkbox also
-            occupies that corner. */}
+        {/* Kondisi pill sits top-left (bottom-left collided with ZoomableImage's dimension footnote), same top-8/top-2.5 banner offset as the checkbox/pencil,
+            nudged right (left-11) while the pick-mode checkbox occupies that corner. */}
         <span
           className={`absolute z-10 rounded-full px-2.5 py-1 text-[0.66rem] font-semibold text-white ${
             bannerActive ? "top-8" : "top-2.5"
@@ -403,10 +287,7 @@ export default function ProductCard({
                 e.stopPropagation();
                 if (!product.fotoUrl) return;
                 setDownloadingPhoto(true);
-                // Matches the server's own extension choice (see
-                // app/api/products/[id]/download-photo/route.ts): a
-                // labeled photo is always re-encoded to .jpg, an
-                // unlabeled one passes through in its original format.
+                // Matches the server's extension choice (download-photo route): a labeled photo is always re-encoded to .jpg, an unlabeled one keeps its format.
                 const ext = photoLabelText
                   ? "jpg"
                   : (product.fotoUrl.match(/\.(jpe?g|png|webp)(?:$|\?)/i)?.[1] ?? "jpg");
@@ -433,17 +314,12 @@ export default function ProductCard({
         )}
       </div>
       <div className="flex flex-1 flex-col p-4">
-        {/* Fixed-height name block + Insentif called out bold/red, matching
-            the Hot Products carousel cards (see confirmation 2026-08-20). */}
         <div className="line-clamp-2 min-h-[2.75rem] text-[0.92rem] leading-snug font-medium">
           {productDisplayName(product.name, product.merk)}
         </div>
         <div className="mt-1.5 flex flex-col gap-1.5">
           {flashSaleActive ? (
-            // Top-down locked price — no editable price/preset/Diskon
-            // controls at all while Flash Sale is active, per the user's
-            // request 2026-08-29 ("harganya tidak bisa untuk di naikan
-            // atau di turunkan"). Only an owner/super_admin can end it.
+            // Top-down locked price: no editable price/preset/Diskon controls while Flash Sale is active; only an owner/super_admin can end it.
             <div className="rounded-lg bg-accent-100 px-3 py-2.5">
               <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-accent-700">
                 Harga Flash Sale (terkunci)
@@ -471,10 +347,7 @@ export default function ProductCard({
                 onBlur={(v) => {
                   const num = v ? Number(v) : 0;
                   if (num <= 0) {
-                    // Emptied out (interrupted retype, see state comment
-                    // above) — discard the override entirely rather than
-                    // leaving Rp 0 in place, falling back to whichever
-                    // preset (Rekomendasi/Minimum) was active before.
+                    // Emptied out (interrupted retype): discard the override and fall back to the active preset instead of leaving Rp 0.
                     setCustomPrice(product._id, undefined);
                     const fallback = getPriceMode(product._id) === "minimum" ? product.hargaMinimum : product.hargaRekomendasi;
                     setPriceWarning(`Harga tidak boleh kosong, dikembalikan ke ${rupiah(fallback)}.`);
@@ -488,17 +361,7 @@ export default function ProductCard({
               {priceWarning && (
                 <div className="text-[0.68rem] font-medium text-accent-700">{priceWarning}</div>
               )}
-              {/* Two separate preset buttons (per the user's request
-                  2026-08-25, replacing the earlier single flip-label
-                  toggle) — each picks its price directly and discards any
-                  manually-typed custom price above. Shows on every card
-                  at all times (not gated to PDF pick mode) since this is
-                  also the price used when adding to invoice. */}
-              {/* Sliding switch (2026-09-30, per the user's request "bentuknya
-                  seperti saklar yang menyamping ... smooth") — replaces the
-                  two separate preset buttons with one pill whose thumb slides
-                  between Rekomendasi/Bottom. Same setPriceMode call as before,
-                  just restyled. */}
+              {/* Sliding switch between the Rekomendasi/Bottom presets; each picks its price directly and discards any manually typed custom price. */}
               <div className="relative flex h-[30px] w-[176px] items-center rounded-full bg-surface p-[3px]">
                 <div
                   className={`absolute top-[3px] left-[3px] h-6 w-[85px] rounded-full bg-accent shadow-sm transition-transform duration-200 ease-out ${
@@ -530,27 +393,9 @@ export default function ProductCard({
                   Bottom
                 </button>
               </div>
-              {/* Diskon — separate field from the price above, per the
-                  user's request 2026-08-29 ("field diskon terpisah dari
-                  harga"). Harga Final (below) and the live Komisi figure
-                  both already factor this in — see finalPrice/liveKomisi
-                  above. Capped at 10% of Harga Minimum for barang bekas
-                  (maxDiskonBekas, same base used inside
-                  computeLineCommission) on blur, not every keystroke —
-                  same "don't fight mid-typing" reasoning as the
-                  below-minimum price guard above. Per the user's request
-                  2026-08-29 ("besaran diskon ... tidak boleh lebih dari
-                  total insentif yang diberikan"). Barang baru/custom have
-                  no such cap — confirmed scope. */}
-              {/* Stacked (label above, full-width input) instead of side-
-                  by-side — per the user's report 2026-08-30 ("tabel
-                  diskon kecil dan menyamping"): squeezing the label onto
-                  the same row as the input left the input itself
-                  cramped. */}
-              {/* Collapsed behind "+ Diskon" by default (2026-09-30, per the
-                  user's decluttering request) — auto-opens via diskonOpen's
-                  initial state above when this line already has a discount,
-                  so an existing value is never hidden. */}
+              {/* Diskon: separate from the price; Harga Final and the live Komisi factor it in. Clamped on blur (not every keystroke, same "don't fight
+                  mid-typing" reasoning as the below-minimum guard) to maxDiskonBekas/maxDiskonBaru. Stacked label-above-input so the field isn't cramped;
+                  collapsed behind "+ Diskon" unless a discount is already set. */}
               {diskonOpen ? (
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
@@ -575,11 +420,7 @@ export default function ProductCard({
                     }}
                     onBlur={(v) => {
                       const num = v ? Number(v) : 0;
-                      // Baru/Custom now has a real cap too (2026-09-03 — see
-                      // maxDiskonBaru's doc comment), same on-blur clamp+
-                      // warning treatment Bekas already had, so a manually
-                      // typed diskon on either kondisi gets the same feedback
-                      // instead of only being silently clamped at save time.
+                      // Both kondisi have a real cap (maxDiskonBaru / maxDiskonBekas); clamp + warn on blur so manual entry gets feedback, not only a silent clamp at save.
                       const max =
                         product.kondisi === "bekas"
                           ? maxDiskonBekas(effectivePrice, product.hargaMinimum, product.komisiBekasPercent, isOwner)
@@ -618,15 +459,10 @@ export default function ProductCard({
                   <span className="font-semibold text-ink">{rupiah(finalPrice)}</span>
                 </div>
               )}
-              {/* Flash Sale activation — owner/super_admin only, see
-                  app/api/products/[id]/flash-sale/route.ts. Per the
-                  user's request 2026-08-29. */}
+              {/* Flash Sale activation: owner/super_admin only. */}
               {canFlashSale &&
                 (flashSaleFormOpen ? (
-                  // Stacked, not side-by-side with the two buttons — per
-                  // the user's report 2026-08-29 that the number field was
-                  // too cramped to read next to them (this card column is
-                  // narrow to begin with).
+                  // Stacked: the number field was too cramped next to the buttons in this narrow column.
                   <div className="flex flex-col gap-1.5 rounded-lg bg-surface p-2">
                     <CurrencyInput value={flashSaleInput} onChange={setFlashSaleInput} showPrefix />
                     <div className="flex items-center gap-1.5">
@@ -662,9 +498,6 @@ export default function ProductCard({
             </>
           )}
         </div>
-        {/* Tersedia + Komisi combined into one line (2026-09-30, per the
-            user's decluttering request) — was two separate blocks (this
-            line, plus a standalone Komisi pill further down). */}
         <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.72rem] text-muted">
           {availableQty <= 0 ? (
             <span className="font-semibold text-accent-700">Tidak Tersedia</span>
@@ -675,26 +508,14 @@ export default function ProductCard({
           <span>Komisi <span className="font-medium text-ink">{rupiah(liveKomisi)}</span></span>
         </div>
 
-        {/* Badges — soft rounded-full pills with a tinted background
-            instead of hard-bordered rectangles, per the "Soft Trade" card
-            treatment. Same semantic colors as before, just border+text →
-            tint+text. */}
         <div className="mt-2 flex flex-wrap gap-1.5">
           {product.isCustom && (
             <span className="rounded-full bg-accent-100 px-2.5 py-1 text-[0.66rem] font-semibold text-accent-700">
               Pesanan Custom
             </span>
           )}
-          {/* Booked / Sudah DP / SOLD — all shown together when they apply
-              simultaneously (a product can have units in more than one
-              state across different invoices at once), per the user's
-              confirmed choice 2026-08-27. Still selectable/pickable —
-              these are informational, not a reservation. */}
-          {/* Booked/DP names moved to a hover/long-press tooltip (title) —
-              the badge itself is just a count now, per the user's
-              decluttering request 2026-09-30. Names aren't removed, just no
-              longer always inline (which made this row grow unbounded with
-              more names). */}
+          {/* Booked / Sudah DP / SOLD show together when they apply simultaneously (a product can have units in several states across invoices). Informational,
+              not a reservation; names are in the title tooltip so the row doesn't grow unbounded. */}
           {!!product.bookedQty && (
             <span
               title={(product.bookedBy ?? []).join(", ")}
@@ -718,8 +539,6 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* Specs collapsed behind "Lihat Detail" by default (2026-09-30, per
-            the user's decluttering request) — was always-visible. */}
         {(dimText || product.ketebalan || product.dayaListrik) && (
           <div className="mt-2.5 border-t border-dashed border-line pt-2.5">
             <button
@@ -795,10 +614,7 @@ export default function ProductCard({
                 specsText,
                 isFlashSale: flashSaleActive,
               });
-              // addItem always starts a fresh cart line at diskonPerUnit: 0
-              // (see CartProvider.tsx) — carry over whatever diskon was set
-              // on this card, per the user's request 2026-08-29, via the
-              // same updateItem path ItemRowEditor's own Diskon field uses.
+              // addItem always starts a fresh cart line at diskonPerUnit 0 (CartProvider): carry over this card's diskon via the same updateItem path ItemRowEditor uses.
               if (discount > 0) updateItem(product._id, { diskonPerUnit: discount });
             }}
             className="mt-auto w-full cursor-pointer rounded-lg bg-accent py-2.5 text-center font-sans text-[0.8rem] font-semibold text-ink shadow-sm transition hover:bg-accent-deep hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
