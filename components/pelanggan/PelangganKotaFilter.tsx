@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select } from "@/components/ui/Form";
 
@@ -19,16 +20,17 @@ export default function PelangganKotaFilter({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   function update(nextKota: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (nextKota) params.set("kota", nextKota);
     else params.delete("kota");
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
   return (
-    <Select value={kota ?? ""} onChange={(e) => update(e.target.value)} className="!w-auto !py-2 !text-[0.78rem]">
+    <Select value={kota ?? ""} onChange={(e) => update(e.target.value)} className={`!w-auto !py-2 !text-[0.78rem] transition-opacity ${isPending ? "opacity-60" : ""}`}>
       <option value="">Semua Kota</option>
       {availableKota.map((k) => (
         <option key={k} value={k}>

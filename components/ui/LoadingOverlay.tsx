@@ -4,28 +4,11 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 /**
- * Full-screen "Mohon menunggu" overlay — per the user's request 2026-08-25
- * (wording updated same day from an earlier "Tunggu Sebentar ya"). Applies
- * on every screen size, including mobile's bottom tab bar / SubnavTabs
- * navigation — those are still real route changes, so they hit the same
- * app/loading.tsx boundary as any other page-to-page navigation. Three ways
- * this shows up:
- *   1. Automatically on every page-to-page navigation, via app/loading.tsx
- *      (Next.js's built-in route-transition boundary — every page here does
- *      a real DB fetch, so this covers "pindah page" everywhere for free).
- *   2. On demand from any client component, via useLoadingOverlay()'s
- *      show()/hide() (or the withLoading(promise) convenience wrapper) —
- *      for a specific long-running action outside of navigation.
- *   3. Automatically on ANY fetch() that's still in flight after 2 seconds
- *      (patchFetchForLoadingOverlay below) — per the user's report
- *      2026-08-25 that the popup "sering tidak muncul": most of this app's
- *      genuinely slow actions (saving a form, uploading a photo, building
- *      the Katalog PDF) are in-page fetch() calls that finish *before* any
- *      route navigation happens, so (1) never sees them and nothing was
- *      manually wired to (2) for most forms — this patch covers all of
- *      them at once with no per-form changes. A fetch can opt out (for
- *      deliberately-invisible background work, e.g. CatalogPrintDoc's
- *      self-fetch) by sending an "X-Loading-Overlay: silent" header.
+ * Full-screen "Mohon menunggu" overlay for user-initiated actions. Two ways to raise it:
+ *   1. On demand from any client component, via useLoadingOverlay()'s show()/hide() (or the withLoading(promise) wrapper), for a specific long-running action.
+ *   2. Automatically on any WRITE fetch (POST/PUT/PATCH/DELETE: saving a form, uploading a photo) still in flight after 2 seconds (patchFetch below).
+ * Reads (GET/HEAD), which include Next's own RSC navigation and prefetch requests, never raise it: page-to-page navigation shows the route's loading.tsx skeleton
+ * instead, so a slow page never blocks the screen with a modal. A fetch can also opt out of the write patch with an "X-Loading-Overlay: silent" header.
  */
 
 const SILENT_HEADER = "X-Loading-Overlay";
@@ -54,9 +37,12 @@ if (typeof window !== "undefined" && !window.__loadingOverlayFetchPatched) {
   const originalFetch = window.fetch.bind(window);
   window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(init?.headers);
-    if (headers.get(SILENT_HEADER) === SILENT_VALUE) {
-      headers.delete(SILENT_HEADER);
-      return originalFetch(input, { ...init, headers });
+    const silent = headers.get(SILENT_HEADER) === SILENT_VALUE;
+    if (silent) headers.delete(SILENT_HEADER);
+    const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+    // Reads (incl. Next's RSC navigation/prefetch) never raise the overlay; opted-out writes pass straight through.
+    if (silent || method === "GET" || method === "HEAD") {
+      return originalFetch(input, silent ? { ...init, headers } : init);
     }
     let shown = false;
     const timer = setTimeout(() => {

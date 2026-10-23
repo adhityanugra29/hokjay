@@ -1,4 +1,5 @@
 import { Panel, PanelHead, SearchInput, TableScroll } from "@/components/ui/Panel";
+import Form from "next/form";
 import Pill from "@/components/ui/Pill";
 import SortableHeader from "@/components/ui/SortableHeader";
 import { dbConnect } from "@/lib/db";
@@ -86,9 +87,9 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
   return (
     <Panel>
       <PanelHead title="Riwayat stok masuk & keluar">
-        <form className="w-full sm:w-auto">
+        <Form action="/produk/riwayat" className="w-full sm:w-auto">
           <SearchInput name="search" defaultValue={search as string} placeholder="Cari produk..." />
-        </form>
+        </Form>
       </PanelHead>
       <TableScroll>
         <table className="w-full border-collapse">

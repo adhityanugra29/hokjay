@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import Form from "next/form";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MONTH_NAMES } from "@/lib/constants";
 
@@ -38,6 +39,7 @@ export default function InvoiceFilterBar({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const activeCount = (bulan ? 1 : 0) + (tahun ? 1 : 0) + (sales ? 1 : 0);
   const showSales = availableSales.length > 0;
@@ -46,7 +48,7 @@ export default function InvoiceFilterBar({
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, String(value));
     else params.delete(key);
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
   function resetAll() {
@@ -54,7 +56,7 @@ export default function InvoiceFilterBar({
     params.delete("bulan");
     params.delete("tahun");
     params.delete("sales");
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
   const selectCls =
@@ -67,12 +69,12 @@ export default function InvoiceFilterBar({
   if (sales) chips.push({ key: "sales", label: `Sales: ${sales}` });
 
   return (
-    <div className="mb-5 flex flex-col gap-2.5">
+    <div aria-busy={isPending} className={`mb-5 flex flex-col gap-2.5 transition-opacity ${isPending ? "opacity-60" : ""}`}>
       <div className="flex flex-wrap items-center gap-2.5">
         {/* Native GET form — hidden fields carry the active filters so
             submitting a search never drops them (a plain <form> only sends
             its own named fields). */}
-        <form className="flex h-10 min-w-0 flex-1 basis-[260px] items-center gap-2 rounded-[10px] border-[1.5px] border-line bg-panel px-3 focus-within:border-ink">
+        <Form action={pathname} className="flex h-10 min-w-0 flex-1 basis-[260px] items-center gap-2 rounded-[10px] border-[1.5px] border-line bg-panel px-3 focus-within:border-ink">
           {bulan ? <input type="hidden" name="bulan" value={bulan} /> : null}
           {tahun ? <input type="hidden" name="tahun" value={tahun} /> : null}
           {sales ? <input type="hidden" name="sales" value={sales} /> : null}
@@ -96,7 +98,7 @@ export default function InvoiceFilterBar({
             aria-label="Cari invoice"
             className="h-full min-w-0 flex-1 border-0 bg-transparent font-sans text-[0.85rem] text-ink outline-none placeholder:text-muted"
           />
-        </form>
+        </Form>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}

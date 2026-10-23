@@ -7,6 +7,7 @@ import { NAV_GROUPS } from "@/lib/nav";
 import { isAllowedPage } from "@/lib/auth/access";
 import NavIcon from "./NavIcons";
 import NavBadge from "./NavBadge";
+import LinkPending from "@/components/ui/LinkPending";
 import Logo from "./Logo";
 import MobileTabBar from "./MobileTabBar";
 import LogoutButton from "./LogoutButton";
@@ -93,7 +94,7 @@ export default function AppShell({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`grid items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13.5px] no-underline transition ${
+                      className={`relative grid items-center gap-2.5 rounded-lg px-3 py-[9px] text-[13.5px] no-underline transition ${
                         item.badge ? "grid-cols-[18px_1fr_auto]" : "grid-cols-[18px_1fr]"
                       } ${
                         active
@@ -103,6 +104,7 @@ export default function AppShell({
                     >
                       <NavIcon name={item.icon} />
                       {item.label}
+                      <LinkPending />
                       {item.badge && badgeCounts && (
                         <Suspense fallback={null}>
                           <NavBadge type={item.badge} active={active} promise={badgeCounts} />

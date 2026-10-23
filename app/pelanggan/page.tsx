@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Form from "next/form";
 import PageHeader from "@/components/layout/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
 import { RowActionLink } from "@/components/ui/RowAction";
@@ -115,11 +116,11 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
             <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
               <div className="font-sans text-[0.92rem] font-extrabold text-ink">Semua pelanggan</div>
               <div className="flex flex-wrap items-center gap-2.5">
-                <form className="w-full sm:w-auto">
+                <Form action="/pelanggan" className="w-full sm:w-auto">
                   {kota ? <input type="hidden" name="kota" value={kota} /> : null}
                   {filter === "piutang" ? <input type="hidden" name="filter" value="piutang" /> : null}
                   <SearchInput name="search" defaultValue={sp.search as string} placeholder="Cari nama atau kode..." />
-                </form>
+                </Form>
                 <PelangganKotaFilter kota={kota} availableKota={summary.kotaTerbesar.map((k) => k.kota)} />
                 <div className="flex gap-1.5 rounded-full bg-surface p-1">
                   <Link

@@ -81,8 +81,8 @@ export const NAV_GROUPS: NavGroup[] = [
 // Display label for the header's group-tab strip — a bare item with no
 // section heading (just Beranda today) falls back to its own label, so the
 // strip still reads "Beranda" instead of blank.
-const FLAT: { href: string; groupLabel: string }[] = NAV_GROUPS.flatMap((g) =>
-  g.items.map((item) => ({ href: item.href, groupLabel: g.label ?? item.label }))
+const FLAT: { href: string; label: string; groupLabel: string }[] = NAV_GROUPS.flatMap((g) =>
+  g.items.map((item) => ({ href: item.href, label: item.label, groupLabel: g.label ?? item.label }))
 );
 
 export interface ModuleMeta {
@@ -108,4 +108,14 @@ export function getModuleMeta(pathname: string): ModuleMeta | null {
   }
   if (!bestHref) return null;
   return { groupLabel: bestGroupLabel };
+}
+
+/** The nav row label for any pathname (longest-prefix match), e.g. "Invoice" for /invoice/123 — used by the loading skeleton's header. */
+export function getNavLabel(pathname: string): string | null {
+  let best: { href: string; label: string } | null = null;
+  for (const entry of FLAT) {
+    const matches = pathname === entry.href || pathname.startsWith(`${entry.href}/`);
+    if (matches && (!best || entry.href.length > best.href.length)) best = entry;
+  }
+  return best?.label ?? null;
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LinkPending from "@/components/ui/LinkPending";
 import type { SortDir } from "@/lib/sort";
 
 /**
@@ -48,12 +49,13 @@ export default function SortableHeader({
     >
       <Link
         href={`${basePath}?${params.toString()}`}
-        className={`inline-flex select-none items-center gap-1 hover:text-ink ${active ? "text-ink" : ""}`}
+        className={`relative inline-flex select-none items-center gap-1 hover:text-ink ${active ? "text-ink" : ""}`}
       >
         {label}
         <span className={`text-[0.6rem] ${active ? "opacity-100" : "opacity-35"}`}>
           {active ? (currentDir === "asc" ? "▲" : "▼") : "⇅"}
         </span>
+        <LinkPending className="-right-2 top-0" />
       </Link>
     </th>
   );

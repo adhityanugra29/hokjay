@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Form from "next/form";
 import { Panel, PanelHead, SearchInput, TableScroll } from "@/components/ui/Panel";
 import Pill from "@/components/ui/Pill";
 import { RowActionLink } from "@/components/ui/RowAction";
@@ -137,9 +138,9 @@ export default async function ProdukListPage({
 
       <Panel>
       <PanelHead title="Semua Produk">
-        <form className="w-full sm:w-auto">
+        <Form action="/produk" className="w-full sm:w-auto">
           <SearchInput name="search" defaultValue={search as string} placeholder="Cari produk atau SKU..." />
-        </form>
+        </Form>
       </PanelHead>
       {/* Mobile card list below md; the <table> (horizontal-scroll fallback
           only, TableScroll) takes over at md+. Per the user's request

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Field, Input, Textarea } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
@@ -135,13 +136,13 @@ export default function BayarTagihanSheet({
 
         <div className="mt-5 border-t-2 border-ink pt-3.5 font-mono text-[0.72rem] text-muted">
           Tagihan supplier muncul sendiri dari PO yang barangnya sudah diterima di{" "}
-          <a href="/purchasing" className="text-accent-700 underline underline-offset-2">
+          <Link href="/purchasing" className="text-accent-700 underline underline-offset-2">
             Purchasing
-          </a>
+          </Link>
           . Pembayaran langsung tercatat sebagai kas keluar di{" "}
-          <a href="/keuangan" className="text-accent-700 underline underline-offset-2">
+          <Link href="/keuangan" className="text-accent-700 underline underline-offset-2">
             Keuangan
-          </a>
+          </Link>
           .
         </div>
       </div>

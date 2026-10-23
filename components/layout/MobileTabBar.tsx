@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LinkPending from "@/components/ui/LinkPending";
 import { usePathname } from "next/navigation";
 import NavIcon, { type NavIconName } from "./NavIcons";
 import { getModuleMeta } from "@/lib/nav";
@@ -68,12 +69,13 @@ export default function MobileTabBar({ role }: { role: UserRole }) {
           <Link
             key={tab.key}
             href={tab.href}
-            className={`flex min-h-[44px] flex-col items-center gap-[5px] border-t-[3px] py-[9px] pb-3 text-[9.5px] no-underline ${
+            className={`relative flex min-h-[44px] flex-col items-center gap-[5px] border-t-[3px] py-[9px] pb-3 text-[9.5px] no-underline ${
               active ? "border-t-accent font-bold text-white" : "border-t-transparent font-semibold text-white/50"
             }`}
           >
             <NavIcon name={tab.icon} size={19} />
             {tab.label}
+            <LinkPending className="right-3 top-2" />
           </Link>
         );
       })}

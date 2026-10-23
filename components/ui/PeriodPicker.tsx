@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select } from "@/components/ui/Form";
 import { MONTH_NAMES } from "@/lib/constants";
@@ -25,18 +26,19 @@ export default function PeriodPicker({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   function update(nextMonth: number, nextYear: number) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("bulan", String(nextMonth));
     params.set("tahun", String(nextYear));
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
   const years = Array.from({ length: 7 }, (_, i) => currentYear - 5 + i);
 
   return (
-    <div className="mb-5 flex flex-wrap gap-2.5">
+    <div aria-busy={isPending} className={`mb-5 flex flex-wrap gap-2.5 transition-opacity ${isPending ? "opacity-60" : ""}`}>
       <Select value={month} onChange={(e) => update(Number(e.target.value), year)} className="w-auto">
         {allowFullYear && <option value={0}>Setahun Penuh</option>}
         {MONTH_NAMES.map((name, idx) => (
