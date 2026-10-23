@@ -212,7 +212,7 @@ export default async function ProdukListPage({
                       <div className="font-mono text-[0.7rem] text-muted">{formatDimensi(p.dimensi)}</div>
                     )}
                     <div className="font-mono text-[0.7rem] text-muted">
-                      {p.category}
+                      {p.category.toUpperCase()}
                       {p.merk ? ` · ${p.merk}` : ""}
                     </div>
                   </td>

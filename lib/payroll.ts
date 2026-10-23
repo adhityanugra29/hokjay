@@ -185,7 +185,7 @@ export async function getSlipGaji(salesNama: string): Promise<SlipGaji | null> {
     riwayatKomisi.push({
       invoiceId: String(inv._id),
       nomor: inv.nomor,
-      itemLabel: items.map((i) => `${i.namaSnapshot} x${i.qty}`).join(", "),
+      itemLabel: items.map((i) => `${i.namaSnapshot.toUpperCase()} x${i.qty}`).join(", "),
       komisiBaris,
       tanggalCair: inv.komisiCairTanggal!,
     });

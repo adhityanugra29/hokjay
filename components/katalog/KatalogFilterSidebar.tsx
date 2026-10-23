@@ -137,7 +137,7 @@ function CategoryMultiSelect({
                     onChange={() => toggle(cat)}
                     className="h-4 w-4 accent-accent"
                   />
-                  {cat}
+                  {cat.toUpperCase()}
                 </label>
               ))
             ) : (

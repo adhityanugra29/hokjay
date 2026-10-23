@@ -270,7 +270,7 @@ export async function getUnpaidCommissionInvoices(salesNama: string): Promise<Un
         invoiceId: String(inv._id),
         nomor: inv.nomor,
         tanggalLunas: inv.payment?.tanggalBayar ?? inv.get("createdAt"),
-        itemLabel: items.map((i) => `${i.namaSnapshot} x${i.qty}`).join(", "),
+        itemLabel: items.map((i) => `${i.namaSnapshot.toUpperCase()} x${i.qty}`).join(", "),
         komisiTotal: items.reduce((s, i) => s + i.komisiSubtotal, 0),
       };
     })

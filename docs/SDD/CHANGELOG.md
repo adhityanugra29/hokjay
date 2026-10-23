@@ -8,6 +8,10 @@
 
 ## 2026-10-23
 
+**Tombol "Tandai Sudah Kirim" dihapus dari modul Invoice** — daftar invoice (baris + panel detail) dan halaman detail invoice tidak lagi menampilkan tombol; pengiriman ditandai hanya lewat `/pengiriman` (juga Beranda/Follow-up). Pil status "Belum dikirim/✓ Dikirim" tetap. Query Courier & prop `couriers` yang tak terpakai dibuang dari `app/invoice/page.tsx`, `app/invoice/[id]/page.tsx`, `InvoiceListClient`. API `/kirim` dan `TandaiKirimButton` tidak diubah. Regression: `tsc` bersih.
+
+**Kapital di invoice & turunannya (lanjutan TASK-047)** — `namaSnapshot` (produk/custom/jasa) di-uppercase server saat simpan (`createInvoice`, `updateInvoice`, `jasaLine`); tampilan invoice/surat jalan/preview (`buildInvoicePrintData`: item, dimensi, pelanggan, alamat kirim, kurir, catatan), PO, label insentif/payroll, serta kategori (katalog sidebar, katalog cetak, daftar produk) di-uppercase saat render sehingga invoice lama ikut kapital tanpa mengubah DB. Preserved: uang/stok/komisi/jurnal, nama Sales/User, S&K. Regression: `tsc` bersih.
+
 **Auto-kapital input (TASK-047)** — `Input`/`Textarea` (+ input mentah di MobileSupplier, No. Resi, prompt Dialog) mengubah ketikan jadi huruf kapital; `noUppercase` untuk nama User/Sales/Karyawan, S&K, Metode Pembayaran. Skrip `scripts/kapitalkan-data-lama.ts` (dry-run/--apply) untuk data master lama; belum dijalankan. Preserved: logika uang/stok/komisi, snapshot invoice, server/API tidak berubah. Regression: `tsc` bersih.
 
 **Token diet (hemat token & waktu per perubahan)** — (1) `CLAUDE.md` memuat peta arsitektur, aturan uang/stok/komisi/zona waktu, dan gotcha PDF. (2) Dokumen SDD diarsipkan ke `docs/SDD/archive/` (TASKS/BUGS selesai, CHANGELOG bulan lama, riwayat PROJECT_STATE, `INDEX.md`); bacaan wajib awal sesi turun dari ±233 KB ke ±21 KB. (3) Komentar riwayat bertanggal dipangkas di 12 file terbesar (kode identik, diverifikasi dengan pembanding AST). (4) 15 handler API tanpa pemanggil dihapus: GET customers/invoices/products/jasa/purchase-bills/purchase-requests/office-expenses/cashflow/absensi, PATCH couriers/[id], `invoices/[id]/payout`, `products/[id]/restock`, `purchase-requests/[id]`.
