@@ -19,7 +19,8 @@ export async function dbConnect() {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(uri, { bufferCommands: false });
+    // Fail fast (8 s) when Atlas is unreachable, instead of the driver's 30 s default hang.
+    cached.promise = mongoose.connect(uri, { bufferCommands: false, serverSelectionTimeoutMS: 8000 });
   }
 
   try {
