@@ -93,18 +93,19 @@ export async function getPengirimanData(session?: SessionPayload | null): Promis
     };
   });
 
-  // /pengiriman's own order (the user's request, 2026-10-22): Kirim Hari Ini,
-  // then Terlambat, then Besok/Terjadwal (soonest first), then Belum
-  // Dijadwalkan last. Inside each group Lunas → Sudah DP → Belum Bayar/Draft,
-  // then the earlier Jadwal Kirim first. getShippingPriorityInvoices itself is
-  // unchanged (Beranda still uses its payment-tier-first order).
-  const GROUP_RANK: Record<ShippingTone, number> = { today: 0, overdue: 1, soon: 2, later: 2, none: 3 };
+  // /pengiriman's own order (the user's request, 2026-10-23): nearest to today
+  // first by payment status (Lunas → Sudah DP → Belum Bayar/Draft), then by
+  // shipping status (Kirim Hari Ini → Terlambat → Besok/Terjadwal → Belum
+  // Dijadwalkan), then by day distance from today (H, H-1, H-2…).
+  // getShippingPriorityInvoices itself is unchanged (Beranda keeps its own order).
   const BAYAR_RANK: Record<PengirimanBayar, number> = { paid: 0, dp: 1, unpaid: 2, draft: 2 };
+  const GROUP_RANK: Record<ShippingTone, number> = { today: 0, overdue: 1, soon: 2, later: 2, none: 3 };
+  const dayKey = (jadwal?: string | null) => shippingUrgency(jadwal).sortKey;
   todo.sort(
     (a, b) =>
-      GROUP_RANK[a.tone] - GROUP_RANK[b.tone] ||
       BAYAR_RANK[a.bayar] - BAYAR_RANK[b.bayar] ||
-      (a.jadwal ?? "").localeCompare(b.jadwal ?? "")
+      GROUP_RANK[a.tone] - GROUP_RANK[b.tone] ||
+      Math.abs(dayKey(a.jadwal)) - Math.abs(dayKey(b.jadwal))
   );
 
   const sent: PengirimanSentRow[] = sentDocs.map((inv) => ({
