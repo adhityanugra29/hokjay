@@ -46,7 +46,7 @@ export interface InvoiceFormInitial {
   provinsi?: string;
   kota?: string;
   catatan?: string;
-  /** Edit mode: the S&K text in force right now (own text, else the template) — per the user's request 2026-10-12. */
+  /** Edit mode: the S&K text in force right now (own text, else the template). */
   syaratKetentuan?: string;
   /** Edit mode: invoice already sent (not draft) — its S&K no longer follows the template. */
   syaratKetentuanFrozen?: boolean;
@@ -75,66 +75,32 @@ export default function InvoiceForm({
   syaratKetentuanTemplate?: string;
 }) {
   const router = useRouter();
-  // Owner-only "no plafon diskon" override — per the user's request
-  // 2026-09-05 ("khusus untuk owner hojay, plafon diskon di hilangkan").
-  // Purely a UI convenience (instant feedback, no clamp/warning shown) —
-  // the actual enforcement is server-side in createInvoice.ts/
-  // updateInvoice.ts, resolved from the session there too, never trusted
-  // from this client value.
+  // Owner-only "no plafon diskon": a UI convenience (no clamp/warning); the real enforcement is server-side in createInvoice/updateInvoice, resolved from the session.
   const isOwner = currentUser?.role === "owner";
   const { items, clear, updateItem, addItem } = useCart();
   const { confirm, alert } = useDialog();
   const { show: showLoading, hide: hideLoading } = useLoadingOverlay();
-  // Keeps "Mohon menunggu" visible for the WHOLE save-then-navigate flow —
-  // the overlay used to hide the instant the save fetch() resolved, but
-  // the router.push() navigation that follows still takes a moment to
-  // actually land, leaving a ~1s gap with nothing showing. Per the user's
-  // report 2026-08-28. showLoading() is called before navigating and
-  // deliberately never paired with a hideLoading() call in the success
-  // path here — LoadingOverlayProvider itself clears it the moment the
-  // route actually changes (see components/ui/LoadingOverlay.tsx), which
-  // is more reliable than this component trying to track the transition
-  // itself (an earlier attempt using useTransition's isPending got stuck
-  // showing on the destination page — this component can get unmounted by
-  // the very navigation it's waiting on, before it ever observes isPending
-  // fall back to false).
+  // showLoading() is deliberately NOT paired with hideLoading() on success: LoadingOverlayProvider clears it when the route actually changes, keeping "Mohon menunggu"
+  // visible through the whole save-then-navigate flow. (useTransition's isPending got stuck: this component unmounts mid-navigation, before it sees isPending fall back to false.)
 
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
-  // Pelanggan is picked right here, inline — this form shows it read-only
-  // at the top once picked, only opening back up to a picker when there's
-  // genuinely no customer yet or the user explicitly clicks "Ubah".
-  // Customer-picking used to happen upstream on a separate /penjualan page
-  // before browsing Katalog; that page was dropped and picking moved here
-  // (invoice time) per the user's request 2026-08-25.
+  // Pelanggan is picked inline: read-only once picked, reopening to a picker only when there is no customer yet or the user clicks "Ubah".
   const [editingCustomer, setEditingCustomer] = useState(false);
-  // Own copy of the customer list so a brand-new customer (added inline,
-  // below) can be appended and selected immediately without a page
-  // refresh. "Tambah pelanggan baru" used to navigate away to
-  // /pelanggan/baru and back; now it expands InlineCustomerForm right
-  // here instead. Per the user's request 2026-08-27.
+  // Own copy of the customer list so a customer added inline can be appended and selected immediately, without a refresh.
   const [customerList, setCustomerList] = useState<CustomerOption[]>(customers);
   const [addingCustomer, setAddingCustomer] = useState(false);
   const [addingProduct, setAddingProduct] = useState(false);
-  // "+ Tambah Jasa" — service fees (see models/Jasa.ts) are picked from a
-  // plain dropdown of active jasa, loaded the first time it's opened. They
-  // never appear in Katalog. Per the user's request 2026-10-07.
+  // "+ Tambah Jasa": service fees (models/Jasa.ts) are picked from a dropdown of active jasa, loaded on first open. They never appear in Katalog.
   const [pickingJasa, setPickingJasa] = useState(false);
   const [jasaOptions, setJasaOptions] = useState<{ _id: string; nama: string }[] | null>(null);
   const [shipAddress, setShipAddress] = useState(initial?.shipAddress ?? "");
-  // Editable, not locked to the selected customer's own record — per the
-  // user's request 2026-09-19 ("bisa di ganti ya jangan di lock"). Still
-  // pre-filled from the customer on pick (selectCustomer/
-  // handleCustomerCreated below), same convenience as shipAddress, but the
-  // typed value is what actually gets saved on the invoice from here on.
+  // Provinsi/Kota are editable (not locked to the customer's record): pre-filled on pick, but the typed value is what gets saved on the invoice.
   const [provinsi, setProvinsi] = useState(initial?.provinsi ?? "");
   const [kota, setKota] = useState(initial?.kota ?? "");
-  // Free-text note, shown on the printed Invoice/Bukti Transfer AND Surat
-  // Jalan — per the user's request 2026-09-19.
+  // Free-text note, shown on the printed Invoice/Bukti Transfer and Surat Jalan.
   const [catatan, setCatatan] = useState(initial?.catatan ?? "");
-  // Per-invoice Syarat & Ketentuan, edited at the bottom of the form — per
-  // the user's request 2026-10-12. Starts from this invoice's own text when
-  // editing, otherwise from the Admin → Invoice template. Only this invoice
-  // is ever changed; the template is never written from here.
+  // Per-invoice Syarat & Ketentuan: starts from this invoice's own text when editing, else the Admin → Invoice template. Only this invoice is
+  // ever changed; the template is never written from here.
   const templateLines = useMemo(() => parseSyaratPoin(syaratKetentuanTemplate), [syaratKetentuanTemplate]);
   const skFrozen = initial?.syaratKetentuanFrozen ?? false;
   const [skLines, setSkLines] = useState<string[]>(() =>
@@ -146,8 +112,7 @@ export default function InvoiceForm({
   const [tanggalInvoice, setTanggalInvoice] = useState(
     initial?.tanggalInvoice ?? new Date().toISOString().slice(0, 10)
   );
-  // No longer defaults to H+3 — per the user's request 2026-09-19
-  // ("jangan lagi dibuat default"), reversing the 2026-08-25 default.
+  // Deliberately no default date.
   const [tanggalKirim, setTanggalKirim] = useState(initial?.tanggalKirim ?? "");
   const [kurirId, setKurirId] = useState(initial?.kurirId ?? "");
   const [ongkosKirim, setOngkosKirim] = useState(initial?.ongkosKirim ?? 0);
@@ -155,21 +120,12 @@ export default function InvoiceForm({
   const [canceling, setCanceling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // "+ Tambah Produk" navigates away to /katalog and back — that remounts
-  // this whole form from scratch, so every field above (pelanggan/sales/
-  // tanggal/kurir/ongkir) would otherwise snap back to its initial value
-  // and silently lose whatever the user had already filled in. Per the
-  // user's report 2026-08-27 ("ketika tambah produk, datanya reset dari
-  // awal"). Sessions-scoped (clears on tab close) rather than permanent —
-  // this is a same-session convenience, not a real draft feature.
+  // "+ Tambah Produk" navigates to /katalog and back, which remounts this form; without this every field above would snap back to its initial value.
+  // Session-scoped (clears on tab close): a same-session convenience, not a real draft feature.
   const draftKey = mode === "edit" ? `invoiceHeaderDraft:edit:${invoiceId}` : "invoiceHeaderDraft:baru";
 
   useEffect(() => {
-    // Only a genuine "back from Katalog" round trip has items already in
-    // the cart on mount — a brand new invoice (create mode) or a freshly
-    // opened edit page both start with an empty cart at this point
-    // (EditInvoiceLoader hasn't loaded the invoice's items yet on the very
-    // first render), so this never clobbers a true first load.
+    // Only a genuine "back from Katalog" round trip has items in the cart on mount (a new or freshly opened edit page starts empty), so this never clobbers a first load.
     if (items.length === 0) return;
     try {
       const raw = sessionStorage.getItem(draftKey);
@@ -201,8 +157,7 @@ export default function InvoiceForm({
     } catch {
       // malformed/unavailable storage — not worth surfacing an error for
     }
-    // Deliberately only on mount — this restores whatever was saved right
-    // before navigating to Katalog, not on every keystroke afterward.
+    // Only on mount: restores what was saved right before navigating to Katalog, not on every keystroke.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -242,16 +197,8 @@ export default function InvoiceForm({
     ongkosKirim,
   ]);
 
-  // Logged in as sales (or manager — manager is treated as a sales rep
-  // with extra authority, same as the Katalog/Leaderboard/Komisi Saya
-  // extension confirmed 2026-08-27) -> "Sales Consultant" auto-fills with
-  // their own account, matched by nama against the Sales roster (same
-  // nama-matching convention used elsewhere, e.g. Insentif ranking). Only
-  // on a fresh invoice with nothing picked yet — never overrides an
-  // explicit pick or an existing invoice being edited. Per the user's
-  // request 2026-08-25, extended to manager 2026-08-27, and to owner
-  // 2026-08-29 ("untuk owner, bisa berjualan ya") — requires a matching
-  // Sales roster entry to exist for that name, same as manager.
+  // Logged in as sales/manager/owner: "Sales Consultant" auto-fills with their own account, matched by nama against the Sales roster (needs a matching roster entry).
+  // Only on a fresh invoice with nothing picked yet; never overrides an explicit pick or an invoice being edited.
   useEffect(() => {
     if (
       mode === "create" &&
@@ -271,12 +218,7 @@ export default function InvoiceForm({
     [items]
   );
   const grandTotal = subtotalProduk + ongkosKirim;
-  // Per the user's request 2026-08-29 ("total diskon belum ada di
-  // sebelum preview") — same figure now shown on the invoice detail
-  // page/PDF, added here too so it's visible at every stage. A Flash
-  // Sale line's diskonPerUnit is always 0 (Diskon is locked out while
-  // one is active) — its implied discount is Harga Rekomendasi −
-  // hargaJual instead, per the same day's follow-up request.
+  // Total Diskon, shown at every stage. A Flash Sale line's diskonPerUnit is always 0, so its implied discount is Harga Rekomendasi − hargaJual.
   const totalDiskon = useMemo(
     () =>
       items.reduce((s, i) => {
@@ -288,12 +230,8 @@ export default function InvoiceForm({
       }, 0),
     [items]
   );
-  // "Subtotal Produk" renamed to "Total Belanja", logic changed to sum
-  // Harga (Harga Rekomendasi for a Flash Sale line, hargaJual otherwise)
-  // instead of the actual charged subtotalProduk — per the user's request
-  // 2026-08-29. subtotalProduk itself is untouched and still drives
-  // grandTotal — see InvoicePrintDoc.tsx's matching comment for why Total
-  // Belanja − Total Diskon always equals it exactly anyway.
+  // "Total Belanja" sums Harga (Harga Rekomendasi for a Flash Sale line, hargaJual otherwise). subtotalProduk still drives grandTotal, and
+  // Total Belanja − Total Diskon always equals it (see InvoicePrintDoc.tsx).
   const totalBelanja = useMemo(
     () =>
       items.reduce((s, i) => {
@@ -307,12 +245,9 @@ export default function InvoiceForm({
       items.reduce(
         (s, i) =>
           s +
-          // Jasa lines never earn komisi — computeLineCommission would
-          // otherwise treat them as a plain barang baru (6%).
+          // Jasa lines never earn komisi (computeLineCommission would treat them as baru, 6%).
           (i.isJasa ? 0 : 1) *
-          // diskon wasn't factored into this summary total before —
-          // found and fixed alongside the 2026-08-29 diskon/komisi work
-          // (ItemRowEditor's own per-line figure already did).
+          // diskon is factored in, like ItemRowEditor's per-line figure.
           computeLineCommission({
             isCustom: i.isCustom,
             kondisi: i.kondisi,
@@ -328,24 +263,12 @@ export default function InvoiceForm({
     [items]
   );
 
-  // Diskon Bulk — TASK-003, per the user's request 2026-08-30: one total
-  // discount amount, distributed across eligible lines to keep every
-  // per-unit diskon a clean Rp10.000 multiple while eroding commission as
-  // little as possible (Baru/Custom filled first). See
-  // allocateBulkDiskon() in lib/commission.ts for the actual algorithm —
-  // this just feeds it the current cart and applies the result.
+  // Diskon Bulk: one total discount distributed across eligible lines in Rp10.000 multiples, eroding commission as little as possible
+  // (allocateBulkDiskon, lib/commission.ts).
   const [bulkDiskonInput, setBulkDiskonInput] = useState("");
   const [bulkDiskonStatus, setBulkDiskonStatus] = useState<{ text: string; warn: boolean } | null>(null);
-  // productId -> the exact diskonPerUnit this feature itself last set there
-  // — per the user's report 2026-09-03 ("kalau mau ganti/tambah diskonya,
-  // sepertinya harus di overwrite"): allocateBulkDiskon only ever fills a
-  // line sitting at Rp0, so after one run every touched line looks
-  // "manually discounted" and a second click (fixing a typo, trying a
-  // different total) found nothing left to redistribute into. Re-running
-  // now first resets any line that STILL holds exactly what this ran last
-  // time (i.e. untouched by the sales rep since) back to Rp0 before
-  // allocating again — a real manual entry, or one the rep has since typed
-  // over, is never in this map and stays fully protected either way.
+  // productId -> the diskonPerUnit this feature itself last set. allocateBulkDiskon only fills lines at Rp0, so without this a second run found nothing left to
+  // redistribute. Re-running first resets lines that STILL hold exactly what the last run set; a manual entry (or one the rep typed over) is never in this map.
   const [lastBulkDiskon, setLastBulkDiskon] = useState<Map<string, number>>(new Map());
 
   function applyBulkDiskon() {
@@ -458,10 +381,8 @@ export default function InvoiceForm({
           provinsi: provinsi || undefined,
           kota: kota || undefined,
           catatan: catatan || undefined,
-          // null = still the template (a draft keeps following it; saving as
-          // unpaid freezes it server-side). A sent invoice always sends its
-          // explicit text so it can never slip back to following the
-          // template. See lib/services/syaratKetentuan.ts.
+          // null = still the template (a draft keeps following it; saving as unpaid freezes it server-side). A sent invoice always sends its explicit
+          // text. See lib/services/syaratKetentuan.ts.
           syaratKetentuan: skIsDefault && !skFrozen ? null : skText,
           salesId: sales._id,
           salesNama: sales.nama,
@@ -492,10 +413,7 @@ export default function InvoiceForm({
       } catch {
         // ignore — nothing to clean up if storage was never available
       }
-      // showLoading() called above is deliberately not matched with a
-      // hideLoading() here — LoadingOverlayProvider clears it itself once
-      // the route actually changes (see components/ui/LoadingOverlay.tsx),
-      // so it stays visible through the whole navigation.
+      // No hideLoading() here: see the note at the top (LoadingOverlayProvider clears it once the route changes).
       router.push(status === "draft" ? "/invoice" : `/invoice/${invoice._id}`);
       router.refresh();
     } catch (err) {
@@ -506,15 +424,8 @@ export default function InvoiceForm({
     }
   }
 
-  // "Batal" deletes the invoice outright rather than just discarding
-  // unsaved changes — per the user's explicit request 2026-08-27, with a
-  // confirm() warning first since it's destructive either way. Edit mode
-  // has a real Invoice document to delete (server-side guards in
-  // deleteInvoice.ts still apply — e.g. refuses if a DP was already
-  // received, surfaced here via the error message). Create mode never has
-  // a saved record yet at this point (only Simpan/Simpan sebagai Draft
-  // create one, and both navigate away immediately after), so there's
-  // nothing to call the API for — just the cart to clear.
+  // "Batal" deletes the invoice outright (after a confirm, since it's destructive). Edit mode deletes the real Invoice (server guards in deleteInvoice.ts
+  // still apply, e.g. it refuses if a DP was received, surfaced via the error); create mode has no saved record yet, so it just clears the cart.
   async function handleCancel() {
     if (mode === "edit") {
       const ok = await confirm(
@@ -536,8 +447,7 @@ export default function InvoiceForm({
         } catch {
           // ignore — nothing to clean up if storage was never available
         }
-        // Same reasoning as submit() above — LoadingOverlayProvider clears
-        // the overlay itself once the route changes.
+        // Same as submit(): LoadingOverlayProvider clears the overlay once the route changes.
         router.push("/invoice");
         router.refresh();
       } catch (err) {
@@ -570,10 +480,6 @@ export default function InvoiceForm({
       title={mode === "edit" ? `Ubah Invoice ${nextNumberHint}` : "Invoice Baru"}
       description="Pilih pelanggan, isi detail pengiriman, lalu tambahkan produk dari Katalog."
     >
-      {/* Pelanggan sits at the very top and is read-only by default once
-          picked (or already set from the invoice being edited); "Ubah"
-          reopens the picker inline instead of it being a plain editable
-          dropdown mixed in with the rest of the fields. */}
       <FormSection label="Pelanggan">
       <div className="border border-line bg-[#f7f5ee] p-4">
         <label className="font-mono text-[0.7rem] uppercase tracking-wide text-muted">Pelanggan</label>
@@ -663,10 +569,6 @@ export default function InvoiceForm({
             placeholder="Otomatis terisi setelah pilih pelanggan"
           />
         </Field>
-        {/* Provinsi/Kota — pre-filled from the selected pelanggan but
-            editable and saved onto the invoice itself, per the user's
-            request 2026-09-19 ("bisa di ganti ya jangan di lock"),
-            reversing the original 2026-08-25 lock. */}
         <Field label="Provinsi">
           <Input
             value={provinsi}
@@ -698,8 +600,6 @@ export default function InvoiceForm({
             placeholder="0"
           />
         </Field>
-        {/* Shown on the printed Invoice/Bukti Transfer AND Surat Jalan —
-            per the user's request 2026-09-19. */}
         <Field label="Catatan (opsional)" span2>
           <Textarea
             value={catatan}
@@ -727,13 +627,8 @@ export default function InvoiceForm({
             </div>
           )}
         </div>
-        {/* Opens the inline sidebar instead of navigating to /katalog —
-            "Lanjut ke Invoice" there always routes to /invoice/baru (a
-            brand new invoice), which silently discarded an in-progress
-            edit's pelanggan/sales/etc. Per the user's report 2026-08-27
-            ("customernya tereset"). Originally edit-mode only per the
-            user's own initial scoping choice; extended to create mode too
-            2026-08-28 once the user asked for the same fix there. */}
+        {/* Opens the inline sidebar instead of navigating to /katalog: "Lanjut ke Invoice" there always routes to a brand new invoice, which discarded an
+            in-progress edit's pelanggan/sales/etc. */}
         <button
           type="button"
           onClick={() => setAddingProduct(true)}
@@ -796,23 +691,13 @@ export default function InvoiceForm({
         </div>
       </div>
 
-      {/* Diskon Bulk — TASK-003, per the user's request 2026-08-30. Sits
-          right below Estimasi Komisi Sales and right above Total Diskon —
-          both figures update the moment "Distribusikan" runs, in the same
-          section the sales rep is already looking at. Only fills lines
-          currently at Rp0 diskon (see allocateBulkDiskon's doc comment) —
-          existing manual per-line edits are never touched. */}
+      {/* Diskon Bulk: sits right above Total Diskon so both figures update when "Distribusikan" runs. Only fills lines at Rp0 diskon; manual per-line edits are never touched. */}
       <div className="mt-4 rounded-xl border-[1.5px] border-dashed border-accent-700 bg-accent-100 p-4">
         <div className="flex flex-wrap items-end gap-2.5">
           <div className="flex-1" style={{ minWidth: 180 }}>
             <label className="mb-1.5 block font-mono text-[0.68rem] font-semibold uppercase tracking-wide text-accent-700">
               Diskon Bulk (Rp)
             </label>
-            {/* CurrencyInput (accounting-style thousand separators), same
-                as every other Rupiah field in this app — the plain Input
-                this used at first showed raw digits while typing
-                ("150000"), inconsistent with Harga Jual/Diskon per unit
-                right above it. Per the user's report 2026-09-03. */}
             <CurrencyInput
               value={bulkDiskonInput}
               onChange={(v) => {

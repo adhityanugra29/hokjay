@@ -17,23 +17,10 @@ import KatalogAddMenu from "./KatalogAddMenu";
 import { capturePagesToPdf } from "@/lib/pdfExport";
 import { formatDateDMY } from "@/lib/format";
 
-// Server-paginated grid (TASK-012, 2026-09-04) — replaces the earlier
-// client-side-only GRID_PAGE_SIZE/"Tampilkan Lebih Banyak" cap
-// (2026-08-31, which only limited how many ProductCards/images mounted
-// at once but still shipped every matching product from the server on
-// every load). Per the user's explicit request: limit the actual data
-// pull to 12 products/batch, auto-loading more via infinite scroll.
-// Filtering/sorting/grouping (search incl. the size-query parser, every
-// sidebar filter, Flash-Sale-first, booked/DP/sold-sink-to-bottom) all
-// moved server-side — see lib/katalog.ts's queryKatalogProducts() /
-// app/api/katalog/route.ts, the single shared implementation both this
-// page and app/katalog/page.tsx (page 1) now call.
+// Server-paginated grid: 12 products/batch with infinite scroll. Search (incl. the size-query parser), every sidebar filter, Flash-Sale-first and
+// booked/DP/sold-sink-to-bottom all run server-side (lib/katalog.ts queryKatalogProducts / app/api/katalog/route.ts, shared with app/katalog/page.tsx for page 1).
 const KATALOG_PAGE_SIZE = 12;
-// Debounce before a search/filter/sort change actually fires a request —
-// unlike the old client-side useMemo (instant, since it only touched an
-// already-in-memory array), every change now costs a real network
-// round-trip, so this keeps fast typing from firing one request per
-// keystroke.
+// Debounce before a search/filter/sort change fires a request (each one is now a network round-trip), so fast typing doesn't fire one per keystroke.
 const FILTER_DEBOUNCE_MS = 350;
 
 /** Builds the app/api/katalog/route.ts query string from the current search/filters/sort state — shared by the grid fetch and the "Pilih Semua" ids fetch so the two can never target different result sets. */
@@ -74,14 +61,14 @@ export default function KatalogClient({
   initialNewStock: KatalogProduct[];
   /** null once there's nothing left to load — see queryKatalogProducts()'s own nextCursor. */
   initialNextCursor: number | null;
-  /** Total catalog size (unfiltered) — only powers the header's "N PRODUK TERSEDIA", never affected by search/filter (that text never updated live even before this task). */
+  /** Total catalog size (unfiltered) — only powers the header's "N PRODUK TERSEDIA"; never affected by search/filter. */
   totalProductCount: number;
   categories: string[];
-  /** Manager/Owner/Super Admin only. Per the user's request 2026-08-27. */
+  /** Manager/Owner/Super Admin only. */
   canEditProduct?: boolean;
-  /** Owner/Super Admin only. Per the user's request 2026-08-29. */
+  /** Owner/Super Admin only. */
   canFlashSale?: boolean;
-  /** Owner role only (not Super Admin) — skips the diskon plafon on each card's inline diskon field. Per the user's request 2026-09-05. */
+  /** Owner role only (not Super Admin) — skips the diskon plafon on each card's inline diskon field. */
   isOwner?: boolean;
 }) {
   const [search, setSearch] = useState("");
@@ -93,35 +80,23 @@ export default function KatalogClient({
   // infinite scroll, gets replaced wholesale on a search/filter/sort
   // change. `cursor === null` means there's nothing left to load.
   const [items, setItems] = useState<KatalogProduct[]>(initialProducts);
-  // Patches one already-loaded card in place after EditProductDrawer saves
-  // — see its onSaved doc comment / lib/katalog.ts's getKatalogProductById
-  // for the stale-until-reload bug this replaces. A no-op if the edited
-  // product had already scrolled out of `items` (nothing to patch), which
-  // is fine — router.refresh() (still called alongside this) covers that
-  // case on the next full navigation.
+  // Patches one already-loaded card in place after EditProductDrawer saves (lib/katalog.ts getKatalogProductById); a no-op if it has scrolled out of
+  // `items` (router.refresh(), still called alongside, covers that on the next navigation).
   function handleProductSaved(updated: KatalogProduct) {
     setItems((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
     setNewStock((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
   }
-  // "New Stock" section (TASK-043) — products uploaded within the last
-  // NEW_STOCK_DAYS days. Only shown while there's no search and no active
-  // filter; the grid leaves these products out in exactly that state (see
-  // `showNewStock` below) so a product never appears twice.
+  // "New Stock" section (TASK-043): products uploaded within NEW_STOCK_DAYS. Shown only with no search and no active filter; the grid leaves them
+  // out then (`showNewStock`) so none appears twice.
   const [newStock, setNewStock] = useState<KatalogProduct[]>(initialNewStock);
   const showNewStock = !search.trim() && countActiveFilters(filters) === 0;
   const [cursor, setCursor] = useState<number | null>(initialNextCursor);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingFilters, setLoadingFilters] = useState(false);
-  // Every id matching the current filters with real available stock —
-  // fetched fresh only when picking starts (see startPicking below), not
-  // on every render: "Pilih Semua" needs the *complete* matching set, not
-  // just whatever's been scrolled into view so far.
+  // Every id matching the current filters with real available stock, fetched when picking starts ("Pilih Semua" needs the complete matching set, not just what's scrolled into view).
   const [availableIds, setAvailableIds] = useState<string[]>([]);
   const isFirstRender = useRef(true);
-  // Bumped on every fetch — a response is only applied if this hasn't
-  // moved on since (e.g. a filter change fired while a "load more" from
-  // the previous filter state was still in flight), so a slow, now-stale
-  // response can't clobber newer state.
+  // Bumped on every fetch; a response is only applied if this hasn't moved on (e.g. a filter change fired while a "load more" from the old filters was in flight).
   const fetchSeq = useRef(0);
 
   const [downloading, setDownloading] = useState(false);
@@ -138,10 +113,7 @@ export default function KatalogClient({
     setAvailableIds(data.ids);
   }
 
-  // Search/filter/sort -> replace the grid with a fresh page 1. Skips the
-  // very first run: page 1 with empty filters is exactly what the server
-  // already rendered, so re-fetching it on mount would just be a wasted
-  // duplicate request.
+  // Search/filter/sort -> fresh page 1. Skips the first run: page 1 with empty filters is exactly what the server already rendered.
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -186,27 +158,16 @@ export default function KatalogClient({
     }
   }
 
-  // Infinite scroll — a sentinel div after the grid; loads the next batch
-  // once it scrolls into view. Per the user's explicit request ("otomatis
-  // menarik data baru setelah scroll sudah sampai bawah"). The observer
-  // itself is only ever created once (empty deps — no need to tear down
-  // and recreate it on every keystroke/state change), so it calls
-  // `loadMore` through a ref kept fresh every render rather than closing
-  // over the mount-time `loadMore` — closing over it directly would keep
-  // reading the initial render's stale `cursor`/`search`/`filters`/`sort`
-  // forever, since this effect never re-runs to pick up a new closure.
+  // Infinite scroll: a sentinel div after the grid loads the next batch when it scrolls into view. The observer calls `loadMore` through a ref kept
+  // fresh every render so it never reads a stale mount-time `cursor`/`search`/`filters`/`sort`.
   const loadMoreRef = useRef(loadMore);
   useEffect(() => {
     loadMoreRef.current = loadMore;
   });
   const sentinelRef = useRef<HTMLDivElement>(null);
-  // Re-created whenever the sentinel div itself is (un)mounted — it only
-  // renders while `cursor !== null` and not `downloading`, so an observer
-  // created once at mount kept watching a detached div after a search with
-  // <=12 results, and later searches with more results never loaded page 2
-  // (e.g. "cabinet" stuck at 12). A fresh observer also fires immediately
-  // if the sentinel is already on-screen, retrying a loadMore that was
-  // skipped while a request was in flight.
+  // Re-created whenever the sentinel (un)mounts: it only renders while `cursor !== null` and not `downloading`, so an observer created once kept watching a
+  // detached div after a search with <=12 results ("cabinet" stuck at 12). A fresh observer also fires immediately if the sentinel is already on-screen,
+  // retrying a loadMore that was skipped while a request was in flight.
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -220,10 +181,7 @@ export default function KatalogClient({
     return () => observer.disconnect();
   }, [cursor !== null, downloading, loadingMore, loadingFilters]); // eslint-disable-line react-hooks/exhaustive-deps -- booleans on purpose: re-observe on sentinel mount/unmount and when a request finishes
 
-  // Staged flow: idle button ("Buat Katalog") -> click reveals checkboxes +
-  // "Pilih Semua" (label stays "Buat Katalog", disabled while 0 selected) ->
-  // once >=1 item is checked it relabels to "Unduh Katalog PDF - XX itemnya"
-  // and now actually triggers the download.
+  // Staged flow: "Buat Katalog" reveals checkboxes + "Pilih Semua" (disabled while 0 selected); once >=1 is checked it relabels to "Unduh Katalog PDF - XX itemnya" and downloads.
   function handleMainButtonClick() {
     if (!pickMode) {
       startPicking();
@@ -246,18 +204,10 @@ export default function KatalogClient({
     if (!element) return;
 
     setDownloading(true);
-    // Shown immediately on click, not gated behind the fetch-patch's 2s
-    // auto-threshold (LoadingOverlay.tsx) — the button's own label already
-    // changes to "Menyiapkan PDF...", but for a many-page catalog this can
-    // run long enough that a full-screen "Mohon menunggu" is warranted, not
-    // just quiet text on a button easy to miss. Per the user's request
-    // 2026-08-27.
+    // Shown immediately on click (not gated behind the fetch-patch's 2s auto-threshold): a many-page catalog can run long enough to warrant a full-screen "Mohon menunggu".
     showLoading();
     try {
-      // The offscreen catalog doc fetches its own product/category/sales
-      // data on mount — wait for that instead of generating a near-empty
-      // PDF (or, on a slow first click, silently doing nothing) if it
-      // hasn't landed yet.
+      // The offscreen catalog doc fetches its own data on mount; wait for it instead of producing a near-empty PDF.
       for (let tries = 0; element.dataset.ready !== "true" && tries < 50; tries++) {
         await new Promise((r) => setTimeout(r, 100));
         element = document.getElementById("catalog-print-doc")!;
@@ -274,9 +224,7 @@ export default function KatalogClient({
       }
       pdf.save(`Katalog-CV-HORECA-JAYA_${formatDateDMY()}.pdf`);
     } catch (err) {
-      // html2pdf/html2canvas failures otherwise vanish as an unhandled
-      // rejection — no visible feedback beyond the button re-enabling —
-      // which is exactly what made this bug hard to report/diagnose.
+      // Otherwise html2canvas failures vanish as an unhandled rejection with no visible feedback.
       console.error("Gagal membuat PDF katalog:", err);
       await alert(
         `Gagal membuat PDF katalog: ${err instanceof Error ? err.message : String(err)}\n\nCoba lagi, atau screenshot pesan ini untuk dilaporkan.`
@@ -287,22 +235,9 @@ export default function KatalogClient({
     }
   }
 
-  // Search/filter/sort/Flash-Sale-first/booked-sinks-to-bottom are all
-  // applied server-side now (lib/katalog.ts's queryKatalogProducts) --
-  // `items` already IS the correctly filtered/sorted/grouped page. See
-  // the debounced fetch effect above.
 
   return (
     <>
-      {/* Was a bespoke hero block (own header, own font sizes) — the only
-          large page in the app not using the shared PageHeader, and its 3
-          buttons all carried equal visual weight with no clear primary
-          action. Switched to PageHeader + a real solid/ghost hierarchy per
-          the user's request 2026-08-30 ("upgrade UI... konsisten"):
-          Pesan Produk Custom / Lihat Produk Custom now live inside the
-          single "+ Tambah" menu (KatalogAddMenu, alongside the new Jasa
-          entry), per the user's request 2026-10-07; the PDF export stays
-          the one secondary (ghost) button. */}
       <PageHeader
         title="Katalog CV HORECA JAYA"
         subtitle={`STOK TER-UPDATE OTOMATIS · ${totalProductCount} PRODUK TERSEDIA`}
@@ -329,10 +264,7 @@ export default function KatalogClient({
           </>
         }
       />
-    {/* Extra bottom padding on mobile (dropped again at md, where the fixed
-        bottom cart bar/tab bar don't exist) so the last row of product cards
-        isn't hidden behind CartBar + the mobile tab bar stacked at the
-        bottom of the screen. Per the user's report 2026-08-25. */}
+    {/* Extra bottom padding on mobile (dropped at md) so the last row isn't hidden behind CartBar + the mobile tab bar. */}
     <div className="p-6 pb-32 md:p-9">
       {pickMode && (
         <div className="mb-5 flex flex-wrap items-center gap-4">
@@ -356,9 +288,6 @@ export default function KatalogClient({
           placeholder="Cari nama produk atau kode SKU..."
           className="min-w-[180px] flex-1 rounded-lg border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.85rem]"
         />
-        {/* Replaces the old plain "Semua Kategori" dropdown — opens a
-            sidebar with Kategori, Kondisi, Tipe, and Range Harga, all
-            defaulting to "Semua". Per the user's request 2026-08-27. */}
         <button
           type="button"
           onClick={() => setFilterOpen(true)}
@@ -382,33 +311,15 @@ export default function KatalogClient({
         </select>
       </div>
 
-      {/* Single column below sm — the two price-preset buttons + currency
-          input on each ProductCard got noticeably more cramped this
-          session, so 2-up was too tight on a phone-width screen. Per the
-          user's report 2026-08-25. */}
-      {/* Grid swapped out for a plain placeholder while a PDF is actually
-          being generated (2026-08-31) — found via a real Playwright capture
-          against a production build (not dev mode/Fast Refresh — ruled that
-          out first) that every one of html2canvas's ~35+ per-page captures
-          was re-triggering network requests for EVERY visible product
-          card's next/image thumbnail, not just the off-screen print doc's
-          own photos: html2canvas clones the live document on each capture,
-          and this heavy, image-dense grid sits in that same document the
-          whole time PDF generation runs. With it out of the DOM (not just
-          hidden via CSS — actually unmounted, so there's nothing for a
-          clone to re-touch) each of those ~35+ clones has far less to
-          re-process. The grid was already invisible behind the full-screen
-          "Mohon menunggu" overlay during this window anyway, so nothing
-          the user could see or interact with is lost. */}
+      {/* Single column below sm: the price presets + currency input on each ProductCard are too cramped 2-up on a phone. */}
+      {/* The grid is swapped for a placeholder (actually unmounted, not CSS-hidden) while a PDF is generated: html2canvas clones the live document on each of its
+          ~35+ per-page captures, and every visible card's next/image thumbnail was re-triggering network requests. Nothing visible is lost behind the "Mohon menunggu" overlay. */}
       {downloading ? (
         <div className="py-16 text-center font-mono text-sm text-muted">Menyiapkan PDF...</div>
       ) : (
         <>
-          {/* New Stock (TASK-043, per the user's request 2026-10-09) —
-              products uploaded in the last NEW_STOCK_DAYS days, pinned above
-              the grid. Hidden while searching/filtering (those products then
-              show in the grid with their own banner) and when there are none.
-              A swipeable row on phones, the same grid as below from sm up. */}
+          {/* New Stock (TASK-043): products uploaded in the last NEW_STOCK_DAYS days, pinned above the grid; hidden while searching/filtering (they show in the grid
+              with their own banner) and when there are none. A swipeable row on phones, the same grid as below from sm up. */}
           {showNewStock && newStock.length > 0 && (
             <section className="mb-7 rounded-2xl border-[1.5px] border-[#16A34A] bg-[#E7F6EC] p-3.5 sm:p-4">
               <div className="mb-3 flex flex-wrap items-center gap-2.5">
@@ -453,12 +364,7 @@ export default function KatalogClient({
             )}
           </div>
 
-          {/* Infinite scroll (TASK-012, 2026-09-04) — replaces the old
-              "Tampilkan Lebih Banyak" button. This sentinel sits after the
-              grid; an IntersectionObserver (set up above) loads the next
-              12-product batch the moment it scrolls into view. Per the
-              user's explicit request ("otomatis menarik data baru setelah
-              scroll sudah sampai bawah"). */}
+          {/* Infinite scroll: an IntersectionObserver (above) loads the next batch when this sentinel scrolls into view. */}
           {cursor !== null && (
             <div ref={sentinelRef} className="mt-6 flex justify-center py-4">
               {loadingMore && <span className="font-mono text-[0.78rem] text-muted">Memuat produk lagi...</span>}
@@ -471,13 +377,7 @@ export default function KatalogClient({
         product={editingProduct}
         onSaved={handleProductSaved}
         categories={categories}
-        // Was `canFlashSale` (Owner+Super Admin) until 2026-09-05 — per
-        // the user's request ("yang hanya boleh akses setting komisi
-        // hanya owner"), commission settings are narrower than Flash
-        // Sale's role set. `isOwner` here is the real Owner-only prop
-        // this component already receives (see TASK-013's diskon-plafon
-        // removal, same role check) — reused instead of adding a third
-        // near-duplicate prop.
+        // Commission settings are Owner-only (narrower than Flash Sale's role set), so this reuses the real Owner-only `isOwner` prop instead of `canFlashSale`.
         isOwner={isOwner}
         onClose={() => setEditingProduct(null)}
       />
