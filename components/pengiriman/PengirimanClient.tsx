@@ -59,6 +59,9 @@ const GRID_SENT = "xl:grid-cols-[92px_minmax(0,1.5fr)_minmax(0,1fr)_76px_76px_96
 const PRIMARY_CLS =
   "inline-flex cursor-pointer items-center justify-center rounded-lg border border-ink bg-ink px-3.5 py-2 font-sans text-[0.78rem] font-extrabold text-accent transition hover:bg-ink/85";
 
+const PAGE_SIZE = 15;
+const PAGE_BTN_CLS =
+  "cursor-pointer rounded-lg border border-line bg-transparent px-3 py-1.5 font-sans text-[0.78rem] font-bold text-ink hover:bg-black/5 disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent";
 const th = "font-sans text-[0.66rem] font-bold uppercase tracking-wider text-muted";
 const fmt = (iso?: string) => (iso ? formatDateShort(iso) : "-");
 
@@ -190,6 +193,7 @@ export default function PengirimanClient({
   const [bayar, setBayar] = useState("");
   const [menu, setMenu] = useState<string | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [pageState, setPageState] = useState({ sig: "", page: 1 });
 
   useEffect(() => {
     if (!menu) return;
@@ -250,6 +254,15 @@ export default function PengirimanClient({
   ];
 
   const rows = tab === "kirim" ? todoRows : sentRows;
+
+  // Client-side pagination (filters and the Perlu Dikirim order are computed here, so the full set is already loaded; paging just limits what is rendered).
+  // The page resets to 1 whenever the tab or any filter changes, via the signature below instead of an effect.
+  const pageSig = [tab, urg, q, bulan, kurir, bayar].join("|");
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const page = Math.min(pageState.sig === pageSig ? pageState.page : 1, totalPages);
+  const pagedTodo = todoRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pagedSent = sentRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const goPage = (p: number) => setPageState({ sig: pageSig, page: p });
 
   return (
     <div className="flex flex-col gap-4 p-6 md:p-9">
@@ -375,8 +388,8 @@ export default function PengirimanClient({
                     <span />
                     <span />
                   </div>
-                  {todoRows.map((r, i) => {
-                    const up = todoRows.length > 3 && i >= todoRows.length - 2;
+                  {pagedTodo.map((r, i) => {
+                    const up = pagedTodo.length > 3 && i >= pagedTodo.length - 2;
                     return (
                       <div key={r.invoiceId} className="border-t border-line first:border-t-0">
                         <div className={`grid items-center gap-3 px-5 py-3 ${GRID_TODO}`}>
@@ -448,8 +461,8 @@ export default function PengirimanClient({
 
             {/* Mobile cards (below md) */}
             <div className="flex flex-col xl:hidden">
-              {todoRows.map((r, i) => {
-                const up = todoRows.length > 3 && i >= todoRows.length - 2;
+              {pagedTodo.map((r, i) => {
+                const up = pagedTodo.length > 3 && i >= pagedTodo.length - 2;
                 return (
                   <div key={r.invoiceId} className="border-t border-line px-4 py-3.5 first:border-t-0">
                     <div className="flex items-start justify-between gap-2">
@@ -541,7 +554,7 @@ export default function PengirimanClient({
                     <span>Dikirim oleh</span>
                     <span />
                   </div>
-                  {sentRows.map((r) => (
+                  {pagedSent.map((r) => (
                     <div
                       key={r.invoiceId}
                       className={`grid items-center gap-3 border-t border-line px-5 py-3 first:border-t-0 ${GRID_SENT}`}
@@ -575,7 +588,7 @@ export default function PengirimanClient({
             </div>
 
             <div className="flex flex-col xl:hidden">
-              {sentRows.map((r) => (
+              {pagedSent.map((r) => (
                 <div key={r.invoiceId} className="border-t border-line px-4 py-3.5 first:border-t-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 font-sans text-[0.9rem] font-extrabold">
@@ -613,6 +626,20 @@ export default function PengirimanClient({
           </>
         )}
       </Panel>
+
+      {totalPages > 1 && (
+        <nav aria-label="Halaman" className="flex items-center justify-between gap-3">
+          <button type="button" disabled={page <= 1} onClick={() => goPage(page - 1)} className={PAGE_BTN_CLS}>
+            ← Sebelumnya
+          </button>
+          <span className="font-mono text-[0.75rem] text-muted">
+            Halaman {page} dari {totalPages}
+          </span>
+          <button type="button" disabled={page >= totalPages} onClick={() => goPage(page + 1)} className={PAGE_BTN_CLS}>
+            Berikutnya →
+          </button>
+        </nav>
+      )}
     </div>
   );
 }
