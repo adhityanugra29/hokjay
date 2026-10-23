@@ -52,8 +52,8 @@ const TONE_CLS: Record<PengirimanTodoRow["tone"], string> = {
 
 const selectCls = "min-w-0 rounded-lg border border-line bg-panel px-3 py-2 font-sans text-[0.8rem] text-ink";
 const GRID_TODO =
-  "md:grid-cols-[130px_minmax(0,1.5fr)_80px_100px_76px_76px_88px_96px_minmax(0,150px)_32px]";
-const GRID_SENT = "md:grid-cols-[92px_minmax(0,1.5fr)_80px_110px_76px_76px_96px_110px_110px]";
+  "xl:grid-cols-[110px_minmax(0,1.6fr)_minmax(0,1fr)_72px_92px_minmax(0,160px)_32px]";
+const GRID_SENT = "xl:grid-cols-[92px_minmax(0,1.5fr)_minmax(0,1fr)_76px_76px_96px_100px_100px]";
 
 // Same look as the dark "Tandai Sudah Kirim" button on the invoice detail page (rounded-lg, ink fill, accent text), sized for a table row.
 const PRIMARY_CLS =
@@ -363,17 +363,14 @@ export default function PengirimanClient({
         ) : tab === "kirim" ? (
           <>
             {/* Desktop table (md+) */}
-            <div className="hidden md:block">
-              <div className="overflow-x-auto xl:overflow-visible">
-                <div className="min-w-[1000px]">
+            <div className="hidden xl:block">
+              <div>
+                <div>
                   <div className={`grid items-center gap-3 rounded-t-2xl bg-surface px-5 py-3 ${GRID_TODO} ${th}`}>
                     <span>Status</span>
                     <span>Pelanggan</span>
-                    <span>Kota</span>
                     <span>Kurir</span>
                     <span>Jadwal Kirim</span>
-                    <span>Tgl Kirim</span>
-                    <span>Ongkir</span>
                     <span>Pembayaran</span>
                     <span />
                     <span />
@@ -387,14 +384,16 @@ export default function PengirimanClient({
                           <span className="min-w-0 font-sans text-[0.85rem] font-extrabold">
                             {r.customerNama}
                             <small className="block font-mono text-[0.68rem] font-medium text-muted">
-                              {r.nomor} · {r.salesNama}
+                              {r.nomor} · {r.kota ?? "-"} · {r.salesNama}
                             </small>
                           </span>
-                          <span className="text-[0.8rem]">{r.kota ?? "-"}</span>
-                          <span className="text-[0.8rem]">{r.kurir || <span className="text-muted">Belum dipilih</span>}</span>
+                          <span className="min-w-0 text-[0.8rem]">
+                            {r.kurir || <span className="text-muted">Belum dipilih</span>}
+                            {r.ongkir ? (
+                              <small className="block font-mono text-[0.68rem] text-muted">{rupiah(r.ongkir)}</small>
+                            ) : null}
+                          </span>
                           <span className="font-mono text-[0.78rem] tabular-nums">{fmt(r.jadwal)}</span>
-                          <span className="font-mono text-[0.78rem] text-muted">Belum</span>
-                          <span className="font-mono text-[0.78rem] tabular-nums">{r.ongkir ? rupiah(r.ongkir) : "-"}</span>
                           <span>
                             <FollowUpStatusBadge status={r.bayar} />
                           </span>
@@ -448,7 +447,7 @@ export default function PengirimanClient({
             </div>
 
             {/* Mobile cards (below md) */}
-            <div className="flex flex-col md:hidden">
+            <div className="flex flex-col xl:hidden">
               {todoRows.map((r, i) => {
                 const up = todoRows.length > 3 && i >= todoRows.length - 2;
                 return (
@@ -529,13 +528,12 @@ export default function PengirimanClient({
           </>
         ) : (
           <>
-            <div className="hidden md:block">
-              <div className="overflow-x-auto xl:overflow-visible">
-                <div className="min-w-[960px]">
+            <div className="hidden xl:block">
+              <div>
+                <div>
                   <div className={`grid items-center gap-3 rounded-t-2xl bg-surface px-5 py-3 ${GRID_SENT} ${th}`}>
                     <span>Status</span>
                     <span>Pelanggan</span>
-                    <span>Kota</span>
                     <span>Kurir</span>
                     <span>Jadwal Kirim</span>
                     <span>Tgl Kirim</span>
@@ -553,9 +551,8 @@ export default function PengirimanClient({
                       </span>
                       <span className="min-w-0 font-sans text-[0.85rem] font-extrabold">
                         {r.customerNama}
-                        <small className="block font-mono text-[0.68rem] font-medium text-muted">{r.nomor}</small>
+                        <small className="block font-mono text-[0.68rem] font-medium text-muted">{r.nomor} · {r.kota ?? "-"}</small>
                       </span>
-                      <span className="text-[0.8rem]">{r.kota ?? "-"}</span>
                       <span className="min-w-0 text-[0.8rem]">
                         {r.kurir ?? "-"}
                         {r.noResiKirim && (
@@ -577,7 +574,7 @@ export default function PengirimanClient({
               </div>
             </div>
 
-            <div className="flex flex-col md:hidden">
+            <div className="flex flex-col xl:hidden">
               {sentRows.map((r) => (
                 <div key={r.invoiceId} className="border-t border-line px-4 py-3.5 first:border-t-0">
                   <div className="flex items-start justify-between gap-2">
