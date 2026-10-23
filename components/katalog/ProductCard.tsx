@@ -314,7 +314,7 @@ export default function ProductCard({
         )}
       </div>
       <div className="flex flex-1 flex-col p-4">
-        <div className="line-clamp-2 min-h-[2.75rem] text-[0.92rem] leading-snug font-medium">
+        <div className="line-clamp-2 min-h-[2.75rem] text-[0.92rem] leading-snug font-medium uppercase">
           {productDisplayName(product.name, product.merk)}
         </div>
         <div className="mt-1.5 flex flex-col gap-1.5">
@@ -600,7 +600,7 @@ export default function ProductCard({
             onClick={() => {
               addItem({
                 productId: product._id,
-                name: productDisplayName(product.name, product.merk),
+                name: productDisplayName(product.name, product.merk).toUpperCase(),
                 hargaJual: effectivePrice,
                 hargaMinimum: product.hargaMinimum,
                 hargaRekomendasi: product.hargaRekomendasi,

@@ -7,6 +7,7 @@ import CatalogPrintDoc from "@/components/cart/CatalogPrintDoc";
 import { CatalogSelectionProvider } from "@/components/katalog/CatalogSelectionProvider";
 import { LoadingOverlayProvider } from "@/components/ui/LoadingOverlay";
 import { DialogProvider } from "@/components/ui/Dialog";
+import EnterToNext from "@/components/ui/EnterToNext";
 import { getSession } from "@/lib/auth/session";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
@@ -71,6 +72,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="id" className={archivo.variable}>
       <body className="min-h-screen bg-paper text-ink font-sans antialiased">
+        <EnterToNext />
         <DialogProvider>
           <LoadingOverlayProvider>
             <CartProvider>

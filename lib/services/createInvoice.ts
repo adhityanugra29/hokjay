@@ -86,7 +86,7 @@ export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?:
       return {
         product: undefined,
         isCustom: true,
-        namaSnapshot: i.namaSnapshot || "Item Custom",
+        namaSnapshot: (i.namaSnapshot || "Item Custom").toUpperCase(),
         qty: i.qty,
         hargaJual: i.hargaJual,
         hargaMinimumSnapshot: 0,
@@ -135,7 +135,7 @@ export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?:
     return {
       product: product._id,
       isCustom: false,
-      namaSnapshot: productDisplayName(product.name, product.merk),
+      namaSnapshot: productDisplayName(product.name, product.merk).toUpperCase(),
       dimensiSnapshot: formatDimensi(product.dimensi),
       qty: i.qty,
       hargaJual,

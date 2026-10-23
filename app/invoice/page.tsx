@@ -5,7 +5,6 @@ import InvoiceFilterBar from "@/components/invoice/InvoiceFilterBar";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
-import { Courier } from "@/models/Courier";
 import { formatDateShort } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
 import { getSession } from "@/lib/auth/session";
@@ -78,8 +77,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   // jakartaMonthRange/jakartaYearRange filter by above.
   // The four reads are independent, so they run together (one round trip of latency instead of four in a row). Sales options are only
   // fetched for non-"sales" sessions (see salesFilter above): the roster, not just names on invoices, so a rep with no invoices still shows up.
-  // Couriers feed TandaiKirimButton's Kurir select.
-  const [periodeAgg, salesDocs, invoices, courierDocs] = await Promise.all([
+  const [periodeAgg, salesDocs, invoices] = await Promise.all([
     Invoice.aggregate<{ months: number[]; years: number[] }>([
       { $match: invoiceVisibilityFilter(session) },
       {
@@ -92,12 +90,10 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
     ]),
     session?.role !== "sales" ? Sales.find({ aktif: true }).sort({ nama: 1 }).lean() : Promise.resolve([] as { nama: string }[]),
     Invoice.find(filter).sort({ createdAt: -1 }),
-    Courier.find().sort({ name: 1 }).lean(),
   ]);
   const availableMonths = (periodeAgg[0]?.months ?? []).sort((a, b) => a - b);
   const availableYears = (periodeAgg[0]?.years ?? []).sort((a, b) => b - a);
   const availableSales = salesDocs.map((s) => s.nama);
-  const couriers = courierDocs.map((c) => ({ _id: String(c._id), name: c.name }));
 
   const rows: InvoiceRow[] = invoices.map((inv) => {
     const tanggal = inv.tanggalInvoice ?? inv.get("createdAt");
@@ -147,7 +143,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
           availableSales={availableSales}
         />
 
-        <InvoiceListClient rows={rows} couriers={couriers} />
+        <InvoiceListClient rows={rows} />
       </div>
     </>
   );

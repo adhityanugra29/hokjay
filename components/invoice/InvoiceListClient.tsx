@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import DeleteInvoiceButton from "./DeleteInvoiceButton";
-import TandaiKirimButton, { type CourierOption } from "./TandaiKirimButton";
 import InvoiceDocument from "./InvoiceDocument";
 import InvoicePrintDoc from "./InvoicePrintDoc";
 import { Button } from "@/components/ui/Button";
@@ -70,8 +69,6 @@ const DAY_NUM_CLASS: Record<InvoiceRowStatus, string> = {
 
 const STEP_SOLID_CLS =
   "block w-full rounded-lg border border-accent bg-accent px-3 py-1.5 text-center font-sans text-[0.72rem] font-bold text-ink no-underline hover:bg-accent-600";
-const STEP_DARK_CLS =
-  "block w-full cursor-pointer rounded-lg border border-ink bg-ink px-3 py-1.5 text-center font-sans text-[0.72rem] font-bold text-accent hover:bg-ink/85";
 const ICON_BTN_CLS =
   "group relative flex h-[34px] w-[34px] shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line text-ink no-underline hover:bg-black/5";
 
@@ -143,7 +140,7 @@ type FilterKey = "semua" | InvoiceRowStatus;
  * document (InvoiceDocument.tsx, shared with /invoice/[id]). The one-line summary is display only and tracks the active pill. Rows use fixed columns with a
  * chevron detail and, under "Semua", are grouped "Perlu tindakan"/"Selesai" (docs/SDD/mockups/invoice-list-v1.html).
  */
-export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow[]; couriers: CourierOption[] }) {
+export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
   const [filter, setFilter] = useState<FilterKey>("semua");
   const [previewId, setPreviewId] = useState<string | null>(null);
   // Which row's detail (sales / item / kurir / Ubah / Hapus) is open — one at a time.
@@ -237,17 +234,6 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
         <Link href={`/invoice/${r.id}`} className={STEP_SOLID_CLS}>
           Tandai Lunas
         </Link>
-      );
-    } else if (!r.dikirim) {
-      step = (
-        <TandaiKirimButton
-          invoiceId={r.id}
-          nomor={r.nomor}
-          customerNama={r.custNama}
-          couriers={couriers}
-          currentKurir={r.kurir}
-          className={STEP_DARK_CLS}
-        />
       );
     }
 
@@ -350,17 +336,6 @@ export default function InvoiceListClient({ rows, couriers }: { rows: InvoiceRow
             <DetailItem label="Pengiriman" value={r.kurir ?? "—"} />
             <DetailItem label="Dibuat" value={formatDateShort(r.tanggal)} />
             <div className="col-span-2 flex flex-wrap justify-end gap-2 md:col-span-1">
-              {/* Second lifecycle step, kept reachable here when the next-step
-                  button above is "Tandai Lunas". */}
-              {!isDraft && !isPaid && !r.dikirim && (
-                <TandaiKirimButton
-                  invoiceId={r.id}
-                  nomor={r.nomor}
-                  customerNama={r.custNama}
-                  couriers={couriers}
-                  currentKurir={r.kurir}
-                />
-              )}
               {canEdit && (
                 <Link
                   href={`/invoice/${r.id}/ubah`}

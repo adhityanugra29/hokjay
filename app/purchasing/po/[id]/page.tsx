@@ -58,7 +58,7 @@ export default async function PurchaseOrderDetailPage({ params }: PageProps<"/pu
                 <tbody>
                   {po.items.map((item, idx) => (
                     <tr key={idx}>
-                      <td className="border-b border-line px-5 py-4.5 font-medium">{item.namaSnapshot}</td>
+                      <td className="border-b border-line px-5 py-4.5 font-medium">{item.namaSnapshot.toUpperCase()}</td>
                       <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{item.qty}</td>
                       <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">
                         {rupiah(item.hargaSatuan)}

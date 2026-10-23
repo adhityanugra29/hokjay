@@ -105,7 +105,7 @@ export default function EditProductDrawer({
         <div className="flex items-center justify-between border-b border-line bg-surface px-5 py-4">
           <div>
             <div className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">Ubah Produk</div>
-            <h2 className="font-sans text-[1rem] font-extrabold text-ink">{product.name}</h2>
+            <h2 className="font-sans text-[1rem] font-extrabold text-ink uppercase">{product.name}</h2>
           </div>
           <div className="flex items-center gap-2">
             {/* Owner-only — per the user's request 2026-09-07 ("Fitur

@@ -54,7 +54,7 @@ export default function MobileProdukList({
                 <div className="mt-0.5 truncate font-mono text-[0.7rem] text-muted">{formatDimensi(p.dimensi)}</div>
               )}
               <div className="mt-0.5 truncate font-mono text-[0.64rem] text-muted">
-                {p.category}
+                {p.category.toUpperCase()}
                 {p.merk ? ` · ${p.merk}` : ""} · {p.sku}
               </div>
             </div>

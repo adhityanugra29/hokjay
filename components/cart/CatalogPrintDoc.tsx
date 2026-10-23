@@ -362,7 +362,7 @@ export default function CatalogPrintDoc({ user }: { user: { nama: string; role: 
                   <Fragment key={p._id}>
                     {categoryLabel && (
                       <div className="mb-4 flex items-baseline justify-between gap-4 border-b-2 border-line pb-3">
-                        <h2 className="text-[22px] font-extrabold">{categoryLabel}</h2>
+                        <h2 className="text-[22px] font-extrabold">{categoryLabel.toUpperCase()}</h2>
                       </div>
                     )}
                     <div className="mb-5 flex gap-5 border-t border-line pt-5">
