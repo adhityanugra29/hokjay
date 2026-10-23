@@ -18,7 +18,7 @@ export interface CreateInvoiceItemInput {
   qty: number;
   hargaJual: number;
   diskonPerUnit?: number;
-  /** Snapshotted client-side at add-to-cart time — see ProductCard.tsx/AddProductSidebar.tsx. Per the user's request 2026-08-29. */
+  /** Snapshotted client-side at add-to-cart time — see ProductCard.tsx/AddProductSidebar.tsx. */
   isFlashSale?: boolean;
 }
 
@@ -31,10 +31,8 @@ export interface CreateInvoiceInput {
   kota?: string;
   catatan?: string;
   /**
-   * This invoice's own Syarat & Ketentuan text. undefined = leave as is
-   * (update only), null = follow the Admin → Invoice template, string =
-   * custom ("" = no S&K). See lib/services/syaratKetentuan.ts. Per the
-   * user's request 2026-10-12.
+   * This invoice's own Syarat & Ketentuan. undefined = leave as is (update only), null = follow the Admin → Invoice template,
+   * string = custom ("" = no S&K). See lib/services/syaratKetentuan.ts.
    */
   syaratKetentuan?: string | null;
   salesId?: string;
@@ -48,29 +46,15 @@ export interface CreateInvoiceInput {
 }
 
 /**
- * Creates an invoice. Sending it ("unpaid", not draft) does NOT touch stock
- * or accounting anymore — per the user's request 2026-08-27, an unpaid
- * invoice is just a "Booked" reservation (or "Sudah DP" once a down
- * payment lands, see receiveDp.ts), visible in Katalog but not yet
- * physically deducted. Stock, revenue, HPP, and commission are all only
- * ever recognized together at actual payment confirmation (see
- * payInvoice.ts's postInvoiceLunas). This function still validates
- * available stock isn't obviously oversold at booking time (a soft check —
- * the authoritative one runs at payInvoice time, since stock isn't
- * reserved between booking and payment) and still snapshots each item's
- * commission rate and cost basis (hargaBeliSnapshot) using the product's
- * CURRENT kondisi/harga at booking time, so a later price change never
- * retroactively changes what was already agreed with this customer.
- * Custom-order items (no productId) never touch stock but do earn the flat
- * 6% "barang baru" commission rate.
+ * Creates an invoice. Sending it ("unpaid") does NOT touch stock or accounting: an unpaid invoice is a "Booked" reservation
+ * ("Sudah DP" once a DP lands, see receiveDp.ts). Stock, revenue, HPP and commission are only recognized at payment
+ * (payInvoice.ts postInvoiceLunas). Validates available stock with a soft check (the authoritative one runs at payInvoice, since stock
+ * isn't reserved) and snapshots each item's commission rate and cost basis (hargaBeliSnapshot) from the CURRENT product state, so later
+ * price changes never rewrite an agreed invoice. Custom-order items (no productId) never touch stock and earn the flat 6% baru rate.
  */
 export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?: boolean } = {}) {
   await dbConnect();
-  // Owner-only, resolved by the caller from the CURRENT SESSION's role
-  // (never a client-supplied field on `input`) — per the user's request
-  // 2026-09-05 ("khusus untuk owner hojay, plafon diskon di hilangkan,
-  // jadi bisa untuk diskon sampai 100% nilai barang"). See
-  // lib/commission.ts's maxDiskonBaru/maxDiskonBekas `unlimited` param.
+  // Owner-only: resolved by the caller from the SESSION role, never a client field on `input`. See maxDiskonBaru/maxDiskonBekas `unlimited`.
   const unlimited = opts.isOwner ?? false;
 
   if (input.items.length === 0) {
@@ -94,15 +78,8 @@ export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?:
     const rawDiskon = i.diskonPerUnit ?? 0;
 
     if (!i.productId) {
-      // Custom-order item: no product reference/stock, but still earns the
-      // flat 6% "barang baru/custom" commission rate on its sale price —
-      // after diskon, per the user's request 2026-08-29 (a discount now
-      // proportionally reduces commission instead of the sales rep
-      // keeping full commission on a discounted sale). Clamped the same
-      // way as a regular barang baru line — maxDiskonBaru(hargaJual, 0)
-      // degrades to hargaJual itself here since there's no real Harga
-      // Bottom for a bespoke item — closes BUG-004, this had no ceiling
-      // at all before.
+      // Custom-order item: no product/stock; earns the flat 6% on the price after diskon. Diskon is clamped like a baru line
+      // (maxDiskonBaru(hargaJual, 0) degrades to hargaJual: a bespoke item has no real Harga Bottom).
       const diskon = i.isFlashSale ? rawDiskon : Math.min(rawDiskon, maxDiskonBaru(i.hargaJual, 0, unlimited));
       const subtotal = (i.hargaJual - diskon) * i.qty;
       const komisiPerItem = computeLineCommission({ isCustom: true, hargaJual: i.hargaJual, hargaMinimum: 0, diskon });
@@ -123,39 +100,18 @@ export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?:
 
     const product = productMap.get(i.productId);
     if (!product) throw new Error(`Produk ${i.productId} tidak ditemukan`);
-    // Soft check only — stock isn't actually reserved by a Booked/DP'd
-    // invoice anymore (see the function doc comment above), so this just
-    // catches an obviously-impossible booking. The authoritative check
-    // that actually blocks overselling runs at payInvoice time, since
-    // several bookings can now compete for the same physical stock.
+    // Soft check only: Booked/DP'd invoices don't reserve stock; the authoritative oversell check runs at payInvoice time.
     if (finalize && product.stok < i.qty) {
       throw new Error(`Stok ${product.name} tidak cukup (sisa ${product.stok})`);
     }
-    // Harga Jual can't go below Harga Minimum — server-side enforcement of
-    // the same floor the client already clamps to on blur (ProductCard.tsx/
-    // ItemRowEditor.tsx), so a raw API request can't bypass it. Per the
-    // user's report 2026-08-30 ("kenapa masih bisa untuk masukan harga
-    // dibawah harga minimum?"). Silently clamped (not rejected), same
-    // treatment as the diskon cap below. N/A for Flash Sale items — their
-    // hargaJual IS the locked flash price, which can legitimately sit
-    // below the product's normal hargaMinimum.
+    // Harga Jual can't go below Harga Minimum (server-side twin of the client clamp in ProductCard/ItemRowEditor, so a raw API request
+    // can't bypass it); silently clamped. N/A for Flash Sale: its hargaJual is the locked flash price, which may sit below hargaMinimum.
     const hargaJual =
       !i.isFlashSale && i.hargaJual > 0 && i.hargaJual < product.hargaMinimum
         ? product.hargaMinimum
         : i.hargaJual;
-    // Diskon can't exceed maxDiskonBekas for barang bekas (or maxDiskonBaru
-    // for barang baru — closes BUG-004, found while designing TASK-003:
-    // this side had NO server-side ceiling at all before, only bekas did)
-    // — server-side enforcement of the same caps the client already clamps
-    // to on blur (ProductCard.tsx/ItemRowEditor.tsx), so a raw API request
-    // can't bypass either. Per the user's request 2026-08-29 ("besaran
-    // diskon ... tidak boleh lebih dari total insentif yang diberikan").
-    // Silently clamped (not rejected). N/A when this line is a Flash Sale
-    // item — Diskon is locked at 0 for those regardless.
-    // Owner-only override chain (2026-09-03): the product's own rate wins,
-    // then its category's default, then the original global 10% — see
-    // resolveKomisiBekasPercent(). Resolved server-side from the DB, never
-    // trusted from the client, same as everything else in this function.
+    // Diskon is silently clamped to maxDiskonBekas / maxDiskonBaru (server-side twin of the client caps); N/A for Flash Sale (diskon
+    // locked at 0). Bekas rate: product override > category default > 10% (resolveKomisiBekasPercent), from the DB, never the client.
     const komisiBekasPercent = resolveKomisiBekasPercent(
       product.komisiBekasPercent,
       kategoriKomisiBekasMap.get(product.category)
@@ -166,15 +122,8 @@ export async function createInvoice(input: CreateInvoiceInput, opts: { isOwner?:
         ? Math.min(rawDiskon, maxDiskonBekas(hargaJual, product.hargaMinimum, komisiBekasPercent, unlimited))
         : Math.min(rawDiskon, maxDiskonBaru(hargaJual, product.hargaMinimum, unlimited));
     const subtotal = (hargaJual - diskon) * i.qty;
-    // Commission is computed from the product's *current* kondisi/harga
-    // minimum (never trusting client-supplied values for this) — see
-    // lib/commission.ts for the baru/custom vs bekas formula, which now
-    // handles the diskon subtraction internally (including flooring at 0
-    // for barang bekas) — per the user's request 2026-08-29. Flash Sale
-    // items get their own flat 7% instead, bypassing kondisi/hargaMinimum
-    // entirely — reverted the same day from an earlier attempt at
-    // treating the Flash Sale price as a "new Harga Minimum" fed into
-    // this same formula.
+    // Commission comes from the product's CURRENT kondisi/hargaMinimum, never client values (formula + diskon handling: lib/commission.ts).
+    // Flash Sale items get a flat 7% that bypasses kondisi/hargaMinimum.
     const komisiPerItem = computeLineCommission({
       kondisi: product.kondisi as "baru" | "bekas",
       hargaJual,

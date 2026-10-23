@@ -1,6 +1,5 @@
 /**
- * Sales commission formula (per invoice line, per unit), agreed with the
- * user 2026-08-18:
+ * Sales commission formula (per invoice line, per unit):
  *
  * - Barang baru / custom: flat 6% of the actual sale price, even if sold
  *   above the recommended/base price (no bonus for markup on new goods).
@@ -11,24 +10,10 @@
  *   price above the floor keeps the extra margin as commission instead of
  *   being capped at 10%.
  */
-/**
- * Global fallback rate for barang bekas commission (% of Harga
- * Bottom/Minimum) when neither the product nor its category has an
- * override set — see resolveKomisiBekasPercent() below. This is the exact
- * rate every bekas product effectively used before per-product/per-category
- * overrides existed (2026-09-03), so leaving both overrides unset must
- * reproduce the old behavior exactly.
- */
+/** Global fallback bekas rate (% of Harga Bottom/Minimum) when neither the product nor its category overrides it. */
 export const DEFAULT_KOMISI_BEKAS_PERCENT = 10;
 
-/**
- * Resolves the effective barang-bekas commission rate for one product:
- * its own override wins if set, otherwise its category's default, otherwise
- * the global 10%. Per the user's request 2026-09-03 ("kalau dia ganti per
- * kategori dia akan mengganti semua kategori, tapi kalau dia mau ganti per
- * produk, perubahan kategori ini tidak berlaku untuk yang per produk") —
- * product-level always wins over category-level.
- */
+/** Effective bekas rate: product override > category override > global 10% (a product override always wins over its category). */
 export function resolveKomisiBekasPercent(
   productOverride?: number | null,
   categoryOverride?: number | null
@@ -44,13 +29,7 @@ export interface KomisiInfo {
   source: "flat-baru" | "override-produk" | "default-kategori" | "default-global";
 }
 
-/**
- * Same resolution order as resolveKomisiBekasPercent (product override ->
- * category override -> global 10%), but also reports WHICH one won — per
- * the user's request 2026-09-19 ("tambahkan tabel % Komisi") after a real
- * support question ("kenapa komisinya 300.000") turned out to hinge on a
- * silent per-product override with no visibility anywhere in the UI.
- */
+/** Same order as resolveKomisiBekasPercent, but also reports WHICH rule won (explains a surprising commission caused by a silent per-product override). */
 export function getEffectiveKomisiInfo(
   kondisi: "baru" | "bekas" | undefined,
   productOverride?: number | null,
@@ -88,32 +67,11 @@ export function computeLineCommission({
   /** The listed/raw sale price — NOT pre-reduced by diskon. Pass diskon separately below. */
   hargaJual: number;
   hargaMinimum: number;
-  /**
-   * Effective barang-bekas commission rate (%, e.g. 10 for 10%) — pass the
-   * result of resolveKomisiBekasPercent() so a product/category override
-   * (Owner-only, per the user's request 2026-09-03) applies here. Ignored
-   * for baru/custom (flat 6%, see below) and Flash Sale (flat 7%).
-   * Defaults to the original global 10% if not passed.
-   */
+  /** Effective bekas rate (%, e.g. 10) from resolveKomisiBekasPercent(); ignored for baru/custom (flat 6%) and Flash Sale (flat 7%). Defaults to 10. */
   komisiBekasPercent?: number;
-  /**
-   * Diskon /unit — per the user's request 2026-08-29, worked through
-   * three examples the same day to land on the formula below (see the
-   * bekas branch). For barang baru/custom, still folded into hargaJual
-   * before the flat 6% (proportional, naturally reaches 0 as price does —
-   * no floor to worry about there). Not consulted at all when isFlashSale
-   * is true — Diskon is locked at 0 during a Flash Sale anyway.
-   */
+  /** Diskon /unit. Baru/custom: folded into hargaJual before the flat 6%. Bekas: see the bekas branch. Ignored for Flash Sale (diskon locked at 0). */
   diskon?: number;
-  /**
-   * Flat 7% of the (locked, top-down) Flash Sale price — per the user's
-   * request 2026-08-29, reverting an earlier same-day attempt at feeding
-   * the Flash Sale price into the normal barang-bekas floor logic as a
-   * "new Harga Minimum". Back to the original idea: Flash Sale pricing is
-   * its own thing, not a variant of the bekas formula — so it fully
-   * bypasses kondisi/hargaMinimum/diskon here, the same way isCustom's
-   * flat 6% doesn't consult hargaMinimum either.
-   */
+  /** Flash Sale: flat 7% of the locked Flash Sale price; bypasses kondisi/hargaMinimum/diskon entirely (not a variant of the bekas formula). */
   isFlashSale?: boolean;
 }): number {
   if (isFlashSale) {
@@ -124,24 +82,10 @@ export function computeLineCommission({
     return Math.round((hargaJual - diskon) * 0.06);
   }
 
-  // Barang bekas, verified against three worked examples 2026-08-29
-  // (100rb/150rb/60rb diskon -> 0; 100rb/200rb/60rb diskon -> 40rb;
-  // 5.000.000rb/6.000.000rb/700.000 diskon -> 500rb) — all three assume
-  // the default 10% rate; komisiBekasPercent (2026-09-03) generalizes the
-  // same shape to whatever rate resolveKomisiBekasPercent() resolves to.
-  //
-  // The 10%-of-Harga-Minimum `base` is a guarantee that only makes sense
-  // while the sale is still actually happening above Harga Minimum — so
-  // it's re-applied as a floor to whatever the (already-discounted)
-  // selisih comes out to, AFTER diskon has been subtracted, not before.
-  // Once diskon pushes the sale price at or below Harga Minimum, that
-  // same guarantee erodes dollar-for-dollar by how far below the floor
-  // it's fallen, down to (and no lower than) 0. This replaces an earlier
-  // same-day version that subtracted diskon from the *already-floored*
-  // full-price commission — which let a large selisih "absorb" diskon
-  // that should have been protected by the base guarantee instead (see
-  // the 6jt/5jt/700rb example: that version gave 300rb, not the correct
-  // 500rb).
+  // Bekas. Worked examples at the default 10% (min/jual/diskon): 100rb/150rb/60rb -> 0; 100rb/200rb/60rb -> 40rb;
+  // 5.000.000/6.000.000/700.000 -> 500rb. The 10%-of-minimum `base` is a guarantee that only holds while the sale is above Harga
+  // Minimum, so it is re-applied as a floor AFTER diskon is subtracted; once diskon pushes the price to/below the minimum it erodes
+  // rupiah-for-rupiah, down to 0. (Subtracting diskon from the already-floored commission let a large markup "absorb" diskon.)
   const base = Math.round(hargaMinimum * (komisiBekasPercent / 100));
   const effective = hargaJual - diskon;
   if (effective > hargaMinimum) {
@@ -151,41 +95,13 @@ export function computeLineCommission({
 }
 
 /**
- * Diskon /unit cap for barang bekas, per the user's request 2026-08-29
- * ("besaran diskon ... tidak boleh lebih dari total insentif yang
- * diberikan"), refined the same day with a worked example: at
- * hargaMinimum=100rb (base=10rb) and hargaJual=150rb (komisi=50rb, the
- * selisih markup), the sales rep's actual max diskon should be 60rb, not
- * a flat 10rb — "kalau 50.000 itu baseline, tapi sales masih ada margin
- * 10.000 insentif yang bisa mereka pakai untuk jadi diskon". I.e. the cap
- * scales with how much markup is already priced in above the floor, plus
- * the same 10%-of-minimum margin every bekas item carries:
- *
- *   maxDiskon = (hargaJual - hargaMinimum) + 10%×hargaMinimum
- *
- * This is a strict generalization of the original flat "10% of Harga
- * Minimum" rule — it reduces to exactly that when hargaJual equals
- * hargaMinimum (no markup priced in, selisih term is 0), which is why
- * the very first version of this cap (10% flat) matched the user's
- * initial description but not this more complete one. Floored at 0
- * defensively, though hargaJual should never actually be below
- * hargaMinimum in practice — see ProductCard.tsx's/ItemRowEditor.tsx's
- * own below-minimum-price guard, which prevents that case from arising
- * in the first place.
- *
- * `komisiBekasPercent` (2026-09-03, defaults to the original 10%) —
- * generalizes the "10%×hargaMinimum" term above to whatever rate
- * resolveKomisiBekasPercent() resolves for this product, so the diskon cap
- * always tracks the same guaranteed-commission margin computeLineCommission
- * actually pays out, even when that rate's been overridden.
- *
- * `unlimited` (2026-09-05) — Owner-only ("khusus untuk owner hojay, plafon
- * diskon di hilangkan, jadi bisa untuk diskon sampai 100% nilai barang"):
- * when true, skips the margin-protection formula entirely and returns
- * `hargaJual` itself, so diskon can go all the way to the full sale price
- * (net Rp0). Every caller resolves this from the CURRENT SESSION's role
- * server-side (never a client-supplied flag) before passing it in — see
- * createInvoice.ts/updateInvoice.ts.
+ * Diskon /unit cap for bekas: the markup already priced in above the floor plus the protected margin:
+ *   maxDiskon = (hargaJual - hargaMinimum) + komisiBekasPercent% × hargaMinimum
+ * e.g. min 100rb, jual 150rb -> 50rb markup + 10rb margin = 60rb. Reduces to the flat "10% of minimum" when hargaJual = hargaMinimum.
+ * Floored at 0 defensively (the below-minimum price guard in ProductCard/ItemRowEditor normally prevents jual < min).
+ * `komisiBekasPercent` tracks the resolved override so the cap always matches what computeLineCommission pays.
+ * `unlimited` (Owner only): skips the formula and returns hargaJual (diskon up to 100%). Callers resolve it from the SESSION role
+ * server-side, never from a client flag — see createInvoice.ts/updateInvoice.ts.
  */
 export function maxDiskonBekas(
   hargaJual: number,
@@ -198,34 +114,13 @@ export function maxDiskonBekas(
   return Math.max(0, hargaJual - hargaMinimum + base);
 }
 
-/**
- * Flat commission rate for barang baru/custom — matches the 0.06 hardcoded
- * in computeLineCommission's baru/custom branch above. Named here so
- * maxDiskonBaru (below) can reference it as a percent without repeating
- * the magic number in two different shapes (0.06 vs 6).
- */
+/** Flat commission rate (%) for barang baru/custom; matches the 0.06 in computeLineCommission. */
 export const DEFAULT_KOMISI_BARU_PERCENT = 6;
 
 /**
- * Diskon /unit cap for barang baru/custom. Corrected 2026-09-03 — the
- * original TASK-003 decision (2026-08-30) capped this at the sale price
- * itself ("commission can go all the way to Rp0"), which the user
- * subsequently flagged as wrong once bulk diskon could actually dump an
- * entire request into one Baru line with no real protection ("sejak kapan
- * plafon diskon itu 100% dari harga jual? plafon itu kan berdasarkan, 1
- * selisih dari harga jual dengan harga bottom + komisi dari harga bottom").
- * Now the exact same shape as maxDiskonBekas — the markup already priced in
- * above Harga Bottom, plus a protected margin worth the flat 6% commission
- * rate — just parameterized with 6% instead of a resolved bekas rate.
- * computeLineCommission's baru/custom formula itself is untouched (still
- * flat 6% of hargaJual-diskon, never consults hargaMinimum) — only this cap
- * changes. For a true custom-order line with no backing product
- * (hargaMinimum snapshotted as 0, see createInvoice.ts), this correctly
- * degrades back to hargaJual itself — there's no real Harga Bottom to
- * protect there.
- *
- * `unlimited` (2026-09-05) -- see maxDiskonBekas's matching doc comment;
- * same Owner-only "up to 100% of item value" override.
+ * Diskon /unit cap for baru/custom: same shape as maxDiskonBekas, with a protected margin of the flat 6% rate. computeLineCommission
+ * itself is unchanged (flat 6% of hargaJual-diskon). A true custom-order line has hargaMinimum 0 (see createInvoice.ts), so this
+ * degrades to hargaJual. `unlimited`: see maxDiskonBekas.
  */
 export function maxDiskonBaru(hargaJual: number, hargaMinimum: number, unlimited = false): number {
   if (unlimited) return hargaJual;
@@ -270,23 +165,10 @@ function diskonCapUnit(line: BulkDiskonLine, unlimited: boolean): number {
 }
 
 /**
- * Distributes one total discount amount across eligible invoice lines —
- * TASK-003, confirmed with the user 2026-08-30. Skips Flash Sale lines
- * (diskon locked at 0 by existing rules) and any line that already has a
- * manually-typed diskon — bulk diskon only ever fills lines currently at
- * Rp0, never overwrites a manual entry. Greedy: exhausts Baru/Custom
- * capacity first (6x cheaper commission-wise per rupiah than Bekas), then
- * spills into Bekas only if the total isn't covered yet. Every line's
- * resulting diskonPerUnit is a clean Rp10.000 multiple — filled to the
- * nearest step below the ideal split, then any leftover (from that
- * rounding, or simply because the total exceeds every eligible line's
- * combined capacity) is redistributed in further Rp10.000 steps,
- * cheapest-line-first, until either the request is met or every eligible
- * line is maxed out.
- *
- * `unlimited` (2026-09-05) — see maxDiskonBekas's matching doc comment;
- * per the user's explicit request, the Owner-only "no plafon" override
- * applies everywhere diskon is capped, Diskon Bulk included.
+ * Distributes one total discount across eligible lines. Skips Flash Sale lines (diskon locked at 0) and lines with a manual diskon
+ * (only fills lines at Rp0). Greedy: exhausts Baru/Custom capacity first (6x cheaper commission per rupiah than Bekas), then spills
+ * into Bekas. Every diskonPerUnit is a multiple of Rp10.000: filled to the nearest step below the ideal split, leftovers redistributed
+ * in further steps, cheapest line first, until met or every line is maxed out. `unlimited` (Owner only): see maxDiskonBekas.
  */
 export function allocateBulkDiskon(
   lines: BulkDiskonLine[],

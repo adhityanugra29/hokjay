@@ -41,8 +41,7 @@ export async function getSalesRanking(period: string): Promise<SalesRanking[]> {
       komisiBelumCairCount: 0,
     };
     for (const item of inv.items) {
-      // Jasa (service fee) lines don't count toward a sales rep's qty or
-      // penjualan on the leaderboard — per the user's request 2026-10-07.
+      // Jasa (service fee) lines don't count toward a rep's qty/penjualan on the leaderboard.
       if (item.isJasa) continue;
       row.qty += item.qty;
       row.totalPenjualan += item.subtotal;
@@ -66,14 +65,8 @@ export interface SalesBoardRow {
   lewatTarget: boolean;
   selisih: number;
   /**
-   * Sum of item subtotals from this period's DP'd or plain-unpaid invoices
-   * (status "unpaid", either way — not yet fully paid) for this sales,
-   * shown as a small "+ Estimasi" line under the confirmed totalPenjualan.
-   * Never affects ranking/sort/target-progress — those stay Lunas-only.
-   * Deliberately does NOT include a commission figure (komisi) alongside
-   * this — per the user's explicit correction 2026-09-19 ("saya lupa itu
-   * privasi"): a sales rep's commission is private, not something to show
-   * on a leaderboard every other sales can see.
+   * Item subtotals from this period's DP'd or plain-unpaid invoices, shown as a small "+ Estimasi" line. Never affects ranking/sort/target
+   * progress (Lunas-only). Deliberately no komisi figure here: a rep's commission is private and the board is visible to every sales.
    */
   estimasiSales: number;
 }
@@ -87,14 +80,7 @@ export interface SalesBoard {
   daysRemaining: number;
 }
 
-/**
- * This period's DP'd or plain-unpaid invoices (status "unpaid" either
- * way — not yet fully paid), bucketed by tanggalInvoice since they have
- * no payment.tanggalBayar yet to bucket by. Feeds getSalesBoard's
- * "Estimasi Sales" line — per the user's request 2026-09-19 ("estimasi
- * sales dan insentif, angkanya dari yang sudah DP dan yang belum
- * lunas").
- */
+/** This period's unpaid invoices (DP'd or not), bucketed by tanggalInvoice (no payment date yet). Feeds getSalesBoard's "Estimasi Sales". */
 async function getUnpaidInvoicesForPeriod(period: string) {
   await dbConnect();
   const { start, end } = periodRange(period);
@@ -105,18 +91,9 @@ async function getUnpaidInvoicesForPeriod(period: string) {
 }
 
 /**
- * Powers the Leaderboard Sales board (design "5a" from the mockup doc the
- * user supplied 2026-08-24) — team-wide target progress + a countdown, then
- * each sales's own achievement against their individual target. Target is
- * Sales.targetBulanan (0 = not set, admin fills it in via Kelola User).
- *
- * "Estimasi Sales" (2026-09-19) — a second, smaller figure per row from
- * this period's DP'd/unpaid invoices, previewed with the user as an HTML
- * mockup before building. Deliberately does NOT affect ranking, the
- * target-progress bar, or which sales sorts to the highlighted #1 spot —
- * all of that stays exactly as before, Lunas-only. A sales with unpaid
- * invoices but zero Lunas ones yet still gets a row (totalPenjualan 0,
- * estimasiSales > 0) rather than being left off the board entirely.
+ * Leaderboard Sales board: team-wide target progress + countdown, then each sales's achievement against Sales.targetBulanan (0 = not set).
+ * "Estimasi Sales" (unpaid invoices) is a secondary figure per row and never affects ranking, the target bar or the #1 spot (Lunas-only);
+ * a sales with only unpaid invoices still gets a row (totalPenjualan 0, estimasiSales > 0).
  */
 export async function getSalesBoard(period: string): Promise<SalesBoard> {
   await dbConnect();
@@ -143,9 +120,7 @@ export async function getSalesBoard(period: string): Promise<SalesBoard> {
     estimasiByNama.set(nama, (estimasiByNama.get(nama) ?? 0) + subtotal);
   }
 
-  // Union of both sets of names — a sales with only unpaid invoices this
-  // period (no Lunas yet) still gets a row, per the user's confirmed
-  // default while planning this feature.
+  // Union of both name sets: a sales with only unpaid invoices this period still gets a row.
   const allNama = new Set([...map.keys(), ...estimasiByNama.keys()]);
 
   const rows: SalesBoardRow[] = [...allNama]
@@ -196,12 +171,8 @@ export interface MyCommissionSummary {
 }
 
 /**
- * One sales's own commission for the period, split by what's already safe
- * (invoice paid) vs held up (invoice still unpaid) — powers "Komisi Saya"
- * (mobile "9b" mockup, 2026-08-26). Deliberately not the same split as
- * komisiCair (Payroll's own-been-disbursed-yet tracking) — this is about
- * whether the *customer* has paid, which is what actually determines
- * whether the commission is real yet from the sales rep's perspective.
+ * One sales's commission for the period, split by whether the *customer* has paid (sudahAman) or not (tertahan). Not the same split as
+ * komisiCair (whether the company has transferred it to the rep).
  */
 export async function getMyCommissionSummary(salesNama: string, period: string): Promise<MyCommissionSummary> {
   await dbConnect();
@@ -244,25 +215,15 @@ export interface UnpaidCommissionSales {
 }
 
 /**
- * Outstanding ("belum cair") commission grouped by sales — not scoped to a
- * period, since Admin needs to see everything still owed regardless of
- * when it was earned. Backs the /payroll landing page's Komisi tab (moved
- * from the standalone /bayar-komisi 2026-08-23).
- */
-/**
- * Login accounts with the "owner" role, by nama — a Sales roster entry
- * sharing that exact name is the Owner's own name matching how they show
- * up as a "sales" on old invoices, not a real commission-earning rep. Per
- * the user's request 2026-09-04 ("andi abdillah di payroll, tidak perlu
- * ada komisinya (karena dia owner)"): scoped to role, not the one name, so
- * it keeps holding if the Owner account is ever renamed or a second Owner
- * account is added.
+ * Nama of login accounts with role "owner": a Sales roster entry with that exact name is the Owner's own name on old invoices, not a
+ * commission-earning rep. Scoped to role so it survives a rename or a second Owner account.
  */
 async function getOwnerNames(): Promise<Set<string>> {
   const owners = await User.find({ role: "owner" }).select("nama").lean();
   return new Set(owners.map((o) => o.nama));
 }
 
+/** Outstanding ("belum cair") commission grouped by sales, not scoped to a period (Admin needs everything still owed). Backs /payroll's Komisi tab. */
 export async function getUnpaidCommissionBySales(): Promise<UnpaidCommissionSales[]> {
   await dbConnect();
   const [invoices, ownerNames] = await Promise.all([
@@ -368,25 +329,12 @@ export interface MyKomisiOverview {
 }
 
 /**
- * Komisi Saya's data (redesign 2026-10-01, mockup-approved). Two statuses,
- * named by the user: "Komisi Siap Cair" (invoice lunas, commission not yet
- * transferred — the headline) and "Komisi Tertunda" (invoice not fully paid
- * yet — a small secondary figure, never added into the headline; the old
- * "Komisi berjalan" summed both, which read as money already earned).
- * Commission that HAS been transferred is not a figure of its own — it lives
- * in the payout history (payouts / totalDiterimaTahun).
- *
- * Both statuses are balances "up to the end of the selected month" (lunas by
- * payment.tanggalBayar — same basis as the Leaderboard; unpaid by
- * tanggalInvoice since they have no payment date yet), earlier months
- * included on purpose: an unpaid / not-yet-transferred invoice from
- * September must not vanish from the October view (the old summary dropped
- * it). Rows from before the selected month carry asalPeriode. Month
- * boundaries are GMT+7 (lib/timezone.ts), not server-local time.
- *
- * Payouts are re-grouped from Invoice.komisiCair* the same way
- * getPayrollHistory does (sales + komisiCairTanggal + bukti identify one
- * batch) — there's no dedicated payout record — but scoped to one sales.
+ * Komisi Saya's data. "Komisi Siap Cair" (invoice lunas, not yet transferred) is the headline; "Komisi Tertunda" (invoice not fully
+ * paid) is secondary and never added into it. Transferred commission has no figure of its own: it lives in the payout history.
+ * Both are balances up to the END of the selected month (lunas by payment.tanggalBayar like the Leaderboard; unpaid by tanggalInvoice),
+ * earlier months included on purpose so an outstanding invoice never vanishes on the 1st; carried rows get asalPeriode. Month
+ * boundaries are GMT+7 (lib/timezone.ts). Payouts are re-grouped from Invoice.komisiCair* like getPayrollHistory (sales +
+ * komisiCairTanggal + bukti = one batch; there is no dedicated payout record), scoped to one sales.
  */
 export async function getMyKomisiOverview(salesNama: string, period: string): Promise<MyKomisiOverview> {
   await dbConnect();

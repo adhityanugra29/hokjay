@@ -8,10 +8,8 @@ import { PRODUK_BARU_DAYS, NEW_STOCK_DAYS } from "@/lib/constants";
 import { resolveKomisiBekasPercent } from "@/lib/commission";
 import type { KatalogProduct } from "@/components/katalog/ProductCard";
 
-// Only these roles get the inline "edit product" pencil / the raw Flash
-// Sale override field — moved here from app/katalog/page.tsx (2026-09-04,
-// TASK-012) so app/api/katalog/route.ts can apply the exact same gating
-// on every subsequent paginated request without a second, driftable copy.
+// Roles allowed the inline "edit product" pencil / raw Flash Sale override; shared by app/katalog/page.tsx and app/api/katalog/route.ts so both
+// gate identically.
 export const CAN_EDIT_PRODUCT_ROLES = ["manager", "owner", "super_admin"];
 export const CAN_FLASH_SALE_ROLES = ["owner", "super_admin"];
 
@@ -29,32 +27,12 @@ export interface ProductInvoiceStatus {
 }
 
 /**
- * Per-product Booked/Sudah DP/SOLD status for the Katalog cards — added
- * 2026-08-27 alongside moving stock deduction to invoice-paid time. An
- * unpaid invoice ("Booked", or "Sudah DP" once a down payment lands) no
- * longer touches Product.stok at all, so without this a sales rep browsing
- * Katalog would have no idea a product already has a customer lined up for
- * it. Per the user's request: "supaya sales aware, siapa yang book".
- *
- * A product can have several simultaneous invoices (some Booked, some DP'd,
- * possibly by different sales reps) — this returns the combined qty/names
- * for each bucket rather than collapsing to one "most advanced" status, per
- * the user's confirmed choice.
- *
- * Reads status straight off Invoice.status/dp — NOT off StockMovement.
- * An earlier version derived "SOLD" from StockMovement("Penjualan")
- * records, which for an invoice finalized under the pre-2026-08-27 rule
- * (stock decremented at "unpaid" time, not "paid") wrongly showed SOLD for
- * an invoice that hadn't actually been paid yet. Per the user's bug report
- * 2026-08-27 ("jika belum dibayar, itu statusnya booked bukan sold").
- *
- * `excludeInvoiceId` — pass the invoice currently being edited (see the
- * Invoice "Tambah Produk" sidebar) so its own qty doesn't count against
- * itself. Without this, removing a product from the very invoice that was
- * the ONLY thing keeping it "Booked" still showed it as Booked/unavailable
- * until the edit was saved — the qty a sales rep is actively adjusting on
- * this invoice was never really "someone else's" claim on the product. Per
- * the user's bug report 2026-08-27.
+ * Per-product Booked/Sudah DP/SOLD status for Katalog cards. An unpaid invoice ("Booked", or "Sudah DP" once a DP lands) does not touch
+ * Product.stok, so this tells sales a product already has a customer lined up. A product can have several simultaneous invoices (different
+ * sales), so each bucket returns the combined qty/names rather than one "most advanced" status.
+ * Reads Invoice.status/dp directly, NOT StockMovement: deriving SOLD from StockMovement("Penjualan") wrongly showed SOLD for invoices
+ * finalized under the pre-2026-08-27 rule (stock decremented at "unpaid" time).
+ * `excludeInvoiceId`: the invoice being edited ("Tambah Produk" sidebar), so its own qty doesn't count against itself.
  */
 export async function getProductInvoiceStatusMap(excludeInvoiceId?: string): Promise<Map<string, ProductInvoiceStatus>> {
   await dbConnect();
@@ -105,13 +83,8 @@ export async function getProductInvoiceStatusMap(excludeInvoiceId?: string): Pro
 }
 
 /**
- * Category name -> its Owner-set default barang-bekas commission rate (%),
- * only for categories that actually have one set. Feed the looked-up value
- * (or undefined) into resolveKomisiBekasPercent() alongside the product's
- * own Product.komisiBekasPercent — that function decides which wins. One
- * query for every category rather than one per product, since every server
- * page/route that needs this is already listing many products at once.
- * Per the user's request 2026-09-03.
+ * Category name -> its Owner-set default bekas commission rate (%), only for categories that set one. Feed the value (or undefined) into
+ * resolveKomisiBekasPercent() with the product's own override. One query for all categories, since callers list many products at once.
  */
 export async function getKategoriKomisiBekasMap(): Promise<Map<string, number>> {
   await dbConnect();
@@ -123,12 +96,8 @@ export async function getKategoriKomisiBekasMap(): Promise<Map<string, number>> 
 }
 
 /**
- * IDs of "Produk Baru" — added within the last PRODUK_BARU_DAYS days and
- * never sold (any StockMovement with alasan "Penjualan"). Same rule the
- * Inventory nav badge already uses (app/layout.tsx, app/menu/page.tsx),
- * shared here so the Katalog Filter sidebar's "Produk Baru" filter can't
- * drift from it. Per the user's request 2026-08-28 (window changed from
- * 7 days to PRODUK_BARU_DAYS/3 at the same time, applied everywhere).
+ * IDs of "Produk Baru": added within the last PRODUK_BARU_DAYS days and never sold (any StockMovement with alasan "Penjualan"). Same rule as
+ * the Inventory nav badge (app/layout.tsx, app/menu/page.tsx); shared so the Katalog filter can't drift from it.
  */
 export async function getProdukBaruIds(): Promise<Set<string>> {
   await dbConnect();
@@ -141,13 +110,7 @@ export async function getProdukBaruIds(): Promise<Set<string>> {
   return new Set(products.map((p) => String(p._id)).filter((id) => !soldSet.has(id)));
 }
 
-/**
- * IDs of "New Stock" — uploaded (Product.createdAt) within the last
- * NEW_STOCK_DAYS days. Unlike getProdukBaruIds above, sold status doesn't
- * matter: the label is about when the product was uploaded, not whether it
- * has moved. Custom-order products are excluded (they live on
- * /katalog/custom). TASK-043, per the user's request 2026-10-09.
- */
+/** IDs of "New Stock": uploaded (createdAt) within NEW_STOCK_DAYS days, sold or not. Custom-order products excluded (they live on /katalog/custom). */
 export async function getNewStockIds(): Promise<Set<string>> {
   await dbConnect();
   const since = new Date(Date.now() - NEW_STOCK_DAYS * 24 * 60 * 60 * 1000);
@@ -155,15 +118,8 @@ export async function getNewStockIds(): Promise<Set<string>> {
   return new Set(products.map((p) => String(p._id)));
 }
 
-// ---------------------------------------------------------------------
-// Server-paginated Katalog query — TASK-012 (2026-09-04), per the user's
-// request to limit the actual data pull to 12 products/batch (infinite
-// scroll) instead of shipping every matching product on every page load.
-// Moved here from KatalogClient.tsx's client-side `filtered` useMemo so
-// app/katalog/page.tsx (page 1, server-rendered) and app/api/katalog/route.ts
-// (every page after, plus every filter/search/sort change) share one
-// implementation instead of two that could drift apart.
-// ---------------------------------------------------------------------
+// Server-paginated Katalog query, shared by app/katalog/page.tsx (page 1) and app/api/katalog/route.ts (every later page and filter/search/sort
+// change) so the two can't drift apart.
 
 export interface KatalogFiltersInput {
   search?: string;
@@ -182,14 +138,8 @@ export interface KatalogFiltersInput {
 }
 
 /**
- * A query only counts as a size query if, once split on x/×/,/-/whitespace,
- * every token is a plain number — so "80" alone still matches a single
- * dimension, "80 x 60 x 100" matches all three, but something like "Meja
- * 80" (mixed text) is left to the normal name/SKU/merk text search. Ported
- * verbatim from KatalogClient.tsx's original client-side version (same
- * behavior, ported 2026-09-04 so a Mongo query can be built from it
- * instead of filtering an in-memory array) — per the user's request
- * 2026-09-02 ("bisa search juga by ukuran 80 x 60 x 100").
+ * A query is a size query only if, after splitting on x/×/,/-/whitespace, every token is a plain number: "80" matches one dimension,
+ * "80 x 60 x 100" all three, "Meja 80" (mixed text) falls through to the normal name/SKU/merk search.
  */
 export function parseSizeQuery(query: string): number[] | null {
   const tokens = query
@@ -205,13 +155,7 @@ export function parseSizeQuery(query: string): number[] | null {
   return nums;
 }
 
-/**
- * Every number in `nums` must match one of panjang/lebar/tinggi (partial
- * — fewer than 3 numbers is fine — unordered), mirroring
- * matchesSizeQuery()'s original client-side semantics exactly. Each
- * number becomes its own $or-of-three-sides clause; the whole thing is an
- * $and of those (every number must find *some* matching side).
- */
+/** Every number must match one of panjang/lebar/tinggi (partial and unordered are fine): one $or-of-three-sides clause per number, $and-ed. */
 function sizeMatchClauses(nums: number[]): Record<string, unknown>[] {
   return nums.map((n) => ({
     $or: [{ "dimensi.panjangCm": n }, { "dimensi.lebarCm": n }, { "dimensi.tinggiCm": n }],
@@ -219,14 +163,8 @@ function sizeMatchClauses(nums: number[]): Record<string, unknown>[] {
 }
 
 /**
- * Shared prep for both queryKatalogProducts and queryKatalogAvailableIds:
- * the base Mongo $match (every KatalogFilters field that maps onto a real
- * Product field or a precomputed id set) plus the two things that don't
- * — booked/DP/sold status (from invoices, not a Product field) and
- * Produk Baru ids — computed once regardless of which filters are active,
- * matching app/katalog/page.tsx's original always-compute-all-three cost
- * (both are already cheap/bounded by invoice count or recent-product
- * count, not by catalog size).
+ * Shared prep for queryKatalogProducts and queryKatalogAvailableIds: the base Mongo $match plus booked/DP/sold status (from invoices, not a
+ * Product field) and Produk Baru ids, always computed (both are cheap: bounded by invoice count / recent products).
  */
 async function prepareKatalogMatch(filters: KatalogFiltersInput) {
   await dbConnect();
@@ -237,9 +175,7 @@ async function prepareKatalogMatch(filters: KatalogFiltersInput) {
     getNewStockIds(),
   ]);
 
-  // Custom-order products live on /katalog/custom, sold-out (stok 0) ones
-  // are hidden — same "hide, don't delete" rule the plain, unpaginated
-  // query used before this task.
+  // Custom-order products live on /katalog/custom; sold-out (stok 0) ones are hidden, not deleted.
   const match: Record<string, unknown> = { isCustom: { $ne: true }, stok: { $gt: 0 } };
   const andClauses: Record<string, unknown>[] = [];
 
@@ -261,10 +197,7 @@ async function prepareKatalogMatch(filters: KatalogFiltersInput) {
 
   if (filters.ukuran) {
     const sizeNums = parseSizeQuery(filters.ukuran);
-    // No match at all (not "ignore the filter") when the sidebar's manual
-    // Ukuran field doesn't parse as a size query — same as the client
-    // version, which only ever matched via matchesSizeQuery here, never a
-    // text fallback.
+    // An Ukuran field that doesn't parse as a size query matches nothing (not "ignore the filter"); no text fallback.
     andClauses.push(sizeNums ? { $and: sizeMatchClauses(sizeNums) } : { _id: null });
   }
 
@@ -292,16 +225,12 @@ async function prepareKatalogMatch(filters: KatalogFiltersInput) {
 
   if (andClauses.length > 0) match.$and = andClauses;
 
-  // Booked/Sudah DP/SOLD sink to the bottom of the grid — this is what
-  // decides that, not the $match above (an encumbered product still
-  // matches every filter, it just sorts last). Aggregation expressions
-  // ($addFields/$in below) aren't schema-cast by Mongoose the way
-  // .find() filters are, so these need to be real ObjectIds already.
+  // Booked/DP/SOLD sink to the bottom via the sort tier below, not the $match (an encumbered product still matches every filter).
+  // Aggregation expressions are not schema-cast like .find() filters, so these must already be real ObjectIds.
   const encumberedObjectIds = [...statusMap.keys()]
     .filter((id) => Types.ObjectId.isValid(id))
     .map((id) => new Types.ObjectId(id));
-  // Produk Baru leads the default sort (see queryKatalogProducts) — same
-  // ObjectId-casting reason as encumberedObjectIds above.
+  // Produk Baru leads the default sort; same ObjectId-casting reason.
   const produkBaruObjectIds = [...produkBaruIds]
     .filter((id) => Types.ObjectId.isValid(id))
     .map((id) => new Types.ObjectId(id));
@@ -309,7 +238,7 @@ async function prepareKatalogMatch(filters: KatalogFiltersInput) {
   return { match, statusMap, produkBaruIds, newStockIds, kategoriKomisiBekasMap, encumberedObjectIds, produkBaruObjectIds };
 }
 
-/** Same per-product mapping app/katalog/page.tsx did inline before this task — kept identical so nothing about what a card shows changes. */
+/** Maps one product (aggregate output) to a Katalog card. */
 function toKatalogProduct(
   p: Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any -- plain aggregate() output, not a typed Mongoose doc
   ctx: {
@@ -364,16 +293,8 @@ function toKatalogProduct(
 }
 
 /**
- * One product, shaped exactly like a Katalog grid card — powers
- * EditProductDrawer.tsx's post-save refresh (TASK-025, 2026-09-19). Fixes a
- * real bug: KatalogClient.tsx keeps its product list in client-side state
- * (`items`, seeded once from the server's initial page for infinite
- * scroll), so the drawer's old `router.refresh()` never actually reached
- * it — a server refresh reruns app/katalog/page.tsx, but that just hands
- * KatalogClient a new `initialProducts` prop it was never watching, so the
- * edited price/fields stayed stale until a full page reload. This lets the
- * drawer fetch just the one edited product, already shaped, and patch it
- * into that state directly instead of trying to reconcile the whole list.
+ * One product shaped like a Katalog grid card, for EditProductDrawer's post-save refresh: KatalogClient keeps its list in client state seeded
+ * once from the server, so router.refresh() never reached it. The drawer fetches the one edited product and patches it into that state.
  */
 export async function getKatalogProductById(
   id: string,
@@ -404,14 +325,8 @@ export interface KatalogQueryResult {
 }
 
 /**
- * One page of the Katalog grid — 12 products/batch by default (the user's
- * explicit ask), server-side filtered/sorted/grouped exactly like the old
- * client-side `filtered` useMemo did: Flash Sale always leads (tier 0),
- * then available stock (tier 1), then booked/DP/sold (tier 2) — booked/DP/
- * sold isn't a Product field, so this needs a real aggregation (not a
- * plain .find()) to fold `encumberedObjectIds` into a sortable field.
- * `_id: 1` is always the final sort tiebreaker so paginated results stay
- * stable across requests even as other products' data changes concurrently.
+ * One page of the Katalog grid (12/batch): Flash Sale first (tier 0), then available stock (tier 1), then booked/DP/sold (tier 2). That needs
+ * an aggregation to fold `encumberedObjectIds` into a sortable field. `_id: 1` is the final tiebreaker so pagination stays stable.
  */
 export async function queryKatalogProducts(
   filters: KatalogFiltersInput,
@@ -422,15 +337,8 @@ export async function queryKatalogProducts(
   const { match, statusMap, produkBaruIds, newStockIds, kategoriKomisiBekasMap, encumberedObjectIds, produkBaruObjectIds } =
     await prepareKatalogMatch(filters);
 
-  // Default order ("Urutkan: Default") is Produk Terbaru -> Kategori ->
-  // Harga (termahal dulu) — per the user's explicit request 2026-09-05,
-  // confirmed: "Produk Terbaru" reuses the existing Produk Baru concept
-  // (same "added recently, never sold" rule as the Filter sidebar's
-  // "Hanya Produk Baru" checkbox, not a raw createdAt sort) as a leading
-  // block, not a continuous tiebreaker. Picking "Harga: Terendah/Tertinggi"
-  // from the Urutkan dropdown is a full override of all three — becomes
-  // the ONLY sort key below Flash Sale/booked-DP-sold tier, Produk
-  // Baru/Kategori no longer group at all (also confirmed with the user).
+  // Default order: Produk Terbaru (the Produk Baru concept as a leading block, not a createdAt sort) -> Kategori -> Harga desc. Picking
+  // "Harga: Terendah/Tertinggi" overrides all three: price becomes the only key below the tier.
   const sortStage: Record<string, 1 | -1> =
     filters.sort === "price-asc"
       ? { tier: 1, hargaRekomendasi: 1, _id: 1 }
@@ -471,12 +379,7 @@ export async function queryKatalogProducts(
   return { products, nextCursor: products.length === limit ? cursor + limit : null };
 }
 
-/**
- * Every product in the Katalog's "New Stock" section (TASK-043), newest
- * upload first. Unpaginated on purpose: it only holds the last NEW_STOCK_DAYS
- * days of uploads, a small bounded set. Same visibility rule as the grid
- * (non-custom, stok > 0) and the same card shape.
- */
+/** Every product in the Katalog's "New Stock" section, newest upload first. Unpaginated on purpose (only the last NEW_STOCK_DAYS days of uploads); same visibility rule and card shape as the grid. */
 export async function queryNewStockProducts(opts: {
   canEditProduct?: boolean;
   canFlashSale?: boolean;
@@ -500,13 +403,8 @@ export async function queryNewStockProducts(opts: {
 }
 
 /**
- * Every id (with real available stock — stok minus Booked/Sudah DP) that
- * matches the current filters, unpaginated — powers "Pilih Semua" (see
- * KatalogClient.tsx), which needs the complete matching set the moment
- * picking starts, not just whatever's been scrolled into view so far.
- * Deliberately only fetches `_id`/`stok` (not full documents) since this
- * is the one place that still needs "every match at once" — keeping it
- * cheap is what makes that acceptable alongside the paginated grid above.
+ * Every id with real available stock (stok minus Booked/Sudah DP) matching the filters, unpaginated, for "Pilih Semua" (needs the full
+ * matching set at once). Fetches only `_id`/`stok` to keep that cheap.
  */
 export async function queryKatalogAvailableIds(filters: KatalogFiltersInput): Promise<string[]> {
   const { match, statusMap } = await prepareKatalogMatch(filters);

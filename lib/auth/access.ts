@@ -4,24 +4,12 @@ import type { UserRole } from "@/models/User";
 // imported by proxy.ts (edge runtime) AND client components (AppShell's
 // nav filtering) without pulling in anything runtime-incompatible.
 
-// "/payroll" is Sales-reachable — but only for their own read-only slip
-// gaji; the admin payment dashboard living at the same URL is gated inside
-// app/payroll/**\/page.tsx itself (!isAdminLevel(session.role) -> notFound()).
-// See models/Karyawan.ts, models/Absensi.ts, models/GajiPayment.ts.
-// "/produk" (Inventory) removed per the user's request 2026-08-26 — Sales
-// works from Katalog, doesn't need the raw stock-management view.
-// "/insentif" (Komisi/Leaderboard Sales) is NOT listed here — that page is
-// now restricted to Owner Hojay + Super Admin only regardless of role, see
-// INSENTIF_ALLOWED_ROLES below (overrides even the Sales/Finance grants
-// this array would otherwise have implied).
+// "/payroll" is Sales-reachable for their own read-only slip gaji only; the admin payment dashboard at the same URL is gated inside
+// app/payroll pages (!isAdminLevel -> notFound()). "/insentif" is NOT listed: see INSENTIF_ALLOWED_ROLES (overrides these grants).
 export const SALES_PREFIXES = ["/katalog", "/invoice", "/pelanggan", "/payroll"];
-// Payroll (2026-08-23) folded in the old Bayar Komisi and moved to
-// Admin-only per the user's explicit confirmation — Finance no longer has
-// a payroll-payment surface at all (was "/bayar-komisi" here before).
+// Payroll is Admin-only, so Finance has no payroll-payment surface.
 export const FINANCE_PREFIXES = ["/bayar-tagihan", "/keuangan", "/akuntansi"];
-// Inventaris Kantor is its own module (split out from Purchasing 2026-08-23)
-// but Purchasing still needs to reach it — the "Catat sebagai Aset" link
-// from a paid Material Order lands here.
+// Inventaris Kantor is its own module; Purchasing reaches it via "Catat sebagai Aset" on a paid Material Order.
 export const PURCHASING_PREFIXES = ["/purchasing", "/inventaris-kantor"];
 
 const ROLE_PREFIXES: Record<string, string[]> = {
@@ -55,75 +43,36 @@ export const ADMIN_ONLY_WRITE_PREFIXES = [
 // Method), so any logged-in role can create/edit them, same as
 // /api/purchase-requests and /api/purchase-bills.
 
-// "owner", "super_admin", "manager" (owner added 2026-08-25 as "Owner
-// Hojay"; super_admin/manager added the same day as "Super Admin"/"Manager
-// Hojay") all have the exact same authority as "admin" everywhere in the
-// app — separate roles purely so each account is labeled distinctly, not
-// restricted ones. Every place that used to check `role === "admin"` should
-// use this instead, so all of them stay in lockstep by construction rather
-// than needing every admin-level role name repeated at each call site.
+// owner, super_admin and manager have the same authority as admin (separate roles only so accounts are labeled distinctly).
+// Use this instead of checking role === "admin" so every admin-level role stays in lockstep.
 export function isAdminLevel(role: UserRole | undefined | null): boolean {
   return role === "admin" || role === "owner" || role === "super_admin" || role === "manager";
 }
 
-// "manager" (2026-08-26): admin-level everywhere EXCEPT these three —
-// Akuntansi, Payroll, and Bayar Tagihan stay off-limits even though
-// isAdminLevel(manager) is true (that flag still covers every other
-// admin-gated action app-wide). Absensi and Karyawan are part of Payroll's
-// own domain (not separately nav-reachable), so they're covered by the
-// "/payroll" prefix too — see isPayrollAdminLevel below, used at those
-// specific API routes instead of isAdminLevel so a raw request can't reach
-// what the page itself already hides.
+// manager is admin-level everywhere EXCEPT these: Akuntansi, Payroll (incl. Absensi/Karyawan) and Bayar Tagihan.
+// API routes that must also refuse manager use isPayrollAdminLevel (below), so a raw request cannot reach what the page hides.
 export const MANAGER_BLOCKED_PREFIXES = ["/akuntansi", "/payroll", "/bayar-tagihan"];
 
-// Admin (2026-08-27): briefly blocked outright, then the user asked for it
-// back open specifically for Kelola Kategori, Metode Pembayaran, and
-// Pengiriman (Kurir) — i.e. everything under /admin EXCEPT "Sales"
-// (/admin/user — the Sales roster) and "Keuangan" (/admin/keuangan —
-// finance settings). "Akun Login" (/admin/akun) was open too at that point,
-// but the user reversed that 2026-09-04 ("manager hojay, tidak boleh untuk
-// masuk ke kelola user [akun login], karena itu khusus untuk superadmin dan
-// owner") — creating/editing login accounts (including roles and
-// passwords) is Owner/Super Admin only now. See app/admin/layout.tsx for
-// the tab list this maps to. Checked as its own list rather than folded
-// into MANAGER_BLOCKED_PREFIXES since "/admin" itself needs to stay ALLOWED
-// while only these sub-tabs are blocked.
-// "/admin/invoice" (2026-09-20) — Syarat & Ketentuan settings, moved out
-// of "/admin/keuangan" into its own tab per the user's request ("jangan
-// taro di keuangan, taro saja di invoice"); kept under the same
-// Manager-blocked restriction it already had there, not widened or
-// narrowed without being asked.
+// Manager-blocked /admin sub-tabs: Sales roster, Keuangan, Akun Login (Owner/Super Admin only), Invoice (S&K settings).
+// A separate list because "/admin" itself must stay allowed. Tab list: app/admin/layout.tsx.
 export const MANAGER_BLOCKED_ADMIN_PREFIXES = ["/admin/user", "/admin/keuangan", "/admin/akun", "/admin/invoice"];
 
-// Akun Login (2026-09-04): Owner/Super Admin only, enforced at the API
-// layer too (app/api/admin/users/**), not just the UI tab above — a raw
-// PATCH could otherwise let a Manager grant themselves a higher role or
-// reset another account's password. Deliberately narrower than
-// isAdminLevel (which the /api/admin prefix's own middleware check already
-// grants Manager) — see proxy.ts.
+// Akun Login: Owner/Super Admin only, enforced at the API too (app/api/admin/users/**) — a raw PATCH could otherwise let a Manager
+// grant themselves a higher role or reset passwords. Narrower than isAdminLevel (see proxy.ts).
 export const AKUN_LOGIN_ROLES: UserRole[] = ["owner", "super_admin"];
 export function isAkunLoginAllowed(role: UserRole | undefined | null): boolean {
   return !!role && AKUN_LOGIN_ROLES.includes(role);
 }
 
-// Insentif/Komisi (Leaderboard Sales) locked down to just these roles per
-// the user's request 2026-08-26 — nobody else reaches it, not even a plain
-// "admin" (isAdminLevel's usual full-access grant doesn't apply here; this
-// check runs before it). "manager" added back in 2026-08-27 — Manager
-// Hojay is "sales juga, tapi diberikan otoritas lebih", so they're meant
-// to see the leaderboard (and appear on it) same as any other sales rep.
+// Insentif/Leaderboard: owner, super_admin, manager only — not even plain admin (this check runs before the admin bypass).
+// Manager is a sales rep with extra authority, so they appear on the board too.
 export const INSENTIF_ALLOWED_ROLES: UserRole[] = ["owner", "super_admin", "manager"];
 export function isInsentifAllowed(role: UserRole | undefined | null): boolean {
   return !!role && INSENTIF_ALLOWED_ROLES.includes(role);
 }
 
-// "Komisi Saya" (2026-08-26) — a Sales rep's own commission summary, distinct
-// from the full multi-sales leaderboard at /insentif (Owner+Super Admin
-// only). Restricted to "sales" and "manager" specifically, not just "not
-// admin" — Manager Hojay is "sales juga, tapi diberikan otoritas lebih"
-// (2026-08-27), so their own commission belongs here too; every OTHER
-// admin-level role isn't a Sales rep, so there's no "own data" for them to
-// see. Same override-before-admin-bypass pattern as isInsentifAllowed.
+// "Komisi Saya": a rep's own commission summary (vs. the multi-sales /insentif). Only sales and manager have "own data".
+// Same override-before-admin-bypass pattern as isInsentifAllowed.
 export function isKomisiSayaAllowed(role: UserRole | undefined | null): boolean {
   return role === "sales" || role === "manager";
 }
@@ -140,22 +89,12 @@ export function isAllowedPage(role: UserRole, pathname: string): boolean {
     return !MANAGER_BLOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   }
   if (isAdminLevel(role)) return true;
-  // Dashboard-adjacent content, viewable by every role just like "/" itself.
-  // "/akun-saya" (2026-08-26) — self-service password change, same as
-  // everyone gets a "Keluar" button regardless of role.
-  // "/menu" (2026-08-26 fix) — the mobile bottom tab bar's "Menu" tab links
-  // here for EVERY role, but this page was missing from this list, so
-  // proxy.ts's middleware silently redirected any non-admin-level role
-  // straight back to "/" on click ("Menu" tab appeared broken/unresponsive
-  // — it was actually navigating, just immediately bounced). The page
-  // itself is just a filtered nav hub (every link on it already re-checks
-  // isAllowedPage), no reason it needs its own gate.
+// Open to every role. "/menu" must be listed: the mobile tab bar links there for every role, and proxy.ts would silently bounce it
+// to "/" (the page itself re-checks isAllowedPage per link).
   if (
     pathname === "/" ||
     pathname === "/follow-up" ||
-    // "/pengiriman" (TASK-046) replaces /follow-up?view=kirim, so it keeps
-    // that view's reach: every role (a plain "sales" is scoped to their own
-    // invoices by the data layer, not here).
+    // every role; a plain "sales" is scoped to their own invoices by the data layer, not here
     pathname === "/pengiriman" ||
     pathname === "/aktivitas" ||
     pathname === "/akun-saya" ||
@@ -171,33 +110,14 @@ export function isPayrollAdminLevel(role: UserRole | undefined | null): boolean 
   return isAdminLevel(role) && role !== "manager";
 }
 
-// Commission settings — Owner ONLY, not even Super Admin. Per the user's
-// request 2026-09-05 ("yang hanya boleh akses setting komisi hanya
-// owner"), narrowed from the ["owner","super_admin"] pairing every other
-// owner-level feature in this app uses (Flash Sale, Akun Login) — this is
-// the one place that's deliberately Owner-exclusive, matching TASK-013's
-// same-day diskon-plafon-removal (also owner-only, not super_admin).
-// Covers: a product's Komisi Bekas override + the (now-hidden, still
-// internally tracked) Komisi — Persen field (app/api/products/[id]/
-// komisi-bekas/route.ts, components/produk/ProductForm.tsx and its
-// callers), and a category's default Komisi Bekas rate
-// (app/api/categories/[id]/route.ts, components/admin/CategoryManager.tsx).
-// Previously 4 separate files each hardcoded their own identical
-// ["owner","super_admin"] copy of this — consolidated here so they can't
-// drift out of sync with each other again.
+// Commission settings (a product's Komisi Bekas override + hidden Komisi %, a category's default Komisi Bekas): Owner ONLY, not even
+// Super Admin — deliberately narrower than the ["owner","super_admin"] used by Flash Sale/Akun Login. One list so call sites cannot drift.
 export const KOMISI_SETTING_ROLES: UserRole[] = ["owner"];
 export function isKomisiSettingAllowed(role: UserRole | undefined | null): boolean {
   return !!role && KOMISI_SETTING_ROLES.includes(role);
 }
 
-// Deleting a product — Owner only. Per the user's request 2026-09-07
-// ("Fitur Hapus produk khusus untuk owner di katalog"): found while
-// building this that DELETE /api/products/[id] (already live —
-// DeleteProductButton.tsx on Inventory's list, both desktop and mobile)
-// had NO role check at all — any Manager/Finance/Purchasing reaching
-// /produk could already delete a product. Confirmed with the user this
-// should apply everywhere the delete button appears, not just the new
-// Katalog one, so this narrows both surfaces at once.
+// Deleting a product — Owner only, on every surface that shows the delete button (Katalog and Inventory).
 export const PRODUCT_DELETE_ROLES: UserRole[] = ["owner"];
 export function isProductDeleteAllowed(role: UserRole | undefined | null): boolean {
   return !!role && PRODUCT_DELETE_ROLES.includes(role);
