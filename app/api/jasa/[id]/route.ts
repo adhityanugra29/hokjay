@@ -5,14 +5,6 @@ import { Invoice } from "@/models/Invoice";
 import { getSession } from "@/lib/auth/session";
 import { isProductDeleteAllowed } from "@/lib/auth/access";
 
-export async function GET(_req: Request, ctx: RouteContext<"/api/jasa/[id]">) {
-  await dbConnect();
-  const { id } = await ctx.params;
-  const jasa = await Jasa.findById(id);
-  if (!jasa) return NextResponse.json({ error: "Jasa tidak ditemukan" }, { status: 404 });
-  return NextResponse.json(jasa);
-}
-
 export async function PATCH(req: Request, ctx: RouteContext<"/api/jasa/[id]">) {
   await dbConnect();
   const { id } = await ctx.params;

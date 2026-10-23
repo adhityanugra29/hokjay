@@ -3,26 +3,6 @@ import { dbConnect } from "@/lib/db";
 import { Customer } from "@/models/Customer";
 import { nextCustomerCode } from "@/lib/counters";
 import { getSession } from "@/lib/auth/session";
-import { customerVisibilityFilter } from "@/lib/pelanggan";
-
-export async function GET(req: NextRequest) {
-  await dbConnect();
-  const session = await getSession();
-  const { searchParams } = new URL(req.url);
-  const search = searchParams.get("search")?.trim();
-
-  // Per-sales customer privacy (2026-08-27) — a plain "sales" role only
-  // sees customers they personally added (or ones with no owner at all);
-  // Manager/Admin/Owner/Super Admin see everyone, same as the /pelanggan
-  // page itself. This is the same customer picker InlineCustomerForm uses
-  // during invoice creation, so it has to respect the same scoping or a
-  // sales rep could still browse other reps' customers from there.
-  const filter: Record<string, unknown> = customerVisibilityFilter(session);
-  if (search) filter.nama = { $regex: search, $options: "i" };
-
-  const customers = await Customer.find(filter).sort({ nama: 1 });
-  return NextResponse.json(customers);
-}
 
 export async function POST(req: NextRequest) {
   await dbConnect();

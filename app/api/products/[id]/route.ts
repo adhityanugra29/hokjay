@@ -4,14 +4,6 @@ import { Product } from "@/models/Product";
 import { getSession } from "@/lib/auth/session";
 import { isProductDeleteAllowed } from "@/lib/auth/access";
 
-export async function GET(_req: Request, ctx: RouteContext<"/api/products/[id]">) {
-  await dbConnect();
-  const { id } = await ctx.params;
-  const product = await Product.findById(id);
-  if (!product) return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 404 });
-  return NextResponse.json(product);
-}
-
 export async function PATCH(req: Request, ctx: RouteContext<"/api/products/[id]">) {
   await dbConnect();
   const { id } = await ctx.params;

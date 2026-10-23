@@ -14,19 +14,6 @@ import { getSession } from "@/lib/auth/session";
 function isBlockedForSession(session: Awaited<ReturnType<typeof getSession>>, assignedSales?: string | null) {
   return session?.role === "sales" && assignedSales !== session.nama;
 }
-
-export async function GET(_req: NextRequest, ctx: RouteContext<"/api/customers/[id]">) {
-  await dbConnect();
-  const { id } = await ctx.params;
-  const session = await getSession();
-  const customer = await Customer.findById(id);
-  if (!customer) return NextResponse.json({ error: "Pelanggan tidak ditemukan" }, { status: 404 });
-  if (isBlockedForSession(session, customer.assignedSales)) {
-    return NextResponse.json({ error: "Pelanggan tidak ditemukan" }, { status: 404 });
-  }
-  return NextResponse.json(customer);
-}
-
 export async function PATCH(req: NextRequest, ctx: RouteContext<"/api/customers/[id]">) {
   await dbConnect();
   const { id } = await ctx.params;

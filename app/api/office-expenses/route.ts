@@ -4,18 +4,6 @@ import { OfficeExpenseRequest, OFFICE_EXPENSE_KATEGORI } from "@/models/OfficeEx
 import { getSession } from "@/lib/auth/session";
 import { nextJobOrderCode } from "@/lib/counters";
 
-export async function GET(req: NextRequest) {
-  await dbConnect();
-  const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status");
-
-  const filter: Record<string, unknown> = {};
-  if (status) filter.status = status;
-
-  const requests = await OfficeExpenseRequest.find(filter).sort({ createdAt: -1 });
-  return NextResponse.json(requests);
-}
-
 /** Anyone logged in can raise a request — approval (admin-only) is what actually gates spending. */
 export async function POST(req: NextRequest) {
   await dbConnect();

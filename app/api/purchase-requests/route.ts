@@ -4,18 +4,6 @@ import { PurchaseRequest } from "@/models/PurchaseRequest";
 import { nextPurchaseRequestCode } from "@/lib/counters";
 import { getSession } from "@/lib/auth/session";
 
-export async function GET(req: NextRequest) {
-  await dbConnect();
-  const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status");
-
-  const filter: Record<string, unknown> = {};
-  if (status) filter.status = status;
-
-  const requests = await PurchaseRequest.find(filter).sort({ createdAt: -1 });
-  return NextResponse.json(requests);
-}
-
 /**
  * Raised either from Katalog's "Request Produk PO" (Sales, sumber: "sales",
  * tied to a customer) or from Purchasing's own "+ Request Baru" (sumber:

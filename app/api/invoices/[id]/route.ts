@@ -7,19 +7,6 @@ import type { CreateInvoiceInput } from "@/lib/services/createInvoice";
 import { getSession } from "@/lib/auth/session";
 import { isInvoiceBlockedForSession } from "@/lib/invoice-visibility";
 
-export async function GET(_req: Request, ctx: RouteContext<"/api/invoices/[id]">) {
-  await dbConnect();
-  const { id } = await ctx.params;
-  const session = await getSession();
-  const invoice = await Invoice.findById(id);
-  if (!invoice) return NextResponse.json({ error: "Invoice tidak ditemukan" }, { status: 404 });
-  // Per-sales invoice privacy — per the user's request 2026-08-29.
-  if (isInvoiceBlockedForSession(session, invoice.sales?.nama)) {
-    return NextResponse.json({ error: "Invoice tidak ditemukan" }, { status: 404 });
-  }
-  return NextResponse.json(invoice);
-}
-
 export async function DELETE(_req: Request, ctx: RouteContext<"/api/invoices/[id]">) {
   await dbConnect();
   const { id } = await ctx.params;

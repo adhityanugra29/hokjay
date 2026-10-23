@@ -6,18 +6,6 @@ import { Supplier } from "@/models/Supplier";
 import { nextPurchaseBillCode } from "@/lib/counters";
 import { getSession } from "@/lib/auth/session";
 
-export async function GET(req: NextRequest) {
-  await dbConnect();
-  const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status");
-
-  const filter: Record<string, unknown> = {};
-  if (status) filter.status = status;
-
-  const bills = await PurchaseBill.find(filter).sort({ createdAt: -1 });
-  return NextResponse.json(bills);
-}
-
 /**
  * Purchasing creates this once they've sourced a supplier and know the
  * cost — optionally against an existing PurchaseRequest (which then flips
