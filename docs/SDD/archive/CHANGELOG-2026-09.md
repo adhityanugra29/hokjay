@@ -1,0 +1,464 @@
+# HOJAY — Change Log 2026-09
+
+> Dipindah dari CHANGELOG.md. Isi tidak diubah.
+
+---
+
+## 2026-09-30
+
+**TASK-035 done** — Leaderboard Sales redesigned as a Soft Trade podium (desktop + mobile), matching the Katalog/Pelanggan look, per the user's "terlalu kaku" feedback. Design Review done as an HTML mockup artifact (approved before coding). Top 3 became rounded podium cards with initials avatars (#1 raised); rank 4+ in one list card; summary cards on top. Data, ranking, Estimasi Sales chip and "Posisi kamu" unchanged; no komisi shown.
+
+Tasks: TASK-035.
+Regression: `tsc --noEmit` clean, `eslint components/insentif` clean. Not yet click-tested live.
+
+---
+
+**TASK-034 done** — Katalog ProductCard decluttered, per the user's report that the card showed "to much information" and felt too long. Design Review done as an HTML mockup artifact (approved before coding). Kondisi badge moved onto the photo; the two price-preset buttons became one sliding-switch pill; Diskon collapsed behind "+ Diskon" (auto-opens if already set); Tersedia + Komisi merged into one line; Dimensi/Ketebalan/Daya Listrik collapsed behind "Lihat Detail ▾"; Booked/Sudah DP badges shortened to a count with names moved to a tooltip. Nothing removed — all relocated/collapsed only.
+
+Tasks: TASK-034.
+Regression: `tsc --noEmit` clean, `next build` clean. Not yet click-tested live.
+
+---
+
+## 2026-09-23
+
+**BUG-021 fixed** — Invoice PDF's product name silently dropped the Merk that Katalog shows for the same product (e.g. Katalog's "Kulkas Hosizaki" printed as just "Kulkas" on the Invoice). Found while checking the user's question "apakah penamaan produk di invoice sudah sesuai dengan di katalog" — `createInvoice.ts`/`updateInvoice.ts` were writing `namaSnapshot` from the raw `product.name` instead of the existing `productDisplayName(name, merk)` helper that Katalog and the invoice product-picker already use. Now both services build `namaSnapshot` through that same helper. Existing invoices unchanged (name is a frozen snapshot by design) — only affects invoices created/edited going forward.
+
+Regression: `tsc --noEmit` clean. No live browser click-through.
+
+---
+
+## 2026-09-20
+
+**TASK-033 done** — Added "Preview" to the Invoice list's "⋯" overflow menu (unpaid/DP rows), reusing the same handler paid rows' dedicated Preview button already calls. Per the user's request "tambahkan button preview di titik tiga".
+
+Tasks: TASK-033.
+Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. Not yet click-tested live.
+
+**TASK-032 done** — Fixed a real bug reported right after TASK-031's deploy ("masih belum berimpact untuk pdf yang sudah dibuat" — S&K still missing on generated PDFs even after the DB backfill). Root cause: `InvoicePrintDoc.tsx` packs PDF pages into fixed-height `overflow:hidden` containers, and S&K shared its height measurement and page placement with the rest of the footer (Total/Catatan/Payment Details/logo) — if that combined block exceeded a page's remaining space, S&K (last in the block) was silently clipped, no error. Gave S&K its own measured ref and its own 3-tier placement decision so it only ever gets pushed to a later page, never dropped. Also added the LUNAS watermark to the two new standalone page types for consistency.
+
+Tasks: TASK-032.
+Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. Not yet click-tested live against a real long invoice.
+
+---
+
+## 2026-09-19
+
+**TASK-027 done** — Pelanggan's "Semua Pelanggan" list gained a search box (nama/kode) and a Kota dropdown filter; `/pelanggan/[id]`'s invoice history table gained a status pill filter (Semua/Draft/Belum Bayar/Lunas). Also fixed a latent bug: an empty search result used to wrongly show "Belum ada pelanggan — Tambah pelanggan pertama" even with customers in the account.
+
+Tasks: TASK-027.
+Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live browser click-through.
+
+**TASK-026 follow-up 5** — "Tandai Sudah Kirim" rebuilt as a modal form (Tanggal Dikirim + Kurir, both defaulted) instead of a bare confirm() click, matching the HTML mockup the user had approved (the deployed version didn't match — reported via screenshot). A changed Kurir here replaces `Invoice.kurir` itself, so it flows through to the PDF/preview automatically.
+
+**TASK-026 follow-up 6** — Added the "Tandai Sudah Kirim" button to Beranda's desktop "Perlu Dikirim" widget too (deliberately left off before, never actually confirmed). Fixed a real pre-existing bug the user spotted in a screenshot: `FollowUpStatusBadge` ("Belum Bayar" etc.) had no `whitespace-nowrap`, so it wrapped onto two lines in narrow table columns.
+
+**TASK-031 done** — Fixed a real bug: Syarat & Ketentuan never actually appeared on any Invoice PDF, because the `Pengaturan` singleton document predates that field and Mongoose schema defaults don't retroactively backfill an existing document. Fixed at the data source (one-off backfill) plus a permanent self-heal in `GET /api/pengaturan`. Also moved the Syarat & Ketentuan settings out of the Keuangan tab into its own new "Invoice" tab under Admin, and rebuilt the form from one freeform textarea into one input per line ("Baris 1", "Baris 2", ...) so it maps directly to what prints on the invoice.
+
+**TASK-030 done (+ same-day correction)** — Invoice list's per-row action buttons simplified from up to 6 down to a max of 2 main buttons: unpaid/DP not-yet-shipped shows Tandai Lunas + Tandai Sudah Kirim, already-shipped shows just Tandai Lunas, paid shows just Preview. Correction same day: Kirim WA/Edit/Hapus were first dropped to the detail page entirely, then brought back onto the list itself behind a "⋯" overflow menu per the user's immediate feedback ("mana 3 titiknya untuk button yang lain?").
+
+Tasks: TASK-030, TASK-031.
+Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live browser click-through.
+
+**TASK-029 done** — Leaderboard Sales gained a small "Estimasi Sales" line per sales (from this period's DP'd/belum lunas invoices — never affects ranking, which stays Lunas-only; no commission figure alongside it, dropped for privacy after the user caught it mid-review). Invoice PDF/preview's small "LUNAS" badge replaced with a big, centered, translucent diagonal watermark (repeats on every page for multi-page invoices). Invoice gained a "Syarat & Ketentuan" section, editable from Pengaturan (`/admin/keuangan`), justified text with generous line spacing, shown on both Invoice and Surat Jalan.
+
+Tasks: TASK-029.
+Regression: `tsc --noEmit` clean, `eslint` clean (one pre-existing unrelated warning), `next build` clean. No live browser click-through.
+
+**TASK-028 done** — Sortable column headers everywhere they were missing: `/pelanggan`'s "Semua Pelanggan" list (Kode/Pelanggan/Frekuensi/Nilai belanja/Piutang — had no sort at all before), and the "% Komisi" column on both `/produk` and `/produk/riwayat` (every other column there was already sortable).
+
+Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live browser click-through.
+
+---
+
+**TASK-026 done (+ 4 same-day follow-ups)** — Invoice gained a free-text "Catatan" field, shown on both the Invoice/Bukti Transfer and Surat Jalan PDFs/previews. Beranda's "Perlu Ditindak" widget reframed as "Perlu Dikirim" — sorted and labeled by shipping due date (Terlambat/Kirim Hari Ini/Besok/tanggal/Belum Dijadwalkan) instead of days-unpaid, applied consistently across all 4 admin/sales × desktop/mobile surfaces. Invoice's "Tanggal Pengiriman" no longer defaults to H+3 — starts empty. Follow-up 1: shipping-urgency label now always shows the actual date too; "Stok tipis" row removed from the reframed desktop widget. Follow-up 2: the widget now also prioritizes payment status — Lunas first, then Sudah DP, then Belum Bayar/Draft — which required reintroducing paid invoices into the widget at all (they'd been fully excluded by the underlying query); bounded to paid invoices whose shipping date still looks relevant (≤14 days overdue) so it can't fill up with old, already-shipped orders. Follow-up 3: the widget's "lihat semua" link now actually leads to the full shipping-priority list (`/follow-up?view=kirim`) instead of the old unpaid-only payment-follow-up page — kept as a query-param branch on the same page since Komisi Saya's "Tagih yang tertahan" button still needs the original payment-only view. Follow-up 4: a real "Tandai Sudah Kirim" trigger — new `dikirim`/`tanggalDikirimAktual`/`dikirimOleh` fields on Invoice, a new endpoint, and a shared button wired into the Invoice list, both `/follow-up` views, and the invoice detail page, so a shipped invoice can actually be dismissed instead of relying only on the 14-day guess (kept as a second signal alongside the button, not replaced).
+
+Tasks: TASK-026.
+Regression: `tsc --noEmit` clean, `eslint` clean (one pre-existing unrelated error confirmed via `git stash`), `next build` clean. No live browser click-through — recommended before treating as fully verified.
+
+---
+
+**TASK-025 done** — Three fixes: (1) Pelanggan's "Nama Toko/Usaha" and "Jenis Usaha" are now optional, not required. (2) Invoice's Provinsi/Kota fields are editable again (were locked/auto-filled-only since 2026-08-25) and now actually persist on the invoice (new `provinsi`/`kota` fields on `Invoice`, previously these were display-only and discarded). (3) Fixed a real bug: editing a product via Katalog's pencil-icon drawer didn't update its price/fields on the grid until a manual page reload — root cause was `KatalogClient.tsx`'s infinite-scroll product list living in client state that `router.refresh()` never reached; now patches the edited card in place via a new `GET /api/katalog?id=...` lookup.
+
+Tasks: TASK-025.
+Regression: `tsc --noEmit` clean, `eslint` clean (two pre-existing errors in `InvoiceForm.tsx` confirmed unrelated via `git stash`), `next build` clean. No live browser click-through — recommended before treating as fully verified.
+
+---
+
+**TASK-024 done** — Inventory's "Semua Produk" and "Riwayat Stok" tables gained a highlighted "% Komisi" column (resolved rate + a sub-label explaining why: flat barang baru / override produk / default kategori / default global), triggered by a real support question that needed a manual DB query to answer ("kenapa komisinya 300.000" — turned out to be a silent per-product commission override with no UI visibility anywhere). `MobileProdukList.tsx` card got a compact version too. Live values, not historical snapshots.
+
+Tasks: TASK-024.
+Regression: `tsc --noEmit` clean, `eslint` clean, `next build` clean. No live browser click-through — recommended before treating as fully verified.
+
+---
+
+**TASK-023 done** — Payroll gained a "Riwayat" tab (`/payroll/riwayat`) combining Gaji payment history (`GajiPayment`) with Komisi payouts re-grouped from `Invoice.komisiCair` batches (no dedicated payment record existed for Komisi before this — invoice-level detail drawer added to see which invoices a payout covered). Invoice list gained a server-side Sales filter (hidden for `role:"sales"` sessions, already locked to their own name). Inventory's Riwayat Stok masuk/keluar table gained a Baru/Bekas label next to Tipe, read live off `Product.kondisi`.
+
+Tasks: TASK-023.
+Regression: `tsc --noEmit` clean, `eslint` clean on all changed files, `next build` clean (all routes compiled). No live browser click-through with a real session — recommended before treating as fully verified.
+
+---
+
+## 2026-09-18
+
+**BUG-020 fixed** — Invoice PDF/preview never marked a DP invoice as "LUNAS" once fully paid, and kept showing "Sisa Tagihan" with the old unpaid balance forever after — not a caching bug (both are generated live), but two real gaps: no "LUNAS" label logic existed anywhere, and the DP/"Sisa Tagihan" row was keyed off the permanent `dpNominal` history field rather than current payment status (`payInvoice.ts` never clears `dp` when it flips `status` to `"paid"`). Added an `isPaid` flag to `InvoicePrintData`, populated at both places it's built (list/Preview-drawer path and detail path). Both templates now show a small "LUNAS" badge next to the invoice number when paid, and "Sisa Tagihan" shows Rp 0 instead of the stale remainder.
+
+Bugs fixed: BUG-020.
+Regression: PARTIAL — `npx tsc --noEmit` clean; reasoned through both render paths (PDF capture + on-screen preview share the same data field), no live-session verification available in this environment.
+
+---
+
+## 2026-09-14
+
+**TASK-022 done (+ same-day retrofit)** — Katalog photo watermark moved from a small (18% width, fully opaque) bottom-right badge to a centered, translucent one (55% width, 10% opacity — "Opsi C" of 4 real candidates generated with the actual sharp pipeline and shown to the user for sign-off before coding). The user then asked for existing photos to get it too ("yang lama harus ikut berubah") — since the pre-watermark originals were never kept, the old corner mark can't be cleanly replaced, only added-to; the user explicitly accepted the resulting double-watermark look ("2 watermark juga oke kok"), so a one-off migration script retrofitted all 187 existing product photos (new Blob upload + `fotoUrl` repoint per product, old Blob objects kept as a rollback path, script deleted after use).
+
+Tasks done: TASK-022.
+Regression: PASS — clean build, lint clean; ran the exact new logic against a real Katalog photo and confirmed the output watermark dimensions match the approved mockup exactly. Retrofit: verified a 2-item dry run visually (real downloaded output) before running the remaining 185 — all 187 succeeded, 0 failures.
+
+---
+
+## 2026-09-08
+
+**BUG-019 fixed** — Right after TASK-021 deployed, the Invoice list's Preview drawer rendered docked to the LEFT instead of the right. The two hidden `InvoicePrintDoc` instances TASK-021 added (for PDF capture only) were nested inside the drawer overlay's own `flex justify-end` container — each is `h-0 overflow-hidden` so it paints as invisible, but its un-clipped 794px-wide content still counted toward the row's flex sizing, so `justify-end` packed the whole row (real panel + 2 invisible spacers) flush right, shoving the actually-visible panel to the left in the process. Moved both hidden instances out of that flex container entirely.
+
+Bugs fixed: BUG-019.
+Regression: PARTIAL — clean build, lint clean; reasoned through directly (no live browser pass available this session, same gap as TASK-021).
+
+---
+
+**TASK-021 done** — Invoice list's Preview drawer gained a "Surat Jalan" tab (next to Invoice and the still-conditional Bukti Transfer), each with its own "Unduh ... (PDF)" button, so both documents can be previewed/downloaded straight from `/invoice` without opening `/invoice/[id]`. Mid-review the user asked for one more thing: a driver name typed once should actually show up in the on-screen preview (not just silently feed the PDF) — opening the tab for the first time now prompts for it immediately, shows it live in the preview, and offers an "Ubah" link to correct it; the detail page's own download still prompts fresh every click, unchanged. Extracted the shared PDF-building logic out of `InvoiceActions.tsx` into a new `useInvoicePdfDownload()` hook so the list didn't duplicate it.
+
+Tasks done: TASK-021.
+Regression: PARTIAL — clean build, lint clean on all 4 touched files; manual trace of the prop/state wiring plus an interactive HTML mockup, but no live DB-backed browser pass this time (Playwright unavailable, session-minting blocked by this sandbox's own security classifier) — flagged to the user rather than claimed.
+
+---
+
+## 2026-09-07
+
+**TASK-020 done** — Invoice list's 4 stat cards (Perlu ditindak/Belum bayar/Sudah DP/Lunas {bulan} — each independently clickable, each showing its own fixed count regardless of which pill was active) collapsed into 2 plain, non-clickable cards: "Jumlah Invoice" and "Total Nilai Invoice", both now tracking whichever pill filter is currently active. "Total Nilai Invoice" sums the remaining sisa tagihan for "Sudah DP" and the full grandTotal for every other filter, so it never blends "already paid" and "still owed" into one misleading figure the way a single flat sum would have. Went through 3 rounds of confirmation with the user, including a genuine design correction mid-way (their first-round proposal — summing raw grandTotal always — was flagged as breaking for the "Semua" view before being redesigned).
+
+Tasks done: TASK-020.
+Regression: PASS — clean build, lint clean; verified live across all 5 pill states with Playwright, numbers cross-checked by hand against the visible rows for "Belum Dibayar" and "Sudah DP".
+
+---
+
+## 2026-09-07
+
+**TASK-019 done, BUG-018 fixed** — Deleting a product is now Owner-only everywhere it appears (Inventory's list and a new "Hapus" button in Katalog's edit pencil) — this used to have zero role restriction at all on Inventory. Inventory's list also now shows "Ukuran" (dimensions) right under each product's name, on both desktop and mobile, with the SKU text shrunk slightly to make room. Separately, the Beranda bell's "Produk baru ditambahkan" notification was linking straight to the product's edit page instead of Katalog — now matches the Flash Sale notification's own `/katalog` link.
+
+Tasks done: TASK-019. Bugs fixed: BUG-018.
+Regression: PASS — clean build, lint clean; verified live against a production build with minted Owner/Manager sessions (delete: Manager 403, Owner 200; Owner's Inventory page rendered 368 "Hapus" occurrences, Manager's rendered 0), Playwright screenshots confirmed Ukuran placement on both viewports, and `/aktivitas` confirmed all 66 "Produk baru ditambahkan" entries now link to `/katalog`.
+
+---
+
+## 2026-09-07
+
+**TASK-018 done** — New "Unduh Surat Jalan (PDF)" on the invoice detail page: same document as the Invoice, but with every price stripped out, title swapped to "SURAT JALAN", and a driver name. Went through 2 mockup rounds (layout, then exact button placement) before coding. The driver name is deliberately never stored anywhere — typed fresh via a new `prompt()` (extending the app's existing styled dialog system) each time the PDF is generated, since the assigned driver can change per dispatch.
+
+Tasks done: TASK-018.
+Regression: PASS — clean build, lint clean; verified live (Surat Jalan DOM has zero price figures/Payment Details, regular Invoice PDF unchanged, real download triggered with the typed driver name, cancel correctly aborts with no download).
+
+---
+
+## 2026-09-07
+
+**BUG-017 fixed** — "Bukti Transfer"'s "Buka ukuran penuh" opened a new browser tab with no obvious way back on mobile. Reused ZoomableImage.tsx (same pattern already proven for Katalog product photos) — clicking the bukti image now opens an in-app full-screen overlay with a real close button instead. PDF uploads still open in a new tab (no in-app viewer to reuse).
+
+Bugs fixed: BUG-017.
+Regression: PASS — clean build, lint clean; verified live (in-app overlay confirmed, zero new tabs opened).
+
+---
+
+## 2026-09-07
+
+**TASK-017 done** — Katalog's Filter sidebar Harga Rekomendasi/Harga Bottom toggle now changes every product's displayed price app-wide, not just the min/max range filter's comparison basis. Confirmed with the user this is a full reset (clears every per-card override and typed custom price too, not just a fallback default). `CatalogSelectionProvider.tsx` gained a persisted `defaultPriceMode` + `setGlobalPriceMode()`.
+
+Tasks done: TASK-017.
+Regression: PASS — clean build, lint clean; verified live (all 12 loaded cards flipped to Harga Bottom, displayed prices changed to match).
+
+---
+
+## 2026-09-07
+
+**BUG-016 fixed** — "Avi" and "Avicenna Pangaran" showed as two separate people on the Insentif leaderboard (User/Sales records were already correctly merged; 11 older invoices and 1 customer still carried the pre-rename name "Avi" as a plain string snapshot). Pure data correction, no code change — updated exactly those 12 documents after confirming no other collection still had the stale name.
+
+Bugs fixed: BUG-016.
+Regression: PASS — verified live: zero remaining "Avi" on any invoice, leaderboard shows one unified name.
+
+---
+
+## 2026-09-07
+
+**TASK-016 done** — Invoice list's Preview drawer gets an "Invoice"/"Bukti Transfer" tab pair (Invoice shown by default), surfacing the proof-of-transfer already captured by PaymentForm.tsx/DpForm.tsx but never viewable anywhere. Two mockup rounds first, per the user's explicit requests — one to see the layout before coding, one rebuilt with the app's real Tailwind classes/tokens instead of hand-approximated CSS. Only shows when the invoice actually has a bukti (cash payments have none); shows both DP and settlement proof separately when both exist.
+
+Tasks done: TASK-016.
+Regression: PASS — clean build, lint clean; verified live against real invoices with real uploaded proof files.
+
+---
+
+## 2026-09-06
+
+**BUG-015 fixed** — Katalog's "Pilih Semua" replaced the whole selection with just the current search's matching products instead of adding to it, so picking under one search then searching again and picking more silently dropped the first batch. Now merges (union) instead of replacing, still supporting "click again to deselect" scoped to the current search only.
+
+Bugs fixed: BUG-015.
+Regression: PASS — clean build, lint clean; verified live (Cabinet 15 + Meja 6 = 21, confirmed via both the UI count and the raw persisted selection).
+
+Also checked the same day: whether a Lunas invoice still shows its Riwayat — confirmed already working correctly against a real paid invoice, no fix needed.
+
+---
+
+## 2026-09-05
+
+**TASK-015 done** — Every commission-setting surface (product's Komisi Bekas override, category's default rate) now Owner-only, not Owner+Super Admin like before. Consolidated 4 separate `["owner","super_admin"]` copies into one `KOMISI_SETTING_ROLES`/`isKomisiSettingAllowed()` in `lib/auth/access.ts`. Also found and fixed a stray leftover: Katalog's EditProductDrawer was still keying its commission-field visibility off `canFlashSale` (Owner+Super Admin) instead of the real owner-only check.
+
+Tasks done: TASK-015.
+Regression: PASS — clean build, lint clean; verified live with minted Owner/Super Admin sessions (API PATCH: Owner 200, Super Admin 403; UI: all 3 entry points checked directly).
+
+---
+
+## 2026-09-05
+
+**BUG-014 fixed** — "Komisi Nominal" on the product form stopped reacting to input right after TASK-014 (same day) removed "Komisi — Persen" — it was still computed from that now-invisible field. Recomputed from the real commission formula instead (Harga Bottom × Komisi Bekas% for kondisi Bekas, flat 6% × Harga Rekomendasi for Baru), so it now updates live with whatever's actually being typed. Display-only fix — the DB-stored `komisiNominal`/Hot Products are untouched.
+
+Bugs fixed: BUG-014.
+Regression: PASS — clean build, lint clean; verified live (20%/15%/empty all produced the exact correct Rupiah figure against Harga Bottom).
+
+---
+
+## 2026-09-05
+
+**TASK-014 done** — Product edit form (Inventory + Katalog's drawer, same shared `ProductForm.tsx`) now shows only ONE commission field instead of two confusing ones. Removed "Komisi — Persen" (never drove real invoice commission — only fed one of Dashboard's Hot Products rankings, explained this trade-off to the user before removing) as a visible input; it still auto-tracks kondisi (6%/10%) under the hood so Komisi Nominal/Hot Products keep working. "Komisi Bekas (%)" remains as the one real commission control, shown only for kondisi Bekas.
+
+Tasks done: TASK-014.
+Regression: PASS — clean build; verified live as Owner (bekas product shows exactly one commission label, baru shows none, save still persists komisiPercent/komisiNominal correctly).
+
+---
+
+## 2026-09-05
+
+**TASK-013 done** — Owner role (only, not Super Admin) can now set diskon up to 100% of an item's value everywhere a plafon existed (new/edit invoice, per-line cart/Katalog diskon, Diskon Bulk). `maxDiskonBaru`/`maxDiskonBekas` gained an `unlimited` param, resolved server-side from the session role (never trusted from the client). Along the way, found and fixed a real gap: the edit-invoice flow never passed the logged-in user down to `InvoiceForm.tsx` at all, which would have silently left this not working for Owner-edited invoices.
+
+Tasks done: TASK-013.
+Regression: PASS — clean build; verified live (minted Owner vs Manager sessions against a real product): Owner's requested 1.800.000 diskon stored in full, Manager's identical request correctly clamped to 630.000.
+
+---
+
+## 2026-09-05
+
+**TASK-012 done** — Katalog's data pull is now server-paginated (12 products/batch, real infinite scroll via IntersectionObserver) instead of fetching every matching product on every load. Filtering/sorting/grouping moved into a shared MongoDB aggregation (`lib/katalog.ts`'s `queryKatalogProducts`) reused by page 1 (server-rendered) and every subsequent page/filter change (new `app/api/katalog/route.ts`). Also changed the default sort order to Produk Terbaru → Kategori → Harga (termahal dulu), per the user's explicit spec — the existing Harga dropdown fully overrides this when picked.
+
+Tasks done: TASK-012.
+Regression: PASS — clean build, lint clean; verified live end-to-end (correct per-batch cursors across a full 190-product paginated fetch, zero duplicate/missing ids, debounced search, "Pilih Semua" fetching the complete matching set, and zero tier/sort-order violations across the whole catalog).
+
+---
+
+## 2026-09-04
+
+**TASK-011 done** — "Kirim ke Pelanggan (WA)" on the invoice detail page now attaches the PDF directly via the Web Share API where the OS supports it (mobile), instead of always requiring a manual download-then-attach. Falls back to the original text-only wa.me link on desktop. Explained to the user why a `wa.me` link alone could never do this (no public file-attach parameter), and why the target number still can't be auto-picked once WhatsApp opens (OS/app-side limitation).
+
+Tasks done: TASK-011.
+Regression: PASS — clean build, lint clean; both the share path and the desktop fallback verified live with a real invoice and real PDF bytes.
+
+---
+
+## 2026-09-04
+
+**BUG-013 fixed** — "Kirim WA" on the Invoice list opened a wa.me link with the customer's number still in local format ("0812..."), which silently fails to load a chat. `InvoiceActions.tsx`'s detail-page WA button already did the "0"→"62" conversion; centralized it as `toWaPhone()` in `lib/format.ts` and pointed both buttons at it.
+
+Bugs fixed: BUG-013.
+Regression: PASS — clean build, lint clean; every real invoice's WA link checked live, all now `62...`.
+
+---
+
+## 2026-09-04
+
+**TASK-009 follow-up #3** — the periode filter's actual layout bug, per the user's report and "buat dulu planya di html" request: published a mockup, got sign-off, then fixed it for real. `InvoicePeriodFilter.tsx` now renders a Fragment (not its own wrapping flex div) so its two selects sit as direct siblings of the search box in one row; also found the shared `Select`'s `w-full` base class was beating a same-specificity `w-auto` override, fixed with `!w-auto`. Bulan/Tahun now only list months/years that actually have invoice data (new aggregation, replacing the old hardcoded 5-year window).
+
+Tasks done: TASK-009 (follow-up).
+Regression: PASS — clean build, lint clean; verified live via real DOM measurement (single row, correct widths) and the actual rendered option lists.
+
+---
+
+## 2026-09-04
+
+**TASK-010 done** — Andi abdillah (Owner, whose login name happens to exactly match a real Sales roster entry) no longer appears on Payroll's Daftar Bayar commission list. `getUnpaidCommissionBySales()`/`getUnpaidCommissionInvoices()` now exclude any sales name belonging to a `role: "owner"` User account — scoped to role, not the one name, and Payroll-only (Insentif leaderboard/Komisi Saya untouched).
+
+Tasks done: TASK-010.
+Regression: PASS — clean build, lint clean, verified live: Andi abdillah's Rp 15.103.000 row is gone, every other sales rep's total unchanged.
+
+---
+
+## 2026-09-04
+
+**BUG-012 fixed** — the "tidak bisa generate invoice" report from earlier today turned out to be a real crash, not a false alarm: `app/invoice/[id]/page.tsx` broke for every single invoice (React error #441 — "This page couldn't load", the exact interstitial the user's screenshot showed). Root cause was TASK-009's own `InvoiceDocument.tsx` extraction, done the same day: it called `displayDiskon()`/`displayHarga()` as value imports from `InvoicePrintDoc.tsx`, a `"use client"` file, from a Server Component. Moved those two pure functions (plus their shared types) into a new plain module `lib/invoiceDisplay.ts`. Reproduced live (`next start` + Playwright, server log confirmed the exact throw) before and after the fix.
+
+Bugs fixed: BUG-012.
+Regression: PASS — clean build, lint clean, `/invoice/[id]` and `/invoice` both verified error-free after the fix.
+
+---
+
+## 2026-09-04
+
+**TASK-009 follow-up #2** — the Bulan/Tahun periode selects sat visibly taller than the search box next to them; overrode their sizing to match `SearchInput` exactly, confirmed level via screenshot. Also investigated a "tidak bisa generate invoice" report (no error given) — reproduced the create flow at the service, API, and full-browser-form level, all succeeded every time; asked the user for the specific error instead of guessing a fix.
+
+Tasks done: TASK-009 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
+**TASK-009 follow-up** — added a Bulan/Tahun periode filter to `/invoice` (new `InvoicePeriodFilter.tsx`, both defaulting to "Semua"). Filters server-side via `tanggalInvoice`, not client-side. "Lunas {month}" stat card stays anchored to the real current month regardless of the periode picked (separate `countDocuments`, not derived from the fetched/filtered list).
+
+Tasks done: TASK-009 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
+**TASK-009 done** — Invoice list (`/invoice`) rebuilt as one flat list filtered by a status pill toggle + click-to-filter stat cards (Semua/Belum Dibayar/Sudah DP/Draft/Sudah Lunas), replacing the old stacked-sections layout — an interim "3 sections" mockup was explicitly rejected first. Every row gets a "Preview" button opening a drawer with the real invoice document, no page navigation. Extracted the on-screen document into `InvoiceDocument.tsx` (shared with `/invoice/[id]`, which is otherwise unchanged) so the two views can't drift apart. The day block is now always the invoice's own date for every status; the unpaid "N hari" urgency signal moved to its own separate badge.
+
+Tasks done: TASK-009.
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
+**TASK-008 follow-up #2** — "Detail Invoice" was also meant as the Daftar Bayar table's own column header, not just the pop-up's title — that column had no label at all. Added it, widened the column to fit.
+
+Tasks done: TASK-008 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
+**TASK-008 follow-up** — 3 fixes to the Komisi detail pop-up per the user's report: Detail button moved to its own column (was cramped into the Sales cell), Status column widened so its label stops wrapping to two lines and throwing row alignment off, drawer title now reads "Detail Invoice", and each invoice number in the pop-up links straight to `/invoice/[id]`.
+
+Tasks done: TASK-008 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
+**TASK-008 done** — Bayar Komisi's Daftar Bayar list gets a "Detail (N invoice)" pop-up per row — reuses the existing per-sales invoice breakdown + pay form (`KomisiPaymentForm.tsx`, previously only reachable via `/payroll/komisi/[nama]`) in a drawer instead of navigating away, so the batch checkbox selection isn't lost. Same data, same pay endpoint as the standalone page — the number shown and the number paid can't drift apart. Confirmed separately (per the user's question) that commission payout was already `status: "paid"`-only at every layer (list, detail, and the actual payout's own server-side re-check) — no change needed there.
+
+Tasks done: TASK-008.
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
+**TASK-007 done** — Akun Login (`/admin/akun`) restricted to Owner/Super Admin, reversing a 2026-08-27 decision that had Manager included. Found while investigating a "Komisi Saya" Rp 0 report — turned out to be a data mismatch (a Manager's login `nama` ≠ their Sales roster name), not a code bug, left for the user to correct via Akun Login. The 2 account-management API routes had no role check of their own (only the general `/api/admin` middleware's `isAdminLevel`, which Manager satisfies) — added a dedicated check to both, same isolation pattern as Flash Sale/Komisi Bekas, so a raw request can't grant a role or reset a password either.
+
+Tasks done: TASK-007.
+Regression: PASS.
+
+---
+
+## 2026-09-04
+
+**BUG-011 fixed** — Katalog's search box and the Invoice "Tambah Produk" sidebar's own search never matched Merk (only name/SKU/size) — a search for a brand like "Hosizaki" returned nothing even for active products carrying it, ever since TASK-005 made Merk a real separate field. The DB-backed searches (`/api/products`, Inventory) already had it right; only these two client-side JS filters had the gap. Added the same `merk` check to both.
+
+Bugs fixed: BUG-011.
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
+**TASK-003 follow-up #3** — re-running "Distribusikan" (typo, or a different total) found nothing to redistribute into, since the allocator only ever fills a Rp0 line and every line was already touched by the first run. Now tracks which lines Diskon Bulk itself last set (`lastBulkDiskon` in `InvoiceForm.tsx`) — a re-run overwrites its own previous split, a genuinely manual entry (or one edited since) stays protected.
+
+Tasks done: TASK-003 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
+**BUG-004 corrected** — the same-day fix capped Baru/Custom diskon at the sale price itself (100%, no real ceiling). The user caught this once Diskon Bulk could concretely dump an entire request into one Baru line with nothing protecting it — "plafon itu kan berdasarkan, 1 selisih dari harga jual dengan harga bottom + komisi dari harga bottom". `maxDiskonBaru()` now mirrors `maxDiskonBekas`'s exact shape (`hargaJual − hargaMinimum + 6%×hargaMinimum`) instead. Also added the matching on-blur warning to the manual diskon field in Katalog/Invoice (was Bekas-only before).
+
+Bugs fixed: BUG-004 (correction).
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
+**TASK-003 follow-up** — Diskon Bulk's input used a plain `Input` (raw digits, "150000") instead of `CurrencyInput` (accounting-style thousand separators, "150.000") — the same component every other Rupiah field in the app already uses. Checked the allocator/`updateItem` logic itself first (no defect found) before concluding the formatting was the actual complaint.
+
+Tasks done: TASK-003 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
+**TASK-003 done** — Diskon Bulk on Invoice: one total discount input + "Distribusikan" button in Ringkasan, auto-split across line items — Baru/Custom filled first (6x cheaper on commission per rupiah than Bekas), every per-unit diskon a clean Rp10.000 multiple, manual per-line entries and Flash Sale lines never touched. New `allocateBulkDiskon()`/`maxDiskonBaru()` in `lib/commission.ts`. Sanity-tested against 7 cases (split, over-capacity clamp, sub-step request, exact-cap, qty>1 rounding, manual-diskon skip, Flash-Sale skip) via a standalone script before wiring into the UI. Iterated placement/copy with the user first via an interactive HTML preview.
+
+Also closes **BUG-004** — Baru/Custom diskon had no server-side ceiling at all (only Bekas was clamped); both `createInvoice.ts`/`updateInvoice.ts` now clamp it via the new `maxDiskonBaru()`.
+
+Tasks done: TASK-003.
+Bugs fixed: BUG-004.
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
+**BUG-010 fixed** — Product names showed a stray "-" (e.g. "Working Table -") from TASK-005's Merk-in-name feature. Queried production directly: 135 of 225 products have `merk` literally stored as `"-"`, a pre-existing "no brand" data-entry convention, not empty. `productDisplayName()` now treats `"-"`/`"—"` the same as empty — fixes every existing product with no DB migration needed.
+
+Bugs fixed: BUG-010.
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
+**TASK-006 follow-up** — the pre-existing "Komisi — Persen" reference field was still visible/editable by Manager in the product form, inconsistent with the owner-only Komisi Bekas override just built. Per the user's direct correction ("manager tidak boleh untuk edit komisi, kolom insentif tidak boleh terlihat... hanya owner yang boleh"): the field and its Komisi Nominal readout are now hidden entirely (not just disabled) unless Owner/Super Admin, and moved server-side into the same Owner-only endpoint as Komisi Bekas (no longer in the general product PATCH's allowlist at all).
+
+Tasks done: TASK-006 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-03
+
+**TASK-006 done** — Owner (+Super Admin) can now override the barang-bekas commission rate per product (`ProductForm.tsx`, Kondisi=Bekas only) and set a default per category (`CategoryManager.tsx`) — was a hardcoded flat 10% of Harga Minimum everywhere, with zero override capability. Hierarchy: product override → category default → global 10%. Baru/Custom (6%) and Flash Sale (7%) untouched, scope deliberately bekas-only per the user. Server-side (`createInvoice.ts`/`updateInvoice.ts`) always resolves and enforces the rate itself from the DB, same as every other commission input. New Owner-only `PATCH /api/products/[id]/komisi-bekas` (isolated from the general product PATCH, which never accepts this field). Also renamed the "Harga Minimum" label to "Harga Bottom" app-wide (display only, DB field name unchanged) and fixed a bug found along the way: `merk` was stuck behind `canEditProduct` in `app/katalog/page.tsx`, so a Sales rep's own Katalog view never actually got Merk data (TASK-005's fix silently didn't apply to them).
+
+Tasks done: TASK-006.
+Regression: PASS.
+
+---
+
+## 2026-09-02
+
+**TASK-005 done** — Merk (brand) now shows automatically next to the product name on Katalog cards, the Katalog PDF, and the Invoice product picker (+ what gets snapshotted onto the invoice), instead of requiring it typed into Nama Produk by hand. New `productDisplayName()` helper in `lib/format.ts`; stored `name` field itself untouched.
+
+Tasks done: TASK-005.
+Regression: PASS.
+
+---
+
+## 2026-09-02
+
+**TASK-005 follow-up** — confirmed `productDisplayName()` never shows a stray "-" when merk is empty (falls back to plain name). Closed 2 naming-consistency gaps the first pass missed: "Produk Custom" listing (`app/katalog/custom/page.tsx`) wasn't passing `merk` through to `ProductCard` at all, and "Pesan Produk Custom" (`app/katalog/custom-order/page.tsx`) added its new product to cart with the raw name, bypassing the helper. Both now match Katalog/PDF Katalog/Invoice.
+
+Tasks done: TASK-005 (follow-up).
+Regression: PASS.
+
+---
+
+## 2026-09-02
+
+**BUG-009 fixed** — Katalog search couldn't match a full "80 x 60 x 100" size query, only a single number against one P/L/T dimension at a time. Not actually a regression (git history confirms this was never implemented), but fixed as reported: added shared size-query parsing to `KatalogClient.tsx` — splits on x/×/,/-/whitespace, every number typed must match one of panjang/lebar/tinggi (partial matching, order doesn't matter). Applies to both the main search box and the sidebar's manual Ukuran field; single-number queries behave exactly as before.
+
+Bugs fixed: BUG-009.
+Regression: PASS.
+
+---
+

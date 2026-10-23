@@ -1,0 +1,456 @@
+# HOJAY — Bug Archive (FIXED)
+
+> Dipindah dari BUGS.md. Isi tidak diubah.
+
+---
+
+## BUG-001 — Katalog photo-zoom collapses into the card instead of covering the screen
+
+**Severity:** B1
+**Status:** FIXED (2026-08-30)
+**Source:** User report ("fitur zoom eror di katalog")
+
+**Description:** `ZoomableImage.tsx`'s full-screen preview is `position: fixed`, and the "Soft Trade" card redesign added a hover `transform: translateY(...)` on the card. Any CSS `transform` on an ancestor makes it that element's own containing block instead of the viewport — so the fixed overlay rendered clipped to the card's own box.
+
+**Root cause:** `ProductCard.tsx`'s outer card div had `hover:-translate-y-0.5`.
+
+**Fix:** Dropped the translate; kept `hover:shadow-md` as the hover cue (box-shadow doesn't create a containing block).
+
+**Files:** `components/katalog/ProductCard.tsx`.
+**Regression test:** Manually confirmed zoom opens full-screen while hovering the card. Documented in `docs/SDD/KNOWN_ISSUES.md` as a standing rule for future hover-transform additions.
+
+---
+
+## BUG-002 — Bare `rounded` class computes to 0px app-wide
+
+**Severity:** B2
+**Status:** FIXED (2026-08-30)
+**Source:** Discovered while investigating the user's repeated "masih kaku" reports across several pages.
+
+**Description:** `app/globals.css` sets `--radius-DEFAULT: 0` (the old flat "Rak & Rel" look). Bare `rounded` (no suffix) silently resolves to 0px, so anything using it — including `components/ui/Button.tsx`'s base class, used by nearly every `<Button>`/`<LinkButton>` in the app — kept hard square corners through multiple earlier rounds of "Soft Trade" work, because the buggy class name looked correct.
+
+**Root cause:** Confusion between Tailwind's bare `rounded` utility (tied to `--radius-DEFAULT`) and the suffixed scale (`rounded-lg`, `rounded-xl`, `rounded-full`, unaffected by that override).
+
+**Fix:** `rounded` → `rounded-lg`/`rounded-xl` in `components/ui/Button.tsx`, `Panel.tsx`, `Form.tsx`, and 6 more files found via `grep -rnP '\brounded\b(?!-[a-z0-9])'`.
+
+**Files:** `components/ui/{Button,Panel,Form,UploadBox}.tsx`, `components/katalog/KatalogClient.tsx`, `components/invoice/{AddProductSidebar,InvoiceForm}.tsx`, `app/invoice/[id]/page.tsx`, `app/katalog/custom-order/page.tsx`.
+**Regression test:** Re-ran the same grep after the fix — zero bare matches remain outside comments/already-correct `rounded-[10px]` usages.
+
+---
+
+## BUG-003 — Hidden yellow-on-white contrast in Dialog and Leaderboard
+
+**Severity:** B2
+**Status:** FIXED (2026-08-30)
+**Source:** Proactive sweep after fixing BUG-002 (per the "actively hunt for bugs" rule).
+
+**Description:** The accent color change (red → yellow, part of TASK-001) fixed every `bg-accent ... text-white` pairing found by a literal-adjacency grep, but two files built their className from one shared base class plus a conditional background, so `text-white` never sat next to `bg-accent` on the same line and was missed: `components/ui/Dialog.tsx`'s confirm button (used by every confirm/alert popup in the app), and `SalesBoard.tsx`/`MobileSalesBoard.tsx`'s rank-#1 leaderboard highlight (rank number, order count, progress bar all assumed a dark fill).
+
+**Root cause:** Grep-based sweep only catches literal same-line adjacency, not classes composed via template-literal ternaries with a shared base.
+
+**Fix:** Split the shared base per branch; flipped `text-white`/`bg-white` variants to `text-ink`/`bg-ink` wherever the branch's own background is the yellow accent.
+
+**Files:** `components/ui/Dialog.tsx`, `components/insentif/SalesBoard.tsx`, `components/insentif/MobileSalesBoard.tsx`.
+**Regression test:** Manually re-read every `isTop`/`dialog.danger` conditional in both files to confirm no remaining light-on-light or light-on-yellow pairing.
+
+---
+
+## BUG-004 — Barang Baru/Custom diskon has no server-side ceiling (commission can go negative)
+
+**Severity:** B2
+**Status:** FIXED (2026-09-03, alongside TASK-003)
+**Source:** Discovered while designing TASK-003 (Bulk Diskon)'s algorithm.
+
+**Description:** `lib/services/createInvoice.ts`/`updateInvoice.ts` clamp diskon for barang Bekas via `maxDiskonBekas()`, but Barang Baru/Custom has no equivalent clamp at all. Since `computeLineCommission` for Baru/Custom is `round((hargaJual - diskon) * 0.06)`, a raw API request (bypassing the client's own guards) with `diskon > hargaJual` would compute a NEGATIVE commission.
+
+**Fix:** New `maxDiskonBaru(hargaJual, hargaMinimum)` in `lib/commission.ts`. Applied in both services to every Baru/Custom line (product-backed and custom-order, Flash Sale lines untouched — diskon's already locked at 0 there), mirroring the existing Bekas clamp exactly.
+
+**Correction (2026-09-03, same day):** the first version capped at `hargaJual` itself (100% of the sale price, no real ceiling) — the user flagged this once Diskon Bulk could concretely dump an entire request into one Baru line with no protection ("sejak kapan plafon diskon itu 100% dari harga jual? plafon itu kan berdasarkan, 1 selisih dari harga jual dengan harga bottom + komisi dari harga bottom"). Rewritten to the exact same shape as `maxDiskonBekas` — `(hargaJual − hargaMinimum) + 6%×hargaMinimum` — just parameterized with the flat 6% baru/custom rate instead of the (possibly overridden) bekas rate. A true custom-order line (no backing product, `hargaMinimum` snapshotted as 0) correctly degrades back to `hargaJual` — there's no real Harga Bottom to protect there. Also added the matching on-blur clamp+warning to the manual per-line diskon field in `ProductCard.tsx`/`ItemRowEditor.tsx` (previously bekas-only), so a manually typed value gets the same client-side feedback as a bulk-allocated one.
+
+**Files:** `lib/commission.ts`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`, `components/katalog/ProductCard.tsx`, `components/invoice/ItemRowEditor.tsx`.
+**Regression test:** Clean build, lint clean. Re-verified via the same manual sanity script: `maxDiskonBaru(1.5jt, 1jt)` now 560rb (was 1.5jt); a bulk request exceeding one line's new (smaller) cap correctly spills into the next-cheapest line instead of silently over-discounting the first.
+
+---
+
+## BUG-005 — Katalog price field can get silently stuck at Rp 0 (shows on-screen and in the exported PDF)
+
+**Severity:** B1
+**Status:** FIXED (2026-08-31)
+**Source:** User report ("kenapa di katalog ada harga yang tulisannya 0" — a Katalog PDF shipped with a product priced at Rp 0).
+
+**Description:** `ProductCard.tsx`'s price `CurrencyInput` select-all's its whole value on focus (so retyping doesn't just concatenate digits). If that retype gets interrupted before a new number is typed — click/tab away right after the select-all clears the field — the field blurs empty. `onChange` had already called `setCustomPrice(id, 0)` for the empty intermediate state, and the existing `onBlur` guard only corrected "positive but below `hargaMinimum`" — an empty/zero value fell through untouched. `getEffectivePrice()` treats a stored `0` as a real override (not "unset"), so the price stayed at Rp 0 indefinitely (persisted to `localStorage`, surviving reloads) until someone noticed and retyped it manually. Both the on-screen card and `CatalogPrintDoc.tsx`'s exported PDF read price from this same shared state, so the PDF shipped with Rp 0 too.
+
+**Root cause:** No handling for the empty/zero case in the price field's blur validation — only the below-minimum case was guarded.
+
+**Fix:** `onBlur` now also handles `num <= 0`: discards the custom-price override entirely (`setCustomPrice(id, undefined)`) instead of leaving `0` in place, falling back to whichever preset (Rekomendasi/Minimum) was active, and shows a warning explaining what happened — same pattern as the existing below-minimum warning. Confirmed via a direct DB query that no product actually has `hargaRekomendasi`/`hargaMinimum` ≤ 0 — this was purely the client-side stuck-state bug, not bad data.
+
+**Files:** `components/katalog/ProductCard.tsx`.
+**Regression test:** Clean build; manually traced the fix against the exact repro (focus → clear → blur before retyping) confirms the override is now dropped instead of persisted at 0.
+
+---
+
+## BUG-006 — Katalog PDF could include unavailable products
+
+**Severity:** B2
+**Status:** FIXED (2026-08-31)
+**Source:** User request ("untuk katalog pdf, hanya boleh checklist produk yang tersedia, pastikan ya").
+
+**Description:** The pick-mode checkbox on every `ProductCard` and the "Pilih Semua" control in `KatalogClient.tsx` let a sales rep check ANY product for the PDF export, including ones already at `availableQty <= 0` (fully Booked/Sudah DP/sold out) — nothing blocked selecting an item with nothing left to actually sell.
+
+**Root cause:** No availability check anywhere in the selection path (per-card checkbox, "Pilih Semua", or the PDF's own product filter).
+
+**Fix:** Three layers, so a stale selection can't slip through even if it predates a stock change: (1) `ProductCard.tsx`'s checkbox is now `disabled` + dimmed for an unavailable product, with a tooltip explaining why; (2) `KatalogClient.tsx`'s "Pilih Semua" only ever selects/counts the currently-available subset of what's on screen; (3) `CatalogPrintDoc.tsx` — the actual authoritative source for what goes into the PDF — re-filters `selectedProducts` by the same availability formula regardless of how an id ended up in the selection set (e.g. checked while in stock, sold out to someone else before the PDF was generated).
+
+**Files:** `components/katalog/ProductCard.tsx`, `components/katalog/KatalogClient.tsx`, `components/cart/CatalogPrintDoc.tsx`.
+**Regression test:** Clean build. Manually confirmed the availability formula (`stok - bookedQty - dpQty`) is applied identically in all three places.
+
+---
+
+## BUG-007 — Katalog PDF/page slow (Katalog PDF generation + opening the Katalog page)
+
+**Severity:** B1
+**Status:** FIXED (2026-08-31)
+**Source:** User reports — first "lama sekali untuk proses pembuatan katalog untuk bisa di download pdf", then after the first attempted fix, "masih sangat lambat, bahkan lebih buruk dari sebelum layout terbaru" and a hard target: PDF export and opening `/katalog` both under 1 second.
+
+**First attempt (WRONG, reverted same day):** Guessed the sequential per-page `html2canvas` `for` loop was serializing work unnecessarily and changed it to `Promise.all`, capturing every page "concurrently". This did not help and the user reported it made things worse. Root issue with the theory: by the time capture starts, every image is already loaded (awaited earlier in the same function) — there's essentially no I/O left for html2canvas to overlap, so it's almost entirely synchronous DOM-clone + canvas-rasterize work, which JS's single thread can't actually run concurrently regardless of how the promises are scheduled. `Promise.all` just kept every page's cloned subtree + canvas alive in memory simultaneously instead of one at a time being processed and released — plausibly *increasing* peak memory/GC pressure instead of speeding anything up. Reverted back to the sequential loop (proven working before any of this).
+
+**Actual root cause found (page-open speed):** `CatalogPrintDoc.tsx` is mounted globally in the root layout (`app/layout.tsx`) — it fetches `/api/products` (all products, again — the page it sits on/near already fetched the same data server-side), `/api/categories`, and `/api/sales` unconditionally on every single mount, unguarded by whether the user is anywhere near the Katalog PDF feature. That means **every page load across the whole app**, and especially landing on `/katalog` itself, paid for three extra API calls this component's own export doesn't need until someone actually starts picking products for a PDF.
+
+Ruled out (checked directly against the DB, not guessed): `getProductInvoiceStatusMap()`'s unbounded `Invoice.find({status:"paid"})` scan — only 30 invoices / 23 paid / 206 products in the real data, indexed on `status`, not a real bottleneck at this scale. Katalog's own product-grid thumbnails already use `next/image` (lazy-loaded, per an earlier 2026-08-28 fix) — also not the culprit.
+
+**Fix:** `CatalogPrintDoc.tsx`'s fetch effect is now gated on `pickMode` (from `CatalogSelectionProvider`) instead of firing unconditionally on mount — it only fires once, the first time `pickMode` flips true (same "fetch once per session" semantics as before, just deferred), giving it the whole browsing-and-checking-boxes window to finish well before "Unduh Katalog PDF" is ever clicked. `KatalogClient.tsx`'s existing wait-for-`data-ready` poll still covers the rare case it hasn't finished. `KATALOG_PDF_RENDER_SCALE`/`KATALOG_PDF_JPEG_QUALITY` (the settings that actually affect visual quality/compression, already deliberately tuned once before after a blur complaint) were not touched by any part of this — confirmed nothing about image compression was removed.
+
+**Files:** `components/katalog/KatalogClient.tsx` (reverted to sequential), `components/cart/CatalogPrintDoc.tsx` (deferred fetch).
+**Regression test:** Clean build. No change to per-page PDF output or image compression — only when the background fetch fires.
+
+**Second correction (evidence-based, 2026-08-31):** Still not enough — user reported it was still very slow and asked directly whether something was leaking. Tried to reproduce locally first (`npm run dev`, minted a real session JWT to hit the actual authenticated routes) but this sandbox itself can't reach MongoDB Atlas reliably (`MongoNetworkTimeoutError`/`MongooseServerSelectionError`) — that made local timings meaningless, and was honestly reported as such rather than presented as real data. Confirmed the *deployed* production site's own unauthenticated response times are fast (0.2-1.3s), and the user confirmed Atlas's Network Access list already allows `0.0.0.0/0` — so the network-layer theories were dead ends.
+
+Asked the user for a real DevTools Network-tab capture from production instead of guessing again. It showed **661 requests, 130 MB of resources**, mostly repeated `image?url=...` (Next.js Image Optimizer) calls, with "Pilih Semua" checked. Root cause: the product grid (`KatalogClient.tsx`) had **no cap at all** — it always rendered every `filtered` product simultaneously, each `ProductCard` mounting its own `next/image` request. With 206 products in the catalog today (and growing over time — which also explains "sebelumnya tidak masalah", the catalog was smaller then), that's 206 cards' worth of images all loading at once on every single page load, independent of the PDF export code touched in the two attempts above.
+
+**Fix:** `KatalogClient.tsx` now renders only `GRID_PAGE_SIZE` (30) products at a time, with a "Tampilkan Lebih Banyak" button to reveal more; resets to the first page on search/filter/sort change. "Pilih Semua" and the PDF export are untouched — both still operate on the full `filtered`/`availableFiltered` arrays regardless of how many cards are currently painted to the screen, only what's rendered/mounted is capped.
+
+**Files (this correction):** `components/katalog/KatalogClient.tsx`.
+**Regression test:** Clean build. Filter/sort/search/selection/PDF logic unchanged — verified by reading the diff, only the render slice + a page-size button were added.
+
+**Third correction (2026-08-31) — the real PDF-generation bug, found by actually reproducing it:** Pagination helped opening `/katalog`, but the user reported the PDF export was still very slow ("bahkan lebih buruk", asked directly if something was leaking). This time, instead of guessing, actually reproduced it: minted a real session JWT, drove a headless Chromium (Playwright) against a real `next build && next start` (a genuine production-equivalent local server, specifically to rule out dev-mode Fast Refresh as a confound), pre-seeded 172 products as selected, and captured every network request while generating the PDF.
+
+**Confirmed finding:** requests grew from ~220 to 1,459+ within the first 20 seconds alone, and kept climbing — the exact same explosive pattern the user's own DevTools screenshot showed (6,306 requests / 1,467 MB). Every individual product photo's `_next/image?url=...` URL (the GRID's own thumbnail, not the print doc's photo) was requested **~70 times each**, growing in waves that lined up almost exactly with the total count of unique images — once per several seconds, for the ENTIRE duration `downloadCatalogPDF()`'s per-page `html2canvas()` loop ran (roughly one wave per page captured, ~35-40 pages for 172 products).
+
+**Root cause:** `html2canvas` clones the live document on every single page capture to render it safely off-screen. The Katalog product grid (with all its `next/image` thumbnails) sits in that same document the whole time a PDF is being generated — so every one of the ~35-40 per-page captures re-touched every visible grid image, not just the off-screen print doc's own photos. This compounds directly with page count, which is why a full-catalog PDF (172-206 products) was so much worse than a small one.
+
+**Fix:** the grid is now swapped for a plain text placeholder (not just hidden via CSS — actually removed from the DOM) while `downloading` is true, so there's nothing left for html2canvas's per-capture clone to re-touch. Verified by re-running the exact same Playwright capture against the fixed build: request count stayed flat (~222, matching the pre-download baseline) for 90+ seconds straight where the unfixed version had already exceeded 1,459 requests by second 20 — no further growth at all.
+
+Also applied, per the user's related request, a conservative compression tightening for future uploads: `MAX_DIMENSION` in `app/api/upload/route.ts` trimmed 1600px → 1280px (still ~4x the pixels the PDF's own photo box needs at full render scale). `JPEG_QUALITY` left untouched — that's the knob that actually affects visible sharpness, already deliberately tuned once before after a real blur complaint. Only affects new uploads, not the 170 photos already in Blob storage.
+
+**Files:** `components/katalog/KatalogClient.tsx` (grid unmounts during download), `app/api/upload/route.ts` (MAX_DIMENSION 1600→1280).
+**Regression test:** Clean build. Re-ran the Playwright network capture before/after — confirmed the fix eliminates the repeated-fetch pattern entirely, not just theorized. Selection/PDF page-packing/output logic untouched — the grid is the only thing conditionally unmounted.
+
+---
+
+## BUG-008 — Beranda shows "Belum Bayar" for invoices that already have a DP
+
+**Severity:** B2
+**Status:** FIXED (2026-08-31)
+**Source:** User report ("Di Beranda, jika sudah DP, berikan status DP nya jangan belum bayar").
+
+**Description:** `Invoice.status` only ever holds `"draft" | "unpaid" | "paid"` — recording a DP (see `app/invoice/[id]/dp/page.tsx`) intentionally leaves status at `"unpaid"` (only the remaining balance changes, per `DpForm.tsx`'s own note "DP bukan pelunasan"). `FollowUpStatusBadge` and every follow-up list read that raw status directly, so an invoice that already had a DP recorded still showed the same "Belum Bayar" badge as one with nothing paid at all — on Beranda's desktop and mobile-sales "Perlu ditindak" lists, and (found while fixing it) the same gap on `/follow-up`'s desktop table and mobile card list, since all four share the exact same `FollowUpStatusBadge` component and `getFollowUpInvoices()` data source.
+
+**Root cause:** No DP-aware state anywhere in the follow-up data/UI layer — only the raw status enum.
+
+**Fix:** `FollowUpInvoiceRow` (`lib/dashboard.ts`) gained `hasDp: boolean` (`!!inv.dp?.nominal`, same check `lib/katalog.ts` already uses for Katalog's own "Sudah DP" badge). `FollowUpStatusBadge` gained a `"dp"` variant ("Sudah DP", same blue already used for this exact state on Katalog's product cards). Every call site that renders the badge from a `FollowUpInvoiceRow` now passes `"dp"` when `hasDp` is true instead of the raw status — Beranda desktop (both the generic and sales-personalized lists), Beranda mobile sales row title, `/follow-up`'s table, and its mobile card list.
+
+**Files:** `lib/dashboard.ts`, `components/dashboard/FollowUpStatusBadge.tsx`, `components/dashboard/MobileFollowUp.tsx`, `app/page.tsx`, `app/follow-up/page.tsx`.
+**Regression test:** Clean build. Aggregate counts (`unpaidCount`, `belumTertagih`, draft/unpaid filters) deliberately left untouched — a DP'd invoice still genuinely has money owed, so it correctly stays counted there; only the per-invoice badge/label changed.
+
+---
+
+## BUG-009 — Katalog search can't match a full "80 x 60 x 100" size query
+
+**Severity:** B3
+**Status:** FIXED (2026-09-02)
+**Source:** User report ("di katalog bisa search juga by ukuran 80 x 60 x 100, kemarin ini sudah bisa tapi sekarang tidak bisa").
+
+**Description:** Checked git history (`ead1934`, 2026-08-26) — the search box and the sidebar's manual Ukuran field have only ever matched a *single* number against one P/L/T dimension at a time (e.g. "80" matches any side that's exactly 80cm); a combined query like "80 x 60 x 100" was never implemented, so this wasn't a regression, but the gap matched what the user asked for closely enough to fix as reported.
+
+**Root cause:** N/A (missing capability, not a broken one) — `asNumber = /^\d+(\.\d+)?$/.test(q)` only ever recognized a query that was purely one number.
+
+**Fix:** Added `parseSizeQuery()`/`matchesSizeQuery()` to `KatalogClient.tsx` — a query is treated as a size query when, split on `x`/`×`/`,`/`-`/whitespace, every token is a plain number; every number the user types must match one of panjang/lebar/tinggi (partial: fewer than 3 numbers is fine, per the user's explicit choice), unordered. Single-number queries behave exactly as before. Applied to both the main search box (still OR'd with name/SKU text search) and the sidebar's Ukuran field (unchanged: size-only, no text fallback). Sidebar placeholder updated to "Contoh: 80 x 60 x 100 (cm, P/L/T)".
+
+**Files:** `components/katalog/KatalogClient.tsx`, `components/katalog/KatalogFilterSidebar.tsx`.
+**Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` in the same file. Manually reasoned through: "80" alone still exact-matches a single dimension (unchanged); "80 x 60 x 100" now requires all three to be present among P/L/T; "80 x 999" now correctly excludes a product that doesn't have a 999cm side.
+
+---
+
+## BUG-010 — Product names show a stray "-" from TASK-005's Merk-in-name feature
+
+**Severity:** B3
+**Status:** FIXED (2026-09-03)
+**Source:** User report ("untuk merk, jika '-' kenapa muncul? bukanya kemaren sudah di fix?").
+
+**Description:** `productDisplayName()` (TASK-005) correctly skips a genuinely empty/blank Merk, but queried the real database and found 135 of 225 products have `merk` stored as the literal string `"-"` — a pre-existing data-entry convention (staff typing "-" to mean "no brand") that predates this feature entirely. Since `"-".trim()` is truthy, the function treated it as a real brand and appended it, producing names like "Working Table -".
+
+**Root cause:** Data, not logic — the function's empty check never accounted for this placeholder convention because it wasn't known about until checked directly against production data.
+
+**Fix:** `productDisplayName()` in `lib/format.ts` now also treats `"-"` and `"—"` the same as empty — no DB migration; the existing 135 products (and any future one someone fills the same way) are corrected everywhere the function is already used (Katalog card, PDF, Invoice picker + snapshot).
+
+**Files:** `lib/format.ts`.
+**Regression test:** Clean build, lint clean. Verified directly against production data via a read-only query (135 products with `merk: "-"`, 0 with `merk: ""`) before and reasoning through after.
+
+---
+
+## BUG-011 — Katalog search never matched Merk (active products "disappear" when searching a brand)
+
+**Severity:** B2
+**Status:** FIXED (2026-09-04)
+**Source:** User report ("Di katalog, eror jika search by merk... barang aktifnya tidak muncul").
+
+**Description:** TASK-005 (2026-09-02) made Merk a real, separately-typed field shown alongside the product name — but the actual search predicates were never updated to match it. Typing a brand (e.g. "Hosizaki") into Katalog's search box, or the Invoice "Tambah Produk" sidebar's own search, matched nothing at all, even for active products genuinely carrying that Merk — both filters only ever checked `name`/`sku` (+ size, for Katalog). The DB-backed searches (`/api/products`'s `search` param, Inventory's list) already included `merk` in their `$or` — only these two purely client-side JS filters had the gap.
+
+**Root cause:** TASK-005 changed what's *displayed* (name + merk) without auditing every place a product is *searched*, and both gaps are hand-written JS predicates independent of the server-side `$regex` filters that already got it right.
+
+**Fix:** Added `p.merk.toLowerCase().includes(q)` (guarded for `undefined`) to both filters — OR'd in alongside the existing name/SKU checks, same pattern as the DB-side searches.
+
+**Files:** `components/katalog/KatalogClient.tsx`, `components/invoice/AddProductSidebar.tsx`.
+**Regression test:** Clean build, lint clean.
+
+---
+
+## BUG-012 — Invoice detail page crashed with "This page couldn't load — A server error occurred" for every invoice
+
+**Severity:** B0
+**Status:** FIXED (2026-09-04)
+**Source:** User report ("invoice ada bug, tidak bisa untuk generate invoice"), then a screenshot of Chrome's native server-error interstitial ("ERROR 1597884985").
+
+**Description:** TASK-009's `InvoiceDocument.tsx` extraction (2026-09-04, same day) pulled `displayDiskon()`/`displayHarga()` in as value imports from `InvoicePrintDoc.tsx` — a `"use client"` module — so it could reuse them instead of a third duplicate copy. `InvoiceDocument.tsx` itself has no `"use client"` directive and is rendered directly by the Server Component `app/invoice/[id]/page.tsx`, so every single visit to an invoice's detail page (`/invoice/[id]`) threw during the server render: "Attempted to call displayDiskon() from the server but displayDiskon is on the client" (React error #441 in the production build, surfaced to the browser as the generic "This page couldn't load" interstitial with an opaque digest). Reproducing locally required rebuilding with `next start` (not `next dev`) and reading the server process's own stderr — a raw HTTP 200 and a `"digest"` string found in the RSC payload both looked benign at first glance and delayed the diagnosis, since Next.js always embeds a `digest` marker in its RSC error-boundary serialization even for unrelated framework metadata.
+
+**Root cause:** A pure, no-client-dependency helper function got stranded inside a `"use client"` file, and a later refactor started calling it from a Server Component — Next.js's RSC boundary forbids calling (not just importing the type of) a client-module value from server code.
+
+**Fix:** Moved `InvoicePrintItem`, `InvoicePrintData`, `displayDiskon()`, `displayHarga()` into a new plain module `lib/invoiceDisplay.ts` (no `"use client"`). `InvoicePrintDoc.tsx` now imports and re-exports them (so its own internal usage and every existing `import ... from "./InvoicePrintDoc"` elsewhere keep working unchanged); `InvoiceDocument.tsx` imports directly from `lib/invoiceDisplay.ts`.
+
+**Files:** `lib/invoiceDisplay.ts` (new), `components/invoice/InvoicePrintDoc.tsx`, `components/invoice/InvoiceDocument.tsx`.
+**Regression test:** Clean build, lint clean on all three files. Reproduced the crash live (`next start` + Playwright, real error captured: React error #441 + server-log stack trace naming `displayDiskon`), applied the fix, re-ran the identical Playwright load — full invoice content now renders with zero console/page errors and nothing in the server log. Also hit `/invoice` (list) directly — clean.
+
+---
+
+## BUG-013 — "Kirim WA" on the Invoice list didn't load a chat for local-format numbers
+
+**Severity:** B2
+**Status:** FIXED (2026-09-04)
+**Source:** User report ("coba cek untuk fitur kirim langsung ke wa, ini eror tidak bisa ke load yang wa nya").
+
+**Description:** The Invoice list's (`/invoice`) "Kirim WA" row action built its `wa.me` link from the customer's WhatsApp number with only non-digit characters stripped — a number stored in the normal local format ("0812...", as every customer's number is entered) produced `https://wa.me/0812...`. `wa.me` requires the number in international form without the leading local "0" (Indonesia's is "62"); given the local form it doesn't error visibly, it just fails to load a chat, matching the report exactly. `InvoiceActions.tsx`'s own "Kirim WA" button (on the invoice detail page) already did the "0"→"62" conversion correctly — the list's version was added by TASK-009 the same day and built the link inline instead of reusing that logic, so the two quietly drifted apart.
+
+**Root cause:** Duplicated wa.me-link construction, only one copy of which had the local-to-international prefix conversion.
+
+**Fix:** Added `toWaPhone()` to `lib/format.ts` (strip non-digits, "0" prefix → "62", `""` if nothing usable) and pointed both `InvoiceActions.tsx` and `InvoiceListClient.tsx` at it, so the two "Kirim WA" buttons can't drift apart again.
+
+**Files:** `lib/format.ts`, `components/invoice/InvoiceListClient.tsx`, `components/invoice/InvoiceActions.tsx`.
+**Regression test:** Clean build, lint clean. Verified live against every real invoice on the list (Playwright, read every rendered `wa.me` href directly): all resolve to `62...`, none still carry a leading `0`.
+
+---
+
+## BUG-014 — "Komisi Nominal" stopped updating live after TASK-014 removed the "Komisi — Persen" field
+
+**Severity:** B3
+**Status:** FIXED (2026-09-05)
+**Source:** User report with screenshot ("bug komisi nominal tidak sesuai dengan yang sedang diubah, harusnya tercalculate secara live").
+
+**Description:** TASK-014 (same day) removed "Komisi — Persen" as a visible/editable field from the product form, leaving "Komisi Bekas (%)" as the only commission input. But the "Komisi Nominal" display below it was still computed from `values.komisiPercent × hargaRekomendasi` — the now-invisible, frozen field — so typing into "Komisi Bekas (%)" (a completely different state field) never moved it. For a product with a historical `komisiPercent` unrelated to its current inputs (e.g. 7%, set before TASK-014 when the field was freely editable), the shown nominal looked arbitrary and disconnected from whatever the user was actively editing.
+
+**Root cause:** TASK-014 hid the field `komisiNominal`'s formula actually depended on, without updating the formula itself to track the field that replaced it in the UI.
+
+**Fix:** `komisiNominal` (the on-screen figure only — `product.komisiPercent`/`product.komisiNominal` stored in the DB, and Hot Products, are untouched) now mirrors the real commission formula from `lib/commission.ts` instead: for kondisi Bekas, `Harga Bottom × Komisi Bekas%` (or the 10% default when the field is empty) — the same guaranteed floor-price commission `computeLineCommission`/`maxDiskonBekas` actually use; for Baru, a static flat 6% × Harga Rekomendasi (unchanged from before, since Baru has no per-product override to react to).
+
+**Files:** `components/produk/ProductForm.tsx`.
+**Regression test:** Clean build, lint clean (same one pre-existing unrelated `react-hooks/set-state-in-effect`). Verified live as Owner against a real bekas product: typing 20/15/(empty) into "Komisi Bekas (%)" updated "Komisi Nominal" to exactly Rp 260.000 / Rp 195.000 / Rp 130.000 (20%/15%/10% of Harga Bottom Rp 1.300.000) each time.
+
+---
+
+## BUG-015 — Katalog "Pilih Semua" reset every previous search's selection instead of accumulating
+
+**Severity:** B2
+**Status:** FIXED (2026-09-06)
+**Source:** User report ("untuk select all, di katalog, kenapa waktu user search dan select all lainnya, dia reset? seharusnya dia bisa ngesave").
+
+**Description:** `CatalogSelectionProvider.tsx`'s `selectAll(ids)` replaced the entire `selected` Set with `new Set(ids)`. Since "Pilih Semua" only ever sees the CURRENT search/filter's matching ids (`KatalogClient.tsx`'s `availableIds`), clicking it under one search, then searching for something else and clicking it again, silently discarded every product picked under the first search the instant the second call ran.
+
+**Root cause:** `selectAll` was written as a full replace, correct only for the single-search case it was originally built and tested against — nothing about it was wrong until "Pilih Semua" needed to compose across multiple searches, which the original design never accounted for.
+
+**Fix:** `selectAll` now merges into whatever's already selected (union) instead of replacing it, while preserving the existing "click again to deselect" behavior — but scoped to just the ids passed in, so deselecting the current search's picks never touches selections made under a different one.
+
+**Files:** `components/katalog/CatalogSelectionProvider.tsx`.
+**Regression test:** Clean build, lint clean (same one pre-existing unrelated `react-hooks/set-state-in-effect`, the provider's own localStorage-hydration effect). Verified live end-to-end: searched "Cabinet" → Pilih Semua (15 produk) → searched "Meja" → Pilih Semua (6 produk) → main button correctly read "Unduh Katalog PDF - 21 itemnya" and the persisted `localStorage` selection held the exact union of both searches' ids, not just the most recent one.
+
+**Also investigated the same day:** the user separately asked whether a paid ("Lunas") invoice still shows its Riwayat (activity history) — checked a real paid invoice's detail page directly and confirmed this already works correctly: `payInvoice.ts` pushes a "Pembayaran dikonfirmasi — status Lunas" entry at payment time, and the Riwayat panel on `/invoice/[id]` renders unconditionally regardless of status. No fix needed; reported back to the user with the real invoice's rendered Riwayat/Status Pembayaran output as evidence.
+
+---
+
+## BUG-016 — "Avi" showed as a separate person from "Avicenna Pangaran" on the leaderboard
+
+**Severity:** B2
+**Status:** FIXED (2026-09-07)
+**Source:** User report ("untuk akun avi, tolong namanya diganti semua menjadi Avicenna Pangaran, karena di leaderboard mereka terpisah, padahal 1 orang").
+
+**Description:** Same underlying risk this project's own [[sales-user-name-matching]] pattern already flags: `Invoice.sales.nama`/`Customer.assignedSales` are plain string snapshots, not live references. The `User`/`Sales` records for this person were already correctly "Avicenna Pangaran" (no code bug there), but 11 older invoices and 1 customer still carried the earlier name "Avi" from before a rename — so anything grouping/ranking by that raw string (the Insentif leaderboard, most visibly) split into two separate rows for what's really one person.
+
+**Root cause:** Data, not logic — a historical name change (Sales roster/User account) was never backfilled onto the Invoice/Customer documents that had already snapshotted the old name.
+
+**Fix:** Direct data correction (no code change — the snapshot-on-write architecture itself is intentional, see TASK-007/BUG's history). Investigated the full blast radius first (`User`, `Sales`, `Invoice.sales.nama`, `Customer.assignedSales`, `PurchaseRequest.sales.nama`/`diajukanOleh`, `Karyawan.nama` — `GajiPayment.sales` is a real ObjectId ref, unaffected) before touching anything: only `Invoice.sales.nama` (11 documents) and `Customer.assignedSales` (1 document) still had "Avi"; everywhere else was already correct. Updated exactly those 12 documents to "Avicenna Pangaran".
+
+**Files:** None — pure data correction via a one-off script (Invoice.updateMany/Customer.updateMany, exact-match filter, deleted after use).
+**Regression test:** Verified live: `Invoice.distinct("sales.nama")` (real API) now returns only "Avicenna Pangaran", zero remaining "Avi"; `/insentif` leaderboard page (real HTTP fetch) shows only the one name, no split entry.
+
+---
+
+## BUG-017 — "Bukti Transfer" full-size link had no way back on mobile
+
+**Severity:** B2
+**Status:** FIXED (2026-09-07)
+**Source:** User report ("ketika sudah klik penuh, tidak ada tombol untuk kembali").
+
+**Description:** TASK-016's "Buka ukuran penuh" link opened the bukti image via a plain `target="_blank"` new browser tab — on mobile, this can strand the user with no obvious way back to the Preview drawer (no visible tab bar/back affordance in some mobile browser contexts).
+
+**Root cause:** Relied on browser-level tab navigation instead of an in-app control for something the app can render itself (an image).
+
+**Fix:** Reused `ZoomableImage.tsx` (already proven — Katalog product photos use the exact same pattern) for the image case: clicking the bukti thumbnail now opens the same in-app full-screen overlay with a working ✕/Escape/backdrop close, no new tab at all. A PDF bukti still opens in a new tab (no in-app PDF viewer exists to reuse, and that's standard, expected behavior for a PDF).
+
+**Files:** `components/invoice/InvoiceListClient.tsx`.
+
+---
+
+## BUG-018 — Beranda notification "Produk baru ditambahkan" linked to the edit page instead of Katalog
+
+**Severity:** B2
+**Status:** FIXED (2026-09-07)
+**Source:** User report ("kenapa pada saat produk baru ditambahkan larinya ke edit? harusnya ke katalog ya"), confirmed via a screenshot showing the "Ubah Booth wawawa" edit page reached from the Beranda bell.
+
+**Description:** The Beranda activity/notification feed's "Produk baru ditambahkan" entry (`lib/activity.ts`) linked straight to `/produk/[id]/edit`. The sibling "Flash Sale diaktifkan" entry right below it already linked to `/katalog` — the new-product entry was the odd one out.
+
+**Root cause:** `getActivityLog()`'s `produk-baru` entry was built with `href: /produk/${p._id}/edit` instead of following the same `/katalog` pattern used by the other product-related entry type.
+
+**Fix:** Changed the `produk-baru` entry's `href` to `/katalog`, matching `flash-sale`'s existing href exactly. No deep-link-to-one-product mechanism exists in Katalog today, so this is a plain, consistent link to the Katalog page — same level of specificity as the Flash Sale entry already had.
+
+**Files:** `lib/activity.ts`.
+**Regression test:** Clean build, lint clean. Verified live against a production build: `/aktivitas` rendered 66 "Produk baru ditambahkan" entries, all with `href="/katalog"`, zero remaining `/produk/.../edit` links anywhere on the page.
+**Regression test:** Clean build, lint clean. Verified live: clicking a real bukti image opens the in-app zoom overlay (confirmed a working ✕ close button renders, zero new browser tabs/popups opened).
+
+---
+
+## BUG-019 — Invoice list's Preview drawer rendered docked to the left instead of the right
+
+**Severity:** B1
+**Status:** FIXED (2026-09-08)
+**Source:** User report with screenshot, right after TASK-021 deployed ("hei, penempatanya kenapa jadi sebelah kiri? ini bug").
+
+**Description:** TASK-021 (same session) added two hidden `InvoicePrintDoc` instances (`list-invoice-print-doc`/`list-surat-jalan-print-doc`, used only for the PDF-capture path) as direct children of the drawer overlay's own container — `<div className="... flex justify-end ...">`. Each `InvoicePrintDoc` renders at `h-0 overflow-hidden` (correctly invisible), but its un-clipped content still includes a real 794px-wide invoice page — as a flex item, that content width still counts toward the row's layout even though its rendered height is zero. With 2 such spacer-width items now sharing the flex row with the actual visible drawer panel, `justify-end` packed the whole row (panel + both invisible spacers) flush against the right edge — which meant the panel itself, being first in DOM order, got shoved over to the LEFT so the two invisible spacers could sit flush right instead.
+
+**Root cause:** Mounting a "purely for background capture, always h-0" component as a sibling flex item inside a `justify-end` layout — `overflow: hidden` only clips what's *painted*, it doesn't stop the element's own intrinsic content width from participating in flex sizing.
+
+**Fix:** Moved both hidden `InvoicePrintDoc` instances out of the drawer overlay's flex container entirely — now a separate `{previewRow && (...)}` block rendered as a sibling after it, outside any flex layout, so they can't influence anyone's positioning again.
+
+**Files:** `components/invoice/InvoiceListClient.tsx`.
+**Regression test:** Clean build, lint clean. Reasoned through the fix directly (the two hidden docs are now outside the only flex container on the page that could be affected) — same live-verification gap flagged for the rest of TASK-021 applies here too (no Playwright/session-minting available in this environment this session).
+
+---
+
+## BUG-020 — Invoice PDF/preview never showed "LUNAS" and kept displaying "Sisa Tagihan" forever after a DP invoice was fully paid
+
+**Severity:** B2
+**Status:** FIXED (2026-09-18)
+**Source:** User report ("customer yang DP, ketika dia lunas, Invoice PDF nya tidak terupdate, seharusnya di update dong kalau lunas, dan berikan mark 'LUNAS'").
+
+**Description:** The Invoice PDF (`InvoicePrintDoc.tsx`) and on-screen preview (`InvoiceDocument.tsx`) are both generated live from current invoice data each time (no cache/stored PDF to invalidate), so this was not a caching bug. Two real gaps: (1) neither template ever had any "LUNAS" label/badge logic — the feature had simply never been built; (2) the totals block's DP/"Sisa Tagihan" row rendered purely off `invoice.dpNominal` being present (a permanent historical record set once when a DP is received), not off current payment status. `lib/services/payInvoice.ts` flips `invoice.status` to `"paid"` but never clears `invoice.dp`, so any invoice that ever had a DP kept showing a nonzero "Sisa Tagihan" in its PDF/preview indefinitely, even long after full settlement.
+
+**Root cause:** `InvoicePrintData` (`lib/invoiceDisplay.ts`) had no `status`/`isPaid` field at all — the templates had no current-payment-status signal to key off, only the frozen DP snapshot.
+
+**Fix:** Added `isPaid?: boolean` to `InvoicePrintData`; populated it (`invoice.status === "paid"`) at both places that build the object (`app/invoice/page.tsx`'s list/Preview-drawer path, `app/invoice/[id]/page.tsx`'s detail path — both already had `status` in scope). Both templates now show a small "LUNAS" badge (reusing the list page's existing `border-moss-deep text-moss-deep` pill style) next to "No. {nomor}" when `isPaid`, and "Sisa Tagihan" renders as Rp 0 instead of the stale computed remainder when `isPaid` is true.
+
+**Files:** `lib/invoiceDisplay.ts`, `app/invoice/page.tsx`, `app/invoice/[id]/page.tsx`, `components/invoice/InvoicePrintDoc.tsx`, `components/invoice/InvoiceDocument.tsx`.
+**Regression test:** `npx tsc --noEmit` clean. No live-session verification available in this environment (same gap noted on prior invoice-doc bugs) — reasoned through both render paths (PDF capture and on-screen preview both read the same `InvoicePrintData.isPaid`/`dpNominal` fields, so an unpaid or never-DP'd invoice's rendering is untouched by this change).
+
+**Follow-up (same day):** User asked for a "Pelunasan (Tanggal)" row directly under the DP row, shown once `isPaid`, with the amount paid to settle (`paymentNominalDiterima`, falling back to `grandTotal − dpNominal` if not recorded) and the settlement date (`paymentTanggalBayar`). `app/invoice/[id]/page.tsx` previously never populated `paymentTanggalBayar`/`paymentNominalDiterima` at all (only the list page did) — added there too so the detail page's own PDF/preview shows it, not just the list's.
+
+---
+
+## BUG-021 — Invoice PDF's product name silently drops the Merk that Katalog shows
+
+**Severity:** B2
+**Status:** FIXED (2026-09-23)
+**Source:** User asked to verify "apakah penamaan produk di invoice sudah sesuai dengan di katalog" — investigated via subagent, confirmed by reading the code directly.
+
+**Description:** Katalog (card + PDF) shows product names through `productDisplayName(name, merk)` (`lib/format.ts`), which appends the Merk field automatically (e.g. name "Kulkas" + merk "Hosizaki" → "Kulkas Hosizaki"). That helper's own doc-comment says it was built precisely so this shows consistently across "Katalog card + PDF, Invoice's product picker + snapshot" (TASK-005, 2026-09-02). The client side (`AddProductSidebar.tsx`, `ProductCard.tsx`) does call it correctly when adding to cart — but the server-side invoice services rebuilt `namaSnapshot` straight from the raw `product.name` field, discarding the merk and whatever the client had sent.
+
+**Root cause:** `lib/services/createInvoice.ts` and `lib/services/updateInvoice.ts` both wrote `namaSnapshot: product.name` instead of using `productDisplayName()`, so any product with a non-empty Merk lost that part of its name once it landed on an actual Invoice PDF — a regression against `productDisplayName`'s stated intent, not a caching or display bug (the PDF template itself just renders whatever `namaSnapshot` it's given).
+
+**Fix:** Both files now write `namaSnapshot: productDisplayName(product.name, product.merk)`, importing `productDisplayName` from `@/lib/format`.
+
+**Files:** `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
+**Regression test:** `npx tsc --noEmit` clean. No live-session verification available in this environment. `namaSnapshot` is a frozen snapshot by design (matches `dimensiSnapshot`/`hargaMinimumSnapshot`/etc.), so this only affects invoices created or edited from now on — existing invoices keep whatever name they were given at the time, unchanged.
+
+---
+
+## BUG-022 — Komisi Saya's headline counted unpaid-invoice commission, and unpaid invoices vanished when the month changed
+
+**Severity:** B2
+**Status:** FIXED (2026-10-01) — by the TASK-036 redesign
+**Source:** Found while reviewing Komisi Saya for the redesign; the headline half was also called out by the user ("terkesan agak menipu ... fokuskan angka terbesarnya hanya ke angka komisi dari invoice yang sudah lunas").
+
+**Description:** (1) The big "Komisi berjalan" figure was `getMyCommissionSummary().totalBerjalan` = commission from lunas invoices + commission from still-unpaid invoices, so a sales rep could read money that might never be paid as already earned. (2) `getMyCommissionSummary` only looks at invoices whose `tanggalInvoice` falls inside the selected month, so an unpaid invoice from September disappeared from the "Tertahan" list on 1 Oct — exactly the invoices that most need attention. (3) "Sudah aman" meant "customer paid", not "company transferred the commission", so Sales couldn't tell whether money had actually arrived.
+
+**Root cause:** Summary design in `lib/insentif.ts` — month-bucketed by invoice date only, one headline total over both statuses, no `komisiCair` split.
+
+**Fix:** New `getMyKomisiOverview` (lib/insentif.ts) and a rebuilt `app/komisi-saya/page.tsx`: headline = "Komisi Siap Cair" (lunas, `komisiCair` false); unpaid-invoice commission = "Komisi Tertunda", a small line + separate tab, never added to the headline; both waiting lists carry over from earlier months with a "dari {bulan}" chip. `getMyCommissionSummary` itself is untouched (Beranda still uses it — see KNOWN_ISSUES.md).
+
+**Files:** `lib/insentif.ts`, `app/komisi-saya/page.tsx`, `components/komisi/KomisiSayaView.tsx`, `components/komisi/PeriodStepper.tsx`.
+**Regression test:** `tsc --noEmit`, `eslint`, `next build` clean. `getMyKomisiOverview` was run read-only against the real database for two sales accounts (e.g. an account with Rp 7.8jt of September DP/unpaid commission that the old page would have dropped on 1 Oct now shows it as "dari September"). Not click-tested in a logged-in browser.
+
+---
+
+## BUG-023 — Leaderboard/Beranda month boundaries used server-local time, not GMT+7
+
+**Severity:** B2
+**Status:** FIXED (2026-10-01)
+**Source:** User asked whether Leaderboard sales matched the current month.
+
+**Description:** `periodRange()` and `currentPeriod()` in `lib/insentif.ts` built month boundaries with `new Date(y, m-1, 1)` / `new Date()` — server-local time. `payment.tanggalBayar` is stored as a real instant, so on a UTC server an invoice paid 00:00–06:59 WIB on the 1st was bucketed into the previous month (and the Beranda "bulan ini" period was wrong for the same 7 hours). The Leaderboard's `daysRemaining` also used server-local time and skipped the last day (showed "0 hari" on the 31st).
+
+**Root cause:** `lib/insentif.ts` predated `lib/timezone.ts`; `getMyKomisiOverview` was already on GMT+7, so Leaderboard and Komisi Saya could disagree for edge-of-month invoices.
+
+**Fix:** `periodRange()` now uses `jakartaMonthRange`, `currentPeriod()` uses `currentJakartaMonthYear()`, and `daysRemaining` is computed from the GMT+7 month end with today counted. Bucketing basis unchanged (lunas by `payment.tanggalBayar`; Estimasi by `tanggalInvoice`).
+
+**Files:** `lib/insentif.ts`. Not touched: `lib/payroll.ts` and `gaji-karyawan/bayar/route.ts` (own `periodRange`, same pattern, outside the Leaderboard).
+**Regression test:** `tsc --noEmit` clean. Not verified against production data or a logged-in browser.
+
+---
+
+## BUG-024 — Katalog search stops at the first 12 results (infinite scroll never loads page 2)
+
+**Severity:** B2
+**Status:** FIXED (2026-10-08)
+**Source:** User report (searching "cabinet" didn't show every product with "cabinet" in its name; "open" showed all of its matches).
+
+**Description:** Only the first 12 matches rendered for searches with more than 12 results; scrolling to the bottom loaded nothing more. Server query was correct.
+
+**Root cause:** `KatalogClient.tsx` created its `IntersectionObserver` once at mount, but the sentinel div renders only while `cursor !== null` (and not while `downloading`). After a search with <=12 results the sentinel unmounted; a later search with more results mounted a new div the observer never watched. Also, an observer only fires on a visibility change, so a `loadMore` skipped during an in-flight request was never retried.
+
+**Fix:** The observer effect now re-runs when the sentinel's presence, `downloading`, `loadingMore` or `loadingFilters` change, so it always watches the live sentinel and re-fires if it is still on-screen.
+
+**Files:** `components/katalog/KatalogClient.tsx`.
+**Regression test:** `tsc --noEmit` and eslint clean. Not yet verified in a logged-in browser. Not changed: unescaped regex in `lib/katalog.ts` search (noted, separate).
+
+---
+
+## BUG-025 — "Unduh Katalog PDF" includes products that were not checked this session (stale selection)
+
+**Severity:** B2
+**Status:** FIXED (2026-10-13)
+**Source:** User report (after searching and checking products, the button read "165 itemnya" and the PDF contained every product instead of only the checked ones).
+
+**Description:** A selection left over from an earlier session (e.g. a past "Pilih Semua") carried into a new "Buat Katalog" session, so every visible card was already checked and the PDF included them.
+
+**Root cause:** `selected` is persisted to localStorage and restored on load, but `startPicking()` only turned `pickMode` on without clearing it.
+
+**Fix:** `startPicking()` now calls `clearAll()` first, so each picking session starts from 0 checked items. Selections kept across searches within one session are unaffected (`startPicking` runs only while pickMode is off). Custom prices/discounts untouched.
+
+**Files:** `components/katalog/CatalogSelectionProvider.tsx`.
+**Regression test:** `tsc --noEmit` clean. Not yet verified in a logged-in browser.

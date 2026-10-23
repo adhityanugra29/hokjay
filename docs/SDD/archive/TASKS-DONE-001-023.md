@@ -1,0 +1,457 @@
+# HOJAY — Task Archive (DONE)
+
+> Dipindah dari TASKS.md. Isi tidak diubah.
+
+---
+
+## TASK-001 — "Foundry" design system: shell, accent color, core forms
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** DONE
+**Dependency:** None
+**Created:** 2026-08-30 · **Last updated:** 2026-08-30
+
+**Description:** Full visual direction confirmed via HTML mockup ("HOJAY Shell — Foundry") before touching real code: sidebar/logo/header, accent color red `#ec3013` → yellow `#FFC800` (same yellow already used in the Katalog PDF export), base surface warmed to cream, Pelanggan/Inventory/Invoice forms rebuilt into sectioned cards (`components/ui/FormSection.tsx`), Inventory's photo-first + filename-autofill feature, Katalog card "Soft Trade" treatment (shadow/rounded instead of hard borders).
+
+**Acceptance criteria:** No existing capability removed (buttons/fields/filters/actions all still present, per the "MASTER AI DEVELOPMENT & DESIGN SYSTEM" capability-preservation rule); every `bg-accent` fill has legible text; clean build; deployed.
+
+**Files affected:** `app/globals.css`, `components/layout/AppShell.tsx`, `components/layout/PageHeader.tsx`, `components/ui/{Button,Panel,Dialog,LoadingOverlay,FormSection,StatCard}.tsx`, `components/katalog/*`, `components/pelanggan/CustomerForm.tsx`, `components/produk/ProductForm.tsx`, `components/invoice/*`, and ~40 files touched only for the accent-contrast fix.
+
+---
+
+## TASK-003 — Bulk Diskon (Invoice)
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-03)
+**Dependency:** None (independent of TASK-002, just sequenced after it by the user's choice)
+**Created:** 2026-08-30 · **Last updated:** 2026-09-03
+
+**Description:** One "Diskon Bulk" input + "Distribusikan" button in Invoice's Ringkasan section (right below Estimasi Komisi Sales, right above Total Diskon — both update live). Distributes one total discount amount across eligible line items to (1) keep every customer-visible per-unit discount a clean multiple of Rp10.000, (2) minimize sales commission erosion (Baru/Custom items cost 0.06/rupiah vs Bekas's ~1.0/rupiah — greedy-fills Baru/Custom first). Before coding, built an interactive HTML placement preview (2 mock line items, the real allocation math running client-side) and iterated the copy/placement with the user there first — see the artifact-preview step in this session.
+
+**Algorithm** (`allocateBulkDiskon()` in `lib/commission.ts`): filters to eligible lines (not Flash Sale, `diskonPerUnit === 0` — never overwrites a manual entry) → sorts cheapest-commission-cost first → fills each line up to `min(remaining, cap)` rounded down to the nearest Rp10.000, where cap is `maxDiskonBaru(hargaJual)` (new) for Baru/Custom or `maxDiskonBekas(...)` for Bekas → mops up any rounding remainder (or genuine capacity shortfall) in further Rp10.000 steps, cheapest-line-first, until the request is met or every eligible line is maxed. Returns `{ allocations, achieved, capped }` so the UI can show exactly what was distributed and whether it fell short.
+
+**Acceptance criteria:** `computeLineCommission`/`maxDiskonBekas` untouched (new pure functions only — `maxDiskonBaru`, `allocateBulkDiskon`); server-side clamp added for Baru/Custom diskon in both `createInvoice.ts`/`updateInvoice.ts` (closes BUG-004); manual per-line diskon entries are never overwritten by the bulk allocator (verified via a manual sanity script covering 7 cases: plain split, over-capacity clamp, sub-Rp10k request, exact-cap request, qty>1 rounding, manual-diskon skip, Flash-Sale skip — all correct).
+
+**Files affected:** `lib/commission.ts`, `components/invoice/InvoiceForm.tsx`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`.
+**Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` in `InvoiceForm.tsx` (2 instances, both pre-existing effects untouched by this change).
+
+**Follow-up (2026-09-03, same day):** the user reported "ini bug" on the Diskon Bulk input. Re-checked the allocator/`updateItem` wiring end to end (including the custom-item `productId` edge case) — no computational defect found. The real issue: the input used a plain `Input` (raw digits while typing, e.g. "150000") instead of `CurrencyInput`, the accounting-style thousand-separator component every other Rupiah field in this app already uses (Harga Jual, Diskon /unit, right next to it). Switched to `CurrencyInput` — matches the user's explicit ask ("format tulisanya harus accounting juga").
+
+**Follow-up #2 (2026-09-03, same day):** the user then reported the allocator "meletakan hanya di satu kolom" with "tanpa ada plafonya" — not actually a distribution bug (greedy cheapest-first, confirmed 2026-08-30, correctly shifts to the next line once one is maxed — see BUG-004's correction), but the CAP itself was wrong: Baru/Custom's `maxDiskonBaru` capped at 100% of `hargaJual` (no real ceiling) instead of the same protected-margin shape `maxDiskonBekas` already used. Fixed at the source (`maxDiskonBaru`, see BUG-004) — the allocator and `InvoiceForm.tsx` needed no changes themselves, since both already consult `maxDiskonBaru` for the cap rather than hardcoding one.
+
+**Follow-up #3 (2026-09-03, same day):** the user then noticed re-running "Distribusikan" (a typo, or wanting a different total) found nothing to redistribute into, since `allocateBulkDiskon` only ever fills a line sitting at Rp0 — after one run, every touched line looks like a manual entry, indistinguishable from one the sales rep actually typed by hand. `InvoiceForm.tsx` now tracks `lastBulkDiskon: Map<productId, diskonPerUnit>` (the exact values THIS feature itself last set) — a re-run first resets any line still holding exactly that value back to Rp0 before allocating again, so it overwrites its own previous split; a line the rep has since typed something else into (or a genuinely manual one that was never touched by bulk) is never in the map and stays fully protected either way.
+
+---
+
+## TASK-005 — Merk otomatis muncul di nama produk (Katalog/PDF/Invoice)
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-02)
+**Dependency:** None
+**Created:** 2026-09-02 · **Last updated:** 2026-09-02
+
+**Description:** The `merk` field already existed on `Product` and its form, but only ever showed on the admin Inventory list (as a separate "· Merk" suffix). Katalog cards, the Katalog PDF, and the Invoice product picker all showed just `product.name`, so a brand only appeared if typed straight into Nama Produk. Per the user's request 2026-09-02 ("kulkas hosizaki... user tidak perlu input merk di judul, cukup mereka input merk di form"), added `productDisplayName(name, merk)` to `lib/format.ts` (`"Kulkas Hosizaki"` when merk is set, else just the name) and applied it at the 3 customer/sales-facing surfaces: Katalog card title + its invoice-snapshot `addItem` call (`ProductCard.tsx`), the Katalog PDF's two product-name render sites (`CatalogPrintDoc.tsx`), and the Invoice "Tambah Produk" sidebar's list + its own `addItem` call (`AddProductSidebar.tsx`).
+
+**Acceptance criteria:** Stored `Product.name` untouched (no DB write changes) — this only changes what's displayed/snapshotted at render/add-to-cart time. Admin Inventory list (`app/produk/(list)/page.tsx`) and the product edit form left as-is (already correct / needs the raw name for editing).
+
+**Files affected:** `lib/format.ts`, `components/katalog/ProductCard.tsx`, `components/cart/CatalogPrintDoc.tsx`, `components/invoice/AddProductSidebar.tsx`.
+**Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` in `AddProductSidebar.tsx`.
+
+**Follow-up (2026-09-02, same day):** the user asked to confirm no stray "-" ever shows when merk is empty (`productDisplayName` already returns just `name` in that case — confirmed, no change needed) and to audit naming consistency across every surface. Found two gaps missed in the first pass — `app/katalog/custom/page.tsx` (Produk Custom listing) didn't pass `merk` into `ProductCard` at all, and `app/katalog/custom-order/page.tsx` (the "Pesan Produk Custom" flow) added its freshly-created product straight to cart with `product.name`, bypassing `productDisplayName`. Both now consistent with the other 3 surfaces. `EditProductDrawer.tsx`'s header intentionally left showing the raw name (matches the raw-name field below it in the edit form — showing the combined display name there would be confusing while editing).
+
+---
+
+## TASK-006 — Owner-only Komisi Bekas override (per produk & per kategori) + rename Harga Minimum → Harga Bottom
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-03)
+**Dependency:** None
+**Created:** 2026-09-03 · **Last updated:** 2026-09-03
+
+**Description:** The real invoice-time barang-bekas commission rate was a hardcoded flat 10% of Harga Minimum everywhere (`lib/commission.ts`) — the existing `Product.komisiPercent` field looked like it should drive this but is actually unrelated (its own hint already said "Nilai referensi — komisi invoice dihitung otomatis"; it only feeds the Hot Products dashboard figure, `komisiPercent% × hargaRekomendasi`). Per the user's request 2026-09-03, Owner (+ Super Admin) can now override the bekas rate per product and set a default per category, while Baru/Custom (flat 6%) and Flash Sale (flat 7%) stay untouched — confirmed with the user this scope is deliberately bekas-only.
+
+**Hierarchy:** product's own override → its category's default → global 10% — `resolveKomisiBekasPercent()` in `lib/commission.ts`. Confirmed with the user: a category-level change applies to every product in it EXCEPT ones that already have their own override, which always wins.
+
+**Data model:** `Product.komisiBekasPercent?: number` (new, separate from the pre-existing `komisiPercent` — reusing that field would have silently dropped every existing bekas product's real commission from 10% to its 5% default). `Category.komisiBekasPercent?: number` (new).
+
+**Server-side authority:** `createInvoice.ts`/`updateInvoice.ts` resolve the effective rate themselves from the DB (product + a `getKategoriKomisiBekasMap()` category lookup, `lib/katalog.ts`) — never trust a client-submitted rate, same posture as `hargaMinimum`'s own floor enforcement right next to it. `computeLineCommission()`/`maxDiskonBekas()` both gained an optional `komisiBekasPercent` param (defaults to 10, the original behavior, when omitted) so every pre-existing call site with no override set behaves byte-identical to before.
+
+**Client-side preview (cosmetic — the server always recomputes authoritatively on save):** the resolved rate is threaded through the same 4 live-preview call sites as `hargaMinimum` already reaches — `ProductCard.tsx`, `AddProductSidebar.tsx`, `InvoiceForm.tsx`, `ItemRowEditor.tsx` — plus `CartProvider.tsx`'s `CartItem` type and `app/invoice/[id]/ubah/page.tsx`'s existing-invoice-to-cart conversion.
+
+**Owner-only UI:** per-product override lives in the existing `ProductForm.tsx` (Harga & Komisi section), visible only when Kondisi=Bekas and `isOwner` — saved through a dedicated `PATCH /api/products/[id]/komisi-bekas` (own server-side role check, same isolation as `flash-sale/route.ts`; the general product PATCH route deliberately never accepts this field, so a Manager saving unrelated changes can't touch or wipe it). Per-category default lives in `CategoryManager.tsx` (`/admin`, tab Kategori) — that page itself stays reachable by every admin-level role, so just the Komisi Bekas column/field within it is conditionally rendered and the existing `/api/categories/[id]` PATCH gained its own inline role check for that one field only.
+
+**Rename:** "Harga Minimum" → "Harga Bottom" — display label only, `hargaMinimum` left as the DB/code field name (no migration). 4 files: `ProductForm.tsx`, `ItemRowEditor.tsx`, `KatalogFilterSidebar.tsx`, `ProductCard.tsx`.
+
+**Bug found & fixed along the way:** `app/katalog/page.tsx` had `merk` stuck inside the `canEditProduct`-only field block (a leftover from before TASK-005 wired Merk into the card title) — a Sales rep's own Katalog view never actually received Merk data at all, only Manager/Owner/Super Admin did. Moved it to the always-sent section.
+
+**Acceptance criteria:** Every existing bekas product with no override set (the overwhelming majority) computes an identical commission to before — verified by `DEFAULT_KOMISI_BEKAS_PERCENT = 10` being the fallback at every layer. Manager (admin-level, but not Owner) can't see or edit either override anywhere, verified by role checks at both the UI-gate and the API-write layers (2 new/extended server routes).
+
+**Files affected:** `models/Product.ts`, `models/Category.ts`, `lib/commission.ts`, `lib/katalog.ts`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`, `components/katalog/{ProductCard,KatalogClient,EditProductDrawer,KatalogFilterSidebar}.tsx`, `components/invoice/{AddProductSidebar,InvoiceForm,ItemRowEditor}.tsx`, `components/cart/CartProvider.tsx`, `components/produk/ProductForm.tsx`, `components/admin/CategoryManager.tsx`, `app/katalog/page.tsx`, `app/produk/baru/page.tsx`, `app/produk/[id]/edit/page.tsx`, `app/invoice/[id]/ubah/page.tsx`, `app/admin/page.tsx`, `app/api/products/route.ts`, `app/api/products/[id]/komisi-bekas/route.ts` (new), `app/api/categories/[id]/route.ts`.
+**Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` errors, none new.
+
+**Follow-up (2026-09-03, same day):** the pre-existing "Komisi — Persen" reference field (`komisiPercent`) was still editable by Manager (anyone with `canEditProduct`) in `ProductForm.tsx`, and its Komisi Nominal readout was visible to them too — inconsistent with the owner-only posture just built for `komisiBekasPercent`. Per the user's direct follow-up ("manager tidak boleh untuk edit komisi, kolom insentif tidak boleh terlihat pada input barang... hanya owner yang boleh"): both the field and its readout are now hidden entirely (not just disabled) unless `isOwner`. Removed `komisiPercent` from the general PATCH route's allowlist (`app/api/products/[id]/route.ts`) and moved it into the same dedicated Owner-only endpoint as `komisiBekasPercent` (`komisi-bekas/route.ts`, now handles both fields under one server-side role check) — a Manager can no longer move this value through a raw API request either, not just the hidden UI. `POST /api/products` (create) deliberately left accepting it unchanged: a non-owner's create payload only ever carries the sensible auto-default `setKondisi()` already computes (6%/10%), never something they consciously typed, so there was nothing to lock down there. Katalog's own live commission figure was already view-only (a computed `<span>`, never an input) — confirmed, no change needed.
+
+---
+
+## TASK-007 — Akun Login restricted to Owner/Super Admin (Manager locked out)
+
+**Type:** ACCESS CONTROL
+**Priority:** P2
+**Status:** DONE (2026-09-04)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-04
+
+**Description:** While investigating a name-mismatch bug on "Komisi Saya" (a Manager's login `nama` — "Avicenna Pangaran" — didn't match their Sales roster entry — "Avi" — so `getMyCommissionSummary()` found none of their own invoices; a data fix, not a code one, left for the user to apply), the user separately confirmed a policy reversal: "manager hojay, tidak boleh untuk masuk ke kelola user [akun login], karena itu khusus untuk superadmin dan owner". This reverses a 2026-08-27 decision that had explicitly reopened Akun Login for Manager alongside Kategori/Kurir/Metode Pembayaran.
+
+**Why it mattered beyond the UI tab:** `/api/admin/users` (GET/POST) and `/api/admin/users/[id]` (PATCH/DELETE) had no role check of their own — only the `/api/admin` prefix's blanket `isAdminLevel` middleware check, which Manager already satisfies. Hiding the tab alone would have left a raw API request able to create accounts, delete them, or — the real risk — PATCH any account's `role` (including their own, to `owner`) or reset a password, same class of gap as BUG-004/Komisi Bekas before their own dedicated routes existed.
+
+**Fix:** `/admin/akun` added to `MANAGER_BLOCKED_ADMIN_PREFIXES` (`lib/auth/access.ts`) — hides the tab and blocks direct navigation, same mechanism as the pre-existing Sales/Keuangan blocks. New `AKUN_LOGIN_ROLES`/`isAkunLoginAllowed()` (Owner/Super Admin only) enforced at the top of all 4 handlers across both API routes — same isolation pattern as `flash-sale/route.ts` and `komisi-bekas/route.ts`, deliberately narrower than the general `/api/admin` middleware grant.
+
+**Files affected:** `lib/auth/access.ts`, `app/api/admin/users/route.ts`, `app/api/admin/users/[id]/route.ts`.
+**Regression test:** Clean build; lint diff shows one pre-existing unused-var warning (`_omit` in `users/route.ts`, untouched by this change — confirmed via `git diff`), no new errors.
+
+---
+
+## TASK-008 — Komisi detail pop-up on Bayar Komisi's Daftar Bayar list
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-04)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-04
+
+**Description:** Per the user's screenshot + request ("detailnya angka komisi ini, detailnya mana? kamu bikin pop-up detail aja dan berikan buttonya, supaya si owner mudah untuk bayarin komisinya, ada basis data yang bisa dipercaya atas komisi yang kamu hitung"): each row's aggregate commission total on the Daftar Bayar list (Payroll → Komisi tab) had no way to see what it was made of — an Owner had to trust the number outright. A per-sales invoice-level breakdown already existed at `/payroll/komisi/[nama]` (`KomisiPaymentForm.tsx` — table of nomor/tanggal lunas/item/komisi per invoice, plus its own pay flow), but nothing on the Daftar Bayar list linked to it.
+
+**Fix:** Added a "Detail (N invoice)" button per row in `BayarKomisiSheet.tsx` that opens a pop-up (same right-side drawer pattern as `EditProductDrawer.tsx`, just wider for the table) rather than navigating away — navigating to the standalone page would have lost the Daftar Bayar list's own batch-checkbox selection. The pop-up reuses `KomisiPaymentForm` as-is (now takes optional `onSuccess`/`onCancel` so the pop-up usage closes + refreshes in place instead of `router.push`-ing to `/payroll`) — same table, same pay button, same `/api/insentif/bayar` endpoint the standalone page already used, so the number shown and the number actually paid can never drift apart. No new query: `app/payroll/page.tsx` was already fetching each sales's full `getUnpaidCommissionInvoices()` result to build `invoiceIds` — it just kept the rest of that data (`detail`) instead of discarding it.
+
+**Confirmed already correct while investigating (2026-09-04, same day):** the user separately asked "pembayaran komisi itu, hanya invoice yang sudah lunas ya" — checked all 3 layers (`getUnpaidCommissionBySales`, `getUnpaidCommissionInvoices`, and `/api/insentif/bayar`'s `findOneAndUpdate` re-check) and confirmed every one already filters `status: "paid"` — no change needed.
+
+**Files affected:** `components/insentif/BayarKomisiSheet.tsx`, `components/insentif/KomisiPaymentForm.tsx`, `app/payroll/page.tsx`.
+**Regression test:** Clean build, lint clean (also removed one pre-existing unused `useMemo` import found while in this file).
+
+**Follow-up (2026-09-04, same day):** per the user's report, 3 fixes: (1) the Detail button moved out of the Sales cell into its own column next to Status, and Status's column widened (150→220px, Detail narrowed 110→90px) + `whitespace-nowrap` added, since "Rekening belum diverifikasi" was wrapping to two lines and throwing the row's alignment off; (2) the drawer's eyebrow now reads exactly "Detail Invoice" (invoice count moved next to the sales name instead); (3) each invoice number in the pop-up's table is now a link straight to `/invoice/[id]`.
+
+**Follow-up #2 (2026-09-04, same day):** the "Detail Invoice" name was meant for the table's own column header too, not just the pop-up's title — that column had been left blank (an empty `<span />`, matching the checkbox column's convention). Added the label and widened the column (90→130px) to fit it.
+
+---
+
+## TASK-009 — Invoice list: single filtered list + Preview drawer
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-04)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-04
+
+**Description:** Per the user's request, `/invoice` gets (1) a status separator between Sudah Lunas / Sudah DP / Belum Dibayar and (2) a way to preview an invoice's actual document without leaving the list. Went through a design-review cycle via an interactive HTML mockup before coding (per this session's established practice): a first version stacked 3 separate sections (mirroring the old Draft/Belum Dibayar/Sudah Lunas layout) was explicitly rejected — "kamu jangan pisah itu berdasarkan line, seharusnya kamu grouping dan ada semacam button tambahan untuk melihat statusnya, seperti slide button... tapi untuk kumpulan invoice, gaperlu kamu pisahkan by line". Rebuilt as **one flat list** filtered through a pill/segmented toggle (Semua/Belum Dibayar/Sudah DP/Draft/Sudah Lunas) plus click-to-filter stat cards — same pattern as Keuangan's existing Semua/Masuk/Keluar filter, not a new one.
+
+**Also corrected mid-review:** the day block (left of each row) used to show different content per status (days-elapsed for unpaid, "DP 40%", a draft placeholder, or the real date for paid) — the user asked for it to always be the invoice's own date instead ("saya mau ini jadi tanggal dibuat saja"), with the "N hari belum bayar" urgency signal kept but moved to its own separate warning badge next to the status tag ("tapi untuk warning belum bayar juga masih ada tapi terpisah").
+
+**Preview:** extracted the on-screen invoice document (previously inline JSX in `app/invoice/[id]/page.tsx`, `id="invoice-doc"`) into a standalone `InvoiceDocument.tsx`, reused by both the detail page (unchanged behavior) and a new right-side drawer on the list (`InvoiceListClient.tsx`) — one component, so the two views can never visually drift apart. `displayDiskon`/`displayHarga` (Flash Sale price-display helpers) exported from `InvoicePrintDoc.tsx` instead of being duplicated a third time. No extra DB query for the preview data: `app/invoice/page.tsx` already fetched full `Invoice` documents (not `.lean()`) for the list, so every field `InvoicePrintData` needs was already in memory — added one batched `Sales.find({nama:{$in:...}})` (same pattern as `app/payroll/page.tsx`) purely for each invoice's live sales phone number.
+
+**Acceptance criteria:** Every existing row action (Kirim WA, Edit, Hapus, Tandai lunas, Lanjutkan) preserved exactly, including the "no Hapus once DP'd" rule. `/invoice/[id]`'s own on-screen document is byte-identical to before (pure extraction, not a redesign).
+
+**Files affected:** `app/invoice/page.tsx` (rewritten), `app/invoice/[id]/page.tsx` (JSX extracted, otherwise unchanged), `components/invoice/InvoiceDocument.tsx` (new), `components/invoice/InvoiceListClient.tsx` (new), `components/invoice/InvoicePrintDoc.tsx` (2 helpers exported).
+**Regression test:** Clean build; lint clean on every touched file (zero errors, not even the usual pre-existing set).
+
+**Follow-up (2026-09-04, same day):** added a Bulan/Tahun periode filter per the user's request ("tambahkan di html itu periode, supaya user bisa untuk filter bulanya") — new `InvoicePeriodFilter.tsx`, both dropdowns defaulting to "Semua" (unlike the shared `PeriodPicker.tsx` elsewhere, which always pins one month; Invoice's default view is everything). Filters server-side (`Invoice.find`'s own `tanggalInvoice` range, not a client-side narrowing of an already-fetched set) since invoice history can grow large over time. The "Lunas {month}" stat card deliberately stays anchored to the real current month regardless of the periode picked — computed via a separate `countDocuments` against the pre-periode filter, not derived from the (possibly differently-scoped) fetched list. Hidden `bulan`/`tahun` inputs added to the search form so submitting search doesn't drop the periode (a plain `<form>` GET only sends its own fields, dropping every other URL param otherwise).
+
+**Follow-up #2 (2026-09-04, same day):** the periode selects rendered visibly taller than the search box next to them (`items-center` alone doesn't fix a real height mismatch) — the shared `Select`'s base padding/font-size is sized for full-width form fields, not a compact filter row. Overrode with `!py-2 !text-[0.78rem]` (matching `SearchInput`'s own sizing exactly) so both rows sit level — confirmed via a screenshot before shipping.
+
+**Also investigated the same day:** the user separately reported "tidak bisa untuk generate invoice" (no error message given). Reproduced the create flow at every layer — `createInvoice()` called directly, `POST /api/invoices` over real HTTP, and the full `/invoice/baru` form driven through a headless browser (opening the product sidebar, adding an item) — all succeeded with zero errors and a real invoice persisted each time. No fix applied; asked the user for the specific error/screenshot instead of guessing, per this project's own established rule against fixing without reproduction (see BUG-007's history). (The real crash behind that report turned out to be unrelated to invoice *creation* — see BUG-012.)
+
+**Follow-up #3 (2026-09-04, same day):** the user rejected the periode filter's actual layout at a wider viewport ("masa peletakanya seperti ini? ... sangat disfunction") and asked for an HTML plan before any further code changes ("coba kamu buat dulu planya di html"). Published a Before/After mockup, got sign-off ("untuk periode di invoice, tolong proceed dari html ya"), then implemented exactly what it showed:
+- `InvoicePeriodFilter.tsx` now returns a Fragment instead of its own wrapping `flex flex-wrap` div — that div, nested inside `app/invoice/page.tsx`'s own already-`flex-wrap` filter row, was giving the browser a starved inner width to wrap the two `<select>`s against even though the outer row had plenty of room (confirmed via live `getBoundingClientRect()` measurement before the fix — both selects stacked at 1117px wide, far past the search box).
+- Fixing that exposed a second bug in the same spot: the shared `Select`'s base class carries `w-full`, and a same-specificity `w-auto` override doesn't reliably win depending on Tailwind's generated stylesheet order — both selects were still rendering full-width even as Fragment siblings. Changed the override to `!w-auto`.
+- Bulan/Tahun now only list months/years that actually have at least one invoice — per the user's explicit ask ("jika tidak ada datanya, gaperlu dimunculin: contoh tidak ada bulan januari di datanya... tidak perlu untuk dishow"). New aggregation in `app/invoice/page.tsx` (`$group` with `$addToSet` on `$month`/`$year` of `tanggalInvoice`, Asia/Jakarta timezone), scoped to the same `invoiceVisibilityFilter` as the list itself (not the search text, so typing in the search box doesn't shift the dropdown's own options) — replaces the old hardcoded `currentYear-3..+1` window entirely.
+
+**Files affected (follow-up #3):** `components/invoice/InvoicePeriodFilter.tsx`, `app/invoice/page.tsx`.
+**Regression test:** Clean build, lint clean. Verified live via Playwright `getBoundingClientRect()` at a 1470px viewport (both selects now sit in the same row as the search box, ~125px wide each, not 1117px) and read the rendered `<option>` lists directly (only "Agustus"/"September"/"2026" — the real available periods in this data).
+
+---
+
+## TASK-011 — Invoice "Kirim ke Pelanggan (WA)": attach the PDF where the OS allows it
+
+**Type:** FEATURE
+**Priority:** P3
+**Status:** DONE (2026-09-04)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-04
+
+**Description:** User asked "kenapa pengiriman PDF tidak bisa langsung ke nomor whatsapp yang dituju?". Explained the real constraint: `wa.me` links can only pre-fill text, WhatsApp exposes no public URL parameter to pre-attach a file — this is why the invoice detail page (`/invoice/[id]`) always needed two separate manual steps (download PDF, then re-attach it by hand inside WhatsApp). Offered 3 options; the user picked the Web Share API route.
+
+**Fix:** `InvoiceActions.tsx`'s "Kirim ke Pelanggan (WA)" button now feature-detects `navigator.share`/`navigator.canShare` support for files (`typeof` checked, not just `in`, so a webview that stubs the keys without real functions behind them falls back safely instead of throwing). Where supported (mobile Chrome/Safari, confirmed to also report `true` in this session's headless Chromium test rig), it builds the same PDF `downloadInvoicePdf()` already did (that PDF-generation core was extracted into a shared `buildInvoicePdf()`) and hands it to the native OS share sheet via `navigator.share({ files, text })` — WhatsApp becomes one tap away with the file already attached, no detour through the Downloads folder. Where unsupported (desktop browsers), falls back to the original text-only `wa.me` link unchanged. The target phone number still can't be picked programmatically once the OS share sheet or WhatsApp itself takes over — that's an OS/WhatsApp-side limitation with no public workaround (a real "auto-send to number X" would require the paid, Meta-approved WhatsApp Business Platform API, out of scope here and not requested).
+
+**Files affected:** `components/invoice/InvoiceActions.tsx`.
+**Regression test:** Clean build, lint clean. Verified both branches live (Playwright, real invoice, real PDF bytes): the share path calls `navigator.share` with the correct message text and a real ~220KB `<nomor>.pdf` File; the fallback path (canShare/share stubbed absent) still opens the identical `wa.me?text=...` link as before. Also caught and fixed a real crash during this testing — an unrealistic-but-defensive-worth-fixing case where `canShare`/`share` exist as non-function properties threw "navigator.canShare is not a function"; switched the guard from `"x" in navigator` to `typeof navigator.x === "function"`.
+
+
+---
+
+## TASK-010 — Exclude Owner accounts from Payroll commission listing
+
+**Type:** BUGFIX/SCOPE
+**Priority:** P2
+**Status:** DONE (2026-09-04)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-04
+
+**Description:** Per the user's request ("andi abdillah di payroll, tidak perlu ada komisinya (karena dia owner)"): Andi abdillah's login `nama` exactly matches a real `Sales` roster entry (the app links commission to that plain name string, not a real foreign key — see TASK-007), so every paid invoice attributed to him as the "sales" on it produced a real commission total on Payroll's Daftar Bayar list (Rp 15.103.000, confirmed via screenshot) — technically correct math, but the Owner isn't a commission-earning rep and shouldn't appear there.
+
+**Fix:** `getUnpaidCommissionBySales()` and `getUnpaidCommissionInvoices()` (`lib/insentif.ts`) now exclude any `sales.nama` matching a `User` with `role: "owner"` (new `getOwnerNames()` helper, queried fresh each call — no caching, matching this file's existing pattern). Scoped to role rather than hardcoding "Andi abdillah" so it keeps holding if the Owner account is renamed or a second Owner is added. Both functions are Payroll-only (confirmed via grep — no other page calls either), so the exclusion doesn't touch the Insentif leaderboard, Komisi Saya, or any other ranking/commission view, matching the user's literal "di payroll" scope.
+
+**Files affected:** `lib/insentif.ts`.
+**Regression test:** Clean build, lint clean. Verified live against real data (`next start` + curl as Owner): "Andi abdillah" no longer appears in the Daftar Bayar list (only as the logged-in user's own sidebar name, unrelated), remaining sales' totals (Rp 11.325.000 / 6.221.000 / 1.495.000 / 620.000 / grand total Rp 19.661.000) unchanged from before the fix.
+
+
+---
+
+## TASK-012 — Katalog: server-paginated infinite scroll (12 produk/batch) + Terbaru→Kategori→Harga default sort
+
+**Type:** PERFORMANCE
+**Priority:** P2
+**Status:** DONE (2026-09-05)
+**Dependency:** None
+**Created:** 2026-09-04 · **Last updated:** 2026-09-05
+
+**Description:** Per the user's request ("untuk penarikan data yang ingin ditampilkan pagination dengan otomatis menarik data baru setelah scroll sudah sampai bawah, kamu limit saja 12 produk, supaya ini lebih cepat lagi untuk ngeload katalognya"). `app/katalog/page.tsx` previously fetched **every** matching product (200+, growing) in one shot and shipped the full array to the client, which then did all searching/filtering/sorting in a client-side `useMemo` over the in-memory array — a prior fix (2026-08-31) already capped how many `<ProductCard>`s/images mounted at once, but never reduced the actual data pull, which is what was still slow.
+
+**Also folded in the same day:** the user separately specified the default sort order explicitly — "Urutan produk di katalog: 1. Produk terbaru, 2. Kategori, 3. Harga". Confirmed via AskUserQuestion: "Produk terbaru" reuses the existing "Produk Baru" concept (`getProdukBaruIds()` — same rule as the Filter sidebar's "Hanya Produk Baru" checkbox) as a leading block, not a raw `createdAt` sort; Harga's default direction within a category is termahal dulu (descending); picking "Urutkan: Harga Terendah/Tertinggi" from the existing dropdown is a full override (Produk Baru/Kategori grouping drops out entirely, Flash Sale/booked-DP-sold tier still applies).
+
+**Fix:** Moved all filtering/sorting/grouping into a shared `queryKatalogProducts()`/`queryKatalogAvailableIds()` (`lib/katalog.ts`) built as a MongoDB aggregation — `$match` (every `KatalogFilters` field, incl. `parseSizeQuery`/`sizeMatchClauses` ported server-side from the old client-side size-query parser) —> `$addFields` (`tier`: Flash Sale 0 / available 1 / booked-DP-sold 2, from a fresh `getProductInvoiceStatusMap()` scan since that status isn't a Product field; `produkBaruRank`: 0/1 from `getProdukBaruIds()`) —> `$sort` —> `$skip`/`$limit` (default 12). New `app/api/katalog/route.ts` (GET) serves every page after the first and every filter/search/sort change (`mode=ids` returns every matching *available* id, unpaginated, for "Pilih Semua"); `app/katalog/page.tsx` calls the same function directly for a server-rendered page 1 (plus a cheap `Product.countDocuments()` for the header's "N PRODUK TERSEDIA", since that's no longer implicit in a full fetch). `components/katalog/KatalogClient.tsx`: `items`/`cursor` state (starts as the server-rendered page 1), an `IntersectionObserver` sentinel below the grid (via a "latest ref" pattern so it always reads current filter state, not a stale mount-time closure) triggers the next batch on scroll, search/filter/sort changes debounce 350ms then replace the grid via a fresh page-1 fetch, "Pilih Semua" fetches the complete matching-id list only when picking starts (not on every render) since it needs every match, not just what's been scrolled into view. `CatalogPrintDoc.tsx` needed no changes (already independently, lazily fetches all products via `/api/products` on its own).
+
+**Trade-off (flagged to the user in the plan before building):** search/filter/sort changes now cost a debounced network round-trip instead of being instant/local — unavoidable once the actual data pull is what's being reduced.
+
+**Files affected:** `lib/katalog.ts`, `app/api/katalog/route.ts` (new), `app/katalog/page.tsx`, `components/katalog/KatalogClient.tsx`.
+**Regression test:** Clean build, lint clean. Verified live against real data (`next start` + direct fetch/Playwright, established pattern this session): page 1 renders exactly 12 cards server-side with zero `/api/katalog` calls; scrolling fires one correctly-cursored request per batch (12→24→36→48, confirmed via response logging) with no duplicate/missing ids across a full 190-product paginated fetch (`_id` tiebreaker keeping pagination stable); typing a search query fires exactly one debounced request, not one per keystroke; "Pilih Semua" fetched a real 162-id available list independent of how many cards were scrolled into view; tier ordering (Flash Sale → available → booked/DP/sold), Produk-Baru-leads, category-ascending, and price-descending-within-category all checked programmatically across the complete paginated result set — zero violations found.
+
+---
+
+## TASK-013 — Owner-only: remove the diskon plafon entirely (up to 100% off)
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-05)
+**Dependency:** None
+**Created:** 2026-09-05 · **Last updated:** 2026-09-05
+
+**Description:** Per the user's request ("khusus untuk owner hojay, plafon diskon di hilangkan, jadi bisa untuk diskon sampai 100% nilai barang"). Confirmed via AskUserQuestion: scoped to role `owner` only (NOT `super_admin` — narrower than the app's usual owner+super_admin pairing for top-tier features), and applies everywhere a diskon plafon exists: new invoice, edit invoice, per-line diskon on the cart/Katalog card, AND Diskon Bulk — not just one of them.
+
+**Fix:** `maxDiskonBaru()`/`maxDiskonBekas()` (`lib/commission.ts`) gained an `unlimited` param — when true, returns `hargaJual` itself (the diskon can reach the full sale price, net Rp0) instead of the usual protected-margin cap. `allocateBulkDiskon()`/`diskonCapUnit()` thread the same flag through. Server-side (the actual enforcement — `createInvoice.ts`/`updateInvoice.ts`) resolves `isOwner` from the **current session's role**, never a client-supplied field: both `app/api/invoices/route.ts` (POST) and `app/api/invoices/[id]/route.ts` (PATCH) now pass `{ isOwner: session?.role === "owner" }` into the service functions. Client-side (`InvoiceForm.tsx`, `ItemRowEditor.tsx`, `ProductCard.tsx`) mirrors the same check purely for instant UI feedback (no clamp/warning shown to an Owner) — the server clamp is what actually matters.
+
+**Found and fixed along the way:** `EditInvoiceLoader.tsx` (the `/invoice/[id]/ubah` edit flow) never threaded `currentUser` through to `InvoiceForm.tsx` at all — only the create flow (`/invoice/baru`) did. Without fixing this, `isOwner` would have silently stayed `false` on every edit regardless of who was logged in, missing half of the confirmed scope. Added `currentUser` to `EditInvoiceLoader`'s props, threaded from `app/invoice/[id]/ubah/page.tsx`'s own `session` (already fetched there for the existing `isInvoiceBlockedForSession` check).
+
+**Files affected:** `lib/commission.ts`, `lib/services/createInvoice.ts`, `lib/services/updateInvoice.ts`, `app/api/invoices/route.ts`, `app/api/invoices/[id]/route.ts`, `components/invoice/{ItemRowEditor,InvoiceForm,EditInvoiceLoader}.tsx`, `app/invoice/[id]/ubah/page.tsx`, `components/katalog/{ProductCard,KatalogClient}.tsx`, `app/katalog/page.tsx`.
+**Regression test:** Clean build; lint diff shows only the pre-existing `react-hooks/set-state-in-effect` (InvoiceForm.tsx x2, ItemRowEditor.tsx x1 — all in effects untouched by this change). Verified live end-to-end against a real Bekas product (hargaJual 1.800.000, hargaMinimum 1.300.000): a minted Owner session's `POST /api/invoices` requesting a full 1.800.000 diskon stored exactly that (no clamp); the identical request under a Manager session was correctly clamped to 630.000 (`maxDiskonBekas`'s normal cap) — confirming the Owner override and the still-enforced normal cap coexist correctly. Test invoices deleted after verification.
+
+---
+
+## TASK-014 — Simplify Komisi% to one field on the product form
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** DONE (2026-09-05)
+**Dependency:** None
+**Created:** 2026-09-05 · **Last updated:** 2026-09-05
+
+**Description:** User reported (with a screenshot) two separate commission-percent fields on the product edit form — "Komisi — Persen" and "Komisi Bekas — Override (%)" — as confusing, and asked for one column. Investigated and explained to the user before changing anything (per this project's own SDD discipline): the two fields are NOT duplicates, they drive genuinely different things — "Komisi — Persen" never actually drives real invoice commission (baru is always a hardcoded flat 6%, bekas uses the other field), it only feeds `komisiNominal`, which in turn feeds one of Dashboard's three "Hot Products" carousel rankings (the "insentif" badge, `getHotProducts()` in `lib/dashboard.ts`, sorted by `komisiNominal` descending). "Komisi Bekas — Override (%)" is the field that really does drive `computeLineCommission()` for bekas sales. Explained this trade-off (removing the first field means every bekas product ties at the same 10%/hargaRekomendasi ratio for that one Hot Products ranking, degrading it to effectively "highest-priced bekas product") — user confirmed they still want one field regardless.
+
+**Fix:** Removed "Komisi — Persen" as a visible/editable input in `ProductForm.tsx` (shared by both Inventory's edit page and Katalog's `EditProductDrawer.tsx` — same component, one fix covers both entry points). `komisiPercent` still auto-tracks kondisi under the hood exactly as before (6% baru / 10% bekas, unchanged `setKondisi` logic), so `komisiNominal`/Hot Products keep computing without erroring — Owner just can't manually override that one number per product anymore. The remaining single field ("Komisi Bekas (%)", renamed from "Komisi Bekas — Override (%)" since it's now the only commission control) still only shows for `kondisi === "bekas"` — for "baru" products, no commission field shows at all, matching reality (always flat 6%, no override concept exists there).
+
+**Files affected:** `components/produk/ProductForm.tsx`.
+**Regression test:** Clean build, lint diff shows only one pre-existing `react-hooks/set-state-in-effect` (an unrelated localStorage-last-category effect, untouched by this change). Verified live as Owner against real products: a bekas product's edit page now shows exactly one commission-related label ("Komisi Bekas (%)"); a baru product's shows none; saving the bekas product unchanged still returns 200 and correctly persists `komisiPercent: 10`/`komisiNominal` recalculated to match (10% × hargaRekomendasi) — confirming the auto-tracking and Komisi Nominal display still work with the input gone.
+
+---
+
+## TASK-015 — Commission settings: narrow to Owner-only (was also allowing Super Admin)
+
+**Type:** BUGFIX/SCOPE
+**Priority:** P2
+**Status:** DONE (2026-09-05)
+**Dependency:** None
+**Created:** 2026-09-05 · **Last updated:** 2026-09-05
+
+**Description:** Per the user's request ("yang hanya boleh akses setting komisi hanya owner"). Every commission-setting surface built since TASK-006 (2026-09-03) used the app's usual owner-level pairing — `["owner", "super_admin"]` — copy-pasted independently into 4 different files, even though `app/api/products/[id]/komisi-bekas/route.ts`'s own error message already claimed "Hanya Owner" (a pre-existing inconsistency between the message and the actual check). Also found while auditing: `KatalogClient.tsx`'s `EditProductDrawer` was passed `isOwner={canFlashSale}` (Owner+Super Admin, matching Flash Sale's role set) instead of a real owner-only check — a stray leftover from before TASK-013 added a genuinely owner-only `isOwner` prop to that same component for the diskon-plafon feature.
+
+**Fix:** New `KOMISI_SETTING_ROLES = ["owner"]` / `isKomisiSettingAllowed()` in `lib/auth/access.ts` — one canonical definition instead of 4 independent copies that could (and did, silently, re: the error-message mismatch) drift apart. Applied to: `app/api/products/[id]/komisi-bekas/route.ts` (PATCH, the real enforcement for a product's Komisi Bekas override + the internal Komisi — Persen figure), `app/api/categories/[id]/route.ts` (PATCH, a category's default Komisi Bekas rate), `app/produk/[id]/edit/page.tsx` + `app/produk/baru/page.tsx` (Inventory's `isOwner` prop into `ProductForm.tsx`), `app/admin/page.tsx` (`CategoryManager`'s Komisi Bekas column/edit-form), and `components/katalog/KatalogClient.tsx` (its `EditProductDrawer`'s `isOwner`, now reusing the already-correct owner-only `isOwner` prop from TASK-013 instead of `canFlashSale`).
+
+**Files affected:** `lib/auth/access.ts`, `app/api/products/[id]/komisi-bekas/route.ts`, `app/api/categories/[id]/route.ts`, `app/produk/[id]/edit/page.tsx`, `app/produk/baru/page.tsx`, `app/admin/page.tsx`, `components/katalog/KatalogClient.tsx`.
+**Regression test:** Clean build, lint clean on every file. Verified live end-to-end with minted Owner vs Super Admin sessions: `PATCH /api/products/[id]/komisi-bekas` — Owner 200 (value persisted), Super Admin 403 ("Hanya Owner yang bisa mengatur Komisi"); UI-level, all three entry points checked directly (Inventory's edit page, Katalog's EditProductDrawer via a real search-then-click flow, Admin's Kelola Kategori table) — Owner sees the Komisi field/column in every one, Super Admin sees it in none.
+
+---
+
+## TASK-016 — Invoice Preview drawer: "Bukti Transfer" tab
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-07)
+**Dependency:** None
+**Created:** 2026-09-07 · **Last updated:** 2026-09-07
+
+**Description:** Per the user's request ("preview invoice yang sudah lunas, dibutuhkan button juga untuk melihat bukti transfer"). The data already existed — `PaymentForm.tsx`/`DpForm.tsx` already capture a proof-of-transfer upload (`invoice.payment.buktiUrl`/`invoice.dp.buktiUrl`), just never surfaced anywhere for viewing.
+
+Went through 2 rounds of HTML mockup before coding, per the user's explicit request ("buat htmlnya dulu, karena saya mau lihat layoutnya"): the first version (an inline "Lihat bukti transfer" link buried in the document's Payment Details block) was rejected — "seharusnya, pada user klik preview, secara default akan muncul invoicenya, lalu ada button ke 2 untuk lihat bukti transfer". Rebuilt as two tabs at the top of the Preview drawer (Invoice / Bukti Transfer), Invoice shown by default. The user then asked for the mockup itself to use the real app's actual Tailwind classes/tokens (via CDN + a config mirroring `app/globals.css`'s real color/font values) instead of hand-approximated CSS, "supaya kamu waktu koding tidak salah" — confirmed via AskUserQuestion that this only needs to apply to the list's Preview drawer, not `/invoice/[id]`'s own detail page.
+
+**Fix:** `InvoicePrintData` (`lib/invoiceDisplay.ts`) gained `dpBuktiUrl`/`paymentBuktiUrl`/`paymentTanggalBayar`/`paymentNominalDiterima` — populated only in `app/invoice/page.tsx` (the list, which already builds `printData` from a full, non-`.lean()` Invoice document — no new query), deliberately left unset on `/invoice/[id]`'s own `printData` per the confirmed scope. `InvoiceListClient.tsx`: new `previewTab` state ("invoice" | "bukti", reset alongside `previewId` whenever a new row's Preview is opened) driving a 2-button tab row — styled with the exact pill classes the list's own status filter already uses — that only renders at all when the invoice actually has a `dpBuktiUrl` or `paymentBuktiUrl` (a cash-paid invoice has neither, so no dead second tab). New `BuktiTransferView`/`BuktiCard` render up to two cards (DP and/or settlement, whichever exist) — an inline `<img>` preview for an image upload, or a plain "Buka file PDF ↗" link when the upload was a PDF (`UploadBox` accepts both), plus a "Buka ukuran penuh ↗" new-tab link either way.
+
+**Files affected:** `lib/invoiceDisplay.ts`, `app/invoice/page.tsx`, `components/invoice/InvoiceListClient.tsx`.
+**Regression test:** Clean build, lint clean. Verified live against real invoices with real uploaded bukti (Playwright, DOM-traversal-based row targeting since the search form's native-submit + text-based locators kept resolving to the wrong row otherwise): an invoice with both a DP and a settlement bukti showed both cards with the correct dates/amounts read straight off the real stored data (Bukti DP · 31 Agu · Rp 2.000.000, Bukti Pelunasan · 7 Sep · Rp 2.000.000); an invoice with neither correctly showed no tab row at all.
+
+---
+
+## TASK-017 — Katalog: Filter's Harga Rekomendasi/Bottom toggle changes every product's displayed price
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-07)
+**Dependency:** None
+**Created:** 2026-09-07 · **Last updated:** 2026-09-07
+
+**Description:** Per the user's request ("ketika user pencet harga bottom / rekomendasi [di Filter], harga di semua katalog langsung berganti"). The Filter sidebar's `hargaBasis` toggle already existed but only affected the min/max price range filter's comparison basis — it had no effect on what price actually showed on each card. Each card already had its own independent Harga Rekomendasi/Harga Bottom buttons (2026-08-25, driving the price actually used when adding to invoice) — confirmed with the user via AskUserQuestion that the Filter's toggle should be a full, unconditional reset of every card (including ones already manually set or given a typed custom price), not just a default for untouched ones.
+
+**Fix:** `CatalogSelectionProvider.tsx` gained `defaultPriceMode` state (persisted to localStorage like everything else there) — `getPriceMode()`'s fallback for a product with no per-id override switched from a hardcoded `"rekomendasi"` to this. New `setGlobalPriceMode(mode)`: sets `defaultPriceMode`, then clears both `priceModes` (every per-card override) and `customPrices` (every manually-typed price) outright. `KatalogFilterSidebar.tsx`'s `hargaBasis` `SegmentedControl` now calls this alongside its existing filter-state update.
+
+**Files affected:** `components/katalog/CatalogSelectionProvider.tsx`, `components/katalog/KatalogFilterSidebar.tsx`.
+**Regression test:** Clean build, lint clean (same one pre-existing unrelated `react-hooks/set-state-in-effect`, the provider's own localStorage-hydration effect). Verified live: clicking "Harga Bottom" in the Filter sidebar flipped all 12 currently-loaded cards' own Harga Rekomendasi/Harga Bottom buttons to show Bottom as active, and the actual displayed price numbers changed to match (e.g. Rp 6.000.000 → Rp 5.000.000).
+
+---
+
+## TASK-018 — Surat Jalan: price-free delivery note PDF, manual driver name
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-07)
+**Dependency:** None
+**Created:** 2026-09-07 · **Last updated:** 2026-09-07
+
+**Description:** Per the user's request: a "Surat Jalan" (delivery note/waybill) a driver physically carries, same shape as the Invoice document but with no prices anywhere, the title "INVOICE" swapped to "SURAT JALAN", and a driver-name field added. Went through the established mockup-first process (published as an Artifact, including a follow-up showing the new button's exact real placement in the invoice detail page's header, next to the existing "Unduh Invoice (PDF)"). Mid-review the user corrected the driver-name approach: it must NOT be stored on the invoice at all ("jangan isi nama driver di invoice, karena driver bisa berganti tergantung kondisi di lapangan") — typed fresh every time the PDF is generated instead, since the assigned driver can change per actual dispatch.
+
+**Fix:** `InvoicePrintDoc.tsx` gained `mode?: "invoice" | "surat-jalan"` (default `"invoice"`, zero change to the existing caller) and `id?: string` (so a second hidden instance can coexist). In `"surat-jalan"` mode: title swaps, the item table drops the Harga/Diskon/Subtotal columns entirely (Produk/Qty only), and the whole totals+Payment Details block is skipped (only the closing logo/"Thank you" note remains) — genuinely zero price figures anywhere. A "Nama Driver" field renders in the existing 3-column info row, reading from a new `data-driver-slot`-tagged element. `app/invoice/[id]/page.tsx` renders a second hidden `<InvoicePrintDoc mode="surat-jalan" id="surat-jalan-print-doc" />` alongside the original.
+
+Driver name is never captured by any form or stored on `Invoice` — `InvoiceActions.tsx`'s new "Unduh Surat Jalan (PDF)" button calls a new `prompt()` (added to the shared `useDialog()` — this app's existing styled alert/confirm replacement, extended with the same pattern rather than falling back to a native `window.prompt()`), then patches the typed name directly into the hidden `#surat-jalan-print-doc`'s `[data-driver-slot]` DOM node right before `html2canvas` captures it (a plain DOM write, not React state — the value only needs to exist for the few seconds it takes to build that one PDF). `buildInvoicePdf()` (already extracted, TASK-011) now takes an `elementId` param so both PDFs can be captured from the same shared code path.
+
+**Files affected:** `components/ui/Dialog.tsx` (new `prompt()`), `lib/invoiceDisplay.ts`, `components/invoice/InvoicePrintDoc.tsx`, `app/invoice/[id]/page.tsx`, `components/invoice/InvoiceActions.tsx`.
+
+---
+
+## TASK-019 — Owner-only product delete (Katalog + Inventory), Ukuran added to Inventory's list
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-07)
+**Dependency:** None
+**Created:** 2026-09-07 · **Last updated:** 2026-09-07
+
+**Description:** Two requests bundled together (planned and approved as one batch): (1) add a "Hapus produk" button inside Katalog's edit pencil (`EditProductDrawer.tsx`), Owner-only — investigation found delete already existed on Inventory's list (`DeleteProductButton.tsx` + `DELETE /api/products/[id]`) but with **zero role restriction at all** (any Manager/Finance/Purchasing role reaching `/produk` could already delete a product); confirmed with the user that narrowing this should apply to both surfaces at once, not just the new Katalog one. (2) Add "Ukuran" (dimensions) to Inventory's list, right below the product name, shrinking the SKU text to make room — confirmed with the user: both desktop table and mobile card list, its own new line before the existing Kategori/Merk line.
+
+Deleting a Product was confirmed safe (no live re-resolution anywhere — `StockMovement.productNameSnapshot` and every `Invoice.items[]` field are already snapshotted at write time, per `app/produk/(list)/riwayat/page.tsx`), so no new safety mechanism was added beyond the existing danger-styled confirm dialog.
+
+**Fix:** New `PRODUCT_DELETE_ROLES = ["owner"]` / `isProductDeleteAllowed()` in `lib/auth/access.ts`, following the file's established per-feature role-constant pattern. `DELETE /api/products/[id]` now checks it first (403 otherwise). `app/produk/(list)/page.tsx` computes `isOwner` and gates its own `<DeleteProductButton>` (desktop table) with it, passing `isOwner` down to `MobileProdukList.tsx` for the same gate on its card. `DeleteProductButton.tsx` gained an optional `onDeleted?: () => void` (existing callers unaffected) so `EditProductDrawer.tsx` can close itself right after deleting the product it was editing; the drawer's header row now renders the button next to the ✕ close button, gated on its own existing (already genuinely Owner-only since TASK-015) `isOwner` prop.
+
+Ukuran: `formatDimensi(p.dimensi)` renders as a new line directly under the product name (absent — no empty line — when unset) on both the desktop table (`app/produk/(list)/page.tsx`) and the mobile card list (`MobileProdukList.tsx`, which gained a `dimensi` field on `MobileProdukRow`). The desktop SKU column's text shrunk `0.8rem → 0.7rem` and the mobile category/merk/sku line `0.68rem → 0.64rem` to keep each row balanced with the extra line.
+
+**Files affected:** `lib/auth/access.ts`, `app/api/products/[id]/route.ts`, `components/produk/DeleteProductButton.tsx`, `components/katalog/EditProductDrawer.tsx`, `app/produk/(list)/page.tsx`, `components/produk/MobileProdukList.tsx`.
+**Regression test:** Clean build, lint clean. Verified live against production build (`next start`) with minted Owner vs Manager sessions: `DELETE /api/products/[id]` — Manager 403 ("Hanya Owner yang bisa menghapus produk"), Owner 200 against a real throwaway test product (created then deleted via the API, dimensi included). Inventory list HTML — Owner's page rendered 368 "Hapus" occurrences (both surfaces), Manager's rendered 0. Playwright screenshots at desktop (1440px) and mobile (390px) viewports confirmed Ukuran renders correctly right under the name for products with dimensi set, and is cleanly absent for ones without (e.g. Bowl Cutter, Cabinet).
+
+---
+
+## TASK-020 — Invoice list summary cards: 2 dynamic cards replacing 4 fixed-bucket ones
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-07)
+**Dependency:** None
+**Created:** 2026-09-07 · **Last updated:** 2026-09-07
+
+**Description:** Per the user's request ("Perlu ditindak -> Jumlah Invoice, Belum -> Total nilai Invoice, Sudah DP -> hapus, Lunas September -> hapus... saya mau summary ini dinamis, tergantung dari user pencet button yang mana"). The old 4 stat cards (Perlu ditindak/Belum bayar/Sudah DP/Lunas {bulan}) were each independently clickable AND each showed its own fixed-bucket count regardless of which pill filter was active — clicking "Sudah DP" always showed the DP count even while viewing "Sudah Lunas". Confirmed via 3 rounds of questions: (1) the 2 remaining cards become pure display, not clickable — the pill row is the only filter control; (2) "Total Nilai Invoice"'s exact meaning — the user's first answer explicitly flagged a real problem with a single blended sum ("Kamu Break jika dia pilih semua: Berapa piutangnya? berapa yang sudah lunas?"), so this went through a second round proposing (and confirming) that the number's meaning shifts with the active filter: "Sudah DP" sums the remaining sisa tagihan, every other filter (including "Semua", which the user confirmed is fine to leave as a combined figure) sums the full grandTotal; (3) "Perlu ditindak" (spanned 3 statuses, reachable only via that one card, no pill existed for it) — confirmed OK to lose entirely, no replacement pill added.
+
+**Fix:** `InvoiceListClient.tsx`'s 4 `<button>` stat cards collapsed to 2 plain `<div>`s: "Jumlah Invoice" (`filtered.length`) and "Total Nilai Invoice" (`filter === "dp" ? sum(sisaTagihan ?? grandTotal) : sum(grandTotal)` over `filtered`, both computed client-side off the already-passed `rows`/`filter` state — no new server data needed). `FilterKey`'s `"perlu"` variant and its handling in `filtered`'s derivation removed. The old fixed-bucket-count footer ("`X invoice · Rp Y tertahan`", built from a server-computed `totalPiutang` that combined unpaid+dp regardless of the active filter) was also removed — once the new "Total Nilai Invoice" card existed, that leftover text sat right below it showing a different, contradicting number for the same filter (caught live during verification: Rp 36.200.000 on the card vs "Rp 78.200.000 tertahan" in the footer for the same "Belum Dibayar" filter). `app/invoice/page.tsx`'s now-fully-unused `totalPiutang` and `paidThisMonthCount` computations (the latter only ever fed the removed "Lunas {bulan}" card) were removed along with the now-unused `MONTH_NAMES` import.
+
+**Files affected:** `components/invoice/InvoiceListClient.tsx`, `app/invoice/page.tsx`.
+**Regression test:** Clean build, lint clean. Verified live against a production build (`next start`) with Playwright across all 5 pill states: "Semua" (54 invoice, Rp 528.450.000 — full combined value), "Belum Dibayar" (6, Rp 36.200.000 — matches the visible rows' grandTotal sum exactly), "Sudah DP" (8, Rp 42.000.000 — confirmed via the visible sisa-tagihan figures summing to it, not the much larger full-grandTotal sum), "Draft" (0, Rp 0 — empty state renders cleanly, no crash), "Sudah Lunas" (40, Rp 420.250.000). Confirmed both cards are non-interactive (no ring/active styling, clicking does nothing) and the pill row is the only filter control.
+**Regression test:** Clean build, lint clean. Verified live against a real invoice: the hidden Surat Jalan DOM read directly confirmed title "SURAT JALAN", table headers exactly `["Produk", "Qty"]`, zero "Rp" figures anywhere in the whole document, no "Payment Details" text; the regular Invoice PDF's own hidden DOM confirmed unchanged (title "INVOICE", prices present) — proving the new `mode`/`id` defaults didn't disturb the existing path. The prompt dialog rendered and accepted input correctly; confirming it triggered a real download named `SuratJalan-<nomor>.pdf` with the typed driver name correctly patched into the DOM; clicking Batal correctly closed the dialog and triggered no download at all.
+
+---
+
+## TASK-021 — Invoice list Preview drawer: "Surat Jalan" tab (preview + download, no detour to detail page)
+
+**Type:** FEATURE
+**Priority:** P2
+**Status:** DONE (2026-09-08)
+**Dependency:** TASK-016 (Preview drawer), TASK-018 (Surat Jalan)
+**Created:** 2026-09-08 · **Last updated:** 2026-09-08
+
+**Description:** Per the user's request: clicking "Preview" on the Invoice list (`/invoice`) should offer both "Preview Invoice + Unduh Invoice (PDF)" and "Preview Surat Jalan + Unduh Surat Jalan (PDF)" without navigating to `/invoice/[id]` first (where both already existed, TASK-011/018). Published an interactive HTML mockup (real HOJAY Foundry tokens/Archivo, matching the `/invoice` list + drawer verbatim) before coding, per this session's established practice.
+
+Mid-review the user added a second requirement: a driver name typed once should actually show up in the on-screen Surat Jalan preview, not just silently feed the downloaded PDF ("jika sudah ada nama drivernya, maka muncul di previewnya, tapi kalau belum ada mereka harus masukan untuk nama drivernya"). This only changes the list's own flow — the detail page's "Unduh Surat Jalan (PDF)" (`InvoiceActions.tsx`) still prompts fresh on every click exactly as TASK-018 built it, since the driver-never-stored rule is unchanged.
+
+**Fix:** The html2canvas/jsPDF PDF-building logic (`buildInvoicePdf`/`downloadInvoicePdf`/`downloadSuratJalanPdf`) was extracted out of `InvoiceActions.tsx` into a shared `useInvoicePdfDownload()` hook so `InvoiceListClient.tsx` doesn't duplicate it (same "one source, no drift" reasoning as BUG-013) — `InvoiceActions.tsx` now calls the hook instead of holding its own copy, byte-identical behavior. `downloadSuratJalanPdf()` gained an optional `driverNameOverride` param: omitted (detail page) it prompts every time as before; passed (list) it skips the prompt and uses the supplied value.
+
+`InvoiceDocument.tsx` (the on-screen document, already shared between the detail page and this drawer) gained a `mode?: "invoice" | "surat-jalan"` prop mirroring `InvoicePrintDoc.tsx`'s existing PDF-export mode — same column/totals/Payment-Details stripping, plus a Nama Driver line.
+
+`InvoiceListClient.tsx`: the drawer's tab row gained "Surat Jalan" (between "Invoice" and the still-conditional "Bukti Transfer"). New `driverName` state, scoped to the currently-open preview (reset to `null` alongside `previewId`/`previewTab` whenever a different invoice is opened). `handleTabClick()` — opening "Surat Jalan" for the first time on this preview immediately prompts for the driver name (`ensureDriverName()`); once set, it's threaded into `InvoiceDocument`'s `invoice.namaDriver` so the preview shows it, and a "Ubah"/"Isi sekarang" link (`promptDriverName()`, always re-asks) sits next to it for correction. The "Unduh Surat Jalan (PDF)" button in this tab calls `ensureDriverName()` then passes the result straight into the hook's `driverNameOverride`, so it never double-prompts once a name is already showing in the preview. Two hidden `InvoicePrintDoc` instances (`list-invoice-print-doc`/`list-surat-jalan-print-doc`, keyed on the row id) mount alongside the drawer purely for the actual PDF capture — same pattern `/invoice/[id]/page.tsx` already uses, just scoped to whichever row is being previewed instead of one fixed invoice.
+
+**Acceptance criteria:** Detail page (`/invoice/[id]`) behavior byte-identical to before (still prompts every click, no override passed). The driver name is never sent to the server or stored on the invoice at any layer — confirmed no new field/request carries it beyond the client-side `driverName` state and the DOM patch at capture time. Every existing Preview drawer capability (Invoice tab, conditional Bukti Transfer tab) unchanged.
+
+**Files affected:** `components/invoice/useInvoicePdfDownload.ts` (new), `components/invoice/InvoiceActions.tsx`, `components/invoice/InvoiceDocument.tsx`, `components/invoice/InvoiceListClient.tsx`.
+**Regression test:** Clean build, lint clean on all four files. Live DB-backed verification (Playwright/minted session) was blocked in this environment (no Playwright installed; minting a session hit this sandbox's own security classifier) — relied on a careful manual trace of the prop/state wiring plus the interactive HTML mockup instead, and told the user this gap plainly rather than claiming a live pass.
+
+---
+
+## TASK-022 — Katalog photo watermark: centered + translucent instead of a small opaque corner badge
+
+**Type:** UX/UI
+**Priority:** P2
+**Status:** DONE (2026-09-14)
+**Dependency:** None
+**Created:** 2026-09-14 · **Last updated:** 2026-09-14
+
+**Description:** Per the user's request ("watermark itu terlalu kecil, coba kamu buat itu di tengah, tapi tidak menghilangkan visual dari foto tersebut"). The upload-time HOJAY watermark (`watermarkImage()`, `app/api/upload/route.ts`, 2026-08-25) stamped a small (18% width), fully-opaque badge in the bottom-right corner — legible enough as a corner mark but too small/easy-to-crop to read as a real brand mark. Centering a mark that size while keeping it fully opaque would have blocked the product photo itself, so this needed both a larger mark AND real transparency, not just a reposition.
+
+Before touching the real pipeline, generated 4 real candidate outputs (not a CSS mockup — the actual `sharp` compositing code, run against a real Katalog product photo) at different width/opacity combinations and published them as a side-by-side comparison artifact. The user picked **"Opsi C"**: 55% width, 10% opacity, centered.
+
+**Fix:** `watermarkImage()`: `wmWidth` now `55%` of the base image's width (was 18%), positioned centered (`left/top` = `(base − wm) / 2`, was bottom-right + margin). Real transparency added via sharp's standard fade-an-overlay recipe — `ensureAlpha()` then `.linear([1,1,1,0.1], [0,0,0,0])` on the resized watermark before compositing (scales only the alpha band, leaves RGB untouched) — needed because the source PNG (`public/logo/hojay-2b-positif.png`) has a fully opaque background with no alpha to reduce otherwise. The crisp lanczos3 resize kernel (2026-08-25's blur fix) is untouched.
+
+**Verified directly:** ran the exact new function's logic against a real Katalog photo (`Working Table w/backsplash w/double undershelf`) and confirmed the output watermark dimensions (528×294 on a 960×1280 source) exactly match "Opsi C" from the comparison artifact.
+
+**Important limitation, disclosed to the user before building:** this only affects photos uploaded from this point forward. Every photo already in Blob storage has the OLD corner watermark permanently baked in — the pre-watermark original was never kept, only the already-composited result, so there is no way to batch-reprocess existing photos into the new style. The only path for an existing product's photo to get the new watermark is re-uploading it.
+
+**Files affected:** `app/api/upload/route.ts` (`watermarkImage()` only — `compressImage()` and the rest of the route untouched).
+**Regression test:** Clean build, lint clean. `download-photo` route (dimension-footnote overlay, unrelated) and `CatalogPrintDoc.tsx` (Katalog PDF, reads whatever watermark is already baked into each stored photo) needed no changes — this only affects the watermark baked in at upload time.
+
+**Follow-up (2026-09-14, same day) — retrofitted onto existing photos too:** the user pushed back on the "only new uploads" limitation ("yang lama harus ikut berubah"). Re-confirmed the real constraint (no pre-watermark original was ever kept for already-uploaded photos, so the old corner mark can only be added-to, never cleanly replaced) and got explicit sign-off on the resulting trade-off — "2 watermark juga oke kok" — before running anything. Ran a one-off migration script (`retrofit-watermark.js`, project root, deleted after use per this project's established one-off-script convention — see BUG-016) against all 187 products with a stored photo: fetched each existing (already old-watermarked) photo, composited the same new centered/translucent mark on top using the exact `watermarkImage()` recipe above, uploaded the result as a new Blob object, and repointed that product's `Product.fotoUrl` to it. Old Blob objects were deliberately left in place (not deleted) — harmless orphaned storage, kept as a rollback path. A full old-url/new-url audit log was written before deleting the script.
+
+Verified a 2-item dry run first (visually confirmed via the actual downloaded output: large translucent centered mark, product fully visible through it, old small corner mark still present, no collision between the two since they don't overlap spatially) before running the remaining 185. All 187 succeeded, 0 failures.
+
+**Files:** None (data migration only, no application code changed) — `app/api/upload/route.ts` from the main fix above is what every NEW upload already used; this follow-up only touched already-stored `Product.fotoUrl` values.
+
+---
+
+## TASK-023 — Payroll Riwayat Pembayaran + Invoice Sales filter + Riwayat Stok Baru/Bekas label
+
+**Type:** Feature
+**Priority:** P2
+**Status:** DONE (2026-09-19)
+**Dependency:** None
+**Created:** 2026-09-19 · **Last updated:** 2026-09-19
+
+**Description:** Three small, independent asks from the same session, previewed as an HTML mockup artifact before coding ("kita buat plan untuk payroll... munculkan history yang sudah dibayar" + "lalu di invoice, tambahkan filter sales", followed mid-build by "di bagian inventory, riwayat stock masuk / keluar, tolong tambahkan lagi di sebelah tipe, yaitu label barang Baru / Bekas").
+
+**1. Payroll → new "Riwayat" tab (`/payroll/riwayat`, admin-only).** Research surfaced that Payroll actually has two separate payment concepts with no shared history: **Gaji** (base salary, one `GajiPayment` row per period — already had "sudah dibayar" tracking, just no cross-period list view) and **Komisi** (no dedicated payment record at all — `/api/insentif/bayar` just flips `komisiCair: true` on each selected Invoice, sharing the same `komisiCairTanggal`/`komisiCairBuktiUrl` across the batch). The new page combines both: `getPayrollHistory()` (`lib/payroll.ts`) lists every `GajiPayment` plus Komisi payouts re-grouped from `Invoice.find({komisiCair:true})` by `(sales.nama, komisiCairTanggal, komisiCairBuktiUrl)` back into one row per batch. Komisi rows get a "N invoice ›" Detail action opening a right-docked drawer (Nomor/Customer/Tgl Lunas/Komisi per invoice) — same drawer pattern already used by `BayarKomisiSheet.tsx`'s own unpaid-commission Detail pop-up, just built from paid data instead. Gaji rows show "—" for Detail (not invoice-backed) and "—" for Dibayar Oleh on Komisi rows (that actor isn't tracked on `Invoice.komisiCair*` today — a real data-model gap, not a UI oversight, left out-of-scope for this task).
+
+**2. Invoice list → Sales filter.** New `sales` URL param, server-side (same pattern as the existing `bulan`/`tahun` filter, not the client-side status-pill filter) — `InvoicePeriodFilter.tsx` gained an optional third `<Select>` sourced from the active `Sales` roster (`Sales.find({aktif:true})`, not just names already appearing on invoices, so a rep with zero invoices yet still shows up). Dropdown is entirely omitted for a `role:"sales"` session — `invoiceVisibilityFilter` already pins them to their own `sales.nama` server-side, so the filter would have nothing to do.
+
+**3. Inventory → Riwayat Stok "Baru/Bekas" label.** `StockMovement` doesn't snapshot `Product.kondisi`, so `app/produk/(list)/riwayat/page.tsx` now does a small batch lookup (`Product.find({_id:{$in:...}}).select("kondisi")`) and renders a green "Baru"/amber "Bekas" badge next to the existing Masuk/Keluar Tipe pill — read live off the product (not snapshotted), matching the same green `#16A34A`/amber `#D97706` colors already used for this exact label everywhere else (`ProductCard.tsx`, `AddProductSidebar.tsx`, `MobileProdukList.tsx`).
+
+**Files affected:** `lib/payroll.ts` (`getPayrollHistory`), `app/payroll/riwayat/page.tsx` (new), `components/payroll/RiwayatPembayaranClient.tsx` (new), `components/payroll/tabs.ts`, `components/ui/Pill.tsx` (`komisi`/`gaji` variants), `app/invoice/page.tsx`, `components/invoice/InvoicePeriodFilter.tsx`, `app/produk/(list)/riwayat/page.tsx`.
+
+**Regression test:** Clean `tsc --noEmit`, clean `eslint` on every changed file, clean `next build` (all routes compiled, including the new `/payroll/riwayat`). Could not exercise either new page against real logged-in session data in a browser this session (no test credentials available here) — build-time compilation is the verification on record; **manual click-through in the browser with a real admin/owner login is still recommended before calling this fully verified.**
+
+**Mobile:** Both new/changed tables reuse `TableScroll` (`overflow-x-auto`) and the existing `PanelHead`/filter-row flex-wrap patterns already proven responsive elsewhere (e.g. `/produk/riwayat`) — not verified live on an actual small viewport this session.
+
+---
+

@@ -1,0 +1,78 @@
+# SDD Archive Index
+
+Format: ID | status | judul | file kunci. Detail: `grep -n "TASK-0NN" docs/SDD/archive/*.md`.
+
+## Tasks
+- TASK-001 | DONE | "Foundry" design system: shell, accent color, core forms | app/globals.css, components/layout/AppShell.tsx, components/layout/PageHeader.tsx
+- TASK-002 | IN PROGRESS | "Foundry" end-to-end sweep: remaining stiff pages | 
+- TASK-003 | DONE (2026-09-03) | Bulk Diskon (Invoice) | lib/commission.ts, components/invoice/InvoiceForm.tsx, lib/services/createInvoice.ts
+- TASK-004 | BACKLOG (explicitly scheduled for AFTER TASK-002 and open bu | Billing plan for Owner Hojay | 
+- TASK-005 | DONE (2026-09-02) | Merk otomatis muncul di nama produk (Katalog/PDF/Invoice) | lib/format.ts, components/katalog/ProductCard.tsx, components/cart/CatalogPrintDoc.tsx
+- TASK-006 | DONE (2026-09-03) | Owner-only Komisi Bekas override (per produk & per kategori) + rename Harga Minimum → Harg | models/Product.ts, models/Category.ts, lib/commission.ts
+- TASK-007 | DONE (2026-09-04) | Akun Login restricted to Owner/Super Admin (Manager locked out) | lib/auth/access.ts, app/api/admin/users/route.ts, app/api/admin/users/[id]/route.ts
+- TASK-008 | DONE (2026-09-04) | Komisi detail pop-up on Bayar Komisi's Daftar Bayar list | components/insentif/BayarKomisiSheet.tsx, components/insentif/KomisiPaymentForm.tsx, app/payroll/page.tsx
+- TASK-009 | DONE (2026-09-04) | Invoice list: single filtered list + Preview drawer | app/invoice/page.tsx, app/invoice/[id]/page.tsx, components/invoice/InvoiceDocument.tsx
+- TASK-010 | DONE (2026-09-04) | Exclude Owner accounts from Payroll commission listing | lib/insentif.ts
+- TASK-011 | DONE (2026-09-04) | Invoice "Kirim ke Pelanggan (WA)": attach the PDF where the OS allows it | components/invoice/InvoiceActions.tsx
+- TASK-012 | DONE (2026-09-05) | Katalog: server-paginated infinite scroll (12 produk/batch) + Terbaru→Kategori→Harga defau | lib/katalog.ts, app/api/katalog/route.ts, app/katalog/page.tsx
+- TASK-013 | DONE (2026-09-05) | Owner-only: remove the diskon plafon entirely (up to 100% off) | lib/commission.ts, lib/services/createInvoice.ts, lib/services/updateInvoice.ts
+- TASK-014 | DONE (2026-09-05) | Simplify Komisi% to one field on the product form | components/produk/ProductForm.tsx
+- TASK-015 | DONE (2026-09-05) | Commission settings: narrow to Owner-only (was also allowing Super Admin) | lib/auth/access.ts, app/api/products/[id]/komisi-bekas/route.ts, app/api/categories/[id]/route.ts
+- TASK-016 | DONE (2026-09-07) | Invoice Preview drawer: "Bukti Transfer" tab | lib/invoiceDisplay.ts, app/invoice/page.tsx, components/invoice/InvoiceListClient.tsx
+- TASK-017 | DONE (2026-09-07) | Katalog: Filter's Harga Rekomendasi/Bottom toggle changes every product's displayed price | components/katalog/CatalogSelectionProvider.tsx, components/katalog/KatalogFilterSidebar.tsx
+- TASK-018 | DONE (2026-09-07) | Surat Jalan: price-free delivery note PDF, manual driver name | components/ui/Dialog.tsx, prompt(), lib/invoiceDisplay.ts
+- TASK-019 | DONE (2026-09-07) | Owner-only product delete (Katalog + Inventory), Ukuran added to Inventory's list | lib/auth/access.ts, app/api/products/[id]/route.ts, components/produk/DeleteProductButton.tsx
+- TASK-020 | DONE (2026-09-07) | Invoice list summary cards: 2 dynamic cards replacing 4 fixed-bucket ones | components/invoice/InvoiceListClient.tsx, app/invoice/page.tsx
+- TASK-021 | DONE (2026-09-08) | Invoice list Preview drawer: "Surat Jalan" tab (preview + download, no detour to detail pa | components/invoice/useInvoicePdfDownload.ts, components/invoice/InvoiceActions.tsx, components/invoice/InvoiceDocument.t
+- TASK-022 | DONE (2026-09-14) | Katalog photo watermark: centered + translucent instead of a small opaque corner badge | app/api/upload/route.ts, watermarkImage(), compressImage()
+- TASK-023 | DONE (2026-09-19) | Payroll Riwayat Pembayaran + Invoice Sales filter + Riwayat Stok Baru/Bekas label | lib/payroll.ts, getPayrollHistory, app/payroll/riwayat/page.tsx
+- TASK-024 | DONE (2026-09-19) | Inventory: "% Komisi" column on Semua Produk + Riwayat Stok | lib/commission.ts, getEffectiveKomisiInfo, KomisiInfo
+- TASK-025 | DONE (2026-09-19) | Pelanggan optional fields, Invoice Provinsi/Kota unlocked, Katalog edit-drawer stale-cache | models/Customer.ts, components/pelanggan/CustomerForm.tsx, components/invoice/InlineCustomerForm.tsx
+- TASK-026 | DONE (2026-09-19) | Invoice Catatan field (+ PDF), Beranda "Perlu Dikirim" reframe, Tanggal Pengiriman no long | models/Invoice.ts, lib/invoiceDisplay.ts, lib/services/createInvoice.ts
+- TASK-027 | DONE (2026-09-19) | Pelanggan: filter on both table surfaces | app/pelanggan/page.tsx, components/pelanggan/PelangganKotaFilter.tsx, app/pelanggan/[id]/page.tsx
+- TASK-028 | DONE (2026-09-19) | Sortable column headers: Pelanggan + Inventory | app/pelanggan/page.tsx, SortCol, SORT_FIELDS
+- TASK-029 | DONE (2026-09-19) | Leaderboard "Estimasi Sales", Invoice LUNAS watermark, Syarat & Ketentuan (editable) | lib/insentif.ts, getUnpaidInvoicesForPeriod, SalesBoardRow.estimasiSales
+- TASK-030 | DONE (2026-09-19) | Invoice list: simplify per-row action buttons (max 6 → max 2) | components/invoice/InvoiceListClient.tsx, toWaPhone
+- TASK-031 | DONE (2026-09-20) | Syarat & Ketentuan moved to its own Admin tab; per-line form; real backfill bug fixed | app/admin/layout.tsx, app/admin/keuangan/page.tsx, app/admin/invoice/page.tsx
+- TASK-032 | DONE (2026-09-20) | Syarat & Ketentuan could still be silently clipped from the generated PDF | components/invoice/InvoicePrintDoc.tsx
+- TASK-033 | DONE (2026-09-20) | Invoice list: add Preview to the "⋯" overflow menu | components/invoice/InvoiceListClient.tsx
+- TASK-034 | DONE (2026-09-30) | Katalog ProductCard decluttered (mockup-approved) | components/katalog/ProductCard.tsx
+- TASK-035 | DONE (2026-09-30) | Leaderboard Sales redesigned as a Soft Trade podium (mockup-approved) | components/insentif/SalesBoard.tsx, components/insentif/MobileSalesBoard.tsx, components/insentif/boardUtils.ts
+- TASK-036 | DONE (2026-10-01) | Komisi Saya redesigned: period filter, lunas-only headline, invoice status, payout history | lib/insentif.ts, getMyKomisiOverview, app/komisi-saya/page.tsx
+- TASK-037 | DONE (2026-10-01, deployed — commit 768ab94) | Invoice detail's Riwayat shows when the commission was paid out | app/invoice/[id]/page.tsx
+- TASK-038 | DONE (2026-10-01, deployed) | Payroll (Owner) redesigned: modern layout, one shared month filter | lib/payrollPeriod.ts, components/payroll/{PayrollNav,ui}.tsx, components/invoice/InvoicePdfModal.tsx
+- TASK-039 | DONE (2026-10-02, deployed) — built from mockup v7. Differen | Invoice detail (`/invoice/[id]`): max 2 buttons, one main card, "Aksi lainnya" | app/invoice/[id]/page.tsx, components/invoice/InvoiceActions.tsx, InvoiceDocument
+- TASK-040 | REVIEW — mockup HTML sudah jadi dan dipublikasikan, menunggu | Laporan Owner (mockup): "Rekomendasi tindakan" berbasis statistik inferensial + tren per b | docs/SDD/mockups/laporan-inferensial.html
+- TASK-041 | DONE (2026-10-02, deployed) | Invoice list: fixed-column rows, chevron detail, Filter button, one-line summary | components/invoice/InvoiceListClient.tsx, components/invoice/InvoiceFilterBar.tsx, app/invoice/page.tsx
+- TASK-042 | DONE (2026-10-07, deployed; belum diklik di browser yang log | Jasa (biaya service): master data terpisah, baris di invoice, tombol di Katalog | models/Jasa.ts, models/Invoice.ts, app/api/jasa/**
+- TASK-043 | DONE (2026-10-09, pushed ke main untuk deploy Vercel; belum  | Katalog: label "New Stock" (produk baru diupload, 7 hari, tampil paling atas) | lib/constants.ts, lib/katalog.ts, app/api/katalog/route.ts
+- TASK-044 | TESTING (2026-10-12; kode selesai, belum diklik di browser y | Syarat & Ketentuan per invoice (template default tetap di Admin → Invoice) | models/Invoice.ts, lib/syaratKetentuan.ts, lib/services/{syaratKetentuan,createInvoice,updateInvoice}.ts
+- TASK-045 | TESTING (2026-10-18; kode selesai, `tsc` dan `eslint` bersih | Batas karakter per poin Syarat & Ketentuan naik 300 → 1000 (format PDF tetap aman) | lib/syaratKetentuan.ts, SK_MAX_CHARS_PER_POIN, SK_MAX_CHARS_TOTAL
+- TASK-046 | TESTING (2026-10-22; kode selesai, tsc/eslint/build bersih,  | Halaman Pengiriman (`/pengiriman`): status, jadwal & tgl kirim, filter bulan, No. Resi ops | models/Invoice.ts, app/api/invoices/[id]/kirim/route.ts, components/invoice/TandaiKirimButton.tsx
+
+## Bugs
+- BUG-001 | FIXED (2026-08-30) | Katalog photo-zoom collapses into the card instead of covering the screen | 
+- BUG-002 | FIXED (2026-08-30) | Bare `rounded` class computes to 0px app-wide | 
+- BUG-003 | FIXED (2026-08-30) | Hidden yellow-on-white contrast in Dialog and Leaderboard | 
+- BUG-004 | FIXED (2026-09-03, alongside TASK-003) | Barang Baru/Custom diskon has no server-side ceiling (commission can go negative) | 
+- BUG-005 | FIXED (2026-08-31) | Katalog price field can get silently stuck at Rp 0 (shows on-screen and in the exported PD | 
+- BUG-006 | FIXED (2026-08-31) | Katalog PDF could include unavailable products | 
+- BUG-007 | FIXED (2026-08-31) | Katalog PDF/page slow (Katalog PDF generation + opening the Katalog page) | 
+- BUG-008 | FIXED (2026-08-31) | Beranda shows "Belum Bayar" for invoices that already have a DP | 
+- BUG-009 | FIXED (2026-09-02) | Katalog search can't match a full "80 x 60 x 100" size query | 
+- BUG-010 | FIXED (2026-09-03) | Product names show a stray "-" from TASK-005's Merk-in-name feature | 
+- BUG-011 | FIXED (2026-09-04) | Katalog search never matched Merk (active products "disappear" when searching a brand) | 
+- BUG-012 | FIXED (2026-09-04) | Invoice detail page crashed with "This page couldn't load — A server error occurred" for e | 
+- BUG-013 | FIXED (2026-09-04) | "Kirim WA" on the Invoice list didn't load a chat for local-format numbers | 
+- BUG-014 | FIXED (2026-09-05) | "Komisi Nominal" stopped updating live after TASK-014 removed the "Komisi — Persen" field | 
+- BUG-015 | FIXED (2026-09-06) | Katalog "Pilih Semua" reset every previous search's selection instead of accumulating | 
+- BUG-016 | FIXED (2026-09-07) | "Avi" showed as a separate person from "Avicenna Pangaran" on the leaderboard | 
+- BUG-017 | FIXED (2026-09-07) | "Bukti Transfer" full-size link had no way back on mobile | 
+- BUG-018 | FIXED (2026-09-07) | Beranda notification "Produk baru ditambahkan" linked to the edit page instead of Katalog | 
+- BUG-019 | FIXED (2026-09-08) | Invoice list's Preview drawer rendered docked to the left instead of the right | 
+- BUG-020 | FIXED (2026-09-18) | Invoice PDF/preview never showed "LUNAS" and kept displaying "Sisa Tagihan" forever after  | 
+- BUG-021 | FIXED (2026-09-23) | Invoice PDF's product name silently drops the Merk that Katalog shows | 
+- BUG-022 | FIXED (2026-10-01) — by the TASK-036 redesign | Komisi Saya's headline counted unpaid-invoice commission, and unpaid invoices vanished whe | 
+- BUG-023 | FIXED (2026-10-01) | Leaderboard/Beranda month boundaries used server-local time, not GMT+7 | 
+- BUG-024 | FIXED (2026-10-08) | Katalog search stops at the first 12 results (infinite scroll never loads page 2) | 
+- BUG-025 | FIXED (2026-10-13) | "Unduh Katalog PDF" includes products that were not checked this session (stale selection) | 
