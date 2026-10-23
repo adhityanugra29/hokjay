@@ -1,6 +1,7 @@
 import PageHeader from "@/components/layout/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
-import InvoiceListClient, { type InvoiceRow } from "@/components/invoice/InvoiceListClient";
+import { redirect } from "next/navigation";
+import InvoiceListClient, { type FilterKey, type InvoiceRow, type InvoiceStats } from "@/components/invoice/InvoiceListClient";
 import InvoiceFilterBar from "@/components/invoice/InvoiceFilterBar";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
@@ -77,7 +78,14 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   // jakartaMonthRange/jakartaYearRange filter by above.
   // The four reads are independent, so they run together (one round trip of latency instead of four in a row). Sales options are only
   // fetched for non-"sales" sessions (see salesFilter above): the roster, not just names on invoices, so a rep with no invoices still shows up.
-  const [periodeAgg, salesDocs, invoices] = await Promise.all([
+  const statusFilter: FilterKey = FILTER_KEYS.includes(sp.status as FilterKey) ? (sp.status as FilterKey) : "semua";
+  const page = Math.max(1, Math.floor(Number(sp.page)) || 1);
+  const selesaiExpr = { $and: [{ $eq: ["$status", "paid"] }, { $eq: ["$dikirim", true] }] };
+  const dpNominal = { $ifNull: ["$dp.nominal", 0] };
+
+  // Status counts/totals come from one grouped query over the whole filtered set; the list itself only loads one page (PAGE_SIZE rows, already shaped by
+  // $project so each row's items[] never leaves Mongo). Under "Semua", rows still needing action sort before finished ones, matching the grouped view.
+  const [periodeAgg, salesDocs, statAgg, invoices] = await Promise.all([
     Invoice.aggregate<{ months: number[]; years: number[] }>([
       { $match: invoiceVisibilityFilter(session) },
       {
@@ -89,18 +97,90 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       },
     ]),
     session?.role !== "sales" ? Sales.find({ aktif: true }).sort({ nama: 1 }).lean() : Promise.resolve([] as { nama: string }[]),
-    Invoice.find(filter).sort({ createdAt: -1 }),
+    Invoice.aggregate<{ _id: { status: InvoiceRow["status"]; selesai: boolean }; count: number; total: number; sisa: number }>([
+      { $match: filter },
+      {
+        $group: {
+          _id: {
+            status: {
+              $switch: {
+                branches: [
+                  { case: { $eq: ["$status", "draft"] }, then: "draft" },
+                  { case: { $eq: ["$status", "paid"] }, then: "paid" },
+                  { case: { $gt: [dpNominal, 0] }, then: "dp" },
+                ],
+                default: "unpaid",
+              },
+            },
+            selesai: selesaiExpr,
+          },
+          count: { $sum: 1 },
+          total: { $sum: "$grandTotal" },
+          sisa: { $sum: { $subtract: ["$grandTotal", dpNominal] } },
+        },
+      },
+    ]),
+    Invoice.aggregate<RawInvoiceRow>([
+      { $match: { ...filter, ...STATUS_MATCH[statusFilter] } },
+      {
+        $project: {
+          nomor: 1,
+          status: 1,
+          tanggalInvoice: 1,
+          createdAt: 1,
+          "customer.nama": 1,
+          "customer.whatsapp": 1,
+          "sales.nama": 1,
+          kurir: 1,
+          grandTotal: 1,
+          "dp.nominal": 1,
+          "dp.buktiUrl": 1,
+          "payment.buktiUrl": 1,
+          dikirim: 1,
+          tanggalDikirimAktual: 1,
+          komisi: { $sum: "$items.komisiSubtotal" },
+          itemCount: { $size: { $ifNull: ["$items", []] } },
+          selesai: { $cond: [selesaiExpr, 1, 0] },
+        },
+      },
+      { $sort: statusFilter === "semua" ? { selesai: 1, createdAt: -1, _id: -1 } : { createdAt: -1, _id: -1 } },
+      { $skip: (page - 1) * PAGE_SIZE },
+      { $limit: PAGE_SIZE },
+    ]),
   ]);
   const availableMonths = (periodeAgg[0]?.months ?? []).sort((a, b) => a - b);
   const availableYears = (periodeAgg[0]?.years ?? []).sort((a, b) => b - a);
   const availableSales = salesDocs.map((s) => s.nama);
 
+  const stats: InvoiceStats = {
+    semua: { count: 0, nilai: 0 },
+    unpaid: { count: 0, nilai: 0 },
+    dp: { count: 0, nilai: 0 },
+    draft: { count: 0, nilai: 0 },
+    paid: { count: 0, nilai: 0 },
+  };
+  let selesaiCount = 0;
+  for (const g of statAgg) {
+    const s = stats[g._id.status];
+    s.count += g.count;
+    s.nilai += g._id.status === "dp" ? g.sisa : g.total; // "Sudah DP" sums the remaining sisa tagihan; every other pill sums grandTotal
+    stats.semua.count += g.count;
+    stats.semua.nilai += g.total;
+    if (g._id.selesai) selesaiCount += g.count;
+  }
+  const totalPages = Math.max(1, Math.ceil(stats[statusFilter].count / PAGE_SIZE));
+  if (page > totalPages) {
+    // Filter/search changed while on a later page: land on the last page that exists instead of an empty one.
+    const qs = new URLSearchParams(Object.entries(sp).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : [])));
+    qs.set("page", String(totalPages));
+    redirect(`/invoice?${qs.toString()}`);
+  }
+
   const rows: InvoiceRow[] = invoices.map((inv) => {
-    const tanggal = inv.tanggalInvoice ?? inv.get("createdAt");
+    const tanggal = inv.tanggalInvoice ?? inv.createdAt;
     const [tglNum, tglMon] = formatDateShortParts(tanggal);
     const status: InvoiceRow["status"] =
       inv.status === "draft" ? "draft" : inv.status === "paid" ? "paid" : inv.dp?.nominal ? "dp" : "unpaid";
-    const komisi = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
 
     return {
       id: String(inv._id),
@@ -112,10 +192,10 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       custWhatsapp: inv.customer?.whatsapp ?? undefined,
       nomor: inv.nomor,
       salesNama: inv.sales?.nama ?? "—",
-      itemCount: inv.items.length,
+      itemCount: inv.itemCount,
       kurir: inv.kurir ?? undefined,
       grandTotal: inv.grandTotal,
-      komisi,
+      komisi: inv.komisi,
       dpPercent: inv.dp?.nominal ? Math.round((inv.dp.nominal / inv.grandTotal) * 100) : undefined,
       sisaTagihan: inv.dp?.nominal ? inv.grandTotal - inv.dp.nominal : undefined,
       dikirim: !!inv.dikirim,
@@ -143,10 +223,49 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
           availableSales={availableSales}
         />
 
-        <InvoiceListClient rows={rows} />
+        <InvoiceListClient
+          rows={rows}
+          filter={statusFilter}
+          stats={stats}
+          selesaiCount={selesaiCount}
+          page={page}
+          totalPages={totalPages}
+          query={{ search: typeof search === "string" ? search : undefined, bulan: sp.bulan, tahun: sp.tahun, sales: salesFilter }}
+        />
       </div>
     </>
   );
+}
+
+const PAGE_SIZE = 15;
+const FILTER_KEYS: FilterKey[] = ["semua", "unpaid", "dp", "draft", "paid"];
+
+// Mirrors the row-status rule in the map above ("unpaid" = anything not draft/paid and without a DP).
+const STATUS_MATCH: Record<FilterKey, Record<string, unknown>> = {
+  semua: {},
+  unpaid: { status: { $nin: ["draft", "paid"] }, "dp.nominal": { $not: { $gt: 0 } } },
+  dp: { status: { $nin: ["draft", "paid"] }, "dp.nominal": { $gt: 0 } },
+  draft: { status: "draft" },
+  paid: { status: "paid" },
+};
+
+/** Shape of one $project-ed row from the list aggregation (no items[] — komisi/itemCount are computed in Mongo). */
+interface RawInvoiceRow {
+  _id: unknown;
+  nomor: string;
+  status?: string;
+  tanggalInvoice?: Date;
+  createdAt: Date;
+  customer?: { nama?: string; whatsapp?: string };
+  sales?: { nama?: string };
+  kurir?: string;
+  grandTotal: number;
+  dp?: { nominal?: number; buktiUrl?: string };
+  payment?: { buktiUrl?: string };
+  dikirim?: boolean;
+  tanggalDikirimAktual?: Date;
+  komisi: number;
+  itemCount: number;
 }
 
 /** "29 Agu" -> ["29", "Agu"] — reuses formatDateShort's own day-number/month-abbrev formatting instead of re-deriving it, just split for the two-line day block. */

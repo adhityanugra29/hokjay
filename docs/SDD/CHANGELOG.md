@@ -8,6 +8,8 @@
 
 ## 2026-10-23
 
+**Refactor Fase 1c — pagination daftar Invoice (15 baris/halaman)** — `/invoice` kini memuat satu halaman saja lewat aggregate (`$project` membuang `items[]`, `komisi`/`itemCount` dihitung di Mongo), dengan `?page=` dan `?status=` di URL. Pill status berubah dari state client menjadi link; hitungan per pill, "Total nilai", dan jumlah grup "Perlu tindakan/Selesai" dihitung server atas seluruh hasil filter (bukan hanya halaman ini). Di "Semua", yang perlu tindakan diurutkan lebih dulu agar grup konsisten antar halaman. Filter/pencarian mereset halaman; halaman di luar jangkauan di-redirect ke halaman terakhir. Preserved: aturan visibilitas sales, filter search/bulan/tahun/sales, Preview/PDF, aksi baris. Regression: `tsc` + eslint bersih; BELUM diuji di browser/DB. Produk/Pelanggan/Pengiriman belum dipaginasi.
+
 **Refactor Fase 1a/1b (performa)** — `/pengiriman`: `getPengirimanData` + `Courier.find` kini paralel (`Promise.all`). `/pelanggan/[id]`: query pelanggan + invoice paralel dan invoice memakai `.lean()` (hanya field primitif dibaca); cek akses sales + `notFound()` tetap sama. Audit bundle: chunk besar (html2canvas/jsPDF/canvg/core-js, ±1,7 MB) tidak ada di entry halaman mana pun (dynamic import sudah benar), jadi tidak ada yang diubah; `app/loading.tsx` root sudah mencakup semua halaman. Preserved: hak akses, data tampil. Regression: `tsc` bersih, `next build` sukses, eslint bersih di 2 file.
 
 **S&K di PDF invoice/surat jalan: nomor sejajar dengan teks** — penanda `list-decimal` dirender html2canvas naik seperti pangkat; diganti nomor teks biasa di kolom kiri (`InvoicePrintDoc.tsx`). Preserved: isi S&K, pengukuran tinggi, tampilan layar. Regression: belum dicek visual di PDF.

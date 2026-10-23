@@ -133,15 +133,38 @@ function DetailItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-type FilterKey = "semua" | InvoiceRowStatus;
+export type FilterKey = "semua" | InvoiceRowStatus;
+/** Per-pill totals over the whole filtered set (not just the current page), computed on the server. `nilai` = grandTotal sum, or remaining sisa for "dp". */
+export type InvoiceStats = Record<FilterKey, { count: number; nilai: number }>;
+
+const PAGE_LINK_CLS = "rounded-lg border border-line px-3 py-1.5 font-sans text-[0.78rem] font-bold text-ink no-underline hover:bg-black/5";
+const PAGE_LINK_OFF_CLS = "rounded-lg border border-line px-3 py-1.5 font-sans text-[0.78rem] font-bold text-muted opacity-50";
 
 /**
  * Invoice list: one flat list filtered through a pill toggle (not stacked sections). Every row has a "Preview" button opening a drawer with the real invoice
  * document (InvoiceDocument.tsx, shared with /invoice/[id]). The one-line summary is display only and tracks the active pill. Rows use fixed columns with a
  * chevron detail and, under "Semua", are grouped "Perlu tindakan"/"Selesai" (docs/SDD/mockups/invoice-list-v1.html).
+ * Status pill + page are URL params (?status=&page=): app/invoice/page.tsx loads one page of rows and the totals; `rows` here is only the current page.
  */
-export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
-  const [filter, setFilter] = useState<FilterKey>("semua");
+export default function InvoiceListClient({
+  rows,
+  filter,
+  stats,
+  selesaiCount,
+  page,
+  totalPages,
+  query,
+}: {
+  rows: InvoiceRow[];
+  filter: FilterKey;
+  stats: InvoiceStats;
+  /** Paid-and-shipped invoices across the whole filtered set ("Selesai" group size). */
+  selesaiCount: number;
+  page: number;
+  totalPages: number;
+  /** The other active URL filters, carried into every pill/page link. */
+  query: { search?: string; bulan?: string | string[]; tahun?: string | string[]; sales?: string };
+}) {
   const [previewId, setPreviewId] = useState<string | null>(null);
   // Which row's detail (sales / item / kurir / Ubah / Hapus) is open — one at a time.
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -188,22 +211,23 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
     }
   }
 
-  const unpaidCount = rows.filter((r) => r.status === "unpaid").length;
-  const dpCount = rows.filter((r) => r.status === "dp").length;
-  const draftCount = rows.filter((r) => r.status === "draft").length;
-  const paidCount = rows.filter((r) => r.status === "paid").length;
+  function hrefFor(status: FilterKey, toPage: number) {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) if (typeof v === "string" && v) params.set(k, v);
+    if (status !== "semua") params.set("status", status);
+    if (toPage > 1) params.set("page", String(toPage));
+    const qs = params.toString();
+    return qs ? `/invoice?${qs}` : "/invoice";
+  }
 
-  const filtered = filter === "semua" ? rows : rows.filter((r) => r.status === filter);
+  const filtered = rows;
   const previewRow = rows.find((r) => r.id === previewId) ?? null;
   const printResult = useInvoicePrintData(previewId);
   const printData = printResult?.data;
 
   // "Total Nilai Invoice" shifts meaning with the active pill so it never mixes piutang with lunas: "Sudah DP" sums the remaining sisa tagihan; every other
-  // filter (incl. "Semua") sums grandTotal.
-  const totalNilaiInvoice =
-    filter === "dp"
-      ? filtered.reduce((s, r) => s + (r.sisaTagihan ?? r.grandTotal), 0)
-      : filtered.reduce((s, r) => s + r.grandTotal, 0);
+  // filter (incl. "Semua") sums grandTotal. Computed over the whole filtered set on the server, not just this page.
+  const totalNilaiInvoice = stats[filter].nilai;
 
   // Needs action = not paid yet, or paid but not shipped yet. Grouping applies only under "Semua".
   const needsAction = filtered.filter((r) => r.status !== "paid" || !r.dikirim);
@@ -357,7 +381,7 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
       {/* One-line summary; display only, tracks whichever status pill is active. */}
       <div className="mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 tabular-nums">
         <span className="font-sans text-[0.8rem] text-muted">
-          <b className="mr-1 text-[1.2rem] font-extrabold tracking-tight text-ink">{filtered.length}</b>invoice
+          <b className="mr-1 text-[1.2rem] font-extrabold tracking-tight text-ink">{stats[filter].count}</b>invoice
         </span>
         <span className="font-sans text-[0.8rem] text-muted">
           <b className="mr-1 text-[1.2rem] font-extrabold tracking-tight text-ink">{rupiah(totalNilaiInvoice)}</b>
@@ -369,23 +393,22 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
         <div className="flex flex-wrap gap-1.5">
           {(
             [
-              ["semua", "Semua", rows.length],
-              ["unpaid", "Belum Dibayar", unpaidCount],
-              ["dp", "Sudah DP", dpCount],
-              ["draft", "Draft", draftCount],
-              ["paid", "Sudah Lunas", paidCount],
-            ] as [FilterKey, string, number][]
-          ).map(([key, label, count]) => (
-            <button
+              ["semua", "Semua"],
+              ["unpaid", "Belum Dibayar"],
+              ["dp", "Sudah DP"],
+              ["draft", "Draft"],
+              ["paid", "Sudah Lunas"],
+            ] as [FilterKey, string][]
+          ).map(([key, label]) => (
+            <Link
               key={key}
-              type="button"
-              onClick={() => setFilter(key)}
-              className={`cursor-pointer rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[0.72rem] font-bold ${
+              href={hrefFor(key, 1)}
+              className={`rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[0.72rem] font-bold no-underline ${
                 filter === key ? "border-accent bg-accent text-ink" : "border-line text-ink hover:border-accent-600"
               }`}
             >
-              {label} <span className="opacity-60">({count})</span>
-            </button>
+              {label} <span className="opacity-60">({stats[key].count})</span>
+            </Link>
           ))}
         </div>
       </div>
@@ -394,9 +417,9 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
       <div className="mt-3.5">
         {grouped ? (
           <>
-            {needsAction.length > 0 && <GroupTitle label="Perlu tindakan" count={needsAction.length} highlight />}
+            {needsAction.length > 0 && <GroupTitle label="Perlu tindakan" count={stats.semua.count - selesaiCount} highlight />}
             {needsAction.map(renderRow)}
-            {done.length > 0 && <GroupTitle label="Selesai" count={done.length} />}
+            {done.length > 0 && <GroupTitle label="Selesai" count={selesaiCount} />}
             {done.map(renderRow)}
           </>
         ) : (
@@ -408,6 +431,28 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
           </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <nav aria-label="Halaman" className="mt-4 flex items-center justify-between gap-3">
+          {page > 1 ? (
+            <Link href={hrefFor(filter, page - 1)} className={PAGE_LINK_CLS}>
+              ← Sebelumnya
+            </Link>
+          ) : (
+            <span className={PAGE_LINK_OFF_CLS}>← Sebelumnya</span>
+          )}
+          <span className="font-mono text-[0.75rem] text-muted">
+            Halaman {page} dari {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Link href={hrefFor(filter, page + 1)} className={PAGE_LINK_CLS}>
+              Berikutnya →
+            </Link>
+          ) : (
+            <span className={PAGE_LINK_OFF_CLS}>Berikutnya →</span>
+          )}
+        </nav>
+      )}
 
       {previewRow && (
         <div className="no-print fixed inset-0 z-50 flex justify-end bg-black/50" onClick={() => setPreviewId(null)}>
