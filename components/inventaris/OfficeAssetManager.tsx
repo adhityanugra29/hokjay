@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select, Textarea } from "@/components/ui/Form";
@@ -53,6 +54,7 @@ const BLANK = {
  * always matches without an extra round trip.
  */
 export default function OfficeAssetManager({ prefillFromBill }: { prefillFromBill?: { _id: string; nomor: string; namaBarang: string; qty: number; totalTagihan: number } }) {
+  const router = useRouter();
   const { confirm } = useDialog();
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,6 +96,7 @@ export default function OfficeAssetManager({ prefillFromBill }: { prefillFromBil
           sumberBill: prefillFromBill?._id,
         }),
       });
+      if (res.ok) router.refresh();
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal menambah aset");
@@ -136,6 +139,7 @@ export default function OfficeAssetManager({ prefillFromBill }: { prefillFromBil
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...editValues, hargaPerolehan: editValues.hargaPerolehan || "" }),
       });
+      if (res.ok) router.refresh();
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal memperbarui aset");
@@ -152,6 +156,7 @@ export default function OfficeAssetManager({ prefillFromBill }: { prefillFromBil
   async function removeAsset(id: string) {
     setAssets((prev) => prev.filter((a) => a._id !== id));
     await fetch(`/api/office-assets/${id}`, { method: "DELETE" });
+    router.refresh();
   }
 
   async function hapusBuku(a: AssetRow) {
@@ -159,6 +164,7 @@ export default function OfficeAssetManager({ prefillFromBill }: { prefillFromBil
     if (!ok) return;
     setAssets((prev) => prev.map((x) => (x._id === a._id ? { ...x, dihapusBuku: true } : x)));
     await fetch(`/api/office-assets/${a._id}/hapus-buku`, { method: "POST" });
+    router.refresh();
   }
 
   const rowsWithNilaiBuku = useMemo(

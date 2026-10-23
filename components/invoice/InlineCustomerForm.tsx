@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/Form";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
@@ -32,6 +33,7 @@ export default function InlineCustomerForm({
   onCreated: (customer: CreatedCustomer) => void;
   onCancel: () => void;
 }) {
+  const router = useRouter();
   const [values, setValues] = useState({
     nama: "",
     namaToko: "",
@@ -71,6 +73,7 @@ export default function InlineCustomerForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      if (res.ok) router.refresh();
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal menyimpan pelanggan");

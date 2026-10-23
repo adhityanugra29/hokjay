@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/Form";
 import { Avatar, PaySwitch, chipCls } from "@/components/payroll/ui";
@@ -29,6 +30,7 @@ const ghostBtnCls =
  * straight away, as before). No month stepper here — a roster has no period.
  */
 export default function KaryawanManager() {
+  const router = useRouter();
   const [karyawan, setKaryawan] = useState<KaryawanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -62,6 +64,7 @@ export default function KaryawanManager() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...values, gajiHarian: Number(values.gajiHarian) }),
       });
+      if (res.ok) router.refresh();
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
         throw new Error(b.error || "Gagal menambah karyawan");
@@ -83,6 +86,7 @@ export default function KaryawanManager() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ aktif }),
     });
+    router.refresh();
   }
 
   function startEdit(k: KaryawanRow) {
@@ -99,6 +103,7 @@ export default function KaryawanManager() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...editValues, gajiHarian: Number(editValues.gajiHarian) }),
     });
+    router.refresh();
     setEditingId(null);
     setEditSaving(false);
     load();
@@ -107,6 +112,7 @@ export default function KaryawanManager() {
   async function removeKaryawan(id: string) {
     setKaryawan((prev) => prev.filter((k) => k._id !== id));
     await fetch(`/api/karyawan/${id}`, { method: "DELETE" });
+    router.refresh();
   }
 
   const aktifCount = karyawan.filter((k) => k.aktif).length;

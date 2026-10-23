@@ -1,11 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input } from "@/components/ui/Form";
 import { Button } from "@/components/ui/Button";
 
 export default function PengaturanKeuangan() {
+  const router = useRouter();
   const [kasAwal, setKasAwal] = useState("");
   const [kasAwalTanggal, setKasAwalTanggal] = useState(() => new Date().toISOString().slice(0, 10));
   const [loaded, setLoaded] = useState(false);
@@ -34,6 +36,7 @@ export default function PengaturanKeuangan() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kasAwal: Number(kasAwal), kasAwalTanggal }),
       });
+      if (res.ok) router.refresh();
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal menyimpan pengaturan");

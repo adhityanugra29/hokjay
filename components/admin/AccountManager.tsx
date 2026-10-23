@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select } from "@/components/ui/Form";
@@ -17,6 +18,7 @@ interface AccountRow {
 }
 
 export default function AccountManager() {
+  const router = useRouter();
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -49,6 +51,7 @@ export default function AccountManager() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
+      if (res.ok) router.refresh();
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal membuat akun");
@@ -70,6 +73,7 @@ export default function AccountManager() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ aktif }),
     });
+    router.refresh();
   }
 
   async function changeRole(id: string, role: UserRole) {
@@ -79,11 +83,13 @@ export default function AccountManager() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role }),
     });
+    router.refresh();
   }
 
   async function removeAccount(id: string) {
     setAccounts((prev) => prev.filter((a) => a._id !== id));
     await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+    router.refresh();
   }
 
   function startEdit(a: AccountRow) {
@@ -107,6 +113,7 @@ export default function AccountManager() {
           password: editValues.password || undefined,
         }),
       });
+      if (res.ok) router.refresh();
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal memperbarui akun");

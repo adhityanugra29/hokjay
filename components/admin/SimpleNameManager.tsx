@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { Input } from "@/components/ui/Form";
@@ -30,6 +31,7 @@ export default function SimpleNameManager({
   /** Nama dicocokkan persis di tempat lain (mis. metode "Tunai" → akun kas) — jangan dikapitalkan. */
   noUppercase?: boolean;
 }) {
+  const router = useRouter();
   const [rows, setRows] = useState<NameRow[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -56,6 +58,7 @@ export default function SimpleNameManager({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     });
+    if (res.ok) router.refresh();
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       setError(body.error || errorText);
@@ -69,6 +72,7 @@ export default function SimpleNameManager({
   async function remove(id: string) {
     setRows((prev) => prev.filter((r) => r._id !== id));
     await fetch(`${endpoint}/${id}`, { method: "DELETE" });
+    router.refresh();
   }
 
   return (
