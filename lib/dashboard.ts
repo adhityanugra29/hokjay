@@ -164,11 +164,13 @@ async function loadFollowUpInvoices(session?: SessionPayload | null): Promise<Fo
   const invoices = await Invoice.find({
     status: { $in: ["unpaid", "draft"] },
     ...invoiceVisibilityFilter(session),
-  }).sort({ createdAt: 1 });
+  })
+    .sort({ createdAt: 1 })
+    .lean(); // plain objects: every field below is read explicitly with a fallback, no Mongoose document needed
 
   return invoices.map((inv) => {
-    const komisiPotensial = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
-    const baseDate = inv.status === "draft" ? inv.get("createdAt") : (inv.tanggalInvoice ?? inv.get("createdAt"));
+    const komisiPotensial = (inv.items ?? []).reduce((s, i) => s + i.komisiSubtotal, 0);
+    const baseDate = inv.status === "draft" ? inv.createdAt! : (inv.tanggalInvoice ?? inv.createdAt!);
     const hariBerjalan = Math.max(0, Math.floor((Date.now() - new Date(baseDate).getTime()) / 86_400_000));
     return {
       invoiceId: String(inv._id),
@@ -237,12 +239,12 @@ export async function getShippingPriorityInvoices(session?: SessionPayload | nul
         { tanggalKirim: null },
         { tanggalKirim: { $gte: new Date(Date.now() - SHIPPING_PAID_LOOKBACK_DAYS * 86_400_000) } },
       ],
-    }),
+    }).lean(),
   ]);
 
   const paidRows: ShippingRow[] = paidInvoices.map((inv) => {
-    const komisiPotensial = inv.items.reduce((s, i) => s + i.komisiSubtotal, 0);
-    const baseDate = inv.tanggalInvoice ?? inv.get("createdAt");
+    const komisiPotensial = (inv.items ?? []).reduce((s, i) => s + i.komisiSubtotal, 0);
+    const baseDate = inv.tanggalInvoice ?? inv.createdAt!;
     const hariBerjalan = Math.max(0, Math.floor((Date.now() - new Date(baseDate).getTime()) / 86_400_000));
     return {
       invoiceId: String(inv._id),
