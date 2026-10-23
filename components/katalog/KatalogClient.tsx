@@ -10,6 +10,7 @@ import KatalogFilterSidebar, {
 } from "./KatalogFilterSidebar";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 import { useLoadingOverlay } from "@/components/ui/LoadingOverlay";
+import { toUpperInPlace } from "@/components/ui/Form";
 import { useDialog } from "@/components/ui/Dialog";
 import PageHeader from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -284,7 +285,10 @@ export default function KatalogClient({
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            toUpperInPlace(e.currentTarget);
+            setSearch(e.target.value);
+          }}
           placeholder="Cari nama produk atau kode SKU..."
           className="min-w-[180px] flex-1 rounded-lg border border-line bg-panel px-3.5 py-2.5 font-sans text-[0.85rem]"
         />

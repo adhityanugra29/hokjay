@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CurrencyInput, Input, inputCls } from "@/components/ui/Form";
+import { CurrencyInput, Input, inputCls, toUpperInPlace } from "@/components/ui/Form";
 import { useCatalogSelection } from "./CatalogSelectionProvider";
 
 export type KondisiFilter = "" | "baru" | "bekas";
@@ -116,7 +116,10 @@ function CategoryMultiSelect({
               type="text"
               autoComplete="off"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                toUpperInPlace(e.currentTarget);
+                setQuery(e.target.value);
+              }}
               placeholder="Cari kategori..."
               className={inputCls}
             />
