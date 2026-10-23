@@ -23,7 +23,7 @@ export function buildJasaLine(
     isCustom: false,
     isJasa: true,
     jasa: jasa._id,
-    namaSnapshot: jasa.nama,
+    namaSnapshot: jasa.nama.toUpperCase(),
     qty: 1,
     hargaJual: input.hargaJual,
     hargaMinimumSnapshot: 0,
