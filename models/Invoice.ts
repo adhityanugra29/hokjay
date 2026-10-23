@@ -160,6 +160,15 @@ const InvoiceSchema = new Schema(
 // the compound covers the common "status X, sorted by tanggal" shape.
 InvoiceSchema.index({ status: 1 });
 InvoiceSchema.index({ status: 1, tanggalInvoice: 1 });
+// Page-load indexes (additive, no behavior change): newest-first list (/invoice), per-sales visibility filter, paid-by-date feeds (Insentif, Aktivitas,
+// Beranda), komisi payout lookups, the shipped/not-shipped views, a customer's invoices (Pelanggan), and the Bulan/Tahun period filter.
+InvoiceSchema.index({ createdAt: -1 });
+InvoiceSchema.index({ "sales.nama": 1, status: 1 });
+InvoiceSchema.index({ status: 1, "payment.tanggalBayar": -1 });
+InvoiceSchema.index({ komisiCair: 1, komisiCairTanggal: -1 });
+InvoiceSchema.index({ dikirim: 1, tanggalDikirimAktual: -1 });
+InvoiceSchema.index({ "customer.ref": 1 });
+InvoiceSchema.index({ tanggalInvoice: 1 });
 
 export type InvoiceDoc = InferSchemaType<typeof InvoiceSchema> & { _id: Types.ObjectId };
 
