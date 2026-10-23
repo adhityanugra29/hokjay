@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { Types } from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
@@ -34,7 +35,7 @@ export interface ProductInvoiceStatus {
  * finalized under the pre-2026-08-27 rule (stock decremented at "unpaid" time).
  * `excludeInvoiceId`: the invoice being edited ("Tambah Produk" sidebar), so its own qty doesn't count against itself.
  */
-export async function getProductInvoiceStatusMap(excludeInvoiceId?: string): Promise<Map<string, ProductInvoiceStatus>> {
+async function loadProductInvoiceStatusMap(excludeInvoiceId?: string): Promise<Map<string, ProductInvoiceStatus>> {
   await dbConnect();
 
   const unpaidFilter: Record<string, unknown> = { status: "unpaid" };
@@ -82,11 +83,14 @@ export async function getProductInvoiceStatusMap(excludeInvoiceId?: string): Pro
   return map;
 }
 
+/** Per-request memo: the page, queryKatalogProducts and queryNewStockProducts all need it; computed once per render. Treat the result as read-only. */
+export const getProductInvoiceStatusMap = cache(loadProductInvoiceStatusMap);
+
 /**
  * Category name -> its Owner-set default bekas commission rate (%), only for categories that set one. Feed the value (or undefined) into
  * resolveKomisiBekasPercent() with the product's own override. One query for all categories, since callers list many products at once.
  */
-export async function getKategoriKomisiBekasMap(): Promise<Map<string, number>> {
+async function loadKategoriKomisiBekasMap(): Promise<Map<string, number>> {
   await dbConnect();
   const categories = await Category.find(
     { komisiBekasPercent: { $exists: true, $ne: null } },
@@ -95,11 +99,14 @@ export async function getKategoriKomisiBekasMap(): Promise<Map<string, number>> 
   return new Map(categories.map((c) => [c.name, c.komisiBekasPercent as number]));
 }
 
+/** Per-request memo (read-only result). */
+export const getKategoriKomisiBekasMap = cache(loadKategoriKomisiBekasMap);
+
 /**
  * IDs of "Produk Baru": added within the last PRODUK_BARU_DAYS days and never sold (any StockMovement with alasan "Penjualan"). Same rule as
  * the Inventory nav badge (app/layout.tsx, app/menu/page.tsx); shared so the Katalog filter can't drift from it.
  */
-export async function getProdukBaruIds(): Promise<Set<string>> {
+async function loadProdukBaruIds(): Promise<Set<string>> {
   await dbConnect();
   const since = new Date(Date.now() - PRODUK_BARU_DAYS * 24 * 60 * 60 * 1000);
   const [products, soldProductIds] = await Promise.all([
@@ -110,13 +117,19 @@ export async function getProdukBaruIds(): Promise<Set<string>> {
   return new Set(products.map((p) => String(p._id)).filter((id) => !soldSet.has(id)));
 }
 
+/** Per-request memo (read-only result): the layout badge, /menu and the Katalog queries share one lookup per render. */
+export const getProdukBaruIds = cache(loadProdukBaruIds);
+
 /** IDs of "New Stock": uploaded (createdAt) within NEW_STOCK_DAYS days, sold or not. Custom-order products excluded (they live on /katalog/custom). */
-export async function getNewStockIds(): Promise<Set<string>> {
+async function loadNewStockIds(): Promise<Set<string>> {
   await dbConnect();
   const since = new Date(Date.now() - NEW_STOCK_DAYS * 24 * 60 * 60 * 1000);
   const products = await Product.find({ createdAt: { $gte: since }, isCustom: { $ne: true } }, { _id: 1 }).lean();
   return new Set(products.map((p) => String(p._id)));
 }
+
+/** Per-request memo (read-only result). */
+export const getNewStockIds = cache(loadNewStockIds);
 
 // Server-paginated Katalog query, shared by app/katalog/page.tsx (page 1) and app/api/katalog/route.ts (every later page and filter/search/sort
 // change) so the two can't drift apart.
