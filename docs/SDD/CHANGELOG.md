@@ -8,6 +8,8 @@
 
 ## 2026-10-23
 
+**Pengiriman: tabel desktop muat satu layar** — kolom Pelanggan sempit/menimpa kolom Kota (min-w 1000px kurang dari total kolom tetap). Tab Perlu Dikirim 10→7 kolom (Kota di bawah nama, Ongkir di bawah Kurir, kolom "Tgl Kirim: Belum" dihapus), Sudah Dikirim 9→8 kolom; tanpa scroll horizontal; tabel mulai `xl`, di bawahnya kartu. Preserved: data/API/aksi tidak berubah. Regression: `tsc` bersih.
+
 **Tombol "Tandai Sudah Kirim" dihapus dari modul Invoice** — daftar invoice (baris + panel detail) dan halaman detail invoice tidak lagi menampilkan tombol; pengiriman ditandai hanya lewat `/pengiriman` (juga Beranda/Follow-up). Pil status "Belum dikirim/✓ Dikirim" tetap. Query Courier & prop `couriers` yang tak terpakai dibuang dari `app/invoice/page.tsx`, `app/invoice/[id]/page.tsx`, `InvoiceListClient`. API `/kirim` dan `TandaiKirimButton` tidak diubah. Regression: `tsc` bersih.
 
 **Kapital di invoice & turunannya (lanjutan TASK-047)** — `namaSnapshot` (produk/custom/jasa) di-uppercase server saat simpan (`createInvoice`, `updateInvoice`, `jasaLine`); tampilan invoice/surat jalan/preview (`buildInvoicePrintData`: item, dimensi, pelanggan, alamat kirim, kurir, catatan), PO, label insentif/payroll, serta kategori (katalog sidebar, katalog cetak, daftar produk) di-uppercase saat render sehingga invoice lama ikut kapital tanpa mengubah DB. Preserved: uang/stok/komisi/jurnal, nama Sales/User, S&K. Regression: `tsc` bersih.
