@@ -16,10 +16,12 @@ export const dynamic = "force-dynamic";
  */
 export default async function PengirimanPage() {
   const session = await getSession();
-  const { todo, sent } = await getPengirimanData(session);
-
   await dbConnect();
-  const couriers = (await Courier.find().sort({ name: 1 }).lean()).map((c) => ({ _id: String(c._id), name: c.name }));
+  const [{ todo, sent }, courierDocs] = await Promise.all([
+    getPengirimanData(session),
+    Courier.find().sort({ name: 1 }).lean(),
+  ]);
+  const couriers = courierDocs.map((c) => ({ _id: String(c._id), name: c.name }));
 
   return (
     <>

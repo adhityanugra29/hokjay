@@ -8,6 +8,8 @@
 
 ## 2026-10-23
 
+**Refactor Fase 1a/1b (performa)** — `/pengiriman`: `getPengirimanData` + `Courier.find` kini paralel (`Promise.all`). `/pelanggan/[id]`: query pelanggan + invoice paralel dan invoice memakai `.lean()` (hanya field primitif dibaca); cek akses sales + `notFound()` tetap sama. Audit bundle: chunk besar (html2canvas/jsPDF/canvg/core-js, ±1,7 MB) tidak ada di entry halaman mana pun (dynamic import sudah benar), jadi tidak ada yang diubah; `app/loading.tsx` root sudah mencakup semua halaman. Preserved: hak akses, data tampil. Regression: `tsc` bersih, `next build` sukses, eslint bersih di 2 file.
+
 **S&K di PDF invoice/surat jalan: nomor sejajar dengan teks** — penanda `list-decimal` dirender html2canvas naik seperti pangkat; diganti nomor teks biasa di kolom kiri (`InvoicePrintDoc.tsx`). Preserved: isi S&K, pengukuran tinggi, tampilan layar. Regression: belum dicek visual di PDF.
 
 **Pengiriman: tabel desktop muat satu layar** — kolom Pelanggan sempit/menimpa kolom Kota (min-w 1000px kurang dari total kolom tetap). Tab Perlu Dikirim 10→7 kolom (Kota di bawah nama, Ongkir di bawah Kurir, kolom "Tgl Kirim: Belum" dihapus), Sudah Dikirim 9→8 kolom; tanpa scroll horizontal; tabel mulai `xl`, di bawahnya kartu. Preserved: data/API/aksi tidak berubah. Regression: `tsc` bersih.

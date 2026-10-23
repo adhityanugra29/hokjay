@@ -42,7 +42,17 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
       : "semua";
   await dbConnect();
 
-  const customer = await Customer.findById(id).lean();
+  const session = await getSession();
+  // Per-sales invoice privacy (2026-08-29) — belt-and-suspenders now that
+  // a sales rep can only reach their own customer anyway: still only shows
+  // invoices this rep themselves made for that customer. Fetched in parallel
+  // with the customer; discarded below if the customer check fails.
+  const [customer, allInvoices] = await Promise.all([
+    Customer.findById(id).lean(),
+    Invoice.find({ "customer.ref": id, ...invoiceVisibilityFilter(session) })
+      .sort(hasSort ? mongoSort(field, dir) : { createdAt: -1 })
+      .lean(),
+  ]);
   if (!customer) notFound();
 
   // Per-sales customer privacy (2026-08-27, tightened 2026-08-30) — a plain
@@ -51,17 +61,10 @@ export default async function PelangganHistoryPage({ params, searchParams }: Pag
   // (assignedSales unset) is now blocked too, matching lib/pelanggan.ts's
   // customerVisibilityFilter. Manager/Admin/Owner/Super Admin are
   // unrestricted, same as the list page.
-  const session = await getSession();
   if (session?.role === "sales" && customer.assignedSales !== session.nama) {
     notFound();
   }
 
-  // Per-sales invoice privacy (2026-08-29) — belt-and-suspenders now that
-  // a sales rep can only reach their own customer anyway: still only shows
-  // invoices this rep themselves made for that customer.
-  const allInvoices = await Invoice.find({ "customer.ref": id, ...invoiceVisibilityFilter(session) }).sort(
-    hasSort ? mongoSort(field, dir) : { createdAt: -1 }
-  );
   const totalBelanja = allInvoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.grandTotal, 0);
   const invoices =
     statusFilter === "semua" ? allInvoices : allInvoices.filter((i) => (i.status ?? "draft") === statusFilter);
