@@ -4,6 +4,8 @@ import Pill, { type PillVariant } from "@/components/ui/Pill";
 import { dbConnect } from "@/lib/db";
 import { PurchaseRequest } from "@/models/PurchaseRequest";
 import { formatDateShort } from "@/lib/format";
+import Pagination from "@/components/ui/Pagination";
+import { parsePage, clampPageOrRedirect } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +16,15 @@ const STATUS_LABEL: Record<string, { label: string; variant: PillVariant }> = {
   dibatalkan: { label: "Dibatalkan", variant: "out" },
 };
 
-export default async function PurchasingRequestPage() {
+export default async function PurchasingRequestPage({ searchParams }: PageProps<"/purchasing/produk-po">) {
+  const sp = await searchParams;
+  const { page, pageSize, skip } = parsePage(sp);
   await dbConnect();
-  const requests = await PurchaseRequest.find().sort({ createdAt: -1 }).lean();
+  const [requests, total] = await Promise.all([
+    PurchaseRequest.find().sort({ createdAt: -1, _id: -1 }).skip(skip).limit(pageSize).lean(),
+    PurchaseRequest.countDocuments(),
+  ]);
+  clampPageOrRedirect("/purchasing/produk-po", sp, page, total, pageSize);
 
   return (
     <Panel>
@@ -94,6 +102,7 @@ export default async function PurchasingRequestPage() {
           </tbody>
         </table>
       </TableScroll>
+      <Pagination basePath="/purchasing/produk-po" searchParams={sp} page={page} pageSize={pageSize} total={total} />
     </Panel>
   );
 }

@@ -7,6 +7,8 @@ import { StockMovement } from "@/models/StockMovement";
 import { Product } from "@/models/Product";
 import { formatDateShort } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
+import { parsePage, clampPageOrRedirect } from "@/lib/pagination";
+import Pagination from "@/components/ui/Pagination";
 import { getEffectiveKomisiInfo, KOMISI_SOURCE_LABEL } from "@/lib/commission";
 import { getKategoriKomisiBekasMap } from "@/lib/katalog";
 
@@ -18,57 +20,58 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
   const sp = await searchParams;
   const { search } = sp;
   const { field, dir } = parseSort(sp, SORT_FIELDS, "tanggal");
+  const { page, pageSize, skip } = parsePage(sp);
   await dbConnect();
 
   const filter: Record<string, unknown> = {};
   if (search) filter.productNameSnapshot = { $regex: search, $options: "i" };
 
-  // "% Komisi" isn't a real StockMovement field — resolved per movement
-  // from its product's kondisi/override/category, so it can't go through
-  // mongoSort() like the others. Fetched with the default (tanggal desc)
-  // order, then sorted in-memory below once komisiPercent is computed —
-  // per the user's request 2026-09-19 ("kamu harus berikan button untuk
-  // sort, di setiap header tablenya").
-  const isKomisiSort = field === "komisiPercent";
-  const movementsRaw = await StockMovement.find(filter)
-    .sort(isKomisiSort ? { tanggal: -1 } : mongoSort(field, dir))
-    .limit(200);
+  const kategoriKomisiBekasMap = await getKategoriKomisiBekasMap();
+  const productSelect = "kondisi komisiBekasPercent category";
 
-  // Baru/Bekas label + % Komisi next to Tipe — per the user's requests
-  // 2026-09-19 ("supaya terlihat" / "tambahkan tabel % Komisi"). Both read
-  // live off Product (not snapshotted on StockMovement) since kondisi and
-  // the komisi-bekas override are slow-changing product attributes, same
-  // reasoning as app/invoice/page.tsx's live salesPhoneByNama lookup — the
-  // % shown here is CURRENT, not necessarily what applied at the time of
-  // that movement if the product's commission settings changed since.
-  const productIds = [...new Set(movementsRaw.map((m) => String(m.product)))];
-  const [products, kategoriKomisiBekasMap] = await Promise.all([
-    Product.find({ _id: { $in: productIds } }).select("kondisi komisiBekasPercent category").lean(),
-    getKategoriKomisiBekasMap(),
-  ]);
-  const productById = new Map(products.map((p) => [String(p._id), p]));
+  // "% Komisi" isn't a real StockMovement field: it is resolved per movement from its product's kondisi/override/category, so it can't go through
+  // mongoSort() like the other columns. For that one sort, order the WHOLE filtered history by it using only (_id, product) pairs, then load the full
+  // rows of just the current page. Every other sort is a plain indexed skip/limit query.
+  let movements;
+  let total: number;
+  if (field === "komisiPercent") {
+    const slim = await StockMovement.find(filter).select("product").sort({ tanggal: -1, _id: -1 }).lean();
+    total = slim.length;
+    const everyProduct = await Product.find({ _id: { $in: [...new Set(slim.map((m) => String(m.product)))] } })
+      .select(productSelect)
+      .lean();
+    const percentByProduct = new Map(
+      everyProduct.map((p) => [
+        String(p._id),
+        getEffectiveKomisiInfo(p.kondisi as "baru" | "bekas" | undefined, p.komisiBekasPercent, kategoriKomisiBekasMap.get(p.category)).percent,
+      ])
+    );
+    // No matching product = -1, which sorts to the bottom (ascending) either way, as before.
+    const sign = dir === "asc" ? 1 : -1;
+    const ordered = [...slim].sort(
+      (a, b) => sign * ((percentByProduct.get(String(a.product)) ?? -1) - (percentByProduct.get(String(b.product)) ?? -1))
+    );
+    const pageIds = ordered.slice(skip, skip + pageSize).map((m) => m._id);
+    const docs = await StockMovement.find({ _id: { $in: pageIds } });
+    const byId = new Map(docs.map((d) => [String(d._id), d]));
+    movements = pageIds.map((id) => byId.get(String(id))).filter((d): d is NonNullable<typeof d> => !!d);
+  } else {
+    const sortStage = { ...mongoSort(field, dir), _id: dir === "asc" ? (1 as const) : (-1 as const) }; // _id keeps page boundaries stable
+    const [rows, count] = await Promise.all([
+      StockMovement.find(filter).sort(sortStage).skip(skip).limit(pageSize),
+      StockMovement.countDocuments(filter),
+    ]);
+    movements = rows;
+    total = count;
+  }
+  clampPageOrRedirect("/produk/riwayat", sp, page, total, pageSize);
 
-  const komisiPercentByMovementId = new Map(
-    movementsRaw.map((m) => {
-      const product = productById.get(String(m.product));
-      const percent = product
-        ? getEffectiveKomisiInfo(
-            product.kondisi as "baru" | "bekas" | undefined,
-            product.komisiBekasPercent,
-            kategoriKomisiBekasMap.get(product.category)
-          ).percent
-        : -1; // no matching product — sorts to the bottom (ascending) either way
-      return [String(m._id), percent];
-    })
-  );
-
-  const movements = isKomisiSort
-    ? [...movementsRaw].sort((a, b) => {
-        const av = komisiPercentByMovementId.get(String(a._id))!;
-        const bv = komisiPercentByMovementId.get(String(b._id))!;
-        return dir === "asc" ? av - bv : bv - av;
-      })
-    : movementsRaw;
+  // Baru/Bekas label + % Komisi next to Tipe read live off Product (not snapshotted on StockMovement): kondisi and the komisi-bekas override are
+  // slow-changing product attributes, so the % shown is CURRENT, not necessarily what applied when that movement happened.
+  const pageProducts = await Product.find({ _id: { $in: [...new Set(movements.map((m) => String(m.product)))] } })
+    .select(productSelect)
+    .lean();
+  const productById = new Map(pageProducts.map((p) => [String(p._id), p]));
 
   const basePath = "/produk/riwayat";
   const headers: { label: string; key: (typeof SORT_FIELDS)[number]; align?: "right"; className?: string }[] = [
@@ -176,6 +179,7 @@ export default async function ProdukRiwayatPage({ searchParams }: PageProps<"/pr
           </tbody>
         </table>
       </TableScroll>
+      <Pagination basePath={basePath} searchParams={sp} page={page} pageSize={pageSize} total={total} />
     </Panel>
   );
 }

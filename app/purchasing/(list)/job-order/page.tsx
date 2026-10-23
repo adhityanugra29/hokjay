@@ -4,6 +4,8 @@ import Pill, { type PillVariant } from "@/components/ui/Pill";
 import { dbConnect } from "@/lib/db";
 import { OfficeExpenseRequest } from "@/models/OfficeExpenseRequest";
 import { rupiah, formatDateShort } from "@/lib/format";
+import Pagination from "@/components/ui/Pagination";
+import { parsePage, clampPageOrRedirect } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -23,9 +25,15 @@ const KATEGORI_LABEL: Record<string, string> = {
 };
 
 /** Job Order (renamed from "Kebutuhan Kantor" 2026-08-23) — office operational expenses (listrik, wifi, pulsa, dll), not resale merchandise. See models/OfficeExpenseRequest.ts. */
-export default async function PurchasingJobOrderPage() {
+export default async function PurchasingJobOrderPage({ searchParams }: PageProps<"/purchasing/job-order">) {
+  const sp = await searchParams;
+  const { page, pageSize, skip } = parsePage(sp);
   await dbConnect();
-  const requests = await OfficeExpenseRequest.find().sort({ createdAt: -1 }).lean();
+  const [requests, total] = await Promise.all([
+    OfficeExpenseRequest.find().sort({ createdAt: -1, _id: -1 }).skip(skip).limit(pageSize).lean(),
+    OfficeExpenseRequest.countDocuments(),
+  ]);
+  clampPageOrRedirect("/purchasing/job-order", sp, page, total, pageSize);
 
   return (
     <Panel>
@@ -97,6 +105,7 @@ export default async function PurchasingJobOrderPage() {
           </tbody>
         </table>
       </TableScroll>
+      <Pagination basePath="/purchasing/job-order" searchParams={sp} page={page} pageSize={pageSize} total={total} />
     </Panel>
   );
 }

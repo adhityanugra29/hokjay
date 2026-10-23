@@ -48,6 +48,7 @@ export default function InvoiceFilterBar({
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, String(value));
     else params.delete(key);
+    params.delete("page");
     startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
@@ -56,6 +57,7 @@ export default function InvoiceFilterBar({
     params.delete("bulan");
     params.delete("tahun");
     params.delete("sales");
+    params.delete("page");
     startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 

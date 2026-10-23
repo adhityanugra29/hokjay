@@ -26,6 +26,7 @@ export default function PelangganKotaFilter({
     const params = new URLSearchParams(searchParams.toString());
     if (nextKota) params.set("kota", nextKota);
     else params.delete("kota");
+    params.delete("page");
     startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
