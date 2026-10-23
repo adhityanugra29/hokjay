@@ -109,10 +109,13 @@ export const getKategoriKomisiBekasMap = cache(loadKategoriKomisiBekasMap);
 async function loadProdukBaruIds(): Promise<Set<string>> {
   await dbConnect();
   const since = new Date(Date.now() - PRODUK_BARU_DAYS * 24 * 60 * 60 * 1000);
-  const [products, soldProductIds] = await Promise.all([
-    Product.find({ createdAt: { $gte: since }, isCustom: { $ne: true } }, { _id: 1 }).lean(),
-    StockMovement.distinct("product", { alasan: "Penjualan" }),
-  ]);
+  const products = await Product.find({ createdAt: { $gte: since }, isCustom: { $ne: true } }, { _id: 1 }).lean();
+  if (products.length === 0) return new Set();
+  // Look up sales only for these few recent products (not the whole movement history); {alasan, product} is indexed.
+  const soldProductIds = await StockMovement.distinct("product", {
+    alasan: "Penjualan",
+    product: { $in: products.map((p) => p._id) },
+  });
   const soldSet = new Set(soldProductIds.map((id) => String(id)));
   return new Set(products.map((p) => String(p._id)).filter((id) => !soldSet.has(id)));
 }
