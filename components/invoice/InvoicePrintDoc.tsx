@@ -232,13 +232,15 @@ export default function InvoicePrintDoc({
         <div className="mb-2.5 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">
           Syarat &amp; Ketentuan
         </div>
-        <ol className="list-decimal space-y-1.5 pl-4 text-justify font-mono text-[0.68rem] leading-[1.9] text-muted">
+        {/* Nomor sebagai teks biasa, bukan list-decimal: html2canvas merender penanda <ol> naik/tidak sejajar dengan teks. */}
+        <div className="space-y-1.5 font-mono text-[0.68rem] leading-[1.9] text-muted">
           {syaratKetentuanPoints.map((point, i) => (
-            <li key={i} className="pl-0.5">
-              {point}
-            </li>
+            <div key={i} className="flex gap-2">
+              <span className="w-4 shrink-0 text-right tabular-nums">{i + 1}.</span>
+              <span className="min-w-0 flex-1 text-justify">{point}</span>
+            </div>
           ))}
-        </ol>
+        </div>
       </div>
     ) : null;
 

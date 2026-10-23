@@ -8,6 +8,8 @@
 
 ## 2026-10-23
 
+**S&K di PDF invoice/surat jalan: nomor sejajar dengan teks** — penanda `list-decimal` dirender html2canvas naik seperti pangkat; diganti nomor teks biasa di kolom kiri (`InvoicePrintDoc.tsx`). Preserved: isi S&K, pengukuran tinggi, tampilan layar. Regression: belum dicek visual di PDF.
+
 **Pengiriman: tabel desktop muat satu layar** — kolom Pelanggan sempit/menimpa kolom Kota (min-w 1000px kurang dari total kolom tetap). Tab Perlu Dikirim 10→7 kolom (Kota di bawah nama, Ongkir di bawah Kurir, kolom "Tgl Kirim: Belum" dihapus), Sudah Dikirim 9→8 kolom; tanpa scroll horizontal; tabel mulai `xl`, di bawahnya kartu. Preserved: data/API/aksi tidak berubah. Regression: `tsc` bersih.
 
 **Tombol "Tandai Sudah Kirim" dihapus dari modul Invoice** — daftar invoice (baris + panel detail) dan halaman detail invoice tidak lagi menampilkan tombol; pengiriman ditandai hanya lewat `/pengiriman` (juga Beranda/Follow-up). Pil status "Belum dikirim/✓ Dikirim" tetap. Query Courier & prop `couriers` yang tak terpakai dibuang dari `app/invoice/page.tsx`, `app/invoice/[id]/page.tsx`, `InvoiceListClient`. API `/kirim` dan `TandaiKirimButton` tidak diubah. Regression: `tsc` bersih.
