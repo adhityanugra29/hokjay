@@ -35,9 +35,8 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
   // URL working for bookmarks and any lingering link.
   if (sp.view === "kirim") redirect("/pengiriman");
 
-  const rows = await getFollowUpInvoices(session);
+  const [rows, couriers] = await Promise.all([getFollowUpInvoices(session), getCouriers()]);
   const bySales = summarizeFollowUpBySales(rows);
-  const couriers = await getCouriers();
 
   const totalNilai = rows.reduce((s, r) => s + r.sisaTagihan, 0);
   const totalKomisi = rows.reduce((s, r) => s + r.komisiPotensial, 0);

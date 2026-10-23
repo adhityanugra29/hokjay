@@ -76,31 +76,28 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   // than helpful). $month/$year in Asia/Jakarta so a late-night invoice
   // never gets bucketed into the wrong day's month/year versus what
   // jakartaMonthRange/jakartaYearRange filter by above.
-  const periodeAgg = await Invoice.aggregate<{ months: number[]; years: number[] }>([
-    { $match: invoiceVisibilityFilter(session) },
-    {
-      $group: {
-        _id: null,
-        months: { $addToSet: { $month: { date: "$tanggalInvoice", timezone: "Asia/Jakarta" } } },
-        years: { $addToSet: { $year: { date: "$tanggalInvoice", timezone: "Asia/Jakarta" } } },
+  // The four reads are independent, so they run together (one round trip of latency instead of four in a row). Sales options are only
+  // fetched for non-"sales" sessions (see salesFilter above): the roster, not just names on invoices, so a rep with no invoices still shows up.
+  // Couriers feed TandaiKirimButton's Kurir select.
+  const [periodeAgg, salesDocs, invoices, courierDocs] = await Promise.all([
+    Invoice.aggregate<{ months: number[]; years: number[] }>([
+      { $match: invoiceVisibilityFilter(session) },
+      {
+        $group: {
+          _id: null,
+          months: { $addToSet: { $month: { date: "$tanggalInvoice", timezone: "Asia/Jakarta" } } },
+          years: { $addToSet: { $year: { date: "$tanggalInvoice", timezone: "Asia/Jakarta" } } },
+        },
       },
-    },
+    ]),
+    session?.role !== "sales" ? Sales.find({ aktif: true }).sort({ nama: 1 }).lean() : Promise.resolve([] as { nama: string }[]),
+    Invoice.find(filter).sort({ createdAt: -1 }),
+    Courier.find().sort({ name: 1 }).lean(),
   ]);
   const availableMonths = (periodeAgg[0]?.months ?? []).sort((a, b) => a - b);
   const availableYears = (periodeAgg[0]?.years ?? []).sort((a, b) => b - a);
-
-  // Sales dropdown options — only fetched/shown for non-"sales" sessions
-  // (see salesFilter above); the roster, not just names appearing on
-  // invoices, so a sales rep with zero invoices yet still shows up.
-  const availableSales =
-    session?.role !== "sales"
-      ? (await Sales.find({ aktif: true }).sort({ nama: 1 }).lean()).map((s) => s.nama)
-      : [];
-
-  const invoices = await Invoice.find(filter).sort({ createdAt: -1 });
-
-  // Feeds TandaiKirimButton's Kurir select (see components/invoice/TandaiKirimButton.tsx).
-  const couriers = (await Courier.find().sort({ name: 1 }).lean()).map((c) => ({ _id: String(c._id), name: c.name }));
+  const availableSales = salesDocs.map((s) => s.nama);
+  const couriers = courierDocs.map((c) => ({ _id: String(c._id), name: c.name }));
 
   const rows: InvoiceRow[] = invoices.map((inv) => {
     const tanggal = inv.tanggalInvoice ?? inv.get("createdAt");
