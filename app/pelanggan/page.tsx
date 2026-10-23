@@ -10,6 +10,8 @@ import { getPelangganSummary } from "@/lib/pelanggan";
 import { getSession } from "@/lib/auth/session";
 import { rupiah, rupiahCompact } from "@/lib/format";
 import { parseSort, sortRows, type SortDir } from "@/lib/sort";
+import { paginate } from "@/lib/pagination";
+import Pagination from "@/components/ui/Pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +50,8 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
     if (kota && r.kota !== kota) return false;
     return true;
   });
-  const filteredRows = hasSort ? sortRows(matchedRows, sortField, sortDir) : matchedRows;
+  const sortedRows = hasSort ? sortRows(matchedRows, sortField, sortDir) : matchedRows;
+  const { items: filteredRows, page, totalPages } = paginate(sortedRows, sp.page);
 
   const emptyMessage =
     // Only the true empty-account state gets the "add first customer" nudge
@@ -187,6 +190,7 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
                 <div className="py-10 text-center font-mono text-sm text-muted">{emptyMessage}</div>
               )}
             </div>
+            <Pagination basePath="/pelanggan" searchParams={sp} page={page} totalPages={totalPages} />
           </div>
 
           <div className="flex flex-col gap-5">
@@ -266,7 +270,7 @@ function SortCol({
   const nextDir: SortDir = active && dir === "asc" ? "desc" : "asc";
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(sp)) {
-    if (k === "sort" || k === "dir") continue;
+    if (k === "sort" || k === "dir" || k === "page") continue;
     if (typeof v === "string") params.set(k, v);
   }
   params.set("sort", column);

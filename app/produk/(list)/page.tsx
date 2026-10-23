@@ -10,6 +10,8 @@ import { dbConnect } from "@/lib/db";
 import { Product, type ProductDoc } from "@/models/Product";
 import { rupiah, formatDimensi } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
+import { paginate } from "@/lib/pagination";
+import Pagination from "@/components/ui/Pagination";
 import { getSession } from "@/lib/auth/session";
 import { isProductDeleteAllowed } from "@/lib/auth/access";
 import { getEffectiveKomisiInfo, KOMISI_SOURCE_LABEL } from "@/lib/commission";
@@ -110,6 +112,9 @@ export default async function ProdukListPage({
     (p) => stockAgeInfo(p.tanggalBarangMasuk ?? p.createdAt!, p.alertHariTidakTerjual ?? 45).variant === "out"
   ).length;
 
+  // The stats above cover every product; only the rows rendered below are paged.
+  const { items: pageProducts, page, totalPages } = paginate(products, sp.page);
+
   return (
     <>
       <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
@@ -147,7 +152,7 @@ export default async function ProdukListPage({
           2026-08-25. */}
       <MobileProdukList
         isOwner={isOwner}
-        products={products.map((p) => {
+        products={pageProducts.map((p) => {
           const { label, variant } = stockAgeInfo(p.tanggalBarangMasuk ?? p.createdAt!, p.alertHariTidakTerjual ?? 45);
           const komisiInfo = komisiInfoByProductId.get(String(p._id))!;
           return {
@@ -189,7 +194,7 @@ export default async function ProdukListPage({
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
+              {pageProducts.map((p) => (
                 <tr key={String(p._id)} className="transition hover:bg-surface">
                   <td className="border-b border-line px-5 py-4.5">
                     <div className="flex items-center gap-2">
@@ -262,6 +267,7 @@ export default async function ProdukListPage({
           </table>
         </TableScroll>
       </div>
+      <Pagination basePath="/produk" searchParams={sp} page={page} totalPages={totalPages} />
       </Panel>
     </>
   );
