@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FormCard, FormSection, FormCardActions } from "@/components/ui/FormSection";
 import { Field, Input, Select, Textarea, CurrencyInput } from "@/components/ui/Form";
@@ -70,8 +70,6 @@ const EMPTY_BASE: Omit<ProductFormValues, "category"> = {
   fotoBelakangUrl: "",
   deskripsi: "",
 };
-
-const LAST_KATEGORI_KEY = "horeca-produk-last-kategori";
 
 /** One P/L/T box: max 3 digits, "000" placeholder, auto-advances to `nextRef` when the 3rd digit lands. */
 function DimensiDigitInput({
@@ -146,17 +144,6 @@ export default function ProductForm({
   const [error, setError] = useState<string | null>(null);
   const lebarRef = useRef<HTMLInputElement>(null);
   const tinggiRef = useRef<HTMLInputElement>(null);
-
-  // Kategori defaults to the last one used (several products of one category in a row). Create mode only, and read from localStorage after mount (not in
-  // useState's initializer) so the server and client first renders match, same as CartProvider.tsx.
-  useEffect(() => {
-    if (mode !== "create") return;
-    const lastKategori = localStorage.getItem(LAST_KATEGORI_KEY);
-    if (lastKategori && categories.includes(lastKategori)) {
-      setValues((v) => ({ ...v, category: lastKategori }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Komisi Nominal mirrors the REAL commission formula (computeLineCommission): bekas = Harga Bottom × Komisi Bekas% (the guaranteed floor commission, same as
   // maxDiskonBekas's base); baru = flat 6% of Harga Rekomendasi (no per-product override, so static). It used to read the removed "Komisi — Persen" field and went stale.
@@ -271,7 +258,6 @@ export default function ProductForm({
           throw new Error(body.error || "Produk tersimpan, tapi Komisi gagal disimpan");
         }
       }
-      localStorage.setItem(LAST_KATEGORI_KEY, values.category);
       if (onSuccess) {
         onSuccess();
       } else {
