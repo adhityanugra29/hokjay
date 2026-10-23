@@ -28,7 +28,7 @@ export default async function PengirimanPage() {
         subtitle={
           session?.role === "sales"
             ? "PENGIRIMAN UNTUK INVOICE ANDA"
-            : "SEMUA INVOICE YANG PERLU DIKIRIM · LUNAS → SUDAH DP → BELUM BAYAR"
+            : "SEMUA INVOICE YANG PERLU DIKIRIM · HARI INI → TERLAMBAT → TERJADWAL → BELUM DIJADWALKAN"
         }
       />
       <PengirimanClient todo={todo} sent={sent} couriers={couriers} />

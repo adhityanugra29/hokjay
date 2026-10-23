@@ -55,6 +55,10 @@ const GRID_TODO =
   "md:grid-cols-[130px_minmax(0,1.5fr)_80px_100px_76px_76px_88px_96px_minmax(0,150px)_32px]";
 const GRID_SENT = "md:grid-cols-[92px_minmax(0,1.5fr)_80px_110px_76px_76px_96px_110px_110px]";
 
+// Same look as the dark "Tandai Sudah Kirim" button on the invoice detail page (rounded-lg, ink fill, accent text), sized for a table row.
+const PRIMARY_CLS =
+  "inline-flex cursor-pointer items-center justify-center rounded-lg border border-ink bg-ink px-3.5 py-2 font-sans text-[0.78rem] font-extrabold text-accent transition hover:bg-ink/85";
+
 const th = "font-sans text-[0.66rem] font-bold uppercase tracking-wider text-muted";
 const fmt = (iso?: string) => (iso ? formatDateShort(iso) : "-");
 
@@ -145,7 +149,7 @@ function BatalkanButton({ row, className }: { row: PengirimanSentRow; className?
       type="button"
       onClick={handle}
       disabled={busy}
-      className={`cursor-pointer rounded-lg border border-line bg-transparent px-3 py-1.5 font-sans text-[0.75rem] font-extrabold text-danger hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 ${
+      className={`cursor-pointer rounded-lg border border-line bg-transparent px-3.5 py-2 font-sans text-[0.78rem] font-extrabold text-danger hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 ${
         className ?? ""
       }`}
     >
@@ -239,8 +243,8 @@ export default function PengirimanClient({
   }
 
   const stats: [Group, string, string][] = [
-    ["late", "Terlambat", "text-red-600"],
     ["today", "Hari Ini", "text-accent-700"],
+    ["late", "Terlambat", "text-red-600"],
     ["later", "Terjadwal", ""],
     ["none", "Belum Dijadwalkan", ""],
   ];
@@ -398,7 +402,7 @@ export default function PengirimanClient({
                             {r.bayar === "draft" ? (
                               <Link
                                 href={`/invoice/${r.invoiceId}/ubah`}
-                                className="rounded-lg border border-accent px-3 py-1.5 font-sans text-[0.75rem] font-extrabold text-accent-700 no-underline hover:bg-accent hover:text-ink"
+                                className="rounded-lg border border-accent px-3.5 py-2 font-sans text-[0.78rem] font-extrabold text-accent-700 no-underline hover:bg-accent hover:text-ink"
                               >
                                 Lanjutkan
                               </Link>
@@ -409,6 +413,7 @@ export default function PengirimanClient({
                                 customerNama={r.customerNama}
                                 couriers={couriers}
                                 currentKurir={r.kurir}
+                              className={PRIMARY_CLS}
                               />
                             )}
                           </span>
@@ -476,7 +481,7 @@ export default function PengirimanClient({
                       {r.bayar === "draft" ? (
                         <Link
                           href={`/invoice/${r.invoiceId}/ubah`}
-                          className="flex-1 rounded-lg border border-accent px-3 py-2 text-center font-sans text-[0.78rem] font-extrabold text-accent-700 no-underline"
+                          className="flex-1 rounded-lg border border-accent px-3.5 py-2 text-center font-sans text-[0.78rem] font-extrabold text-accent-700 no-underline"
                         >
                           Lanjutkan
                         </Link>
@@ -487,7 +492,7 @@ export default function PengirimanClient({
                           customerNama={r.customerNama}
                           couriers={couriers}
                           currentKurir={r.kurir}
-                          className="flex-1 cursor-pointer border border-ink bg-ink px-3 py-2 font-sans text-[0.78rem] font-semibold text-accent hover:bg-ink/85"
+                          className={`${PRIMARY_CLS} flex-1`}
                         />
                       )}
                       <Kebab

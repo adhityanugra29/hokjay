@@ -93,6 +93,20 @@ export async function getPengirimanData(session?: SessionPayload | null): Promis
     };
   });
 
+  // /pengiriman's own order (the user's request, 2026-10-22): Kirim Hari Ini,
+  // then Terlambat, then Besok/Terjadwal (soonest first), then Belum
+  // Dijadwalkan last. Inside each group Lunas → Sudah DP → Belum Bayar/Draft,
+  // then the earlier Jadwal Kirim first. getShippingPriorityInvoices itself is
+  // unchanged (Beranda still uses its payment-tier-first order).
+  const GROUP_RANK: Record<ShippingTone, number> = { today: 0, overdue: 1, soon: 2, later: 2, none: 3 };
+  const BAYAR_RANK: Record<PengirimanBayar, number> = { paid: 0, dp: 1, unpaid: 2, draft: 2 };
+  todo.sort(
+    (a, b) =>
+      GROUP_RANK[a.tone] - GROUP_RANK[b.tone] ||
+      BAYAR_RANK[a.bayar] - BAYAR_RANK[b.bayar] ||
+      (a.jadwal ?? "").localeCompare(b.jadwal ?? "")
+  );
+
   const sent: PengirimanSentRow[] = sentDocs.map((inv) => ({
     invoiceId: String(inv._id),
     nomor: inv.nomor,
