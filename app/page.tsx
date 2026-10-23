@@ -9,7 +9,7 @@ import { getSalesRanking, getMyCommissionSummary } from "@/lib/insentif";
 import { getFollowUpInvoices, getShippingPriorityInvoices, shippingUrgency } from "@/lib/dashboard";
 import { getMyDormantCustomers } from "@/lib/pelanggan";
 import { getKeuanganSummary, getCurrentCashBalance } from "@/lib/keuangan";
-import { getActivityLog } from "@/lib/activity";
+import { getRecentActivityCount } from "@/lib/activity";
 import { getPurchasingSummary, getBayarTagihanSummary, getLowStockSuggestions } from "@/lib/purchasing";
 import { getSession } from "@/lib/auth/session";
 import { isAllowedPage } from "@/lib/auth/access";
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
     shippingRows,
     ranking,
     keuangan,
-    activity,
+    recentActivityCount,
     kasSekarang,
     purchasingSummary,
     bayarTagihanSummary,
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
     getShippingPriorityInvoices(session),
     getSalesRanking(currentPayrollPeriode()),
     getKeuanganSummary(thisMonthRange),
-    getActivityLog(50),
+    getRecentActivityCount(),
     getCurrentCashBalance(),
     canSeePurchasing ? getPurchasingSummary() : null,
     canSeeBayarTagihan ? getBayarTagihanSummary() : null,
@@ -68,7 +68,6 @@ export default async function DashboardPage() {
     Courier.find().sort({ name: 1 }).lean(),
   ]);
   const couriers = couriersRaw.map((c) => ({ _id: String(c._id), name: c.name }));
-  const recentActivityCount = activity.filter((a) => Date.now() - a.tanggal.getTime() < 24 * 60 * 60 * 1000).length;
 
   const draftCount = followUpAll.filter((i) => i.status === "draft").length;
   const unpaidCount = followUpAll.filter((i) => i.status === "unpaid").length;

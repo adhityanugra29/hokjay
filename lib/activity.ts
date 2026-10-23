@@ -105,3 +105,26 @@ export async function getActivityLog(limit = 50): Promise<ActivityEntry[]> {
 
   return entries.sort((a, b) => b.tanggal.getTime() - a.tanggal.getTime()).slice(0, limit);
 }
+
+/**
+ * How many activity entries fall in the last 24 hours (capped at `limit`, like the feed itself) — Beranda's bell badge only needs this number, so it counts with
+ * four cheap queries instead of building the whole merged feed. Mirrors getActivityLog's four sources and its date rules (a paid invoice without
+ * payment.tanggalBayar counts by updatedAt; komisi-cair needs komisiCairTanggal).
+ */
+export async function getRecentActivityCount(limit = 50): Promise<number> {
+  await dbConnect();
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const [paid, cair, newProducts, flashSale] = await Promise.all([
+    Invoice.countDocuments({
+      status: "paid",
+      $or: [
+        { "payment.tanggalBayar": { $gte: since } },
+        { "payment.tanggalBayar": { $exists: false }, updatedAt: { $gte: since } },
+      ],
+    }),
+    Invoice.countDocuments({ komisiCair: true, komisiCairTanggal: { $gte: since } }),
+    Product.countDocuments({ isCustom: { $ne: true }, createdAt: { $gte: since } }),
+    Product.countDocuments({ "flashSale.active": true, "flashSale.setAt": { $gte: since } }),
+  ]);
+  return Math.min(limit, paid + cair + newProducts + flashSale);
+}
