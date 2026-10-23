@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { dbConnect } from "@/lib/db";
 import { CashflowEntry } from "@/models/CashflowEntry";
 import { Product } from "@/models/Product";
@@ -110,10 +111,13 @@ export async function getCashBook(range: { from: Date; to: Date }): Promise<Cash
 }
 
 /** True current cash position (all-time), independent of whatever month is selected — powers the "Sisa kas hari ini" stat. */
-export async function getCurrentCashBalance(): Promise<number> {
+async function loadCurrentCashBalance(): Promise<number> {
   await dbConnect();
   const kasAwal = await getKasAwal();
   const entries = await CashflowEntry.find({ tanggal: { $gte: kasAwal.tanggal } }).lean();
   const net = entries.reduce((s, e) => s + (e.tipe === "masuk" ? e.nominal : -e.nominal), 0);
   return kasAwal.amount + net;
 }
+
+/** Per-request memo: Beranda reads it directly and again through getBayarTagihanSummary. */
+export const getCurrentCashBalance = cache(loadCurrentCashBalance);

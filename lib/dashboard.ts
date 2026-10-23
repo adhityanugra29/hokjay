@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Product } from "@/models/Product";
@@ -152,7 +153,7 @@ export interface FollowUpSalesSummary {
  * — only stock/journal posting is gated behind finalize), so summing it here
  * is safe even for drafts. See confirmation with the user 2026-08-21.
  */
-export async function getFollowUpInvoices(session?: SessionPayload | null): Promise<FollowUpInvoiceRow[]> {
+async function loadFollowUpInvoices(session?: SessionPayload | null): Promise<FollowUpInvoiceRow[]> {
   await dbConnect();
   // Per-sales invoice privacy — per the user's report 2026-08-30 ("notif
   // masih terlihat di semua akun, tapi invoicenya sudah tidak ada"): this
@@ -188,6 +189,9 @@ export async function getFollowUpInvoices(session?: SessionPayload | null): Prom
     };
   });
 }
+
+/** Per-request memo (keyed by the cached session object): Beranda calls it directly and again via getShippingPriorityInvoices. Treat the result as read-only. */
+export const getFollowUpInvoices = cache(loadFollowUpInvoices);
 
 export interface ShippingRow extends Omit<FollowUpInvoiceRow, "status"> {
   status: "draft" | "unpaid" | "paid";

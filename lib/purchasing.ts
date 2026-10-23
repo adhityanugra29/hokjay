@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { dbConnect } from "@/lib/db";
 import { PurchaseOrder } from "@/models/PurchaseOrder";
 import { PurchaseBill } from "@/models/PurchaseBill";
@@ -16,7 +17,7 @@ export interface PurchasingSummary {
 }
 
 /** The 4 stat cards atop the Purchasing dashboard — design "6a". */
-export async function getPurchasingSummary(): Promise<PurchasingSummary> {
+async function loadPurchasingSummary(): Promise<PurchasingSummary> {
   await dbConnect();
   const menunggu = await PurchaseOrder.find({ status: "menunggu" }).lean();
   const now = Date.now();
@@ -43,6 +44,9 @@ export async function getPurchasingSummary(): Promise<PurchasingSummary> {
     perluDibeliCount,
   };
 }
+
+/** Per-request memo: the Purchasing layout and page both render it. */
+export const getPurchasingSummary = cache(loadPurchasingSummary);
 
 export interface PurchaseOrderRow {
   id: string;
