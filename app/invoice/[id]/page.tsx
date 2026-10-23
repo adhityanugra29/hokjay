@@ -25,18 +25,19 @@ const MENU_ITEM_CLS = "block px-6 py-2.5 font-sans text-[0.82rem] font-semibold 
 export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/[id]">) {
   const { id } = await params;
   await dbConnect();
-  const invoice = await Invoice.findById(id);
+  // Independent reads run together; only the Sales lookup below needs the invoice first. Pengaturan feeds the Syarat & Ketentuan block
+  // (models/Pengaturan.ts's syaratKetentuan doc comment).
+  const [invoice, session, courierDocs, pengaturan] = await Promise.all([
+    Invoice.findById(id),
+    getSession(),
+    Courier.find().sort({ name: 1 }).lean(),
+    Pengaturan.findById("singleton").lean(),
+  ]);
   if (!invoice) notFound();
-  // Per-sales invoice privacy — per the user's request 2026-08-29. Same
-  // pattern as Pelanggan's own per-sales guard.
-  const session = await getSession();
+  // Per-sales invoice privacy: same pattern as Pelanggan's own per-sales guard.
   if (isInvoiceBlockedForSession(session, invoice.sales?.nama)) notFound();
 
-  const couriers = (await Courier.find().sort({ name: 1 }).lean()).map((c) => ({ _id: String(c._id), name: c.name }));
-
-  // Feeds the Syarat & Ketentuan block — see models/Pengaturan.ts's
-  // syaratKetentuan doc comment.
-  const pengaturan = await Pengaturan.findById("singleton").lean();
+  const couriers = courierDocs.map((c) => ({ _id: String(c._id), name: c.name }));
 
   // Live lookup rather than a snapshot on the invoice itself — a phone
   // number changing should show up on invoices printed afterward, unlike
