@@ -19,7 +19,7 @@
 - Fase 1a/1b performa — DONE (query paralel `/pengiriman`, `/pelanggan/[id]`; bundle client sudah sehat, PDF lib dynamic).
 - Pagination daftar (15 baris, `DEFAULT_PAGE_SIZE`) — DONE: Invoice, Produk, Pelanggan, Follow-up (server); Pengiriman (sisi client).
 - Surat Jalan dari `/pengiriman` — DONE (belum diuji PDF di browser).
-- Fase 2 kerapihan — `PengirimanClient` dipecah (`rowParts`, `PengirimanTodoList`, `PengirimanSentList`) — DONE. `app/page.tsx` (Beranda), `ProductCard`, `InvoiceListClient` — BACKLOG. **`InvoiceForm` sengaja TIDAK disentuh** (permintaan pengguna: risiko tampilan; bobot logika uang).
+- Fase 2 kerapihan — `PengirimanClient` dipecah (`rowParts`, `PengirimanTodoList`, `PengirimanSentList`) — DONE. `ProductCard` dipecah (`ProductCardPhoto`, `ProductCardPricing`) — DONE. `app/page.tsx` (Beranda), `InvoiceListClient` — BACKLOG. **`InvoiceForm` sengaja TIDAK disentuh** (permintaan pengguna: risiko tampilan; bobot logika uang).
 - Fase 3 duplikasi handler API / daftar role (3 tempat) — BACKLOG.
 - Belum dikerjakan: profil payload Beranda dan `lib/insentif.ts`.
 
