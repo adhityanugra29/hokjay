@@ -8,6 +8,7 @@ import { Panel } from "@/components/ui/Panel";
 import FollowUpStatusBadge from "@/components/dashboard/FollowUpStatusBadge";
 import TandaiKirimButton, { type CourierOption } from "@/components/invoice/TandaiKirimButton";
 import { useDialog } from "@/components/ui/Dialog";
+import SuratJalanDrawer from "./SuratJalanDrawer";
 import { formatDateShort, rupiah } from "@/lib/format";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type { PengirimanSentRow, PengirimanTodoRow } from "@/lib/pengiriman";
@@ -54,7 +55,7 @@ const TONE_CLS: Record<PengirimanTodoRow["tone"], string> = {
 const selectCls = "min-w-0 rounded-lg border border-line bg-panel px-3 py-2 font-sans text-[0.8rem] text-ink";
 const GRID_TODO =
   "xl:grid-cols-[110px_minmax(0,1.6fr)_minmax(0,1fr)_72px_92px_minmax(0,160px)_32px]";
-const GRID_SENT = "xl:grid-cols-[92px_minmax(0,1.5fr)_minmax(0,1fr)_76px_76px_96px_100px_100px]";
+const GRID_SENT = "xl:grid-cols-[92px_minmax(0,1.5fr)_minmax(0,1fr)_76px_76px_96px_88px_112px]";
 
 // Same look as the dark "Tandai Sudah Kirim" button on the invoice detail page (rounded-lg, ink fill, accent text), sized for a table row.
 const PRIMARY_CLS =
@@ -162,6 +163,26 @@ function BatalkanButton({ row, className }: { row: PengirimanSentRow; className?
   );
 }
 
+function SuratJalanButton({
+  row,
+  onOpen,
+  className,
+}: {
+  row: PengirimanSentRow;
+  onOpen: (v: { invoiceId: string; nomor: string; customerNama: string }) => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen({ invoiceId: row.invoiceId, nomor: row.nomor, customerNama: row.customerNama })}
+      className={`cursor-pointer whitespace-nowrap rounded-lg border border-line bg-transparent px-2.5 py-2 font-sans text-[0.78rem] font-extrabold text-ink hover:bg-black/5 ${className ?? ""}`}
+    >
+      Surat Jalan
+    </button>
+  );
+}
+
 function Detail({ alamat, catatan }: { alamat?: string; catatan?: string }) {
   return (
     <dl className="m-0 grid grid-cols-1 gap-3 bg-[#fbf8ef] px-5 pt-1 pb-4 text-[0.8rem] md:grid-cols-2">
@@ -194,6 +215,8 @@ export default function PengirimanClient({
   const [bayar, setBayar] = useState("");
   const [menu, setMenu] = useState<string | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  // Invoice whose Surat Jalan drawer is open (from the row's ⋮ menu on Perlu Dikirim, or the "Surat Jalan" button on Sudah Dikirim).
+  const [suratJalan, setSuratJalan] = useState<{ invoiceId: string; nomor: string; customerNama: string } | null>(null);
   const [pageState, setPageState] = useState({ sig: "", page: 1 });
 
   useEffect(() => {
@@ -447,6 +470,19 @@ export default function PengirimanClient({
                             >
                               {open[r.invoiceId] ? "Sembunyikan Detail" : "Lihat Detail"}
                             </button>
+                            {r.bayar !== "draft" && (
+                              <button
+                                type="button"
+                                role="menuitem"
+                                className={menuItemCls}
+                                onClick={() => {
+                                  setSuratJalan({ invoiceId: r.invoiceId, nomor: r.nomor, customerNama: r.customerNama });
+                                  setMenu(null);
+                                }}
+                              >
+                                Surat Jalan
+                              </button>
+                            )}
                             <Link role="menuitem" href={`/invoice/${r.invoiceId}`} className={menuItemCls}>
                               Buka Invoice
                             </Link>
@@ -525,6 +561,19 @@ export default function PengirimanClient({
                         >
                           {open[r.invoiceId] ? "Sembunyikan Detail" : "Lihat Detail"}
                         </button>
+                        {r.bayar !== "draft" && (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className={menuItemCls}
+                            onClick={() => {
+                              setSuratJalan({ invoiceId: r.invoiceId, nomor: r.nomor, customerNama: r.customerNama });
+                              setMenu(null);
+                            }}
+                          >
+                            Surat Jalan
+                          </button>
+                        )}
                         <Link role="menuitem" href={`/invoice/${r.invoiceId}`} className={menuItemCls}>
                           Buka Invoice
                         </Link>
@@ -579,7 +628,8 @@ export default function PengirimanClient({
                         <FollowUpStatusBadge status={r.bayar} />
                       </span>
                       <span className="text-[0.8rem]">{r.dikirimOleh ?? "-"}</span>
-                      <span>
+                      <span className="flex flex-col items-start gap-1">
+                        <SuratJalanButton row={r} onOpen={setSuratJalan} />
                         <BatalkanButton row={r} />
                       </span>
                     </div>
@@ -618,8 +668,9 @@ export default function PengirimanClient({
                     <span className="text-muted">· Tgl kirim</span>
                     <b className="tabular-nums">{fmt(r.tanggalKirim)}</b>
                   </div>
-                  <div className="mt-3">
-                    <BatalkanButton row={r} className="w-full" />
+                  <div className="mt-3 flex gap-2">
+                    <SuratJalanButton row={r} onOpen={setSuratJalan} className="flex-1" />
+                    <BatalkanButton row={r} className="flex-1" />
                   </div>
                 </div>
               ))}
@@ -641,6 +692,8 @@ export default function PengirimanClient({
           </button>
         </nav>
       )}
+
+      {suratJalan && <SuratJalanDrawer key={suratJalan.invoiceId} {...suratJalan} onClose={() => setSuratJalan(null)} />}
     </div>
   );
 }

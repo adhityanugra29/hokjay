@@ -6,6 +6,10 @@
 
 ---
 
+## 2026-10-24
+
+**Surat Jalan bisa dibuka dari /pengiriman** — komponen baru `components/pengiriman/SuratJalanDrawer.tsx` (drawer: pratinjau Surat Jalan, Nama Driver diisi saat itu juga dan tidak disimpan, tombol "Unduh Surat Jalan (PDF)"); memakai `InvoiceDocument`/`InvoicePrintDoc` mode surat-jalan dan `useInvoicePdfDownload` yang sama dengan drawer Preview di daftar Invoice. Penempatan: tab Perlu Dikirim → menu ⋮ item "Surat Jalan" (desktop dan kartu mobile; tidak muncul untuk Draft); tab Sudah Dikirim → tombol "Surat Jalan" di samping "Batalkan" (kolom aksi `GRID_SENT` dilebarkan 100→112px, "Dikirim oleh" 100→88px). Preserved: aksi Tandai Kirim/Batalkan/Detail, daftar Invoice dan halaman detail invoice tidak diubah. Regression: `tsc` + eslint bersih; belum diuji di browser/PDF.
+
 ## 2026-10-23
 
 **Pagination /pengiriman (DEFAULT_PAGE_SIZE = 25 baris/halaman, sisi client)** — `PengirimanClient`: kedua tab (Perlu Dikirim, Sudah Dikirim) hanya merender satu halaman (25 baris) sekali tampil dengan tombol Sebelumnya/Berikutnya; halaman kembali ke 1 saat tab atau filter berubah. Filter, urutan, dan hitungan kartu/tab tetap dihitung atas seluruh data (query server tidak berubah). Preserved: aksi Tandai Kirim/Batalkan/Detail. Regression: `tsc` + eslint bersih; belum diuji di browser.
