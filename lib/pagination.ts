@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-export const DEFAULT_PAGE_SIZE = 25;
+export const DEFAULT_PAGE_SIZE = 15;
 
 type SearchParamsLike = { [key: string]: string | string[] | undefined };
 

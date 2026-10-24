@@ -12,7 +12,7 @@
 
 ## 2026-10-23
 
-**Pagination /pengiriman (DEFAULT_PAGE_SIZE = 25 baris/halaman, sisi client)** — `PengirimanClient`: kedua tab (Perlu Dikirim, Sudah Dikirim) hanya merender satu halaman (25 baris) sekali tampil dengan tombol Sebelumnya/Berikutnya; halaman kembali ke 1 saat tab atau filter berubah. Filter, urutan, dan hitungan kartu/tab tetap dihitung atas seluruh data (query server tidak berubah). Preserved: aksi Tandai Kirim/Batalkan/Detail. Regression: `tsc` + eslint bersih; belum diuji di browser.
+**Pagination /pengiriman (DEFAULT_PAGE_SIZE baris/halaman, sisi client)** — `PengirimanClient`: kedua tab (Perlu Dikirim, Sudah Dikirim) hanya merender satu halaman sekali tampil dengan tombol Sebelumnya/Berikutnya; halaman kembali ke 1 saat tab atau filter berubah. Filter, urutan, dan hitungan kartu/tab tetap dihitung atas seluruh data (query server tidak berubah). Preserved: aksi Tandai Kirim/Batalkan/Detail. Regression: `tsc` + eslint bersih; belum diuji di browser.
 
 **Refactor Fase 1a/1b (performa)** — `/pengiriman`: `getPengirimanData` + `Courier.find` kini paralel (`Promise.all`). `/pelanggan/[id]`: query pelanggan + invoice paralel dan invoice memakai `.lean()` (hanya field primitif dibaca); cek akses sales + `notFound()` tetap sama. Audit bundle: chunk besar (html2canvas/jsPDF/canvg/core-js, ±1,7 MB) tidak ada di entry halaman mana pun (dynamic import sudah benar), jadi tidak ada yang diubah; `app/loading.tsx` root sudah mencakup semua halaman. Preserved: hak akses, data tampil. Regression: `tsc` bersih, `next build` sukses, eslint bersih di 2 file.
 
