@@ -103,14 +103,17 @@ async function watermarkImage(compressed: Buffer, mimeType: string): Promise<Buf
   // (public/logo/hojay-2b-positif.png) is a high-res 3900x2169 PNG, so
   // this is a pure downscale, never an upscale. Per the user's report
   // 2026-08-25 that the watermark looked blurry in the Katalog PDF.
-  // ensureAlpha() first so the following linear() has an alpha band to
-  // scale even though the source PNG's own background is fully opaque.
-  const wm = await sharp(watermarkBuffer)
+  // Two separate passes on purpose: sharp runs linear() BEFORE ensureAlpha()
+  // inside a single pipeline, so on an RGB (3-band) logo — which is what the
+  // file became after the Perf 2.12 shrink — the 4-value linear() throws
+  // "Band expansion using linear is unsupported" and every product-photo
+  // upload fails. Pass 1 guarantees an alpha band, pass 2 scales it.
+  const wmRgba = await sharp(watermarkBuffer)
     .resize({ width: wmWidth, kernel: sharp.kernel.lanczos3 })
     .ensureAlpha()
-    .linear([1, 1, 1, WM_OPACITY], [0, 0, 0, 0])
     .png()
     .toBuffer();
+  const wm = await sharp(wmRgba).linear([1, 1, 1, WM_OPACITY], [0, 0, 0, 0]).png().toBuffer();
   const wmMeta = await sharp(wm).metadata();
   const wmHeight = wmMeta.height ?? wmWidth;
 
