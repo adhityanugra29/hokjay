@@ -6,6 +6,25 @@
 
 ---
 
+## TASK-049 — Refactor: performa halaman, pagination daftar, kerapihan komponen besar
+
+**Type:** Refactor / Performance
+**Priority:** P2
+**Status:** IN PROGRESS
+**Created:** 2026-10-24 · **Last updated:** 2026-10-24
+
+**Description:** Kode lebih cepat dimuat dan lebih rapi, tanpa mengubah perilaku (uang, stok, komisi, jurnal tetap). Dikerjakan bertahap, satu commit per langkah; perubahan hanya memindahkan kode (diverifikasi identik) kecuali disebut lain.
+
+**Subtasks:**
+- Fase 1a/1b performa — DONE (query paralel `/pengiriman`, `/pelanggan/[id]`; bundle client sudah sehat, PDF lib dynamic).
+- Pagination daftar (15 baris, `DEFAULT_PAGE_SIZE`) — DONE: Invoice, Produk, Pelanggan, Follow-up (server); Pengiriman (sisi client).
+- Surat Jalan dari `/pengiriman` — DONE (belum diuji PDF di browser).
+- Fase 2 kerapihan — `PengirimanClient` dipecah (`rowParts`, `PengirimanTodoList`, `PengirimanSentList`) — DONE. `app/page.tsx` (Beranda), `ProductCard`, `InvoiceListClient` — BACKLOG. **`InvoiceForm` sengaja TIDAK disentuh** (permintaan pengguna: risiko tampilan; bobot logika uang).
+- Fase 3 duplikasi handler API / daftar role (3 tempat) — BACKLOG.
+- Belum dikerjakan: profil payload Beranda dan `lib/insentif.ts`.
+
+---
+
 ## TASK-048 — Tambah banyak produk dari foto (`/produk/baru-massal`)
 
 **Type:** Feature

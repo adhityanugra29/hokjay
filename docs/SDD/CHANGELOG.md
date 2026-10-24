@@ -8,6 +8,8 @@
 
 ## 2026-10-24
 
+**Refactor Fase 2 — `PengirimanClient` dipecah (TASK-049)** — 699 → 274 baris. Dipindah apa adanya: `components/pengiriman/rowParts.tsx` (Kebab, BatalkanButton, SuratJalanButton, Detail, konstanta grid/gaya), `PengirimanTodoList.tsx` (tabel desktop + kartu mobile Perlu Dikirim), `PengirimanSentList.tsx` (Sudah Dikirim). State, filter, urutan, tab, dan pagination tetap di `PengirimanClient`. Diverifikasi dengan pembanding teks (spasi diabaikan): seluruh blok yang dipindah identik dengan aslinya (hanya `pagedTodo/pagedSent` → `rows`, `setSuratJalan` → `onSuratJalan`, dan kata `export`). Tidak ada perubahan markup/kelas CSS. Regression: `tsc` + eslint bersih; belum diuji di browser. `InvoiceForm` sengaja tidak disentuh.
+
 **Surat Jalan bisa dibuka dari /pengiriman** — komponen baru `components/pengiriman/SuratJalanDrawer.tsx` (drawer: pratinjau Surat Jalan, Nama Driver diisi saat itu juga dan tidak disimpan, tombol "Unduh Surat Jalan (PDF)"); memakai `InvoiceDocument`/`InvoicePrintDoc` mode surat-jalan dan `useInvoicePdfDownload` yang sama dengan drawer Preview di daftar Invoice. Penempatan: tab Perlu Dikirim → menu ⋮ item "Surat Jalan" (desktop dan kartu mobile; tidak muncul untuk Draft); tab Sudah Dikirim → tombol "Surat Jalan" di samping "Batalkan" (kolom aksi `GRID_SENT` dilebarkan 100→112px, "Dikirim oleh" 100→88px). Preserved: aksi Tandai Kirim/Batalkan/Detail, daftar Invoice dan halaman detail invoice tidak diubah. Regression: `tsc` + eslint bersih; belum diuji di browser/PDF.
 
 ## 2026-10-23
