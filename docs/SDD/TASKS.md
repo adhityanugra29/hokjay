@@ -6,6 +6,23 @@
 
 ---
 
+## TASK-048 — Tambah banyak produk dari foto (`/produk/baru-massal`)
+
+**Type:** Feature
+**Priority:** P2
+**Status:** TESTING
+**Created:** 2026-10-23 · **Last updated:** 2026-10-23
+
+**Description:** Unggah banyak foto sekaligus (maks 30, 3 unggahan paralel), 1 foto = 1 produk dan semua foto wajib diisi sampai tersimpan. Tiap produk disimpan lewat `POST /api/products` yang sama dengan `ProductForm` (Harga Modal = Bottom ÷ 2, komisi 10/6, SKU otomatis). Antrean hidup di browser (bukan draft DB), isian disimpan di `localStorage` agar bisa dilanjutkan. Kategori/Kondisi/Tipe meniru produk yang baru disimpan (disorot kuning); Kategori wajib dipilih tanpa nilai bawaan. Mockup: `docs/SDD/mockups/produk-massal-v5.html`.
+
+**Files:** `app/produk/baru-massal/page.tsx`, `components/produk/BulkProductWizard.tsx`, `app/produk/(list)/layout.tsx` (tombol), `components/produk/ProductForm.tsx` (hanya `export` pada `parseProductFilename`).
+
+**Subtasks:**
+- Implementasi — selesai (tsc/eslint bersih pada file yang diubah). Belum diuji manual di browser.
+- Tidak ada: override Komisi Bekas owner (tetap lewat Edit Produk), foto Samping/Belakang, impor Excel. Foto yang dibuang tidak dihapus dari Blob.
+
+---
+
 ## TASK-047 — Auto-kapital semua input teks + migrasi data lama
 
 **Type:** UX / Data

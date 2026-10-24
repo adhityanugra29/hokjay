@@ -15,7 +15,14 @@ export default async function ProdukLayout({ children }: { children: React.React
       <PageHeader
         title="Inventory"
         subtitle={`${count} PRODUK AKTIF`}
-        actions={<LinkButton href="/produk/baru">+ Tambah Produk</LinkButton>}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <LinkButton variant="ghost" href="/produk/baru-massal">
+              Bulk Upload Product
+            </LinkButton>
+            <LinkButton href="/produk/baru">+ Tambah Produk</LinkButton>
+          </div>
+        }
       />
       <div className="p-6 md:p-9">
         <SubnavTabs
