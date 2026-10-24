@@ -19,6 +19,7 @@ export default function InvoiceFilterBar({
   bulan,
   tahun,
   sales,
+  status,
   availableMonths,
   availableYears,
   availableSales,
@@ -28,6 +29,8 @@ export default function InvoiceFilterBar({
   tahun?: number;
   /** Currently selected sales.nama, or undefined for "all". */
   sales?: string;
+  /** Active status pill ("unpaid" | "dp" | "draft" | "paid"); kept across a new search. */
+  status?: string;
   /** Month numbers (1-12) that actually have at least one invoice — others are left out entirely, not just disabled. */
   availableMonths: number[];
   /** Years that actually have at least one invoice, newest-first. */
@@ -48,6 +51,7 @@ export default function InvoiceFilterBar({
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, String(value));
     else params.delete(key);
+    params.delete("page");
     startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
@@ -56,6 +60,7 @@ export default function InvoiceFilterBar({
     params.delete("bulan");
     params.delete("tahun");
     params.delete("sales");
+    params.delete("page");
     startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
@@ -78,6 +83,7 @@ export default function InvoiceFilterBar({
           {bulan ? <input type="hidden" name="bulan" value={bulan} /> : null}
           {tahun ? <input type="hidden" name="tahun" value={tahun} /> : null}
           {sales ? <input type="hidden" name="sales" value={sales} /> : null}
+          {status ? <input type="hidden" name="status" value={status} /> : null}
           <svg
             viewBox="0 0 24 24"
             fill="none"

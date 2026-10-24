@@ -140,6 +140,7 @@ export default function CustomOrderPage() {
         }
       }
       router.push("/invoice/baru");
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal membuat produk custom");
     } finally {

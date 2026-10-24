@@ -1,14 +1,31 @@
 import PageHeader from "@/components/layout/PageHeader";
 import { LinkButton } from "@/components/ui/Button";
-import InvoiceListClient, { type InvoiceRow } from "@/components/invoice/InvoiceListClient";
+import InvoiceListClient, {
+  type InvoiceRow,
+  type InvoiceRowStatus,
+  type InvoiceFilterKey,
+  type InvoiceListCounts,
+} from "@/components/invoice/InvoiceListClient";
+import Pagination from "@/components/ui/Pagination";
+import { parsePage, clampPageOrRedirect } from "@/lib/pagination";
 import InvoiceFilterBar from "@/components/invoice/InvoiceFilterBar";
 import { dbConnect } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
 import { Sales } from "@/models/Sales";
+import type { Types } from "mongoose";
 import { formatDateShort } from "@/lib/format";
 import { currentJakartaMonthYear, jakartaMonthRange, jakartaYearRange } from "@/lib/timezone";
 import { getSession } from "@/lib/auth/session";
 import { invoiceVisibilityFilter } from "@/lib/invoice-visibility";
+
+/** Mongo condition for each status pill. "dp" = unpaid with a DP received; "unpaid" = unpaid with none (a missing, null or 0 DP). */
+const STATUS_CLAUSE: Record<InvoiceRowStatus, Record<string, unknown>> = {
+  draft: { status: "draft" },
+  paid: { status: "paid" },
+  dp: { status: "unpaid", "dp.nominal": { $gt: 0 } },
+  unpaid: { status: "unpaid", "dp.nominal": { $not: { $gt: 0 } } },
+};
+const STATUS_KEYS = ["unpaid", "dp", "draft", "paid"] as const;
 
 export const dynamic = "force-dynamic";
 
@@ -75,9 +92,48 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
   // than helpful). $month/$year in Asia/Jakarta so a late-night invoice
   // never gets bucketed into the wrong day's month/year versus what
   // jakartaMonthRange/jakartaYearRange filter by above.
-  // The four reads are independent, so they run together (one round trip of latency instead of four in a row). Sales options are only
-  // fetched for non-"sales" sessions (see salesFilter above): the roster, not just names on invoices, so a rep with no invoices still shows up.
-  const [periodeAgg, salesDocs, invoices] = await Promise.all([
+  // Status pill and page live in the URL: the server counts and pages through just what is shown.
+  const statusParam = typeof sp.status === "string" ? sp.status : "";
+  const status: InvoiceFilterKey = (STATUS_KEYS as readonly string[]).includes(statusParam) ? (statusParam as InvoiceRowStatus) : "semua";
+  const { page, pageSize, skip } = parsePage(sp);
+  const pageFilter = status === "semua" ? filter : { $and: [filter, STATUS_CLAUSE[status]] };
+
+  // Same expressions as the row mapping below ("dp" = unpaid with a DP; finished = paid AND shipped), evaluated in the database.
+  const dpAmount = { $ifNull: ["$dp.nominal", 0] };
+  const statusKey = {
+    $switch: {
+      branches: [
+        { case: { $eq: ["$status", "draft"] }, then: "draft" },
+        { case: { $eq: ["$status", "paid"] }, then: "paid" },
+        { case: { $gt: [dpAmount, 0] }, then: "dp" },
+      ],
+      default: "unpaid",
+    },
+  };
+  const paidAndShipped = { $and: [{ $eq: ["$status", "paid"] }, { $eq: ["$dikirim", true] }] };
+
+  // One page of invoices. Under "Semua" the list is grouped "Perlu tindakan" first, then "Selesai" (newest first within each), so the ids are ordered that way in
+  // the database and only this page's invoices are loaded; a single status is just newest-first.
+  const loadPageInvoices = async () => {
+    if (status !== "semua") {
+      return await Invoice.find(pageFilter).sort({ createdAt: -1, _id: -1 }).skip(skip).limit(pageSize);
+    }
+    const ids = await Invoice.aggregate<{ _id: Types.ObjectId }>([
+      { $match: filter },
+      { $addFields: { selesai: paidAndShipped } },
+      { $sort: { selesai: 1, createdAt: -1, _id: -1 } },
+      { $skip: skip },
+      { $limit: pageSize },
+      { $project: { _id: 1 } },
+    ]);
+    const docs = await Invoice.find({ _id: { $in: ids.map((d) => d._id) } });
+    const byId = new Map(docs.map((d) => [String(d._id), d]));
+    return ids.map((d) => byId.get(String(d._id))).filter((d): d is NonNullable<typeof d> => !!d);
+  };
+
+  // The reads are independent, so they run together. Sales options are only fetched for non-"sales" sessions (see salesFilter above): the roster, not just
+  // names on invoices, so a rep with no invoices still shows up. `groups` gives every pill count and total for the current search/sales/periode filters.
+  const [periodeAgg, salesDocs, groups, invoices] = await Promise.all([
     Invoice.aggregate<{ months: number[]; years: number[] }>([
       { $match: invoiceVisibilityFilter(session) },
       {
@@ -89,11 +145,50 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       },
     ]),
     session?.role !== "sales" ? Sales.find({ aktif: true }).sort({ nama: 1 }).lean() : Promise.resolve([] as { nama: string }[]),
-    Invoice.find(filter).sort({ createdAt: -1 }),
+    Invoice.aggregate<{ _id: { k: InvoiceRowStatus; done: boolean }; n: number; grand: number; sisa: number }>([
+      { $match: filter },
+      {
+        $group: {
+          _id: { k: statusKey, done: paidAndShipped },
+          n: { $sum: 1 },
+          grand: { $sum: "$grandTotal" },
+          sisa: { $sum: { $subtract: ["$grandTotal", dpAmount] } },
+        },
+      },
+    ]),
+    loadPageInvoices(),
   ]);
   const availableMonths = (periodeAgg[0]?.months ?? []).sort((a, b) => a - b);
   const availableYears = (periodeAgg[0]?.years ?? []).sort((a, b) => b - a);
   const availableSales = salesDocs.map((s) => s.nama);
+
+  const counts: InvoiceListCounts = { semua: 0, unpaid: 0, dp: 0, draft: 0, paid: 0, needs: 0, done: 0 };
+  const grand: Record<InvoiceFilterKey, number> = { semua: 0, unpaid: 0, dp: 0, draft: 0, paid: 0 };
+  let sisaDp = 0;
+  for (const g of groups) {
+    counts.semua += g.n;
+    counts[g._id.k] += g.n;
+    grand.semua += g.grand;
+    grand[g._id.k] += g.grand;
+    if (g._id.k === "dp") sisaDp += g.sisa;
+    if (g._id.k === "paid" && g._id.done) counts.done += g.n;
+    else counts.needs += g.n;
+  }
+  const total = counts[status];
+  clampPageOrRedirect("/invoice", sp, page, total, pageSize);
+  // "Sudah DP" sums what is still owed (sisa tagihan); every other pill, including "Semua", sums grandTotal.
+  const totalNilai = status === "dp" ? sisaDp : grand[status];
+
+  // Pill links keep search/sales/periode, drop page (a new status starts at page 1).
+  const pillHrefs = Object.fromEntries(
+    (["semua", ...STATUS_KEYS] as InvoiceFilterKey[]).map((key) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(sp)) if (k !== "page" && k !== "status" && typeof v === "string") params.set(k, v);
+      if (key !== "semua") params.set("status", key);
+      const qs = params.toString();
+      return [key, qs ? `/invoice?${qs}` : "/invoice"];
+    })
+  ) as Record<InvoiceFilterKey, string>;
 
   const rows: InvoiceRow[] = invoices.map((inv) => {
     const tanggal = inv.tanggalInvoice ?? inv.get("createdAt");
@@ -138,12 +233,14 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
           bulan={bulan}
           tahun={tahun}
           sales={salesFilter}
+          status={status === "semua" ? undefined : status}
           availableMonths={availableMonths}
           availableYears={availableYears}
           availableSales={availableSales}
         />
 
-        <InvoiceListClient rows={rows} />
+        <InvoiceListClient rows={rows} status={status} counts={counts} totalNilai={totalNilai} pillHrefs={pillHrefs} />
+        <Pagination basePath="/invoice" searchParams={sp} page={page} pageSize={pageSize} total={total} />
       </div>
     </>
   );

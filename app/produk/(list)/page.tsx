@@ -10,6 +10,8 @@ import { dbConnect } from "@/lib/db";
 import { Product, type ProductDoc } from "@/models/Product";
 import { rupiah, formatDimensi } from "@/lib/format";
 import { parseSort, mongoSort } from "@/lib/sort";
+import Pagination from "@/components/ui/Pagination";
+import { parsePage, clampPageOrRedirect } from "@/lib/pagination";
 import { getSession } from "@/lib/auth/session";
 import { isProductDeleteAllowed } from "@/lib/auth/access";
 import { getEffectiveKomisiInfo, KOMISI_SOURCE_LABEL } from "@/lib/commission";
@@ -101,6 +103,11 @@ export default async function ProdukListPage({
       })
     : productsRaw;
 
+  // Only one page of the filtered, sorted list is rendered; the summary strip below still covers every matching product.
+  const { page, pageSize, skip } = parsePage(sp);
+  clampPageOrRedirect("/produk", sp, page, products.length, pageSize);
+  const pageProducts = products.slice(skip, skip + pageSize);
+
   // Summary strip — "extreme"/"Soft Trade" rework (2026-08-30), same
   // treatment as app/pelanggan/page.tsx: a quick-glance stat row above
   // the list instead of jumping straight into a bare table. Derived from
@@ -147,7 +154,7 @@ export default async function ProdukListPage({
           2026-08-25. */}
       <MobileProdukList
         isOwner={isOwner}
-        products={products.map((p) => {
+        products={pageProducts.map((p) => {
           const { label, variant } = stockAgeInfo(p.tanggalBarangMasuk ?? p.createdAt!, p.alertHariTidakTerjual ?? 45);
           const komisiInfo = komisiInfoByProductId.get(String(p._id))!;
           return {
@@ -189,7 +196,7 @@ export default async function ProdukListPage({
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
+              {pageProducts.map((p) => (
                 <tr key={String(p._id)} className="transition hover:bg-surface">
                   <td className="border-b border-line px-5 py-4.5">
                     <div className="flex items-center gap-2">
@@ -262,6 +269,7 @@ export default async function ProdukListPage({
           </table>
         </TableScroll>
       </div>
+      <Pagination basePath="/produk" searchParams={sp} page={page} pageSize={pageSize} total={products.length} />
       </Panel>
     </>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Panel } from "@/components/ui/Panel";
 import { Field, FormActions, Input } from "@/components/ui/Form";
@@ -25,6 +26,7 @@ import { Button } from "@/components/ui/Button";
  * only this form's own presentation changed.
  */
 export default function PengaturanSyaratKetentuan() {
+  const router = useRouter();
   const [lines, setLines] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -67,6 +69,7 @@ export default function PengaturanSyaratKetentuan() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ syaratKetentuan: text }),
       });
+      if (res.ok) router.refresh();
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal menyimpan pengaturan");

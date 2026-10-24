@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Textarea } from "@/components/ui/Form";
@@ -24,6 +25,7 @@ const BLANK = { namaUsaha: "", alamat: "", bank: "", nomorRekening: "", kontak: 
  * See confirmation with the user 2026-08-22.
  */
 export default function SupplierManager() {
+  const router = useRouter();
   const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -56,6 +58,7 @@ export default function SupplierManager() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
+      if (res.ok) router.refresh();
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal menambah supplier");
@@ -94,6 +97,7 @@ export default function SupplierManager() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editValues),
       });
+      if (res.ok) router.refresh();
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Gagal memperbarui supplier");
@@ -110,6 +114,7 @@ export default function SupplierManager() {
   async function removeSupplier(id: string) {
     setSuppliers((prev) => prev.filter((s) => s._id !== id));
     await fetch(`/api/suppliers/${id}`, { method: "DELETE" });
+    router.refresh();
   }
 
   return (

@@ -102,7 +102,7 @@ function DimensiDigitInput({
 }
 
 /** Reads Nama Produk + Ukuran P×L×T from the photo's filename (the workflow is per photo). */
-function parseProductFilename(filename: string): { name: string; dims: { p: string; l: string; t: string } | null } {
+export function parseProductFilename(filename: string): { name: string; dims: { p: string; l: string; t: string } | null } {
   const base = filename.replace(/\.[^/.]+$/, ""); // strip extension
   const dimMatch = base.match(/(\d{1,4})\s*[xX×]\s*(\d{1,4})\s*[xX×]\s*(\d{1,4})/);
   let name = base;

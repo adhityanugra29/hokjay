@@ -10,6 +10,7 @@ import { useInvoicePdfDownload } from "./useInvoicePdfDownload";
 import { useDialog } from "@/components/ui/Dialog";
 import ZoomableImage from "@/components/katalog/ZoomableImage";
 import { useInvoicePrintData } from "./useInvoicePrintData";
+import LinkPending from "@/components/ui/LinkPending";
 import type { InvoicePrintData } from "@/lib/invoiceDisplay";
 import { rupiah, toWaPhone, formatDateShort } from "@/lib/format";
 
@@ -133,15 +134,40 @@ function DetailItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-type FilterKey = "semua" | InvoiceRowStatus;
+export type InvoiceFilterKey = "semua" | InvoiceRowStatus;
+
+/** Invoice counts for the current search/sales/periode filters, computed server-side (the page itself only carries one page of rows). */
+export interface InvoiceListCounts {
+  semua: number;
+  unpaid: number;
+  dp: number;
+  draft: number;
+  paid: number;
+  /** Under "Semua": invoices still needing action (not paid, or paid but not shipped) vs. finished ones. */
+  needs: number;
+  done: number;
+}
 
 /**
- * Invoice list: one flat list filtered through a pill toggle (not stacked sections). Every row has a "Preview" button opening a drawer with the real invoice
+ * Invoice list: one flat list filtered through status pills (links: the status lives in the URL, the server pages through it, not stacked sections). Every row has a "Preview" button opening a drawer with the real invoice
  * document (InvoiceDocument.tsx, shared with /invoice/[id]). The one-line summary is display only and tracks the active pill. Rows use fixed columns with a
  * chevron detail and, under "Semua", are grouped "Perlu tindakan"/"Selesai" (docs/SDD/mockups/invoice-list-v1.html).
  */
-export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
-  const [filter, setFilter] = useState<FilterKey>("semua");
+export default function InvoiceListClient({
+  rows,
+  status,
+  counts,
+  totalNilai,
+  pillHrefs,
+}: {
+  /** The current page of invoices (already filtered by `status` and ordered by the server). */
+  rows: InvoiceRow[];
+  status: InvoiceFilterKey;
+  counts: InvoiceListCounts;
+  /** Sum shown in the summary strip: remaining sisa tagihan for "Sudah DP", grandTotal otherwise. */
+  totalNilai: number;
+  pillHrefs: Record<InvoiceFilterKey, string>;
+}) {
   const [previewId, setPreviewId] = useState<string | null>(null);
   // Which row's detail (sales / item / kurir / Ubah / Hapus) is open — one at a time.
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -188,27 +214,14 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
     }
   }
 
-  const unpaidCount = rows.filter((r) => r.status === "unpaid").length;
-  const dpCount = rows.filter((r) => r.status === "dp").length;
-  const draftCount = rows.filter((r) => r.status === "draft").length;
-  const paidCount = rows.filter((r) => r.status === "paid").length;
-
-  const filtered = filter === "semua" ? rows : rows.filter((r) => r.status === filter);
   const previewRow = rows.find((r) => r.id === previewId) ?? null;
   const printResult = useInvoicePrintData(previewId);
   const printData = printResult?.data;
 
-  // "Total Nilai Invoice" shifts meaning with the active pill so it never mixes piutang with lunas: "Sudah DP" sums the remaining sisa tagihan; every other
-  // filter (incl. "Semua") sums grandTotal.
-  const totalNilaiInvoice =
-    filter === "dp"
-      ? filtered.reduce((s, r) => s + (r.sisaTagihan ?? r.grandTotal), 0)
-      : filtered.reduce((s, r) => s + r.grandTotal, 0);
-
   // Needs action = not paid yet, or paid but not shipped yet. Grouping applies only under "Semua".
-  const needsAction = filtered.filter((r) => r.status !== "paid" || !r.dikirim);
-  const done = filtered.filter((r) => r.status === "paid" && r.dikirim);
-  const grouped = filter === "semua";
+  const needsAction = rows.filter((r) => r.status !== "paid" || !r.dikirim);
+  const done = rows.filter((r) => r.status === "paid" && r.dikirim);
+  const grouped = status === "semua";
 
   /**
    * One list row on fixed columns (tanggal | pelanggan | status | total | aksi) so every row lines up. Visible actions: the one next-step button, Preview and WA
@@ -357,10 +370,10 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
       {/* One-line summary; display only, tracks whichever status pill is active. */}
       <div className="mb-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 tabular-nums">
         <span className="font-sans text-[0.8rem] text-muted">
-          <b className="mr-1 text-[1.2rem] font-extrabold tracking-tight text-ink">{filtered.length}</b>invoice
+          <b className="mr-1 text-[1.2rem] font-extrabold tracking-tight text-ink">{counts[status]}</b>invoice
         </span>
         <span className="font-sans text-[0.8rem] text-muted">
-          <b className="mr-1 text-[1.2rem] font-extrabold tracking-tight text-ink">{rupiah(totalNilaiInvoice)}</b>
+          <b className="mr-1 text-[1.2rem] font-extrabold tracking-tight text-ink">{rupiah(totalNilai)}</b>
           total nilai
         </span>
       </div>
@@ -369,23 +382,24 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
         <div className="flex flex-wrap gap-1.5">
           {(
             [
-              ["semua", "Semua", rows.length],
-              ["unpaid", "Belum Dibayar", unpaidCount],
-              ["dp", "Sudah DP", dpCount],
-              ["draft", "Draft", draftCount],
-              ["paid", "Sudah Lunas", paidCount],
-            ] as [FilterKey, string, number][]
+              ["semua", "Semua", counts.semua],
+              ["unpaid", "Belum Dibayar", counts.unpaid],
+              ["dp", "Sudah DP", counts.dp],
+              ["draft", "Draft", counts.draft],
+              ["paid", "Sudah Lunas", counts.paid],
+            ] as [InvoiceFilterKey, string, number][]
           ).map(([key, label, count]) => (
-            <button
+            <Link
               key={key}
-              type="button"
-              onClick={() => setFilter(key)}
-              className={`cursor-pointer rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[0.72rem] font-bold ${
-                filter === key ? "border-accent bg-accent text-ink" : "border-line text-ink hover:border-accent-600"
+              href={pillHrefs[key]}
+              aria-current={status === key ? "true" : undefined}
+              className={`relative cursor-pointer rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[0.72rem] font-bold no-underline ${
+                status === key ? "border-accent bg-accent text-ink" : "border-line text-ink hover:border-accent-600"
               }`}
             >
               {label} <span className="opacity-60">({count})</span>
-            </button>
+              <LinkPending className="-right-1 -top-1" />
+            </Link>
           ))}
         </div>
       </div>
@@ -394,15 +408,15 @@ export default function InvoiceListClient({ rows }: { rows: InvoiceRow[] }) {
       <div className="mt-3.5">
         {grouped ? (
           <>
-            {needsAction.length > 0 && <GroupTitle label="Perlu tindakan" count={needsAction.length} highlight />}
+            {needsAction.length > 0 && <GroupTitle label="Perlu tindakan" count={counts.needs} highlight />}
             {needsAction.map(renderRow)}
-            {done.length > 0 && <GroupTitle label="Selesai" count={done.length} />}
+            {done.length > 0 && <GroupTitle label="Selesai" count={counts.done} />}
             {done.map(renderRow)}
           </>
         ) : (
-          filtered.map(renderRow)
+          rows.map(renderRow)
         )}
-        {filtered.length === 0 && (
+        {rows.length === 0 && (
           <div className="border-b border-line py-8 text-center font-mono text-[0.8rem] text-muted">
             Tidak ada invoice untuk filter ini.
           </div>

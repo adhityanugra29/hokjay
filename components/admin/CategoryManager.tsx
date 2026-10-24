@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { Input } from "@/components/ui/Form";
@@ -14,6 +15,7 @@ interface CategoryRow {
 }
 
 export default function CategoryManager({ isOwner }: { isOwner?: boolean }) {
+  const router = useRouter();
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -57,6 +59,7 @@ export default function CategoryManager({ isOwner }: { isOwner?: boolean }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     });
+    if (res.ok) router.refresh();
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       setError(body.error || "Gagal menambah kategori");
@@ -70,6 +73,7 @@ export default function CategoryManager({ isOwner }: { isOwner?: boolean }) {
   async function removeCategory(id: string) {
     setCategories((prev) => prev.filter((c) => c._id !== id));
     await fetch(`/api/categories/${id}`, { method: "DELETE" });
+    router.refresh();
   }
 
   function startEdit(c: CategoryRow) {
@@ -88,6 +92,7 @@ export default function CategoryManager({ isOwner }: { isOwner?: boolean }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: editName }),
     });
+    if (res.ok) router.refresh();
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       setEditError(body.error || "Gagal mengubah kategori");
@@ -123,6 +128,7 @@ export default function CategoryManager({ isOwner }: { isOwner?: boolean }) {
         komisiBekasPercent: editKomisi.trim() ? Number(editKomisi) : null,
       }),
     });
+    if (res.ok) router.refresh();
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       setEditKomisiError(body.error || "Gagal mengubah Komisi Bekas");

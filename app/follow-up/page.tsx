@@ -9,6 +9,8 @@ import TandaiKirimButton, { type CourierOption } from "@/components/invoice/Tand
 import { getFollowUpInvoices, summarizeFollowUpBySales } from "@/lib/dashboard";
 import { rupiah, rupiahCompact } from "@/lib/format";
 import { getSession } from "@/lib/auth/session";
+import Pagination from "@/components/ui/Pagination";
+import { parsePage, clampPageOrRedirect } from "@/lib/pagination";
 import { Courier } from "@/models/Courier";
 import { dbConnect } from "@/lib/db";
 
@@ -37,6 +39,10 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
 
   const [rows, couriers] = await Promise.all([getFollowUpInvoices(session), getCouriers()]);
   const bySales = summarizeFollowUpBySales(rows);
+  // The stat cards and "Total per sales" cover every open invoice; only the full invoice list below is paged.
+  const { page, pageSize, skip } = parsePage(sp);
+  clampPageOrRedirect("/follow-up", sp, page, rows.length, pageSize);
+  const pageRows = rows.slice(skip, skip + pageSize);
 
   const totalNilai = rows.reduce((s, r) => s + r.sisaTagihan, 0);
   const totalKomisi = rows.reduce((s, r) => s + r.komisiPotensial, 0);
@@ -105,7 +111,7 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
 
         <Panel>
           <PanelHead title="Semua invoice perlu follow-up" />
-          <MobileFollowUpRows rows={rows} />
+          <MobileFollowUpRows rows={pageRows} />
           <div className="hidden md:block">
           <TableScroll>
             <table className="w-full border-collapse">
@@ -136,7 +142,7 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {pageRows.map((r) => (
                   <tr key={r.invoiceId} className="hover:bg-[#fbfaf5]">
                     <td className="border-b border-line px-5 py-4.5 font-mono text-[0.8rem]">{r.nomor}</td>
                     <td className="border-b border-line px-5 py-4.5">
@@ -195,6 +201,7 @@ export default async function FollowUpPage({ searchParams }: PageProps<"/follow-
             </table>
           </TableScroll>
           </div>
+          <Pagination basePath="/follow-up" searchParams={sp} page={page} pageSize={pageSize} total={rows.length} />
         </Panel>
       </div>
     </>

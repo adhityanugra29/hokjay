@@ -32,6 +32,7 @@ export default function PeriodPicker({
     const params = new URLSearchParams(searchParams.toString());
     params.set("bulan", String(nextMonth));
     params.set("tahun", String(nextYear));
+    params.delete("page");
     startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 

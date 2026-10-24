@@ -35,7 +35,7 @@ export default function SortableHeader({
 
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(searchParams ?? {})) {
-    if (k === sortParam || k === dirParam) continue;
+    if (k === sortParam || k === dirParam || k === "page") continue; // a new sort restarts at page 1
     if (typeof v === "string") params.set(k, v);
   }
   params.set(sortParam, sortKey);

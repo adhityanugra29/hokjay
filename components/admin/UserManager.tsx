@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
 import { Panel, PanelHead, TableScroll } from "@/components/ui/Panel";
 import { Field, FormGrid, FormActions, Input, Select } from "@/components/ui/Form";
@@ -38,6 +39,7 @@ const BLANK = {
  * sheet's "Rekening" column and verified/unverified status.
  */
 export default function UserManager() {
+  const router = useRouter();
   const [sales, setSales] = useState<SalesRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -79,6 +81,7 @@ export default function UserManager() {
         targetBulanan: Number(values.targetBulanan) || 0,
       }),
     });
+    router.refresh();
     setValues(BLANK);
     setShowForm(false);
     setSaving(false);
@@ -92,6 +95,7 @@ export default function UserManager() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ aktif }),
     });
+    router.refresh();
   }
 
   async function toggleVerified(id: string, rekeningTerverifikasi: boolean) {
@@ -101,6 +105,7 @@ export default function UserManager() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rekeningTerverifikasi }),
     });
+    router.refresh();
   }
 
   function startEdit(s: SalesRow) {
@@ -129,6 +134,7 @@ export default function UserManager() {
         targetBulanan: Number(editValues.targetBulanan) || 0,
       }),
     });
+    router.refresh();
     setEditingId(null);
     setEditSaving(false);
     load();
@@ -137,6 +143,7 @@ export default function UserManager() {
   async function removeSales(id: string) {
     setSales((prev) => prev.filter((s) => s._id !== id));
     await fetch(`/api/sales/${id}`, { method: "DELETE" });
+    router.refresh();
   }
 
   return (

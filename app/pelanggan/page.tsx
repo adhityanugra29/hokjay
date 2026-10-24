@@ -10,6 +10,8 @@ import { getPelangganSummary } from "@/lib/pelanggan";
 import { getSession } from "@/lib/auth/session";
 import { rupiah, rupiahCompact } from "@/lib/format";
 import { parseSort, sortRows, type SortDir } from "@/lib/sort";
+import Pagination from "@/components/ui/Pagination";
+import { parsePage, clampPageOrRedirect } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +51,11 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
     return true;
   });
   const filteredRows = hasSort ? sortRows(matchedRows, sortField, sortDir) : matchedRows;
+  // Only one page of the filtered, sorted list is rendered (the stat cards and filters above still see every customer): fewer rows to ship and mount,
+  // which matters here because the list is rendered twice (phone cards + desktop grid).
+  const { page, pageSize, skip } = parsePage(sp);
+  clampPageOrRedirect("/pelanggan", sp, page, filteredRows.length, pageSize);
+  const pageRows = filteredRows.slice(skip, skip + pageSize);
 
   const emptyMessage =
     // Only the true empty-account state gets the "add first customer" nudge
@@ -141,7 +148,7 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
 
             {/* Mobile card list below md; the fixed-column grid table takes
                 over at md+. Per the user's request 2026-08-25. */}
-            <MobilePelangganList rows={filteredRows} emptyMessage={emptyMessage} />
+            <MobilePelangganList rows={pageRows} emptyMessage={emptyMessage} />
             <div className="hidden md:block">
               {/* "Kebiasaan bayar" column removed per the user's request
                   2026-08-25. */}
@@ -163,7 +170,7 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
                 </SortCol>
                 <span />
               </div>
-              {filteredRows.map((r) => (
+              {pageRows.map((r) => (
                 <div
                   key={r._id}
                   className="grid grid-cols-[100px_1.5fr_70px_105px_100px_60px] items-center gap-3.5 border-b border-line px-5 py-3.5 text-[0.85rem] transition last:border-b-0 hover:bg-surface"
@@ -187,6 +194,7 @@ export default async function PelangganPage({ searchParams }: PageProps<"/pelang
                 <div className="py-10 text-center font-mono text-sm text-muted">{emptyMessage}</div>
               )}
             </div>
+            <Pagination basePath="/pelanggan" searchParams={sp} page={page} pageSize={pageSize} total={filteredRows.length} />
           </div>
 
           <div className="flex flex-col gap-5">
@@ -266,7 +274,7 @@ function SortCol({
   const nextDir: SortDir = active && dir === "asc" ? "desc" : "asc";
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(sp)) {
-    if (k === "sort" || k === "dir") continue;
+    if (k === "sort" || k === "dir" || k === "page") continue; // a new sort restarts at page 1
     if (typeof v === "string") params.set(k, v);
   }
   params.set("sort", column);

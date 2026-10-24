@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { Avatar, PaySwitch, bigFigureCls, eyebrowCls, heroCls } from "@/components/payroll/ui";
@@ -41,6 +42,7 @@ export default function AbsensiForm({
   karyawanList: KaryawanOption[];
   hadirRows: AbsensiRow[];
 }) {
+  const router = useRouter();
   const [hadirMap, setHadirMap] = useState<Map<string, string>>(
     () => new Map(hadirRows.map((r) => [r.karyawan, r._id]))
   );
@@ -58,6 +60,7 @@ export default function AbsensiForm({
       const existingAbsensiId = hadirMap.get(karyawanId);
       if (existingAbsensiId) {
         await fetch(`/api/absensi/${existingAbsensiId}`, { method: "DELETE" });
+        router.refresh();
         setHadirMap((prev) => {
           const next = new Map(prev);
           next.delete(karyawanId);
@@ -69,6 +72,7 @@ export default function AbsensiForm({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ karyawanId, tanggal }),
         });
+        if (res.ok) router.refresh();
         const row = await res.json();
         setHadirMap((prev) => new Map(prev).set(karyawanId, row._id));
       }

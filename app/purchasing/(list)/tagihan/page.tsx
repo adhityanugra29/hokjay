@@ -5,13 +5,21 @@ import Pill from "@/components/ui/Pill";
 import { dbConnect } from "@/lib/db";
 import { PurchaseBill } from "@/models/PurchaseBill";
 import { rupiah, formatDateShort } from "@/lib/format";
+import Pagination from "@/components/ui/Pagination";
+import { parsePage, clampPageOrRedirect } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
 /** "Material Order" (renamed from "Tagihan Pembelian" 2026-08-23). Model stays PurchaseBill internally. */
-export default async function PurchasingTagihanPage() {
+export default async function PurchasingTagihanPage({ searchParams }: PageProps<"/purchasing/tagihan">) {
+  const sp = await searchParams;
+  const { page, pageSize, skip } = parsePage(sp);
   await dbConnect();
-  const bills = await PurchaseBill.find().sort({ createdAt: -1 }).lean();
+  const [bills, total] = await Promise.all([
+    PurchaseBill.find().sort({ createdAt: -1, _id: -1 }).skip(skip).limit(pageSize).lean(),
+    PurchaseBill.countDocuments(),
+  ]);
+  clampPageOrRedirect("/purchasing/tagihan", sp, page, total, pageSize);
 
   return (
     <Panel>
@@ -82,6 +90,7 @@ export default async function PurchasingTagihanPage() {
           </tbody>
         </table>
       </TableScroll>
+      <Pagination basePath="/purchasing/tagihan" searchParams={sp} page={page} pageSize={pageSize} total={total} />
     </Panel>
   );
 }
