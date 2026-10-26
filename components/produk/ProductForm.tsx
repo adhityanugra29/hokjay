@@ -7,7 +7,7 @@ import { Field, Input, Select, Textarea, CurrencyInput } from "@/components/ui/F
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button, LinkButton } from "@/components/ui/Button";
 import UploadBox from "@/components/ui/UploadBox";
-import { rupiah } from "@/lib/format";
+import { rupiah, autoKapital } from "@/lib/format";
 import { DEFAULT_KOMISI_BEKAS_PERCENT, DEFAULT_KOMISI_BARU_PERCENT } from "@/lib/commission";
 
 export interface ProductFormValues {
@@ -296,7 +296,7 @@ export default function ProductForm({
               <Input
                 required
                 value={values.name}
-                onChange={(e) => set("name", e.target.value)}
+                onChange={(e) => set("name", autoKapital(e.target.value))}
                 placeholder="Contoh: Meja Kerja Stainless Steel 120cm"
               />
             </Field>

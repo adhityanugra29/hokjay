@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Field, Input, Select, Textarea, CurrencyInput } from "@/components/ui/Form";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Button, LinkButton } from "@/components/ui/Button";
-import { rupiah } from "@/lib/format";
+import { rupiah, autoKapital } from "@/lib/format";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { DEFAULT_KOMISI_BEKAS_PERCENT, DEFAULT_KOMISI_BARU_PERCENT } from "@/lib/commission";
 import { parseProductFilename } from "./ProductForm";
@@ -585,7 +585,7 @@ export default function BulkProductWizard({ categories, isOwner }: { categories:
                 <div className="mb-2 font-mono text-[0.64rem] font-bold tracking-widest text-muted uppercase">Identitas</div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field label="Nama Produk" span2>
-                    <Input required value={v.name} onChange={(e) => setValue("name", e.target.value)} placeholder="Contoh: Meja Kerja Stainless Steel 120cm" />
+                    <Input required value={v.name} onChange={(e) => setValue("name", autoKapital(e.target.value))} placeholder="Contoh: Meja Kerja Stainless Steel 120cm" />
                   </Field>
                   <Field label="Kategori" hint={cur.fromPrev.category ? "Dari produk sebelumnya — ganti bila beda" : undefined}>
                     <div data-combobox className={cur.fromPrev.category ? "[&_input]:border-accent-600 [&_input]:bg-accent-100" : ""}>

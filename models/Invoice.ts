@@ -1,4 +1,5 @@
 import { Schema, model, models, Types, type InferSchemaType, type Model } from "mongoose";
+import { autoKapital } from "@/lib/format";
 
 const InvoiceItemSchema = new Schema(
   {
@@ -11,7 +12,7 @@ const InvoiceItemSchema = new Schema(
     // request 2026-10-07.
     isJasa: { type: Boolean, default: false },
     jasa: { type: Schema.Types.ObjectId, ref: "Jasa" },
-    namaSnapshot: { type: String, required: true },
+    namaSnapshot: { type: String, required: true, set: autoKapital },
     // Dimensions at the moment of sale (e.g. "120x80x60 cm"), shown right
     // after the product name on the printed invoice — per the user's
     // request 2026-08-28. Undefined for custom items (no dimensi to

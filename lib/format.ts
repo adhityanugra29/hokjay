@@ -138,3 +138,8 @@ export function formatDimensi(
   if (!panjangCm && !lebarCm && !tinggiCm) return undefined;
   return `${panjangCm ?? "—"}x${lebarCm ?? "—"}x${tinggiCm ?? "—"} cm`;
 }
+
+/** Nama item selalu HURUF BESAR. */
+export function autoKapital(s: string): string {
+  return s.toUpperCase();
+}

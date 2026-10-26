@@ -1,9 +1,10 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
+import { autoKapital } from "@/lib/format";
 
 const ProductSchema = new Schema(
   {
-    name: { type: String, required: true, trim: true },
+    name: { type: String, required: true, trim: true, set: autoKapital },
     merk: { type: String, trim: true },
     sku: { type: String, required: true, unique: true, trim: true, uppercase: true },
     // Free-form string, validated against models/Category.ts entries at the

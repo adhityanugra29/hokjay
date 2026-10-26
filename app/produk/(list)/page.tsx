@@ -20,7 +20,7 @@ import type { HydratedDocument } from "mongoose";
 
 export const dynamic = "force-dynamic";
 
-const SORT_FIELDS = ["name", "sku", "hargaRekomendasi", "stok", "tanggalBarangMasuk", "komisiPercent"] as const;
+const SORT_FIELDS = ["name", "sku", "hargaRekomendasi", "stok", "tanggalBarangMasuk", "komisiPercent", "createdAt"] as const;
 
 /**
  * "Umur Stok" (stock age) — replaces the old quantity-based Stok
@@ -53,7 +53,10 @@ export default async function ProdukListPage({
 }: PageProps<"/produk">) {
   const sp = await searchParams;
   const { search } = sp;
-  const { field, dir } = parseSort(sp, SORT_FIELDS, "name");
+  // Default: terbaru dimasukkan di atas; header yang diklik tetap memakai arah dari URL.
+  const parsed = parseSort(sp, SORT_FIELDS, "createdAt");
+  const { field } = parsed;
+  const dir = sp.sort || sp.dir ? parsed.dir : "desc";
   await dbConnect();
 
   // Owner-only (2026-09-07) — see lib/auth/access.ts's
@@ -200,7 +203,7 @@ export default async function ProdukListPage({
                 <tr key={String(p._id)} className="transition hover:bg-surface">
                   <td className="border-b border-line px-5 py-4.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{p.name}</span>
+                      <span className="font-medium uppercase">{p.name}</span>
                       {/* Just "Bekas"/"Baru", filled bright color — per the
                           user's request 2026-08-25. */}
                       <span

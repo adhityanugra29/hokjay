@@ -1,5 +1,5 @@
 import { TableScroll } from "@/components/ui/Panel";
-import { rupiah, formatDateLong, formatDateShort } from "@/lib/format";
+import { rupiah, formatDateLong, formatDateShort, autoKapital } from "@/lib/format";
 import { displayDiskon, displayHarga, type InvoicePrintData } from "@/lib/invoiceDisplay";
 
 /**
@@ -147,7 +147,7 @@ export default function InvoiceDocument({
             {shownItems.map((item, idx) => (
               <tr key={idx}>
                 <td className="border-b border-line py-3 text-[0.88rem]">
-                  {item.namaSnapshot}
+                  {autoKapital(item.namaSnapshot)}
                   {item.dimensiSnapshot && (
                     <span className="ml-1.5 font-mono text-[0.72rem] text-muted">({item.dimensiSnapshot})</span>
                   )}

@@ -5,7 +5,7 @@ import type { CartItem } from "@/components/cart/CartProvider";
 import { useCart } from "@/components/cart/CartProvider";
 import { CurrencyInput } from "@/components/ui/Form";
 import { computeLineCommission, maxDiskonBekas, maxDiskonBaru } from "@/lib/commission";
-import { rupiah } from "@/lib/format";
+import { rupiah, autoKapital } from "@/lib/format";
 
 /**
  * A number input backed by its own local string buffer instead of being
@@ -84,7 +84,7 @@ export default function ItemRowEditor({ item, isOwner }: { item: CartItem; isOwn
     <div className="mb-2.5 rounded-xl bg-panel p-4 shadow-sm">
       <div className="mb-2.5 flex items-center gap-2.5">
         <span className="flex-1 rounded-lg bg-[#efece3] px-2.5 py-2 font-sans text-[0.88rem] font-medium">
-          {item.name}
+          {autoKapital(item.name)}
           {/* Snapshotted when this line was added (see ProductCard.tsx/
               AddProductSidebar.tsx) — stays showing even if the product's
               own Flash Sale is later ended. Per the user's request

@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { rupiah, formatDateShort, formatDateLong } from "@/lib/format";
+import { rupiah, formatDateShort, formatDateLong, autoKapital } from "@/lib/format";
 import { displayDiskon, displayHarga, type InvoicePrintItem, type InvoicePrintData } from "@/lib/invoiceDisplay";
 
 // Same A4-at-96dpi math as the Katalog PDF (CatalogPrintDoc.tsx) — 794px
@@ -363,7 +363,7 @@ export default function InvoicePrintDoc({
                     {rows.map((item, idx) => (
                       <tr key={idx}>
                         <td className="border-b border-line py-3 text-[0.88rem]">
-                          {item.namaSnapshot}
+                          {autoKapital(item.namaSnapshot)}
                           {item.dimensiSnapshot && (
                             <span className="ml-1.5 font-mono text-[0.72rem] text-muted">
                               ({item.dimensiSnapshot})

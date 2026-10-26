@@ -45,7 +45,7 @@ export default function MobileProdukList({
         <div key={p.id} className="border-b border-line px-4 py-3.5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="truncate font-sans text-[0.88rem] font-semibold">{p.name}</div>
+              <div className="truncate font-sans text-[0.88rem] font-semibold uppercase">{p.name}</div>
               {/* Ukuran — per the user's request 2026-09-07, own line right
                   under the name; absent (no empty line) when unset. The
                   category/merk/sku line below shrinks slightly (0.68rem ->

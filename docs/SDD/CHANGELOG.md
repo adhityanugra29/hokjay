@@ -6,6 +6,10 @@
 
 ---
 
+## 2026-10-26
+
+**Auto Kapital nama item** — nama produk/item invoice selalu HURUF BESAR: `autoKapital` (`lib/format.ts`) dipasang sebagai setter `Product.name` dan `InvoiceItem.namaSnapshot`, saat mengetik di `ProductForm`/`BulkProductWizard`, dan saat menampilkan invoice lama (`InvoiceDocument`, `InvoicePrintDoc`, `ItemRowEditor`); Inventory tampil uppercase. Inventory default urut terbaru (`createdAt` desc). Data di database tidak dimigrasi. Regression: `tsc` bersih; belum diuji di browser.
+
 ## 2026-10-24
 
 **Refactor Fase 2 — `ProductCard` dipecah (TASK-049)** — 628 → ±290 baris. Dipindah apa adanya: `components/katalog/ProductCardPhoto.tsx` (area foto: banner, checkbox pilih, pensil, pil kondisi, foto zoom, tombol unduh + helper `downloadPhoto`) dan `ProductCardPricing.tsx` (field harga, switch Rekomendasi/Bottom, Diskon, Harga Final, Flash Sale + state/fungsi yang hanya dipakai bagian itu). `effectivePrice`/`discount`/`finalPrice`, komisi live, stok, detail spesifikasi, dan tombol keranjang tetap di `ProductCard`. Diverifikasi dengan pembanding teks: setiap blok yang dipindah identik dengan aslinya; tanpa perubahan markup/kelas CSS/logika. Regression: `tsc`, eslint, dan `npm run build` bersih; belum diuji di browser (periksa: Pilih katalog, unduh foto, ganti harga, diskon melebihi batas, Flash Sale, Tambah ke Invoice).
