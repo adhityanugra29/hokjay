@@ -6,6 +6,12 @@
 
 ---
 
+## 2026-11-02
+
+**Invoice: kolom uang satu baris** — tabel item di `InvoiceDocument` (Harga, Diskon, Subtotal): "Rp" dan angka terpecah ke dua baris di kolom sempit. Sel uang diberi `whitespace-nowrap`, font 0.88→0.8rem, `pl-2` antar kolom (tabel tetap `min-w-[480px]` dan bisa digeser di `TableScroll`). Preserved: data, perhitungan, `InvoicePrintDoc` (PDF) tidak diubah. Commit `07ac29d`, di-push ke `main` (deploy Vercel via GitHub). Regression: `tsc` bersih; belum diuji di browser/ponsel sempit.
+
+---
+
 ## 2026-10-26
 
 **Auto Kapital nama item** — nama produk/item invoice selalu HURUF BESAR: `autoKapital` (`lib/format.ts`) dipasang sebagai setter `Product.name` dan `InvoiceItem.namaSnapshot`, saat mengetik di `ProductForm`/`BulkProductWizard`, dan saat menampilkan invoice lama (`InvoiceDocument`, `InvoicePrintDoc`, `ItemRowEditor`); Inventory tampil uppercase. Inventory default urut terbaru (`createdAt` desc). Data di database tidak dimigrasi. Regression: `tsc` bersih; belum diuji di browser.
