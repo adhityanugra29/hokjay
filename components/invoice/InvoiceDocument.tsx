@@ -161,9 +161,9 @@ export default function InvoiceDocument({
                 <td className="border-b border-line py-3 text-center text-[0.88rem]">{item.isJasa ? "–" : item.qty}</td>
                 {!isSuratJalan && (
                   <>
-                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(displayHarga(item))}</td>
-                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{item.isJasa ? "–" : rupiah(displayDiskon(item))}</td>
-                    <td className="border-b border-line py-3 text-right text-[0.88rem]">{rupiah(item.subtotal)}</td>
+                    <td className="border-b border-line whitespace-nowrap py-3 pl-2 text-right text-[0.8rem]">{rupiah(displayHarga(item))}</td>
+                    <td className="border-b border-line whitespace-nowrap py-3 pl-2 text-right text-[0.8rem]">{item.isJasa ? "–" : rupiah(displayDiskon(item))}</td>
+                    <td className="border-b border-line whitespace-nowrap py-3 pl-2 text-right text-[0.8rem]">{rupiah(item.subtotal)}</td>
                   </>
                 )}
               </tr>
