@@ -111,7 +111,9 @@ export function maxDiskonBekas(
 ): number {
   if (unlimited) return hargaJual;
   const base = Math.round(hargaMinimum * (komisiBekasPercent / 100));
-  return Math.max(0, hargaJual - hargaMinimum + base);
+  const markup = Math.max(0, hargaJual - hargaMinimum);
+  // Commission = max(base, markup), so any diskon off a markup > base erodes it; only a markup <= base can be discounted (down to the floor) for free.
+  return markup <= base ? markup : 0;
 }
 
 /** Flat commission rate (%) for barang baru/custom; matches the 0.06 in computeLineCommission. */
@@ -124,8 +126,8 @@ export const DEFAULT_KOMISI_BARU_PERCENT = 6;
  */
 export function maxDiskonBaru(hargaJual: number, hargaMinimum: number, unlimited = false): number {
   if (unlimited) return hargaJual;
-  const base = Math.round(hargaMinimum * (DEFAULT_KOMISI_BARU_PERCENT / 100));
-  return Math.max(0, hargaJual - hargaMinimum + base);
+  // shortcut: flat 6% always shrinks with diskon, so zero erosion is impossible; cap at Harga Bottom instead.
+  return Math.max(0, hargaJual - hargaMinimum);
 }
 
 /** One invoice line's shape as far as the bulk-diskon allocator cares. */
@@ -175,7 +177,8 @@ export function allocateBulkDiskon(
   totalRequested: number,
   unlimited = false
 ): BulkDiskonResult {
-  const eligible = lines.filter((l) => !l.isFlashSale && l.diskonPerUnit === 0 && l.qty > 0);
+  // Custom lines are never bulk-discounted: the rep enters their diskon manually.
+  const eligible = lines.filter((l) => !l.isFlashSale && !l.isCustom && l.diskonPerUnit === 0 && l.qty > 0);
   const sorted = [...eligible].sort((a, b) => komisiCostPerRupiah(a) - komisiCostPerRupiah(b));
 
   const allocations = new Map<string, number>();

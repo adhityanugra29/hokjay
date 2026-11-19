@@ -6,6 +6,12 @@
 
 ---
 
+## 2026-11-19
+
+**Batas diskon item tidak boleh menyentuh komisi** — `maxDiskonBekas`: diskon hanya boleh jika markup di atas Harga Bottom <= komisi dasar (maka batas = markup, harga tidak pernah di bawah bottom); markup > komisi dasar = 0 (markup itu komisi sales). `maxDiskonBaru`: batas = hargaJual - hargaMinimum (komisi flat 6% tetap turun proporsional, tidak bisa nol-erosi). Item custom dikeluarkan dari Diskon Bulk (diskon manual saja). Sisa bulk tetap dilempar ke item lain (logika lama). Owner tetap unlimited. Server memakai fungsi yang sama. Regression: `tsc` bersih; belum diuji di browser.
+
+---
+
 ## 2026-11-02
 
 **Invoice: kolom uang satu baris** — tabel item di `InvoiceDocument` (Harga, Diskon, Subtotal): "Rp" dan angka terpecah ke dua baris di kolom sempit. Sel uang diberi `whitespace-nowrap`, font 0.88→0.8rem, `pl-2` antar kolom (tabel tetap `min-w-[480px]` dan bisa digeser di `TableScroll`). Preserved: data, perhitungan, `InvoicePrintDoc` (PDF) tidak diubah. Commit `07ac29d`, di-push ke `main` (deploy Vercel via GitHub). Regression: `tsc` bersih; belum diuji di browser/ponsel sempit.
