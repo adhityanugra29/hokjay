@@ -6,6 +6,12 @@
 
 ---
 
+## 2026-11-23
+
+**Fix: diskon item bekas tidak bisa dipakai (TASK-050)** — commit `6d64ab0` membuat `maxDiskonBekas` = 0 bila markup di atas Harga Bottom > komisi dasar, jadi hampir semua barang bekas tak bisa didiskon. Sekarang batas = `hargaJual − hargaMinimum` (diskon sampai Harga Bottom, tidak melewatinya); komisi bekas turun paling jauh ke komisi dasar (10% × bottom). Preserved: rumus komisi, `maxDiskonBaru`, Owner unlimited, pengecualian item custom dari Diskon Bulk. Server memakai fungsi yang sama. Regression: `tsc` bersih; belum diuji di browser.
+
+---
+
 ## 2026-11-19
 
 **Batas diskon item tidak boleh menyentuh komisi** — `maxDiskonBekas`: diskon hanya boleh jika markup di atas Harga Bottom <= komisi dasar (maka batas = markup, harga tidak pernah di bawah bottom); markup > komisi dasar = 0 (markup itu komisi sales). `maxDiskonBaru`: batas = hargaJual - hargaMinimum (komisi flat 6% tetap turun proporsional, tidak bisa nol-erosi). Item custom dikeluarkan dari Diskon Bulk (diskon manual saja). Sisa bulk tetap dilempar ke item lain (logika lama). Owner tetap unlimited. Server memakai fungsi yang sama. Regression: `tsc` bersih; belum diuji di browser.

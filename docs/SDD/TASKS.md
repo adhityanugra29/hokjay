@@ -6,6 +6,20 @@
 
 ---
 
+## TASK-050 — Fix: batas diskon item bekas terlalu ketat (hampir selalu Rp 0)
+
+**Type:** Bug fix
+**Priority:** P1
+**Status:** REVIEW
+**Created:** 2026-11-23 · **Last updated:** 2026-11-23
+
+**Description:** Sejak commit `6d64ab0`, `maxDiskonBekas` mengembalikan 0 kalau markup di atas Harga Bottom > komisi dasar (10% × bottom), sehingga sales tidak bisa memberi diskon pada hampir semua barang bekas ("Melebihi batas insentif, disesuaikan ke maks. Rp 0").
+**Keputusan:** "Tidak menyentuh komisi" = diskon boleh sampai Harga Bottom, tidak melewatinya. Batas bekas = `hargaJual − hargaMinimum` (sama dengan baru). Di titik bottom komisi = komisi dasar, tidak pernah di bawahnya (`computeLineCommission` tidak diubah).
+**Files:** `lib/commission.ts` (`maxDiskonBekas`). Server (`createInvoice`/`updateInvoice`) dan UI (`ItemRowEditor`, `ProductCardPricing`) memakai fungsi yang sama.
+**Remaining:** uji di browser (invoice dengan item bekas markup besar; Owner tetap unlimited); docstring `maxDiskonBekas` masih menjelaskan rumus lama.
+
+---
+
 ## TASK-049 — Refactor: performa halaman, pagination daftar, kerapihan komponen besar
 
 **Type:** Refactor / Performance

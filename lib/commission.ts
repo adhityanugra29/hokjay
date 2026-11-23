@@ -110,10 +110,9 @@ export function maxDiskonBekas(
   unlimited = false
 ): number {
   if (unlimited) return hargaJual;
-  const base = Math.round(hargaMinimum * (komisiBekasPercent / 100));
-  const markup = Math.max(0, hargaJual - hargaMinimum);
-  // Commission = max(base, markup), so any diskon off a markup > base erodes it; only a markup <= base can be discounted (down to the floor) for free.
-  return markup <= base ? markup : 0;
+  // Diskon boleh sampai Harga Bottom (hargaJual - hargaMinimum); di titik itu komisi = base (10% × min), tidak pernah di bawahnya.
+  void komisiBekasPercent;
+  return Math.max(0, hargaJual - hargaMinimum);
 }
 
 /** Flat commission rate (%) for barang baru/custom; matches the 0.06 in computeLineCommission. */
