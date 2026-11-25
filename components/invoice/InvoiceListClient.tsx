@@ -33,6 +33,8 @@ export interface InvoiceRow {
   grandTotal: number;
   komisi: number;
   dpPercent?: number;
+  /** Number of DP payments received (shown as "· 2x" when more than one). */
+  dpCount?: number;
   sisaTagihan?: number;
   /** Real "sudah dikirim" flag, independent of payment status — see /api/invoices/[id]/kirim. */
   dikirim: boolean;
@@ -291,6 +293,7 @@ export default function InvoiceListClient({
             <span className={`rounded-full border px-2 py-0.5 font-mono text-[0.62rem] font-bold ${STATUS_TAG_CLASS[r.status]}`}>
               {STATUS_LABEL[r.status]}
               {r.status === "dp" && r.dpPercent != null ? ` ${r.dpPercent}%` : ""}
+              {r.status === "dp" && (r.dpCount ?? 1) > 1 ? ` · ${r.dpCount}x` : ""}
             </span>
             {!isDraft &&
               (r.dikirim ? (
@@ -579,13 +582,15 @@ function BuktiCard({ eyebrow, url }: { eyebrow: string; url: string }) {
 function BuktiTransferView({ invoice }: { invoice: InvoicePrintData }) {
   return (
     <div className="flex flex-col gap-4">
-      {invoice.dpBuktiUrl && (
-        <BuktiCard
-          eyebrow={`Bukti DP · ${formatDateShort(invoice.dpTanggal ?? invoice.tanggal)}${
-            invoice.dpNominal ? ` · ${rupiah(invoice.dpNominal)}` : ""
-          }`}
-          url={invoice.dpBuktiUrl}
-        />
+      {(invoice.dpList ?? []).map(
+        (d, i, arr) =>
+          d.buktiUrl && (
+            <BuktiCard
+              key={i}
+              eyebrow={`Bukti DP${arr.length > 1 ? ` ke-${i + 1}` : ""} · ${formatDateShort(d.tanggal ?? invoice.tanggal)} · ${rupiah(d.nominal)}`}
+              url={d.buktiUrl}
+            />
+          )
       )}
       {invoice.paymentBuktiUrl && (
         <BuktiCard

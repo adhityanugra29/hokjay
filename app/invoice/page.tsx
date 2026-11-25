@@ -211,6 +211,7 @@ export default async function InvoiceListPage({ searchParams }: PageProps<"/invo
       kurir: inv.kurir ?? undefined,
       grandTotal: inv.grandTotal,
       komisi,
+      dpCount: inv.dp?.cicilan?.length || undefined,
       dpPercent: inv.dp?.nominal ? Math.round((inv.dp.nominal / inv.grandTotal) * 100) : undefined,
       sisaTagihan: inv.dp?.nominal ? inv.grandTotal - inv.dp.nominal : undefined,
       dikirim: !!inv.dikirim,

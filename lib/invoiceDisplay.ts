@@ -50,6 +50,8 @@ export interface InvoicePrintData {
   grandTotal: number;
   dpNominal?: number;
   dpTanggal?: string;
+  /** Each DP received (DP bertahap) — the document lists them individually when there's more than one. */
+  dpList?: { nominal: number; tanggal?: string; buktiUrl?: string }[];
   /** True once the invoice is fully settled (models/Invoice.ts status === "paid") — drives the "LUNAS" badge and zeroes out "Sisa Tagihan" for invoices that started as DP. */
   isPaid?: boolean;
   /**
@@ -115,6 +117,33 @@ export function displayHarga(item: InvoicePrintItem): number {
   return item.hargaJual;
 }
 
+export interface DpCicilanView {
+  nominal: number;
+  tanggal?: Date;
+  metode?: string;
+  buktiUrl?: string;
+}
+
+/**
+ * Per-payment DP list (DP bertahap). A pre-cicilan invoice only has the
+ * aggregate dp.nominal — shown as a single entry.
+ */
+export function dpListOf(
+  dp?: {
+    nominal?: number | null;
+    tanggal?: Date | null;
+    metode?: string | null;
+    buktiUrl?: string | null;
+    cicilan?: readonly { nominal?: number | null; tanggal?: Date | null; metode?: string | null; buktiUrl?: string | null }[] | null;
+  } | null
+): DpCicilanView[] {
+  if (dp?.cicilan?.length) {
+    return dp.cicilan.map((c) => ({ nominal: c.nominal ?? 0, tanggal: c.tanggal ?? undefined, metode: c.metode ?? undefined, buktiUrl: c.buktiUrl ?? undefined }));
+  }
+  if (dp?.nominal) return [{ nominal: dp.nominal, tanggal: dp.tanggal ?? undefined, metode: dp.metode ?? undefined, buktiUrl: dp.buktiUrl ?? undefined }];
+  return [];
+}
+
 /**
  * The one place an Invoice document becomes InvoicePrintData — used by
  * /invoice/[id], GET /api/invoices/[id]/print and (through that route) the
@@ -155,6 +184,7 @@ export function buildInvoicePrintData(
     dpNominal: inv.dp?.nominal ?? undefined,
     dpTanggal: inv.dp?.tanggal ? inv.dp.tanggal.toISOString() : undefined,
     dpBuktiUrl: inv.dp?.buktiUrl ?? undefined,
+    dpList: dpListOf(inv.dp).map((d) => ({ nominal: d.nominal, tanggal: d.tanggal?.toISOString(), buktiUrl: d.buktiUrl })),
     isPaid: inv.status === "paid",
     paymentBuktiUrl: inv.payment?.buktiUrl ?? undefined,
     paymentTanggalBayar: inv.payment?.tanggalBayar ? inv.payment.tanggalBayar.toISOString() : undefined,

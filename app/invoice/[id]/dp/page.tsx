@@ -18,7 +18,8 @@ export default async function InvoiceDpPage({ params }: PageProps<"/invoice/[id]
     PaymentMethod.find().sort({ name: 1 }).lean(),
   ]);
   if (!invoice) notFound();
-  if (invoice.status !== "unpaid" || invoice.dp?.nominal) notFound();
+  const dpSebelumnya = invoice.dp?.nominal ?? 0;
+  if (invoice.status !== "unpaid" || dpSebelumnya >= invoice.grandTotal - 1) notFound();
   // Per-sales invoice privacy — per the user's request 2026-08-29.
   const session = await getSession();
   if (isInvoiceBlockedForSession(session, invoice.sales?.nama)) notFound();
@@ -26,7 +27,7 @@ export default async function InvoiceDpPage({ params }: PageProps<"/invoice/[id]
   return (
     <>
       <PageHeader
-        title="Catat DP"
+        title={dpSebelumnya ? "Tambah DP" : "Catat DP"}
         subtitle={`${invoice.nomor} · ${invoice.customer!.nama.toUpperCase()} · ${rupiah(invoice.grandTotal)}`}
       />
       <div className="p-6 md:p-9">
@@ -35,6 +36,8 @@ export default async function InvoiceDpPage({ params }: PageProps<"/invoice/[id]
           nomor={invoice.nomor}
           customerNama={invoice.customer!.nama}
           grandTotal={invoice.grandTotal}
+          dpSebelumnya={dpSebelumnya}
+          dpKe={Math.max(invoice.dp?.cicilan?.length ?? 0, dpSebelumnya ? 1 : 0) + 1}
           paymentMethods={paymentMethods.map((m) => m.name)}
         />
       </div>

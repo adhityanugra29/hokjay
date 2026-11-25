@@ -149,6 +149,10 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   const subtotalProduk = items.reduce((sum, i) => sum + i.subtotal, 0);
   const ongkosKirim = input.ongkosKirim ?? 0;
   const grandTotal = subtotalProduk + ongkosKirim;
+  // DP already received can't exceed the new total (DP bertahap makes this likelier).
+  if (finalize && (existing.dp?.nominal ?? 0) >= grandTotal) {
+    throw new Error("Total invoice tidak boleh lebih kecil dari DP yang sudah diterima");
+  }
 
   const syaratKetentuan = await resolveSyaratKetentuanForSave({
     input: input.syaratKetentuan,

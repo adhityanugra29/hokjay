@@ -19,12 +19,18 @@ export default function DpForm({
   nomor,
   customerNama,
   grandTotal,
+  dpSebelumnya = 0,
+  dpKe = 1,
   paymentMethods,
 }: {
   invoiceId: string;
   nomor: string;
   customerNama: string;
   grandTotal: number;
+  /** Cumulative DP already received (0 for the first DP). */
+  dpSebelumnya?: number;
+  /** Which DP this one will be (1 = first). */
+  dpKe?: number;
   paymentMethods: string[];
 }) {
   const router = useRouter();
@@ -41,7 +47,8 @@ export default function DpForm({
   const [error, setError] = useState<string | null>(null);
 
   const nominalNum = Number(nominal) || 0;
-  const sisaSetelahDp = grandTotal - nominalNum;
+  const sisaSaatIni = grandTotal - dpSebelumnya;
+  const sisaSetelahDp = sisaSaatIni - nominalNum;
   // Cash/Tunai never has a transfer receipt — hide the upload field
   // entirely. Per the user's request 2026-08-25.
   const isCash = /tunai|cash/i.test(metode);
@@ -71,7 +78,10 @@ export default function DpForm({
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
-      <FormCard title="Catat DP" description="Uang muka diterima — sisa tagihan dilunasi lewat Tandai Lunas nanti.">
+      <FormCard
+        title={dpKe > 1 ? `Catat DP ke-${dpKe}` : "Catat DP"}
+        description="Uang muka diterima — sisa tagihan dilunasi lewat Tandai Lunas nanti."
+      >
         <form onSubmit={handleSubmit}>
           <FormSection label="Detail DP" last>
           <FormGrid>
@@ -80,7 +90,7 @@ export default function DpForm({
                 required
                 type="number"
                 min={1}
-                max={grandTotal - 1}
+                max={sisaSaatIni - 1}
                 value={nominal}
                 onChange={(e) => setNominal(e.target.value)}
                 placeholder="Rp 0"
@@ -118,7 +128,7 @@ export default function DpForm({
           </FormSection>
 
           <FormCardActions>
-            <Button variant="clay" type="submit" disabled={saving || nominalNum <= 0 || nominalNum >= grandTotal}>
+            <Button variant="clay" type="submit" disabled={saving || nominalNum <= 0 || nominalNum >= sisaSaatIni}>
               {saving ? "Memproses..." : "Catat DP"}
             </Button>
             <LinkButton variant="ghost" href={`/invoice/${invoiceId}`}>
@@ -137,6 +147,14 @@ export default function DpForm({
             Pelanggan: {customerNama}
             <br />
             Total: <span className="font-semibold text-ink">{rupiah(grandTotal)}</span>
+            {dpSebelumnya > 0 && (
+              <>
+                <br />
+                DP sebelumnya: <span className="font-semibold text-ink">{rupiah(dpSebelumnya)}</span>
+                <br />
+                Sisa saat ini: <span className="font-semibold text-ink">{rupiah(sisaSaatIni)}</span>
+              </>
+            )}
           </div>
         </div>
         <div className="mb-3.5 rounded-2xl bg-panel p-5 shadow-sm">
@@ -150,7 +168,7 @@ export default function DpForm({
           <div className="font-mono text-[0.75rem] leading-relaxed text-muted">
             • Status invoice tetap Belum Bayar — DP bukan pelunasan
             <br />
-            • Arus kas "Uang Masuk" tercatat otomatis sebesar DP
+            • Arus kas &quot;Uang Masuk&quot; baru tercatat otomatis sebesar DP ini
             <br />• Sisa tagihan berkurang, dilunasi lewat Tandai Lunas nanti
           </div>
         </div>

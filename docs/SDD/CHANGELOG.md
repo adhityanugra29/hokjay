@@ -6,6 +6,12 @@
 
 ---
 
+## 2026-11-25
+
+**DP bertahap (TASK-051)** — invoice unpaid bisa menerima DP lebih dari sekali. `Invoice.dp.cicilan[]` baru; `dp.nominal` tetap total kumulatif (pembaca lama tak berubah). `receiveDp`: validasi total DP < total invoice, cashflow + jurnal per DP. UI: "Tambah DP", "Catat DP ke-N", riwayat DP di detail, dokumen invoice/cetak merinci DP, "· Nx" di daftar. `updateInvoice` menolak total baru <= DP diterima. Preserved: status, payInvoice, jurnal lunas, hapus invoice ber-DP tetap diblokir. Pencatatan DP atomik (`$inc` total + `$push` cicilan dalam satu update bersyarat) agar DP yang diklik/dikirim bersamaan tidak ada yang hilang; Preview daftar menampilkan bukti tiap DP. Regression: `tsc` bersih; belum diuji di browser.
+
+---
+
 ## 2026-11-23
 
 **Fix: diskon item bekas tidak bisa dipakai (TASK-050)** — commit `6d64ab0` membuat `maxDiskonBekas` = 0 bila markup di atas Harga Bottom > komisi dasar, jadi hampir semua barang bekas tak bisa didiskon. Sekarang batas = `hargaJual − hargaMinimum` (diskon sampai Harga Bottom, tidak melewatinya); komisi bekas turun paling jauh ke komisi dasar (10% × bottom). Preserved: rumus komisi, `maxDiskonBaru`, Owner unlimited, pengecualian item custom dari Diskon Bulk. Server memakai fungsi yang sama. Regression: `tsc` bersih; belum diuji di browser.

@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — DP Bertahap (Cicilan DP)</title>
+<style>
+  :root{--ink:#201e1d;--panel:#fffdf8;--surface:#efe9da;--line:rgba(36,31,25,.16);--muted:rgba(36,31,25,.6);
+    --accent:#ffc800;--a100:#fff8e0;--a600:#f0b800;--a700:#92610a;--danger:#c0392b;--ok:#047857}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--surface);color:var(--ink);font:14px/1.45 system-ui,sans-serif}
+  .mono{font-family:ui-monospace,Consolas,monospace}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);background:var(--panel)}
+  header h1{margin:0;font-size:18px} header p{margin:2px 0 0;color:var(--muted);font-size:12px}
+  .tabs{display:flex;gap:8px;padding:14px 24px 0;flex-wrap:wrap}
+  .tabs button{border:1px solid var(--ink);background:transparent;padding:7px 14px;font-weight:700;cursor:pointer;font-size:12px}
+  .tabs button.on{background:var(--accent)}
+  main{padding:20px 24px 60px;max-width:1040px}
+  .screen{display:none}.screen.on{display:block}
+  .grid{display:grid;grid-template-columns:1fr 340px;gap:20px}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border-radius:16px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:14px}
+  .lbl{font:700 10.5px ui-monospace,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .big{font-size:28px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;border:1px solid var(--a600);background:var(--a100);color:var(--a700);border-radius:99px;padding:3px 10px;font:700 11px ui-monospace,Consolas,monospace;margin-top:10px}
+  .row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font:13px ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums;margin-top:6px}
+  .row .r{text-align:right;font-weight:700}
+  .muted{color:var(--muted)} .sisa{color:var(--a700)}
+  .bar{height:8px;background:var(--surface);border-radius:99px;overflow:hidden;margin-top:12px}
+  .bar i{display:block;height:100%;background:var(--accent);transition:width .25s}
+  hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+  .btn{display:block;width:100%;text-align:center;border:1px solid var(--ink);background:var(--accent);color:var(--ink);padding:11px;font-weight:800;cursor:pointer;font-size:14px;margin-top:8px}
+  .btn.ghost{background:transparent}
+  .btn[disabled]{opacity:.4;cursor:not-allowed}
+  .hist{width:100%;border-collapse:collapse;font:12.5px ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+  .hist th{text-align:left;color:var(--muted);font-weight:700;padding:4px 6px;border-bottom:1px solid var(--line)}
+  .hist td{padding:7px 6px;border-bottom:1px solid var(--line)}
+  .hist td.r,.hist th.r{text-align:right}
+  .hist tfoot td{font-weight:800;border-bottom:0}
+  label{display:block;font-weight:700;font-size:12px;margin:12px 0 4px}
+  input,select,textarea{width:100%;border:1px solid var(--ink);background:#fff;padding:9px;font:inherit}
+  .err{color:var(--danger);font:12px ui-monospace,Consolas,monospace;margin-top:8px;min-height:16px}
+  .doc{background:#fff;border:1px solid var(--ink);padding:22px;font-size:12.5px}
+  .doc h3{margin:0 0 10px;font-size:15px}
+  .doc table{width:100%;border-collapse:collapse}.doc td{padding:4px 0}
+  .doc .tot td{border-top:1px solid var(--ink);font-weight:800;padding-top:8px}
+  .list{width:100%;border-collapse:collapse;background:var(--panel)}
+  .list th{font:700 10.5px ui-monospace,Consolas,monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);text-align:left;padding:10px;border-bottom:1px solid var(--ink)}
+  .list td{padding:10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .tag{font:700 11px ui-monospace,Consolas,monospace;border:1px solid var(--a600);color:var(--a700);padding:2px 8px;border-radius:99px}
+  .tag.p{border-color:var(--ink);color:var(--ink)}
+  .note{background:var(--a100);border-left:4px solid var(--accent);padding:10px 14px;font-size:12.5px;margin-bottom:16px}
+  .toast{position:fixed;right:20px;bottom:20px;background:var(--ink);color:#fff;padding:10px 16px;display:none;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1>Mockup: DP Bertahap (Cicilan DP) <span class="mono muted">— dp-cicilan-v1</span></h1>
+  <p>Data contoh, bukan data asli. Coba klik "Tambah DP" dan isi nominalnya — tampilan ikut berubah.</p>
+</header>
+<div class="tabs">
+  <button class="on" data-s="detail">1. Detail Invoice</button>
+  <button data-s="form">2. Form Tambah DP</button>
+  <button data-s="cetak">3. Dokumen Invoice</button>
+  <button data-s="daftar">4. Daftar Invoice</button>
+</div>
+
+<main>
+<!-- 1. DETAIL -->
+<section class="screen on" id="s-detail">
+  <div class="note">Perubahan: kartu "DP diterima" jadi <b>riwayat DP</b> (tiap cicilan satu baris). Tombol <b>Tambah DP</b> tetap muncul selama invoice belum lunas dan sisa tagihan &gt; 0.</div>
+  <div class="grid">
+    <div class="card"><div class="lbl">Pratinjau dokumen</div><p class="muted">INV-2611-0042 · PT Maju Jaya · lihat tab 3</p></div>
+    <div>
+      <div class="card">
+        <div class="lbl">Total Invoice</div>
+        <div class="big" id="d-total">Rp 12.000.000</div>
+        <span class="pill" id="d-pill">Sudah DP 25%</span>
+        <div class="bar"><i id="d-bar" style="width:25%"></i></div>
+        <hr>
+        <div class="lbl" style="margin-bottom:6px">Riwayat DP</div>
+        <table class="hist"><thead><tr><th>#</th><th>Tanggal</th><th>Metode</th><th class="r">Nominal</th></tr></thead>
+          <tbody id="d-hist"></tbody>
+          <tfoot><tr><td colspan="3">Total DP</td><td class="r" id="d-sum"></td></tr></tfoot></table>
+        <div class="row"><span class="muted">Sisa tagihan</span><span class="r sisa" id="d-sisa"></span></div>
+        <hr>
+        <div class="lbl" style="margin-bottom:4px">Pembayaran</div>
+        <button class="btn" onclick="show('form')" id="d-add">Tambah DP</button>
+        <button class="btn ghost" onclick="toast('Contoh: membuka halaman Tandai Lunas')">Tandai Lunas (sisa <span id="d-sisa2"></span>)</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. FORM -->
+<section class="screen" id="s-form">
+  <div class="note">Perubahan: judul jadi "Catat DP ke-<b>N</b>", batas nominal = <b>sisa tagihan − 1</b> (bukan total invoice), dan ada ringkasan DP sebelumnya.</div>
+  <div class="grid">
+    <div class="card">
+      <h2 style="margin:0 0 4px;font-size:18px" id="f-title">Catat DP ke-2</h2>
+      <p class="muted" style="margin:0 0 6px">Uang muka tambahan diterima — sisa tagihan dilunasi lewat Tandai Lunas nanti.</p>
+      <label>Nominal DP</label><input id="f-nom" type="number" min="1" placeholder="Rp 0" oninput="calc()">
+      <label>Metode Pembayaran</label>
+      <select id="f-met"><option>Transfer Bank</option><option>Tunai</option></select>
+      <label>Bukti Transfer</label><input type="file">
+      <label>Catatan (opsional)</label><textarea rows="2" placeholder="Contoh: termin ke-2, transfer dari rekening BCA a.n. Budi"></textarea>
+      <div class="err" id="f-err"></div>
+      <button class="btn" id="f-ok" onclick="submitDp()" disabled>Catat DP</button>
+      <button class="btn ghost" onclick="show('detail')">Batal</button>
+    </div>
+    <div>
+      <div class="card">
+        <div class="lbl" style="margin-bottom:8px">Ringkasan Invoice</div>
+        <div class="row"><span class="muted">Total</span><span class="r">Rp 12.000.000</span></div>
+        <div class="row"><span class="muted">DP sebelumnya (<span id="f-n">1</span>x)</span><span class="r" id="f-prev"></span></div>
+        <div class="row"><span class="muted">Sisa saat ini</span><span class="r" id="f-cur"></span></div>
+      </div>
+      <div class="card">
+        <div class="lbl" style="margin-bottom:6px">Sisa Setelah DP Ini</div>
+        <div class="big" id="f-after"></div>
+      </div>
+      <div class="card">
+        <div class="lbl" style="margin-bottom:6px">Apa yang terjadi setelah dicatat</div>
+        <div class="mono muted" style="font-size:12px;line-height:1.7">• Status tetap Belum Bayar<br>• Arus kas "Uang Masuk" baru sebesar DP ini<br>• Jurnal baru: Kas/Bank ↔ Uang Muka Pelanggan<br>• DP sebelumnya tidak berubah</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. CETAK -->
+<section class="screen" id="s-cetak">
+  <div class="note">Perubahan: bagian bawah invoice mencantumkan tiap DP (bila lebih dari satu) lalu sisa tagihan. Bila hanya satu DP, tampilannya sama seperti sekarang.</div>
+  <div class="doc" style="max-width:640px">
+    <h3>INVOICE INV-2611-0042</h3>
+    <div class="muted" style="margin-bottom:10px">PT Maju Jaya · 25 Nov 2026</div>
+    <table>
+      <tr><td>Kulkas Display 2 Pintu × 2</td><td style="text-align:right">Rp 10.000.000</td></tr>
+      <tr><td>Ongkos kirim</td><td style="text-align:right">Rp 2.000.000</td></tr>
+      <tr class="tot"><td>Total</td><td style="text-align:right">Rp 12.000.000</td></tr>
+    </table>
+    <table id="c-dp" style="margin-top:8px"></table>
+  </div>
+</section>
+
+<!-- 4. DAFTAR -->
+<section class="screen" id="s-daftar">
+  <div class="note">Perubahan: label "Sudah DP" dan persentase memakai <b>total DP</b>; ditambah penanda "2x" bila DP lebih dari sekali. Filter "Sudah DP" tidak berubah.</div>
+  <table class="list">
+    <thead><tr><th>No. Invoice</th><th>Pelanggan</th><th>Status</th><th style="text-align:right">Total</th><th style="text-align:right">Sisa</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">INV-2611-0042</td><td>PT Maju Jaya</td><td><span class="tag" id="l-tag"></span></td><td style="text-align:right">Rp 12.000.000</td><td style="text-align:right" id="l-sisa"></td></tr>
+      <tr><td class="mono">INV-2611-0041</td><td>Warung Bu Tini</td><td><span class="tag">Belum Bayar</span></td><td style="text-align:right">Rp 3.500.000</td><td style="text-align:right">Rp 3.500.000</td></tr>
+      <tr><td class="mono">INV-2611-0040</td><td>Resto Sedap</td><td><span class="tag p">Lunas</span></td><td style="text-align:right">Rp 8.200.000</td><td style="text-align:right">—</td></tr>
+    </tbody>
+  </table>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const TOTAL = 12000000;
+let dp = [{tgl:'20 Nov 2026', met:'Transfer Bank', nom:3000000}];
+const rp = n => 'Rp ' + n.toLocaleString('id-ID');
+const sum = () => dp.reduce((s,x)=>s+x.nom,0);
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(e=>e.classList.toggle('on', e.id==='s-'+id));
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on', b.dataset.s===id));
+  if(id==='form'){document.getElementById('f-nom').value='';calc();}
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>show(b.dataset.s));
+
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',1800)}
+
+function render(){
+  const s=sum(), sisa=TOTAL-s, pct=Math.round(s/TOTAL*100);
+  d('d-hist').innerHTML = dp.map((x,i)=>`<tr><td>${i+1}</td><td>${x.tgl}</td><td>${x.met}</td><td class="r">${rp(x.nom)}</td></tr>`).join('');
+  d('d-sum').textContent=rp(s); d('d-sisa').textContent=rp(sisa); d('d-sisa2').textContent=rp(sisa);
+  d('d-pill').textContent='Sudah DP '+pct+'%'+(dp.length>1?' · '+dp.length+'x':'');
+  d('d-bar').style.width=pct+'%';
+  d('d-add').disabled = sisa<=1;
+  d('f-title').textContent='Catat DP ke-'+(dp.length+1);
+  d('f-n').textContent=dp.length; d('f-prev').textContent=rp(s); d('f-cur').textContent=rp(sisa);
+  d('c-dp').innerHTML = dp.map((x,i)=>`<tr><td class="muted">DP${dp.length>1?' ke-'+(i+1):''} (${x.tgl}, ${x.met})</td><td style="text-align:right">− ${rp(x.nom)}</td></tr>`).join('')
+    + `<tr class="tot"><td>Sisa tagihan</td><td style="text-align:right">${rp(sisa)}</td></tr>`;
+  d('l-tag').textContent='Sudah DP '+pct+'%'+(dp.length>1?' · '+dp.length+'x':'');
+  d('l-sisa').textContent=rp(sisa);
+}
+function d(id){return document.getElementById(id)}
+
+function calc(){
+  const sisa=TOTAL-sum(), n=Number(d('f-nom').value)||0, max=sisa-1;
+  d('f-after').textContent=rp(Math.max(0,sisa-n));
+  let e='';
+  if(n>max) e='Nominal DP tidak boleh melebihi '+rp(max)+' — gunakan Tandai Lunas untuk pelunasan.';
+  d('f-err').textContent=e;
+  d('f-ok').disabled = !(n>0 && n<=max);
+}
+function submitDp(){
+  const n=Number(d('f-nom').value);
+  dp.push({tgl:'25 Nov 2026', met:d('f-met').value, nom:n});
+  render(); show('detail'); toast('DP ke-'+dp.length+' dicatat');
+}
+render(); calc();
+</script>
+</body>
+</html>

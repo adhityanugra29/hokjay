@@ -120,12 +120,27 @@ const InvoiceSchema = new Schema(
     // the real cash received is still posted to Keuangan/Akuntansi
     // immediately, same as a full payment. Confirmed with the user
     // 2026-08-25.
+    // DP can be received more than once (receiveDp.ts). dp.nominal is the
+    // CUMULATIVE total (so every existing reader keeps working); tanggal/
+    // metode/buktiUrl/catatan mirror the latest payment; cicilan[] is the
+    // per-payment history. A pre-cicilan invoice has dp.nominal but an empty
+    // cicilan[] — receiveDp backfills it as cicilan #1 on the next DP.
     dp: {
       nominal: { type: Number },
       tanggal: { type: Date },
       metode: { type: String },
       buktiUrl: { type: String },
       catatan: { type: String },
+      cicilan: [
+        {
+          _id: false,
+          nominal: { type: Number },
+          tanggal: { type: Date },
+          metode: { type: String },
+          buktiUrl: { type: String },
+          catatan: { type: String },
+        },
+      ],
     },
 
     komisiCair: { type: Boolean, default: false },

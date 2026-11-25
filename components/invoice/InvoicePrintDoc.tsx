@@ -159,10 +159,21 @@ export default function InvoicePrintDoc({
           </div>
           {invoice.dpNominal ? (
             <>
-              <div className="flex justify-between py-1.5 text-[0.88rem]">
-                <span>DP ({formatDateShort(invoice.dpTanggal ?? invoice.tanggal)})</span>
-                <span>− {rupiah(invoice.dpNominal)}</span>
-              </div>
+              {invoice.dpList && invoice.dpList.length > 1 ? (
+                invoice.dpList.map((d, i) => (
+                  <div key={i} className="flex justify-between py-1.5 text-[0.88rem]">
+                    <span>
+                      DP ke-{i + 1} ({formatDateShort(d.tanggal ?? invoice.tanggal)})
+                    </span>
+                    <span>− {rupiah(d.nominal)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex justify-between py-1.5 text-[0.88rem]">
+                  <span>DP ({formatDateShort(invoice.dpTanggal ?? invoice.tanggal)})</span>
+                  <span>− {rupiah(invoice.dpNominal)}</span>
+                </div>
+              )}
               {invoice.isPaid && (
                 <div className="flex justify-between py-1.5 text-[0.88rem]">
                   <span>Pelunasan ({formatDateShort(invoice.paymentTanggalBayar ?? invoice.tanggal)})</span>

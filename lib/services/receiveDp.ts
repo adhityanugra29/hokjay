@@ -12,7 +12,9 @@ export interface ReceiveDpInput {
 }
 
 /**
- * Records a one-time down payment on a sent ("unpaid") invoice — reduces
+ * Records a down payment on a sent ("unpaid") invoice — can be called
+ * repeatedly (DP bertahap) as long as the cumulative DP stays below
+ * grandTotal; each call is its own cashflow + journal entry. Reduces
  * what's still owed without moving status to "paid". Real cash received,
  * so it posts a normal "uang masuk" cashflow entry immediately, same as a
  * full payment. Confirmed with the user 2026-08-25.
@@ -35,29 +37,83 @@ export async function receiveDp(invoiceId: string, input: ReceiveDpInput) {
       invoice.status === "draft" ? "Invoice masih draft, kirim dulu sebelum menerima DP" : "Invoice ini sudah lunas"
     );
   }
-  if (invoice.dp?.nominal) throw new Error("DP untuk invoice ini sudah pernah dicatat");
   if (!input.nominal || input.nominal <= 0) throw new Error("Nominal DP harus lebih dari 0");
-  if (input.nominal >= invoice.grandTotal) {
-    throw new Error("Nominal DP tidak boleh sama dengan atau melebihi total invoice — gunakan Tandai Lunas untuk pelunasan penuh");
+  const dpLama = invoice.dp?.nominal ?? 0;
+  const totalDp = dpLama + input.nominal;
+  if (totalDp >= invoice.grandTotal) {
+    throw new Error(
+      dpLama
+        ? "Total DP tidak boleh sama dengan atau melebihi total invoice — gunakan Tandai Lunas untuk pelunasan"
+        : "Nominal DP tidak boleh sama dengan atau melebihi total invoice — gunakan Tandai Lunas untuk pelunasan penuh"
+    );
   }
 
   const tanggal = new Date();
-  invoice.dp = {
-    nominal: input.nominal,
-    tanggal,
-    metode: input.metode,
-    buktiUrl: input.buktiUrl,
-    catatan: input.catatan,
-  };
-  invoice.riwayat.push({
-    tanggal,
-    keterangan: `DP diterima Rp ${input.nominal.toLocaleString("id-ID")} — sisa Rp ${(invoice.grandTotal - input.nominal).toLocaleString("id-ID")}`,
-  });
-  await invoice.save();
+  // Pre-cicilan invoice: its single DP becomes cicilan #1 first. Idempotent
+  // (only matches while cicilan is still empty), so a concurrent request can't
+  // backfill it twice.
+  if (dpLama && !invoice.dp!.cicilan?.length) {
+    await Invoice.updateOne(
+      { _id: invoice._id, "dp.nominal": { $gt: 0 }, "dp.cicilan.0": { $exists: false } },
+      {
+        $push: {
+          "dp.cicilan": {
+            nominal: dpLama,
+            tanggal: invoice.dp!.tanggal,
+            metode: invoice.dp!.metode,
+            buktiUrl: invoice.dp!.buktiUrl,
+            catatan: invoice.dp!.catatan,
+          },
+        },
+      }
+    );
+  }
+
+  // Atomic: the total is incremented (never overwritten from a stale read) and
+  // the cumulative < grandTotal check runs inside the same write, so two DPs
+  // submitted at once (double click, two tabs/users) are BOTH counted — never
+  // one recorded and one lost.
+  const updated = await Invoice.findOneAndUpdate(
+    {
+      _id: invoice._id,
+      status: "unpaid",
+      $expr: { $lt: [{ $add: [{ $ifNull: ["$dp.nominal", 0] }, input.nominal] }, "$grandTotal"] },
+    },
+    {
+      $inc: { "dp.nominal": input.nominal },
+      $set: {
+        "dp.tanggal": tanggal,
+        "dp.metode": input.metode,
+        "dp.buktiUrl": input.buktiUrl,
+        "dp.catatan": input.catatan,
+      },
+      $push: {
+        "dp.cicilan": { nominal: input.nominal, tanggal, metode: input.metode, buktiUrl: input.buktiUrl, catatan: input.catatan },
+      },
+    },
+    { new: true }
+  );
+  if (!updated) {
+    throw new Error("DP gagal dicatat — total DP akan melebihi total invoice atau status invoice baru saja berubah. Muat ulang halaman.");
+  }
+  const invoiceBaru = updated;
+  const ke = invoiceBaru.dp!.cicilan.length;
+  const totalBaru = invoiceBaru.dp!.nominal ?? 0;
+  await Invoice.updateOne(
+    { _id: invoice._id },
+    {
+      $push: {
+        riwayat: {
+          tanggal,
+          keterangan: `DP${ke > 1 ? ` ke-${ke}` : ""} diterima Rp ${input.nominal.toLocaleString("id-ID")} — sisa Rp ${(invoice.grandTotal - totalBaru).toLocaleString("id-ID")}`,
+        },
+      },
+    }
+  );
 
   await CashflowEntry.create({
     tipe: "masuk",
-    keterangan: `DP invoice ${invoice.nomor} — ${invoice.customer!.nama}`,
+    keterangan: `DP${ke > 1 ? ` ke-${ke}` : ""} invoice ${invoice.nomor} — ${invoice.customer!.nama}`,
     kategori: "DP Invoice",
     referensi: invoice.nomor,
     nominal: input.nominal,
@@ -68,10 +124,10 @@ export async function receiveDp(invoiceId: string, input: ReceiveDpInput) {
 
   const legacyFinalized = await JournalEntry.exists({ invoice: invoice._id, sumberTipe: "invoice-finalisasi" });
   if (legacyFinalized) {
-    await postInvoiceDpLegacy(invoice, input.nominal, input.metode);
+    await postInvoiceDpLegacy(invoiceBaru, input.nominal, input.metode);
   } else {
-    await postInvoiceDp(invoice, input.nominal, input.metode);
+    await postInvoiceDp(invoiceBaru, input.nominal, input.metode);
   }
 
-  return invoice;
+  return invoiceBaru;
 }

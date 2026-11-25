@@ -6,6 +6,19 @@
 
 ---
 
+## TASK-051 — DP bertahap (Cicilan DP)
+
+**Type:** Feature
+**Priority:** P2
+**Status:** REVIEW
+**Created:** 2026-11-25 · **Last updated:** 2026-11-25
+
+**Requirement:** Invoice unpaid boleh menerima DP lebih dari sekali; total DP harus < total invoice (pelunasan lewat Tandai Lunas). Mockup: `mockups/dp-cicilan-v1.html`.
+**Implementasi:** `Invoice.dp.cicilan[]` (riwayat per DP); `dp.nominal` = total kumulatif sehingga semua pembaca lama (daftar, filter, Beranda, payInvoice, jurnal lunas) tidak berubah. `receiveDp` tidak lagi menolak DP kedua, validasi kumulatif, cashflow + jurnal per DP (jurnal memakai `dp.tanggal` = tanggal DP terbaru). DP lama tanpa `cicilan` dijadikan cicilan #1 saat DP berikutnya. UI: tombol "Tambah DP", form "Catat DP ke-N", riwayat DP di detail, dokumen invoice/cetak merinci DP bila >1, label "· Nx" di daftar. `updateInvoice` menolak total baru <= DP yang sudah diterima.
+**Open points:** (1) Tidak ada edit/hapus per DP (koreksi salah input). (2) [selesai] Preview daftar menampilkan bukti tiap DP. Pencatatan atomik (`$inc` + `$push` bersyarat) supaya dua DP yang masuk bersamaan keduanya tercatat. (3) Perlu uji manual: DP 1, DP 2, Tandai Lunas, cek jurnal/arus kas; invoice lama ber-DP.
+
+---
+
 ## TASK-050 — Fix: batas diskon item bekas terlalu ketat (hampir selalu Rp 0)
 
 **Type:** Bug fix

@@ -1,10 +1,11 @@
+import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import InvoiceActions from "@/components/invoice/InvoiceActions";
 import InvoiceMoreActions from "@/components/invoice/InvoiceMoreActions";
 import InvoicePrintDoc from "@/components/invoice/InvoicePrintDoc";
-import { buildInvoicePrintData } from "@/lib/invoiceDisplay";
+import { buildInvoicePrintData, dpListOf } from "@/lib/invoiceDisplay";
 import InvoiceDocument from "@/components/invoice/InvoiceDocument";
 import DeleteInvoiceButton from "@/components/invoice/DeleteInvoiceButton";
 import { LinkButton } from "@/components/ui/Button";
@@ -76,7 +77,9 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
   const isPaid = invoice.status === "paid";
   const dpNominal = invoice.dp?.nominal ?? 0;
   const allDone = isPaid && !!invoice.dikirim;
-  const canCatatDp = invoice.status === "unpaid" && !dpNominal;
+  // DP bertahap: stays available while the cumulative DP leaves > Rp 1 owed.
+  const canCatatDp = invoice.status === "unpaid" && dpNominal < invoice.grandTotal - 1;
+  const dpList = dpListOf(invoice.dp);
   const canUbah = !isPaid && !isDraft;
   const canHapus = !isPaid && !dpNominal;
   const morePeek = ["Surat Jalan", ...(canUbah ? ["Ubah"] : []), ...(canHapus ? ["Hapus"] : [])];
@@ -162,8 +165,26 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
               </div>
               {dpNominal && !isPaid ? (
                 <div className="mt-3.5 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 font-mono text-[0.8rem] tabular-nums">
-                  <span className="text-muted">DP diterima ({formatDateShort(invoice.dp!.tanggal ?? invoice.createdAt!)})</span>
-                  <span className="text-right font-bold">{rupiah(dpNominal)}</span>
+                  {dpList.length > 1 ? (
+                    <>
+                      {dpList.map((d, i) => (
+                        <Fragment key={i}>
+                          <span className="text-muted">
+                            DP ke-{i + 1} ({formatDateShort(d.tanggal ?? invoice.createdAt!)}
+                            {d.metode ? ` · ${d.metode}` : ""})
+                          </span>
+                          <span className="text-right font-bold">{rupiah(d.nominal)}</span>
+                        </Fragment>
+                      ))}
+                      <span className="text-muted">Total DP</span>
+                      <span className="text-right font-bold">{rupiah(dpNominal)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-muted">DP diterima ({formatDateShort(invoice.dp!.tanggal ?? invoice.createdAt!)})</span>
+                      <span className="text-right font-bold">{rupiah(dpNominal)}</span>
+                    </>
+                  )}
                   <span className="text-muted">Sisa tagihan</span>
                   <span className="text-right font-bold text-accent-700">{rupiah(invoice.grandTotal - dpNominal)}</span>
                 </div>
@@ -200,7 +221,7 @@ export default async function InvoiceDetailPage({ params }: PageProps<"/invoice/
                         2026-10-12. Same rule as before: unpaid, no DP yet. */}
                     {canCatatDp && (
                       <LinkButton variant="ghost" href={`/invoice/${invoice._id}/dp`} className="mt-2 w-full">
-                        Catat DP
+                        {dpNominal ? "Tambah DP" : "Catat DP"}
                       </LinkButton>
                     )}
                   </div>
